@@ -171,7 +171,7 @@ export default function Profile() {
       </div>
 
       {/* Banner */}
-      <div className="h-32 sm:h-48 bg-gray-100 relative overflow-hidden">
+      <div className="h-32 sm:h-48 bg-gray-100 relative">
         {profile.bannerURL && (
           <img 
             src={profile.bannerURL} 
@@ -180,7 +180,7 @@ export default function Profile() {
             referrerPolicy="no-referrer"
           />
         )}
-        <div className="absolute -bottom-12 sm:-bottom-16 left-4 sm:left-6 p-1 bg-white rounded-full shadow-xl">
+        <div className="absolute -bottom-12 sm:-bottom-16 left-4 sm:left-6 p-1 bg-white rounded-full shadow-xl z-10">
           <img
             src={profile.photoURL || 'https://picsum.photos/seed/user/200/200'}
             alt={profile.displayName}
@@ -191,57 +191,59 @@ export default function Profile() {
       </div>
 
       {/* Profile Info */}
-      <div className="mt-14 sm:mt-20 px-4 sm:px-6 pb-6 border-b border-gray-100 space-y-4">
-        <div className="flex justify-end">
-          {currentUser?.uid === profile.uid ? (
-            <button 
-              onClick={() => setIsEditing(true)}
-              className="px-4 py-1.5 sm:px-6 sm:py-2 border-2 border-black text-black rounded-full font-bold text-sm sm:text-base hover:bg-black hover:text-white transition-all flex items-center gap-2"
-            >
-              <Edit3 className="w-4 h-4" />
-              <span className="hidden sm:inline">Edit Profile</span>
-              <span className="sm:hidden">Edit</span>
-            </button>
-          ) : (
-            <div className="flex items-center gap-2">
+      <div className="mt-12 sm:mt-16 px-4 sm:px-6 pb-6 border-b border-gray-100 space-y-4">
+        <div className="flex items-end justify-between gap-4">
+          <div className="min-w-0">
+            <h2 className="text-xl sm:text-2xl font-black tracking-tighter text-black truncate">{profile.displayName}</h2>
+            <p className="text-sm sm:text-base text-gray-400 font-medium truncate">@{profile.username}</p>
+          </div>
+          
+          <div className="flex-shrink-0">
+            {currentUser?.uid === profile.uid ? (
               <button 
-                onClick={handleMessage}
-                disabled={followLoading}
-                className="p-2 sm:p-3 border-2 border-black text-black rounded-full hover:bg-black hover:text-white transition-all active:scale-95 disabled:opacity-30"
+                onClick={() => setIsEditing(true)}
+                className="px-4 py-1.5 sm:px-6 sm:py-2 border-2 border-black text-black rounded-full font-bold text-sm sm:text-base hover:bg-black hover:text-white transition-all flex items-center gap-2"
               >
-                <MessageCircle className="w-5 h-5" />
+                <Edit3 className="w-4 h-4" />
+                <span className="hidden sm:inline">Edit Profile</span>
+                <span className="sm:hidden">Edit</span>
               </button>
-              <button 
-                onClick={handleFollow}
-                disabled={followLoading}
-                className={cn(
-                  "px-6 py-1.5 sm:px-8 sm:py-2 rounded-full font-bold text-sm sm:text-base transition-all flex items-center gap-2",
-                  isFollowing 
-                    ? "border-2 border-gray-200 text-black hover:border-red-200 hover:text-red-500 hover:bg-red-50" 
-                    : "bg-black text-white hover:bg-gray-800"
-                )}
-              >
-                {followLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : isFollowing ? (
-                  <>
-                    <UserMinus className="w-4 h-4" />
-                    Unfollow
-                  </>
-                ) : (
-                  <>
-                    <UserPlus className="w-4 h-4" />
-                    Follow
-                  </>
-                )}
-              </button>
-            </div>
-          )}
-        </div>
-
-        <div>
-          <h2 className="text-xl sm:text-2xl font-black tracking-tighter text-black">{profile.displayName}</h2>
-          <p className="text-sm sm:text-base text-gray-400 font-medium">@{profile.username}</p>
+            ) : (
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={handleMessage}
+                  disabled={followLoading}
+                  className="p-2 sm:p-3 border-2 border-black text-black rounded-full hover:bg-black hover:text-white transition-all active:scale-95 disabled:opacity-30"
+                >
+                  <MessageCircle className="w-5 h-5" />
+                </button>
+                <button 
+                  onClick={handleFollow}
+                  disabled={followLoading}
+                  className={cn(
+                    "px-6 py-1.5 sm:px-8 sm:py-2 rounded-full font-bold text-sm sm:text-base transition-all flex items-center gap-2",
+                    isFollowing 
+                      ? "border-2 border-gray-200 text-black hover:border-red-200 hover:text-red-500 hover:bg-red-50" 
+                      : "bg-black text-white hover:bg-gray-800"
+                  )}
+                >
+                  {followLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : isFollowing ? (
+                    <>
+                      <UserMinus className="w-4 h-4" />
+                      Unfollow
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="w-4 h-4" />
+                      Follow
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {profile.bio && (

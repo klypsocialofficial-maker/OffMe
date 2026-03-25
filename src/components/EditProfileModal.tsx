@@ -149,17 +149,17 @@ export default function EditProfileModal({ profile, onClose, onUpdate }: Props) 
 
             {/* Banner Upload */}
             <div 
-              className="h-32 bg-gray-100 rounded-2xl relative mb-16 group cursor-pointer overflow-hidden"
+              className="h-32 bg-gray-100 rounded-2xl relative mb-16 group cursor-pointer"
               onClick={() => bannerInputRef.current?.click()}
             >
               {bannerURL ? (
-                <img src={bannerURL} alt="Banner" className="w-full h-full object-cover" />
+                <img src={bannerURL} alt="Banner" className="w-full h-full object-cover rounded-2xl" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
                   <ImageIcon className="w-8 h-8 text-gray-300" />
                 </div>
               )}
-              <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl">
                 <Camera className="w-8 h-8 text-white" />
               </div>
               <input
@@ -172,7 +172,7 @@ export default function EditProfileModal({ profile, onClose, onUpdate }: Props) 
 
               {/* Avatar Upload */}
               <div 
-                className="absolute -bottom-12 left-6 p-1 bg-white rounded-full shadow-lg group/avatar cursor-pointer"
+                className="absolute -bottom-12 left-6 p-1 bg-white rounded-full shadow-lg group/avatar cursor-pointer z-10"
                 onClick={(e) => {
                   e.stopPropagation();
                   avatarInputRef.current?.click();
