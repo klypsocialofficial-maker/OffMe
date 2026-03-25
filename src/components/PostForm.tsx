@@ -4,6 +4,7 @@ import { collection, addDoc, serverTimestamp, doc, updateDoc, increment, Timesta
 import { Image as ImageIcon, Smile, Calendar, MapPin, Send, X, MapPinOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useProfile } from '../hooks/useProfile';
+import { imageService } from '../services/imageService';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 
 interface Props {
@@ -68,6 +69,11 @@ export default function PostForm({ onSuccess }: Props) {
 
     setLoading(true);
     try {
+      let imageUrl = null;
+      if (selectedImage) {
+        imageUrl = await imageService.uploadImage(selectedImage);
+      }
+
       const postData: any = {
         authorUid: user.uid,
         authorName: profile.displayName || 'Anonymous',
@@ -84,10 +90,8 @@ export default function PostForm({ onSuccess }: Props) {
         postData.authorPhoto = profile.photoURL;
       }
 
-      if (selectedImage) {
-        // In a real app, upload to Storage. For now, we'll use a placeholder URL
-        // to avoid Firestore 1MB limit with base64
-        postData.imageUrl = `https://picsum.photos/seed/${Date.now()}/800/600`;
+      if (imageUrl) {
+        postData.imageUrl = imageUrl;
       }
 
       if (location) {

@@ -4,6 +4,7 @@ import { doc, updateDoc, collection, query, where, getDocs } from 'firebase/fire
 import { UserProfile } from '../types';
 import { X, Camera, Loader2, Image as ImageIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { imageService } from '../services/imageService';
 import ImageCropper from './ImageCropper';
 
 interface Props {
@@ -45,9 +46,7 @@ export default function EditProfileModal({ profile, onClose, onUpdate }: Props) 
     setCropImage(null);
 
     try {
-      const fileRef = ref(storage, `users/${auth.currentUser.uid}/${type}_${Date.now()}.jpg`);
-      await uploadBytes(fileRef, blob);
-      const url = await getDownloadURL(fileRef);
+      const url = await imageService.uploadImage(blob);
       
       if (type === 'avatar') {
         setPhotoURL(url);
