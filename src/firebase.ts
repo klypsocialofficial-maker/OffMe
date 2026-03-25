@@ -1,7 +1,8 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, User as FirebaseUser, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { getFirestore, collection, doc, setDoc, getDoc, getDocs, query, where, orderBy, limit, onSnapshot, updateDoc, deleteDoc, increment, serverTimestamp, Timestamp, getDocFromServer } from 'firebase/firestore';
+import { getFirestore, collection, doc, setDoc, getDoc, getDocs, query, where, orderBy, limit, onSnapshot, updateDoc, deleteDoc, increment, serverTimestamp, Timestamp, getDocFromServer, arrayUnion } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL, uploadString } from 'firebase/storage';
+import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import firebaseConfigLocal from '../firebase-applet-config.json';
 
 // Use environment variables if available, otherwise fallback to local config
@@ -20,13 +21,15 @@ const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
 export const storage = getStorage(app);
+export const messaging = typeof window !== 'undefined' ? getMessaging(app) : null;
 export const googleProvider = new GoogleAuthProvider();
 
 // Export Firebase methods
 export { signInWithPopup, signOut, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile };
 export type { FirebaseUser };
-export { collection, doc, setDoc, getDoc, getDocs, query, where, orderBy, limit, onSnapshot, updateDoc, deleteDoc, increment, serverTimestamp, Timestamp, getDocFromServer };
+export { collection, doc, setDoc, getDoc, getDocs, query, where, orderBy, limit, onSnapshot, updateDoc, deleteDoc, increment, serverTimestamp, Timestamp, getDocFromServer, arrayUnion };
 export { ref, uploadBytes, getDownloadURL, uploadString };
+export { getToken, onMessage };
 
 // Auth helpers
 export const loginWithGoogle = () => signInWithPopup(auth, googleProvider);
