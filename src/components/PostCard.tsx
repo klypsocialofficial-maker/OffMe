@@ -19,6 +19,7 @@ const PostCard: React.FC<Props> = ({ post }) => {
   const [repostedPost, setRepostedPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { profile: currentUserProfile } = useProfile();
   const user = auth.currentUser;
 
@@ -185,21 +186,62 @@ const PostCard: React.FC<Props> = ({ post }) => {
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              {user?.uid === post.authorUid && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowDeleteConfirm(true);
-                  }}
-                  className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              )}
-              <button className="p-2 text-gray-400 hover:text-black hover:bg-gray-100 rounded-xl transition-all">
-                <MoreHorizontal className="w-4 h-4" />
+            <div className="flex items-center gap-2 sm:opacity-0 group-hover:opacity-100 transition-opacity relative">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsMenuOpen(!isMenuOpen);
+                }}
+                className="p-2 text-gray-400 hover:text-black hover:bg-gray-100 rounded-xl transition-all"
+              >
+                <MoreHorizontal className="w-5 h-5" />
               </button>
+
+              <AnimatePresence>
+                {isMenuOpen && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-30" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsMenuOpen(false);
+                      }} 
+                    />
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                      className="absolute right-0 top-full mt-1 w-48 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-40 overflow-hidden"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {user?.uid === post.authorUid && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsMenuOpen(false);
+                            setShowDeleteConfirm(true);
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-50 transition-colors font-bold text-sm"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Delete Post
+                        </button>
+                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsMenuOpen(false);
+                          // Implement share logic if needed
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 transition-colors font-bold text-sm"
+                      >
+                        <Share className="w-4 h-4" />
+                        Share Post
+                      </button>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
             </div>
           </div>
 

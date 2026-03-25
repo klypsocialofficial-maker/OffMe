@@ -4,12 +4,14 @@ import { collection, query, orderBy, limit, onSnapshot, where } from 'firebase/f
 import { Post } from '../types';
 import PostCard from './PostCard';
 import PostForm from './PostForm';
+import { useDrawer } from '../contexts/DrawerContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, Loader2 } from 'lucide-react';
 
 export default function Feed() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+  const { openDrawer } = useDrawer();
 
   useEffect(() => {
     const q = query(
@@ -39,12 +41,17 @@ export default function Feed() {
       {/* Header */}
       <div className="sticky top-0 z-20 backdrop-blur-xl bg-white/80 border-b border-gray-100 px-4 py-3 sm:px-6 sm:py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <img
-            src={auth.currentUser?.photoURL || 'https://picsum.photos/seed/user/100/100'}
-            alt="Profile"
-            className="sm:hidden w-8 h-8 rounded-full object-cover border border-gray-100"
-            referrerPolicy="no-referrer"
-          />
+          <button 
+            onClick={openDrawer}
+            className="sm:hidden focus:outline-none active:scale-95 transition-transform"
+          >
+            <img
+              src={auth.currentUser?.photoURL || 'https://picsum.photos/seed/user/100/100'}
+              alt="Profile"
+              className="w-8 h-8 rounded-full object-cover border border-gray-100"
+              referrerPolicy="no-referrer"
+            />
+          </button>
           <h1 className="text-xl sm:text-2xl font-black tracking-tighter text-black">Home</h1>
         </div>
         <div className="p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer">

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db, auth, handleFirestoreError, OperationType } from '../firebase';
 import { collection, query, where, orderBy, onSnapshot, limit } from 'firebase/firestore';
 import { Notification } from '../types';
+import { useDrawer } from '../contexts/DrawerContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { Heart, UserPlus, MessageCircle, Repeat2, Loader2, Bell } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -11,6 +12,7 @@ import { socialService } from '../services/socialService';
 export default function Notifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const { openDrawer } = useDrawer();
   const user = auth.currentUser;
   const navigate = useNavigate();
 
@@ -68,7 +70,18 @@ export default function Notifications() {
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
-      <div className="sticky top-0 z-20 backdrop-blur-xl bg-white/80 border-b border-gray-100 px-4 py-3 sm:px-6 sm:py-4">
+      <div className="sticky top-0 z-20 backdrop-blur-xl bg-white/80 border-b border-gray-100 px-4 py-3 sm:px-6 sm:py-4 flex items-center gap-4">
+        <button 
+          onClick={openDrawer}
+          className="sm:hidden focus:outline-none active:scale-95 transition-transform"
+        >
+          <img
+            src={auth.currentUser?.photoURL || 'https://picsum.photos/seed/user/100/100'}
+            alt="Profile"
+            className="w-8 h-8 rounded-full object-cover border border-gray-100"
+            referrerPolicy="no-referrer"
+          />
+        </button>
         <h1 className="text-xl sm:text-2xl font-black tracking-tighter text-black">Notifications</h1>
       </div>
 

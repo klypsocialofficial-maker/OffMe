@@ -4,6 +4,7 @@ import { UserProfile } from '../types';
 import { Search, UserPlus, UserCheck, Loader2, MessageCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
+import { useDrawer } from '../contexts/DrawerContext';
 import { socialService } from '../services/socialService';
 import { chatService } from '../services/chatService';
 import { useProfile } from '../hooks/useProfile';
@@ -13,6 +14,7 @@ export default function Explore() {
   const [searchTerm, setSearchTerm] = useState('');
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(false);
+  const { openDrawer } = useDrawer();
   const { profile: currentUserProfile } = useProfile();
   const currentUser = auth.currentUser;
 
@@ -50,14 +52,25 @@ export default function Explore() {
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-gray-100 p-4">
-        <div className="relative group">
+      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-gray-100 p-4 flex items-center gap-4">
+        <button 
+          onClick={openDrawer}
+          className="sm:hidden focus:outline-none active:scale-95 transition-transform"
+        >
+          <img
+            src={auth.currentUser?.photoURL || 'https://picsum.photos/seed/user/100/100'}
+            alt="Profile"
+            className="w-8 h-8 rounded-full object-cover border border-gray-100"
+            referrerPolicy="no-referrer"
+          />
+        </button>
+        <div className="relative group flex-1">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-black transition-colors" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search users by @username..."
+            placeholder="Search users..."
             className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-transparent focus:border-black focus:bg-white rounded-2xl outline-none font-bold text-lg transition-all placeholder:text-gray-400"
           />
         </div>

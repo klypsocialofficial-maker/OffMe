@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db, collection, query, where, orderBy, onSnapshot, auth } from '../firebase';
 import { Conversation } from '../types';
+import { useDrawer } from '../contexts/DrawerContext';
 import { MessageSquare, Search, Loader2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -9,6 +10,7 @@ import { formatDistanceToNow } from 'date-fns';
 export default function Messages() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
+  const { openDrawer } = useDrawer();
   const user = auth.currentUser;
   const navigate = useNavigate();
 
@@ -45,7 +47,20 @@ export default function Messages() {
     <div className="min-h-screen bg-white">
       {/* Header */}
       <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-gray-100 p-4 flex items-center justify-between">
-        <h2 className="text-2xl font-black tracking-tight">Messages</h2>
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={openDrawer}
+            className="sm:hidden focus:outline-none active:scale-95 transition-transform"
+          >
+            <img
+              src={auth.currentUser?.photoURL || 'https://picsum.photos/seed/user/100/100'}
+              alt="Profile"
+              className="w-8 h-8 rounded-full object-cover border border-gray-100"
+              referrerPolicy="no-referrer"
+            />
+          </button>
+          <h2 className="text-2xl font-black tracking-tight">Messages</h2>
+        </div>
         <button 
           onClick={() => navigate('/explore')}
           className="p-2 hover:bg-gray-50 rounded-2xl transition-colors"
