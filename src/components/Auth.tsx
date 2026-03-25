@@ -16,9 +16,15 @@ export default function Auth() {
   const [displayName, setDisplayName] = useState('');
 
   const checkUsernameUnique = async (uname: string) => {
-    const q = query(collection(db, 'users'), where('username', '==', uname.toLowerCase()));
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.empty;
+    try {
+      const q = query(collection(db, 'users'), where('username', '==', uname.toLowerCase()));
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.empty;
+    } catch (err: any) {
+      console.error('Username check error:', err);
+      handleFirestoreError(err, OperationType.GET, 'users');
+      return false;
+    }
   };
 
   const handleGoogleLogin = async () => {
