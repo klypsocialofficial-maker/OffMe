@@ -16,8 +16,23 @@ interface Props {
 const PostCard: React.FC<Props> = ({ post }) => {
   const [liked, setLiked] = useState(false);
   const [reposted, setReposted] = useState(false);
+  const [currentPost, setCurrentPost] = useState<Post>(post);
   const [repostedPost, setRepostedPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setCurrentPost(post);
+  }, [post]);
+
+  useEffect(() => {
+    if (!post.id) return;
+    const unsubscribe = onSnapshot(doc(db, 'posts', post.id), (doc) => {
+      if (doc.exists()) {
+        setCurrentPost({ id: doc.id, ...doc.data() } as Post);
+      }
+    });
+    return () => unsubscribe();
+  }, [post.id]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { profile: currentUserProfile } = useProfile();
@@ -131,7 +146,7 @@ const PostCard: React.FC<Props> = ({ post }) => {
   const timeAgo = post.createdAt ? formatDistanceToNow(post.createdAt.toDate()) + ' ago' : 'Just now';
   const isScheduled = post.scheduledFor && post.scheduledFor.toDate() > new Date();
 
-  const displayPost = repostedPost || post;
+  const displayPost = repostedPost || currentPost;
   const displayTimeAgo = displayPost.createdAt ? formatDistanceToNow(displayPost.createdAt.toDate()) + ' ago' : 'Just now';
 
   if (post.repostedPostId && !repostedPost) {
@@ -307,7 +322,14 @@ const PostCard: React.FC<Props> = ({ post }) => {
           <div className="flex items-center justify-between pt-4 text-gray-400">
             <button className="flex items-center gap-2 group/btn hover:text-black transition-all p-2 hover:bg-gray-100 rounded-xl">
               <MessageCircle className="w-5 h-5 group-hover/btn:scale-110 transition-transform" />
-              <span className="text-xs font-bold tracking-widest uppercase">{displayPost.repliesCount || 0}</span>
+              <motion.span 
+                key={displayPost.repliesCount}
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-xs font-bold tracking-widest uppercase"
+              >
+                {displayPost.repliesCount || 0}
+              </motion.span>
             </button>
             <button 
               onClick={handleRepost}
@@ -317,7 +339,14 @@ const PostCard: React.FC<Props> = ({ post }) => {
               )}
             >
               <Repeat2 className={cn("w-5 h-5 group-hover/btn:rotate-180 transition-transform duration-500", reposted && "scale-110")} />
-              <span className="text-xs font-bold tracking-widest uppercase">{displayPost.repostsCount || 0}</span>
+              <motion.span 
+                key={displayPost.repostsCount}
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-xs font-bold tracking-widest uppercase"
+              >
+                {displayPost.repostsCount || 0}
+              </motion.span>
             </button>
             <button
               onClick={handleLike}
@@ -327,7 +356,14 @@ const PostCard: React.FC<Props> = ({ post }) => {
               )}
             >
               <Heart className={cn("w-5 h-5 group-hover/btn:scale-125 transition-transform", liked && "fill-current")} />
-              <span className="text-xs font-bold tracking-widest uppercase">{displayPost.likesCount || 0}</span>
+              <motion.span 
+                key={displayPost.likesCount}
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-xs font-bold tracking-widest uppercase"
+              >
+                {displayPost.likesCount || 0}
+              </motion.span>
             </button>
             <button className="flex items-center gap-2 group/btn hover:text-black transition-all p-2 hover:bg-gray-100 rounded-xl">
               <Share className="w-5 h-5 group-hover/btn:-translate-y-1 transition-transform" />

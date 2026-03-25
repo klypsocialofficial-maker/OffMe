@@ -54,7 +54,7 @@ export default function UserDrawer() {
             className="absolute top-0 left-0 bottom-0 w-[280px] bg-white shadow-2xl flex flex-col"
           >
             {/* Header */}
-            <div className="p-4 flex items-center justify-between border-b border-gray-50">
+            <div className="p-4 flex items-center justify-between">
               <h3 className="text-xl font-black tracking-tight">Account info</h3>
               <button 
                 onClick={closeDrawer}
@@ -65,38 +65,55 @@ export default function UserDrawer() {
             </div>
 
             {/* User Info */}
-            <div className="p-6 space-y-4">
-              <Link 
-                to={`/profile/${user?.uid}`} 
-                onClick={closeDrawer}
-                className="block"
-              >
-                <img
-                  src={profile?.photoURL || 'https://picsum.photos/seed/user/100/100'}
-                  alt="Profile"
-                  className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-md"
-                  referrerPolicy="no-referrer"
-                />
-              </Link>
-              <div>
-                <Link 
-                  to={`/profile/${user?.uid}`} 
-                  onClick={closeDrawer}
-                  className="block group"
-                >
-                  <p className="text-lg font-black text-black tracking-tight group-hover:underline">{profile?.displayName}</p>
-                  <p className="text-sm text-gray-400 font-medium">@{profile?.username}</p>
-                </Link>
+            <div className="relative">
+              {/* Banner */}
+              <div className="h-24 bg-gray-100 relative overflow-hidden">
+                {profile?.bannerURL && (
+                  <img 
+                    src={profile.bannerURL} 
+                    alt="Banner" 
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                )}
               </div>
 
-              <div className="flex items-center gap-4 pt-2">
-                <div className="flex items-center gap-1 group cursor-pointer">
-                  <span className="font-black text-black text-sm">{profile?.followingCount || 0}</span>
-                  <span className="text-gray-400 font-medium text-sm group-hover:underline">Following</span>
+              <div className="px-6 pb-4">
+                <div className="relative -mt-8 mb-4">
+                  <Link 
+                    to={`/profile/${user?.uid}`} 
+                    onClick={closeDrawer}
+                    className="inline-block p-1 bg-white rounded-full shadow-lg"
+                  >
+                    <img
+                      src={profile?.photoURL || 'https://picsum.photos/seed/user/100/100'}
+                      alt="Profile"
+                      className="w-16 h-16 rounded-full object-cover border-2 border-white"
+                      referrerPolicy="no-referrer"
+                    />
+                  </Link>
                 </div>
-                <div className="flex items-center gap-1 group cursor-pointer">
-                  <span className="font-black text-black text-sm">{profile?.followersCount || 0}</span>
-                  <span className="text-gray-400 font-medium text-sm group-hover:underline">Followers</span>
+
+                <div className="space-y-1">
+                  <Link 
+                    to={`/profile/${user?.uid}`} 
+                    onClick={closeDrawer}
+                    className="block group"
+                  >
+                    <p className="text-lg font-black text-black tracking-tight group-hover:underline truncate">{profile?.displayName}</p>
+                    <p className="text-sm text-gray-400 font-medium truncate">@{profile?.username}</p>
+                  </Link>
+                </div>
+
+                <div className="flex items-center gap-4 pt-3">
+                  <div className="flex items-center gap-1 group cursor-pointer">
+                    <span className="font-black text-black text-sm">{profile?.followingCount || 0}</span>
+                    <span className="text-gray-400 font-medium text-sm group-hover:underline">Following</span>
+                  </div>
+                  <div className="flex items-center gap-1 group cursor-pointer">
+                    <span className="font-black text-black text-sm">{profile?.followersCount || 0}</span>
+                    <span className="text-gray-400 font-medium text-sm group-hover:underline">Followers</span>
+                  </div>
                 </div>
               </div>
             </div>

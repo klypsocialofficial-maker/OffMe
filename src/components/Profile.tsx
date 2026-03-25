@@ -49,6 +49,10 @@ export default function Profile() {
     }
 
     let q;
+    let unsubscribePosts = () => {};
+    let unsubscribeLikes = () => {};
+    let unsubscribeLikesInner = () => {};
+
     if (activeTab === 'Posts') {
       q = query(
         collection(db, 'posts'),
@@ -62,12 +66,70 @@ export default function Profile() {
         collection(db, 'posts'),
         where('authorUid', '==', userId),
         where('parentPostId', '!=', null),
-        orderBy('parentPostId'), // Required for inequality filter
+        orderBy('parentPostId'),
         orderBy('createdAt', 'desc'),
         limit(50)
       );
+    } else if (activeTab === 'Highlights') {
+      q = query(
+        collection(db, 'posts'),
+        where('authorUid', '==', userId),
+        orderBy('likesCount', 'desc'),
+        orderBy('createdAt', 'desc'),
+        limit(20)
+      );
+    } else if (activeTab === 'Media') {
+      q = query(
+        collection(db, 'posts'),
+        where('authorUid', '==', userId),
+        where('imageUrl', '!=', null),
+        orderBy('imageUrl'),
+        orderBy('createdAt', 'desc'),
+        limit(50)
+      );
+    } else if (activeTab === 'Likes') {
+      const likesQuery = query(
+        collection(db, 'likes'),
+        where('userId', '==', userId),
+        orderBy('createdAt', 'desc'),
+        limit(50)
+      );
+
+      unsubscribeLikes = onSnapshot(likesQuery, (snapshot) => {
+        const postIds = snapshot.docs.map(doc => doc.data().postId);
+        if (postIds.length === 0) {
+          setPosts([]);
+          setLoading(false);
+          return;
+        }
+
+        const limitedPostIds = postIds.slice(0, 30);
+        const postsQuery = query(
+          collection(db, 'posts'),
+          where('id', 'in', limitedPostIds)
+        );
+
+        if (unsubscribeLikesInner) unsubscribeLikesInner();
+        unsubscribeLikesInner = onSnapshot(postsQuery, (postsSnapshot) => {
+          const postsData = postsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          })) as Post[];
+          
+          const sortedPosts = postsData.sort((a, b) => {
+            const indexA = limitedPostIds.indexOf(a.id);
+            const indexB = limitedPostIds.indexOf(b.id);
+            return indexA - indexB;
+          });
+
+          setPosts(sortedPosts);
+          setLoading(false);
+        });
+      }, (err) => {
+        console.error('Likes fetch error:', err);
+        setLoading(false);
+      });
     } else {
-      // Fallback for other tabs
       q = query(
         collection(db, 'posts'),
         where('authorUid', '==', userId),
@@ -76,26 +138,29 @@ export default function Profile() {
       );
     }
 
-    const unsubscribePosts = onSnapshot(q, (snapshot) => {
-      const postsData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Post[];
-      setPosts(postsData);
-      setLoading(false);
-    }, (err) => {
-      console.error('Profile posts error:', err);
-      // Don't show error for complex queries that might need indexes
-      if (err.code !== 'failed-precondition') {
-        handleFirestoreError(err, OperationType.LIST, 'posts');
-      }
-      setLoading(false);
-    });
+    if (q) {
+      unsubscribePosts = onSnapshot(q, (snapshot) => {
+        const postsData = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Post[];
+        setPosts(postsData);
+        setLoading(false);
+      }, (err) => {
+        console.error('Profile posts error:', err);
+        if (err.code !== 'failed-precondition') {
+          handleFirestoreError(err, OperationType.LIST, 'posts');
+        }
+        setLoading(false);
+      });
+    }
 
     return () => {
       unsubscribeProfile();
       unsubscribeFollow();
       unsubscribePosts();
+      unsubscribeLikes();
+      if (unsubscribeLikesInner) unsubscribeLikesInner();
     };
   }, [userId, currentUser, activeTab]);
 
