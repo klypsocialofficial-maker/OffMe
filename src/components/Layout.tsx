@@ -85,7 +85,7 @@ export default function Layout({ children }: Props) {
         {/* Mobile Post Modal */}
         <AnimatePresence>
           {isPostModalOpen && (
-            <div className="fixed inset-0 z-50 sm:hidden">
+            <div className="fixed inset-0 z-[60] sm:hidden">
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -98,7 +98,7 @@ export default function Layout({ children }: Props) {
                 animate={{ y: 0 }}
                 exit={{ y: '100%' }}
                 transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[32px] shadow-2xl overflow-hidden"
+                className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[32px] shadow-2xl overflow-hidden pb-safe"
               >
                 <div className="flex items-center justify-between p-4 border-b border-gray-100">
                   <h3 className="text-xl font-black tracking-tight">New Post</h3>
@@ -109,7 +109,7 @@ export default function Layout({ children }: Props) {
                     <X className="w-6 h-6" />
                   </button>
                 </div>
-                <div className="max-h-[80vh] overflow-y-auto">
+                <div className="max-h-[80vh] overflow-y-auto pb-10">
                   <PostForm onSuccess={() => setIsPostModalOpen(false)} />
                 </div>
               </motion.div>

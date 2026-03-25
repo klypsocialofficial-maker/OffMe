@@ -200,8 +200,8 @@ export default function PostForm({ onSuccess }: Props) {
             </AnimatePresence>
           </div>
 
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-4 border-t border-gray-50 gap-4">
-            <div className="flex items-center gap-1 sm:gap-4 text-gray-400">
+          <div className="flex items-center justify-between pt-4 border-t border-gray-50">
+            <div className="flex items-center gap-1 sm:gap-2 text-gray-400">
               <input 
                 type="file" 
                 ref={fileInputRef} 
@@ -281,9 +281,9 @@ export default function PostForm({ onSuccess }: Props) {
               </button>
             </div>
 
-            <div className="flex items-center justify-between sm:justify-end gap-4">
+            <div className="flex items-center gap-3">
               <div className={cn(
-                "text-xs font-bold tracking-widest uppercase",
+                "hidden sm:block text-[10px] font-black tracking-widest uppercase",
                 content.length > 250 ? "text-red-500" : "text-gray-300"
               )}>
                 {content.length}/280
@@ -291,14 +291,14 @@ export default function PostForm({ onSuccess }: Props) {
               <button
                 type="submit"
                 disabled={!content.trim() || loading}
-                className="px-6 sm:px-8 py-2.5 sm:py-3 bg-black text-white rounded-full font-bold text-sm sm:text-base hover:bg-gray-800 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-xl hover:shadow-2xl active:scale-95 flex items-center gap-2"
+                className="px-5 sm:px-8 py-2 sm:py-3 bg-black text-white rounded-full font-bold text-sm sm:text-base hover:bg-gray-800 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-xl hover:shadow-2xl active:scale-95 flex items-center gap-2"
               >
                 {loading ? (
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : (
                   <>
-                    <Send className="w-4 h-4" />
-                    {scheduledFor ? 'Schedule' : 'Post'}
+                    <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span>{scheduledFor ? 'Schedule' : 'Post'}</span>
                   </>
                 )}
               </button>
