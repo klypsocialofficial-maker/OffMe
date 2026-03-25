@@ -107,6 +107,71 @@ export const socialService = {
     }
   },
 
+  async repostPost(userId: string, post: Post, userProfile: UserProfile) {
+    try {
+      const repostRef = doc(collection(db, 'posts'));
+      const repostData: Post = {
+        id: repostRef.id,
+        authorUid: userId,
+        authorName: userProfile.displayName,
+        authorUsername: userProfile.username,
+        authorPhoto: userProfile.photoURL,
+        content: '',
+        createdAt: serverTimestamp() as any,
+        likesCount: 0,
+        repostsCount: 0,
+        repliesCount: 0,
+        repostedPostId: post.id
+      };
+
+      await setDoc(repostRef, repostData);
+
+      // Update original post count
+      await updateDoc(doc(db, 'posts', post.id), {
+        repostsCount: increment(1)
+      });
+
+      // Update user posts count
+      await updateDoc(doc(db, 'users', userId), {
+        postsCount: increment(1)
+      });
+
+      // Create notification if not self-repost
+      if (userId !== post.authorUid) {
+        await this.createNotification({
+          recipientId: post.authorUid,
+          senderId: userId,
+          senderName: userProfile.displayName,
+          senderUsername: userProfile.username,
+          senderPhoto: userProfile.photoURL,
+          type: 'repost',
+          postId: post.id,
+          postContent: post.content
+        });
+      }
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, 'posts');
+    }
+  },
+
+  async unrepostPost(userId: string, repostId: string, originalPostId: string) {
+    try {
+      await deleteDoc(doc(db, 'posts', repostId));
+
+      // Update original post count
+      await updateDoc(doc(db, 'posts', originalPostId), {
+        repostsCount: increment(-1)
+      });
+
+      // Update user posts count
+      await updateDoc(doc(db, 'users', userId), {
+        postsCount: increment(-1)
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, 'posts');
+    }
+  },
+
   async createNotification(data: {
     recipientId: string;
     senderId: string;

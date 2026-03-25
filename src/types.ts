@@ -42,6 +42,7 @@ export interface Post {
   repostsCount: number;
   repliesCount: number;
   parentPostId?: string | null;
+  repostedPostId?: string | null;
   imageUrl?: string;
   location?: {
     lat: number;

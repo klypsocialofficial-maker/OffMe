@@ -145,17 +145,18 @@ service cloud.firestore {
     }
 
     function isValidPost(data) {
-      return hasOnlyAllowedFields(['id', 'authorUid', 'authorName', 'authorUsername', 'authorPhoto', 'content', 'createdAt', 'likesCount', 'repostsCount', 'repliesCount', 'parentPostId', 'imageUrl', 'location', 'scheduledFor']) &&
+      return hasOnlyAllowedFields(['id', 'authorUid', 'authorName', 'authorUsername', 'authorPhoto', 'content', 'createdAt', 'likesCount', 'repostsCount', 'repliesCount', 'parentPostId', 'repostedPostId', 'imageUrl', 'location', 'scheduledFor']) &&
              data.authorUid == request.auth.uid &&
              data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 50 &&
              data.authorUsername is string && data.authorUsername.size() >= 3 && data.authorUsername.size() <= 20 &&
              (!('authorPhoto' in data) || isValidOptionalUrl(data.authorPhoto)) &&
-             data.content is string && data.content.size() >= 1 && data.content.size() <= 280 &&
+             data.content is string && data.content.size() >= 0 && data.content.size() <= 280 &&
              data.createdAt is timestamp &&
              data.likesCount is int && data.likesCount >= 0 &&
              data.repostsCount is int && data.repostsCount >= 0 &&
              data.repliesCount is int && data.repliesCount >= 0 &&
              (!('parentPostId' in data) || data.parentPostId == null || data.parentPostId is string) &&
+             (!('repostedPostId' in data) || data.repostedPostId == null || data.repostedPostId is string) &&
              (!('imageUrl' in data) || isValidOptionalUrl(data.imageUrl)) &&
              (!('location' in data) || (data.location is map && data.location.lat is number && data.location.lng is number)) &&
              (!('scheduledFor' in data) || data.scheduledFor is timestamp);
