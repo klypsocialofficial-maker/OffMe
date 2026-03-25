@@ -1,0 +1,85 @@
+import React, { useState, useEffect } from 'react';
+import { db, auth, handleFirestoreError, OperationType } from '../firebase';
+import { collection, query, orderBy, limit, onSnapshot, where } from 'firebase/firestore';
+import { Post } from '../types';
+import PostCard from './PostCard';
+import PostForm from './PostForm';
+import { motion, AnimatePresence } from 'motion/react';
+import { Sparkles, Loader2 } from 'lucide-react';
+
+export default function Feed() {
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const q = query(
+      collection(db, 'posts'),
+      where('parentPostId', '==', null), // Only top-level posts
+      orderBy('createdAt', 'desc'),
+      limit(50)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const postsData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Post[];
+      setPosts(postsData);
+      setLoading(false);
+    }, (err) => {
+      console.error('Feed error:', err);
+      handleFirestoreError(err, OperationType.LIST, 'posts');
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  return (
+    <div className="flex flex-col min-h-screen bg-white">
+      {/* Header */}
+      <div className="sticky top-0 z-20 backdrop-blur-xl bg-white/80 border-b border-gray-100 px-4 py-3 sm:px-6 sm:py-4 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <img
+            src={auth.currentUser?.photoURL || 'https://picsum.photos/seed/user/100/100'}
+            alt="Profile"
+            className="sm:hidden w-8 h-8 rounded-full object-cover border border-gray-100"
+            referrerPolicy="no-referrer"
+          />
+          <h1 className="text-xl sm:text-2xl font-black tracking-tighter text-black">Home</h1>
+        </div>
+        <div className="p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer">
+          <Sparkles className="w-5 h-5 text-black" />
+        </div>
+      </div>
+
+      <div className="hidden sm:block">
+        <PostForm />
+      </div>
+
+      <div className="flex-1">
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <Loader2 className="w-8 h-8 text-black animate-spin" />
+            <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Loading Feed...</p>
+          </div>
+        ) : (
+          <AnimatePresence mode="popLayout">
+            {posts.map((post) => (
+              <PostCard key={post.id} post={post} />
+            ))}
+          </AnimatePresence>
+        )}
+
+        {!loading && posts.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-20 text-center px-6">
+            <div className="w-20 h-20 rounded-3xl bg-gray-50 flex items-center justify-center mb-6">
+              <Sparkles className="w-10 h-10 text-gray-200" />
+            </div>
+            <h2 className="text-2xl font-black mb-2 tracking-tight">Nothing to see here yet</h2>
+            <p className="text-gray-400 font-medium">Be the first to share what's on your mind!</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

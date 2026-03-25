@@ -1,0 +1,139 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Represents a user profile on OffMe.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The unique ID of the user." },
+        "displayName": { "type": "string", "description": "The user's display name." },
+        "username": { "type": "string", "description": "The user's unique username." },
+        "photoURL": { "type": "string", "description": "The URL of the user's profile picture." },
+        "bannerURL": { "type": "string", "description": "The URL of the user's banner image." },
+        "bio": { "type": "string", "description": "A short bio about the user." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the profile was created." },
+        "followersCount": { "type": "integer", "description": "Number of followers." },
+        "followingCount": { "type": "integer", "description": "Number of users followed." },
+        "postsCount": { "type": "integer", "description": "Number of posts created." }
+      },
+      "required": ["uid", "displayName", "username", "createdAt", "followersCount", "followingCount", "postsCount"]
+    },
+    "Post": {
+      "title": "Post",
+      "description": "A post or reply shared by a user.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The unique ID of the post." },
+        "authorUid": { "type": "string", "description": "The UID of the author." },
+        "authorName": { "type": "string", "description": "The display name of the author." },
+        "authorUsername": { "type": "string", "description": "The username of the author." },
+        "authorPhoto": { "type": "string", "description": "The profile picture of the author." },
+        "content": { "type": "string", "description": "The text content of the post." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the post was created." },
+        "likesCount": { "type": "integer", "description": "Number of likes." },
+        "repostsCount": { "type": "integer", "description": "Number of reposts." },
+        "repliesCount": { "type": "integer", "description": "Number of replies." },
+        "parentPostId": { "type": "string", "description": "ID of the parent post if this is a reply." }
+      },
+      "required": ["id", "authorUid", "content", "createdAt"]
+    },
+    "Like": {
+      "title": "Like",
+      "description": "Represents a user liking a post.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The UID of the user who liked." },
+        "postId": { "type": "string", "description": "The ID of the post liked." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the like occurred." }
+      },
+      "required": ["userId", "postId", "createdAt"]
+    },
+    "Follow": {
+      "title": "Follow",
+      "description": "Represents a follow relationship between users.",
+      "type": "object",
+      "properties": {
+        "followerId": { "type": "string", "description": "The UID of the follower." },
+        "followingId": { "type": "string", "description": "The UID of the user being followed." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the follow occurred." }
+      },
+      "required": ["followerId", "followingId", "createdAt"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "A notification for a user.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "recipientId": { "type": "string" },
+        "senderId": { "type": "string" },
+        "senderName": { "type": "string" },
+        "senderUsername": { "type": "string" },
+        "senderPhoto": { "type": "string" },
+        "type": { "type": "string", "enum": ["like", "follow", "reply", "repost"] },
+        "postId": { "type": "string" },
+        "postContent": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "read": { "type": "boolean" }
+      },
+      "required": ["id", "recipientId", "senderId", "type", "createdAt", "read"]
+    },
+    "Conversation": {
+      "title": "Conversation",
+      "description": "A chat conversation between users.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "participants": { "type": "array", "items": { "type": "string" } },
+        "lastMessage": { "type": "string" },
+        "lastMessageAt": { "type": "string", "format": "date-time" },
+        "lastMessageSenderId": { "type": "string" },
+        "participantInfo": { "type": "object", "description": "Map of userId to basic profile info for quick display." }
+      },
+      "required": ["id", "participants", "lastMessageAt"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "A single message in a conversation.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "conversationId": { "type": "string" },
+        "senderId": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "conversationId", "senderId", "content", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles."
+    },
+    "/posts/{postId}": {
+      "schema": "Post",
+      "description": "All posts and replies."
+    },
+    "/likes/{likeId}": {
+      "schema": "Like",
+      "description": "Likes on posts. ID is usually userId_postId."
+    },
+    "/follows/{followId}": {
+      "schema": "Follow",
+      "description": "Follow relationships. ID is usually followerId_followingId."
+    },
+    "/notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "User notifications."
+    },
+    "/conversations/{conversationId}": {
+      "schema": "Conversation",
+      "description": "Chat conversations."
+    },
+    "/conversations/{conversationId}/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Messages within a conversation."
+    }
+  }
+}

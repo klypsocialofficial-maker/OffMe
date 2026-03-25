@@ -1,0 +1,5 @@
+{
+  "name": "OffMe",
+  "description": "A fast, expressive social platform for sharing what's on your mind. Like Twitter, but more OffMe.",
+  "requestFramePermissions": ["geolocation"]
+}

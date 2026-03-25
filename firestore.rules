@@ -1,0 +1,265 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: userId
+    // Fields:
+    //   - uid: string (required)
+    //   - displayName: string (required, 1-50 chars)
+    //   - username: string (required, 3-20 chars, alphanumeric)
+    //   - photoURL: string (optional, URL)
+    //   - bio: string (optional, 0-160 chars)
+    //   - createdAt: timestamp (required)
+    //   - followersCount: integer (required, >= 0)
+    //   - followingCount: integer (required, >= 0)
+    //   - postsCount: integer (required, >= 0)
+    //
+    // Collection: posts
+    // Document ID: postId
+    // Fields:
+    //   - id: string (required)
+    //   - authorUid: string (required)
+    //   - authorName: string (required, 1-50 chars)
+    //   - authorUsername: string (required, 3-20 chars)
+    //   - authorPhoto: string (optional, URL)
+    //   - content: string (required, 1-280 chars)
+    //   - createdAt: timestamp (required)
+    //   - likesCount: integer (required, >= 0)
+    //   - repostsCount: integer (required, >= 0)
+    //   - repliesCount: integer (required, >= 0)
+    //   - parentPostId: string (optional)
+    //
+    // Collection: likes
+    // Document ID: userId_postId
+    // Fields:
+    //   - userId: string (required)
+    //   - postId: string (required)
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: follows
+    // Document ID: followerId_followingId
+    // Fields:
+    //   - followerId: string (required)
+    //   - followingId: string (required)
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: notifications
+    // Document ID: notificationId
+    // Fields:
+    //   - id: string (required)
+    //   - recipientId: string (required)
+    //   - senderId: string (required)
+    //   - senderName: string (required)
+    //   - senderUsername: string (required)
+    //   - senderPhoto: string (optional)
+    //   - type: string (required, enum: like, follow, reply, repost)
+    //   - postId: string (optional)
+    //   - postContent: string (optional)
+    //   - createdAt: timestamp (required)
+    //   - read: boolean (required)
+    //
+    // Collection: conversations
+    // Document ID: conversationId
+    // Fields:
+    //   - id: string (required)
+    //   - participants: list (required, strings)
+    //   - lastMessage: string (optional)
+    //   - lastMessageAt: timestamp (required)
+    //   - lastMessageSenderId: string (optional)
+    //   - participantInfo: map (optional)
+    //
+    // Collection: messages (subcollection of conversations)
+    // Document ID: messageId
+    // Fields:
+    //   - id: string (required)
+    //   - conversationId: string (required)
+    //   - senderId: string (required)
+    //   - content: string (required)
+    //   - createdAt: timestamp (required)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.authorUid;
+    }
+
+    function isValidUrl(url) {
+      return url is string && (url.matches("^https://.*") || url.matches("^http://.*"));
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "klypsocialofficial@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return hasOnlyAllowedFields(['uid', 'displayName', 'username', 'photoURL', 'bannerURL', 'bio', 'createdAt', 'role', 'followersCount', 'followingCount', 'postsCount']) &&
+             data.uid == request.auth.uid &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 50 &&
+             data.username is string && data.username.size() >= 3 && data.username.size() <= 20 &&
+             (!('photoURL' in data) || isValidUrl(data.photoURL)) &&
+             (!('bannerURL' in data) || isValidUrl(data.bannerURL)) &&
+             (!('bio' in data) || (data.bio is string && data.bio.size() <= 160)) &&
+             data.createdAt is timestamp &&
+             data.followersCount is int && data.followersCount >= 0 &&
+             data.followingCount is int && data.followingCount >= 0 &&
+             data.postsCount is int && data.postsCount >= 0;
+    }
+
+    function isValidPost(data) {
+      return hasOnlyAllowedFields(['id', 'authorUid', 'authorName', 'authorUsername', 'authorPhoto', 'content', 'createdAt', 'likesCount', 'repostsCount', 'repliesCount', 'parentPostId', 'imageUrl', 'location', 'scheduledFor']) &&
+             data.authorUid == request.auth.uid &&
+             data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 50 &&
+             data.authorUsername is string && data.authorUsername.size() >= 3 && data.authorUsername.size() <= 20 &&
+             (!('authorPhoto' in data) || isValidUrl(data.authorPhoto)) &&
+             data.content is string && data.content.size() >= 1 && data.content.size() <= 280 &&
+             data.createdAt is timestamp &&
+             data.likesCount is int && data.likesCount >= 0 &&
+             data.repostsCount is int && data.repostsCount >= 0 &&
+             data.repliesCount is int && data.repliesCount >= 0 &&
+             (!('parentPostId' in data) || data.parentPostId == null || data.parentPostId is string) &&
+             (!('imageUrl' in data) || isValidUrl(data.imageUrl)) &&
+             (!('location' in data) || (data.location is map && data.location.lat is number && data.location.lng is number)) &&
+             (!('scheduledFor' in data) || data.scheduledFor is timestamp);
+    }
+
+    function isValidLike(data) {
+      return hasOnlyAllowedFields(['userId', 'postId', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.postId is string &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidFollow(data) {
+      return hasOnlyAllowedFields(['followerId', 'followingId', 'createdAt']) &&
+             data.followerId == request.auth.uid &&
+             data.followingId is string &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidNotification(data) {
+      return hasOnlyAllowedFields(['id', 'recipientId', 'senderId', 'senderName', 'senderUsername', 'senderPhoto', 'type', 'postId', 'postContent', 'createdAt', 'read']) &&
+             data.id is string &&
+             data.recipientId is string &&
+             data.senderId == request.auth.uid &&
+             data.type in ['like', 'follow', 'reply', 'repost'] &&
+             data.createdAt is timestamp &&
+             data.read is bool;
+    }
+
+    function isValidConversation(data) {
+      return hasOnlyAllowedFields(['id', 'participants', 'lastMessage', 'lastMessageAt', 'lastMessageSenderId', 'participantInfo']) &&
+             data.id is string &&
+             data.participants is list && data.participants.size() >= 2 &&
+             request.auth.uid in data.participants &&
+             data.lastMessageAt is timestamp &&
+             (!('lastMessage' in data) || (data.lastMessage is string && data.lastMessage.size() <= 1000)) &&
+             (!('lastMessageSenderId' in data) || data.lastMessageSenderId is string) &&
+             (!('participantInfo' in data) || data.participantInfo is map);
+    }
+
+    function isValidMessage(data) {
+      return hasOnlyAllowedFields(['id', 'conversationId', 'senderId', 'content', 'createdAt']) &&
+             data.id is string &&
+             data.conversationId is string &&
+             data.senderId == request.auth.uid &&
+             data.content is string && data.content.size() >= 1 && data.content.size() <= 1000 &&
+             data.createdAt is timestamp;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data) && (!('role' in request.resource.data) || request.resource.data.role == 'user');
+      allow update: if isAuthenticated() && (
+        (isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role == resource.data.role || isAdmin())) ||
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followersCount', 'followingCount', 'postsCount']))
+      );
+    }
+
+    match /posts/{postId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidPost(request.resource.data);
+      allow update: if isAuthenticated() && (
+        (request.auth.uid == resource.data.authorUid && isValidPost(request.resource.data)) ||
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likesCount', 'repostsCount', 'repliesCount']))
+      );
+      allow delete: if isAuthenticated() && (request.auth.uid == resource.data.authorUid || isAdmin());
+    }
+
+    match /likes/{likeId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidLike(request.resource.data) && likeId == request.auth.uid + "_" + request.resource.data.postId;
+      allow delete: if isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+
+    match /follows/{followId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidFollow(request.resource.data) && followId == request.auth.uid + "_" + request.resource.data.followingId;
+      allow delete: if isAuthenticated() && request.auth.uid == resource.data.followerId;
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && request.auth.uid == resource.data.recipientId;
+      allow create: if isAuthenticated() && isValidNotification(request.resource.data);
+      allow update: if isAuthenticated() && request.auth.uid == resource.data.recipientId && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      allow delete: if isAuthenticated() && request.auth.uid == resource.data.recipientId;
+    }
+
+    match /conversations/{conversationId} {
+      allow read: if isAuthenticated() && request.auth.uid in resource.data.participants;
+      allow create: if isAuthenticated() && isValidConversation(request.resource.data);
+      allow update: if isAuthenticated() && request.auth.uid in resource.data.participants && isValidConversation(request.resource.data);
+      
+      match /messages/{messageId} {
+        allow read: if isAuthenticated() && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+        allow create: if isAuthenticated() && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants && isValidMessage(request.resource.data);
+      }
+    }
+
+    match /{path=**} {
+      allow read, write: if false;
+    }
+
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}
