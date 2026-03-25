@@ -127,21 +127,21 @@ export default function PostForm({ onSuccess }: Props) {
   };
 
   return (
-    <div className="p-6 border-b border-gray-100 bg-white shadow-sm relative">
-      <div className="flex gap-4">
+    <div className="p-4 sm:p-6 border-b border-gray-100 bg-white sm:shadow-sm relative">
+      <div className="flex gap-3 sm:gap-4">
         <img
           src={user?.photoURL || 'https://picsum.photos/seed/user/100/100'}
           alt="Profile"
-          className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-md"
+          className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-white shadow-md flex-shrink-0"
           referrerPolicy="no-referrer"
         />
-        <form onSubmit={handleSubmit} className="flex-1 space-y-4">
+        <form onSubmit={handleSubmit} className="flex-1 min-w-0 space-y-4">
           <div className="relative">
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="What's on your mind?"
-              className="w-full text-xl font-medium text-black placeholder-gray-300 border-none focus:ring-0 resize-none min-h-[120px] bg-transparent"
+              className="w-full text-lg sm:text-xl font-medium text-black placeholder-gray-300 border-none focus:ring-0 resize-none min-h-[100px] sm:min-h-[120px] bg-transparent p-0 pt-1"
               maxLength={280}
             />
             
@@ -200,8 +200,8 @@ export default function PostForm({ onSuccess }: Props) {
             </AnimatePresence>
           </div>
 
-          <div className="flex items-center justify-between pt-4 border-t border-gray-50">
-            <div className="flex items-center gap-2 sm:gap-4 text-gray-400">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-4 border-t border-gray-50 gap-4">
+            <div className="flex items-center gap-1 sm:gap-4 text-gray-400">
               <input 
                 type="file" 
                 ref={fileInputRef} 
@@ -281,7 +281,7 @@ export default function PostForm({ onSuccess }: Props) {
               </button>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center justify-between sm:justify-end gap-4">
               <div className={cn(
                 "text-xs font-bold tracking-widest uppercase",
                 content.length > 250 ? "text-red-500" : "text-gray-300"
@@ -291,7 +291,7 @@ export default function PostForm({ onSuccess }: Props) {
               <button
                 type="submit"
                 disabled={!content.trim() || loading}
-                className="px-8 py-3 bg-black text-white rounded-full font-bold text-base hover:bg-gray-800 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-xl hover:shadow-2xl active:scale-95 flex items-center gap-2"
+                className="px-6 sm:px-8 py-2.5 sm:py-3 bg-black text-white rounded-full font-bold text-sm sm:text-base hover:bg-gray-800 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-xl hover:shadow-2xl active:scale-95 flex items-center gap-2"
               >
                 {loading ? (
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

@@ -98,9 +98,9 @@ export default function Layout({ children }: Props) {
                 animate={{ y: 0 }}
                 exit={{ y: '100%' }}
                 transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[32px] p-2 pb-8 shadow-2xl"
+                className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[32px] shadow-2xl overflow-hidden"
               >
-                <div className="flex items-center justify-between p-4 border-b border-gray-50 mb-2">
+                <div className="flex items-center justify-between p-4 border-b border-gray-100">
                   <h3 className="text-xl font-black tracking-tight">New Post</h3>
                   <button 
                     onClick={() => setIsPostModalOpen(false)}
@@ -109,7 +109,7 @@ export default function Layout({ children }: Props) {
                     <X className="w-6 h-6" />
                   </button>
                 </div>
-                <div className="max-h-[80vh] overflow-y-auto px-2">
+                <div className="max-h-[80vh] overflow-y-auto">
                   <PostForm onSuccess={() => setIsPostModalOpen(false)} />
                 </div>
               </motion.div>
