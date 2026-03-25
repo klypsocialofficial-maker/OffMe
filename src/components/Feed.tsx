@@ -1,40 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { db, auth, handleFirestoreError, OperationType } from '../firebase';
-import { collection, query, orderBy, limit, onSnapshot, where } from 'firebase/firestore';
+import React from 'react';
+import { auth } from '../firebase';
 import { Post } from '../types';
 import PostCard from './PostCard';
 import PostForm from './PostForm';
 import { useDrawer } from '../contexts/DrawerContext';
+import { usePosts } from '../hooks/usePosts';
+import { useLanguage } from '../contexts/LanguageContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, Loader2 } from 'lucide-react';
 
 export default function Feed() {
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { posts, loading } = usePosts();
   const { openDrawer } = useDrawer();
-
-  useEffect(() => {
-    const q = query(
-      collection(db, 'posts'),
-      where('parentPostId', '==', null), // Only top-level posts
-      orderBy('createdAt', 'desc'),
-      limit(50)
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const postsData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Post[];
-      setPosts(postsData);
-      setLoading(false);
-    }, (err) => {
-      console.error('Feed error:', err);
-      handleFirestoreError(err, OperationType.LIST, 'posts');
-    });
-
-    return () => unsubscribe();
-  }, []);
+  const { t } = useLanguage();
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
@@ -52,7 +30,7 @@ export default function Feed() {
               referrerPolicy="no-referrer"
             />
           </button>
-          <h1 className="text-xl sm:text-2xl font-black tracking-tighter text-black">Home</h1>
+          <h1 className="text-xl sm:text-2xl font-black tracking-tighter text-black">{t('home')}</h1>
         </div>
         <div className="p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer">
           <Sparkles className="w-5 h-5 text-black" />
@@ -67,7 +45,7 @@ export default function Feed() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <Loader2 className="w-8 h-8 text-black animate-spin" />
-            <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Loading Feed...</p>
+            <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">{t('loading')}</p>
           </div>
         ) : (
           <AnimatePresence mode="popLayout">

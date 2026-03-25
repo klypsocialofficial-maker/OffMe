@@ -1,22 +1,29 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, Search, Bell, Mail, User, LogOut, MessageCircle, PlusCircle } from 'lucide-react';
+import { Home, Search, Bell, Mail, User, LogOut, MessageCircle, PlusCircle, List, Bookmark, MessageSquare, ShieldCheck, Settings } from 'lucide-react';
 import { logout, auth } from '../firebase';
 import { cn } from '../lib/utils';
 import { useProfile } from '../hooks/useProfile';
 import { useNotifications } from '../hooks/useNotifications';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function Sidebar() {
   const { profile } = useProfile();
   const { unreadCount } = useNotifications();
+  const { t } = useLanguage();
   const user = auth.currentUser;
 
   const navItems = [
-    { icon: Home, label: 'Home', to: '/' },
-    { icon: Search, label: 'Explore', to: '/explore' },
-    { icon: Bell, label: 'Notifications', to: '/notifications', badge: unreadCount },
-    { icon: Mail, label: 'Messages', to: '/messages' },
-    { icon: User, label: 'Profile', to: `/profile/${user?.uid}` },
+    { icon: Home, label: t('home'), to: '/' },
+    { icon: Search, label: t('explore'), to: '/explore' },
+    { icon: Bell, label: t('notifications'), to: '/notifications', badge: unreadCount },
+    { icon: Mail, label: t('messages'), to: '/messages' },
+    { icon: List, label: t('lists'), to: '/lists' },
+    { icon: Bookmark, label: t('bookmarks'), to: '/bookmarks' },
+    { icon: MessageSquare, label: t('communities'), to: '/communities' },
+    { icon: ShieldCheck, label: t('verified'), to: '/verified' },
+    { icon: User, label: t('profile'), to: `/profile/${user?.uid}` },
+    { icon: Settings, label: t('settings'), to: '/settings' },
   ];
 
   return (

@@ -8,7 +8,16 @@ import Notifications from './components/Notifications';
 import Explore from './components/Explore';
 import Messages from './components/Messages';
 import Chat from './components/Chat';
+import Lists from './components/Lists';
+import Bookmarks from './components/Bookmarks';
+import Communities from './components/Communities';
+import Verified from './components/Verified';
+import Settings from './components/Settings';
+import AccessibilitySettings from './components/AccessibilitySettings';
+import HelpCenter from './components/HelpCenter';
+import LanguageSettings from './components/LanguageSettings';
 import Layout from './components/Layout';
+import { LanguageProvider } from './contexts/LanguageContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Loader2 } from 'lucide-react';
 
@@ -36,8 +45,9 @@ export default function App() {
   }
 
   return (
-    <ErrorBoundary>
-      <Router>
+    <LanguageProvider>
+      <ErrorBoundary>
+        <Router>
         <Routes>
           {!user ? (
             <>
@@ -94,6 +104,70 @@ export default function App() {
                   </Layout>
                 }
               />
+              <Route
+                path="/lists"
+                element={
+                  <Layout>
+                    <Lists />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/bookmarks"
+                element={
+                  <Layout>
+                    <Bookmarks />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/communities"
+                element={
+                  <Layout>
+                    <Communities />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/verified"
+                element={
+                  <Layout>
+                    <Verified />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <Layout>
+                    <Settings />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/settings/accessibility"
+                element={
+                  <Layout>
+                    <AccessibilitySettings />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/settings/help"
+                element={
+                  <Layout>
+                    <HelpCenter />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/settings/languages"
+                element={
+                  <Layout>
+                    <LanguageSettings />
+                  </Layout>
+                }
+              />
               {/* Fallback for other routes */}
               <Route
                 path="*"
@@ -112,5 +186,6 @@ export default function App() {
         </Routes>
       </Router>
     </ErrorBoundary>
+  </LanguageProvider>
   );
 }

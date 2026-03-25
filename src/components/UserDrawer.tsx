@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, User, Settings, LogOut, Bookmark, List, MessageSquare, ShieldCheck } from 'lucide-react';
 import { useDrawer } from '../contexts/DrawerContext';
 import { useProfile } from '../hooks/useProfile';
+import { useLanguage } from '../contexts/LanguageContext';
 import { auth, logout } from '../firebase';
 import { useNavigate, Link } from 'react-router-dom';
 import { cn } from '../lib/utils';
@@ -10,6 +11,7 @@ import { cn } from '../lib/utils';
 export default function UserDrawer() {
   const { isOpen, closeDrawer } = useDrawer();
   const { profile } = useProfile();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const user = auth.currentUser;
 
@@ -20,16 +22,16 @@ export default function UserDrawer() {
   };
 
   const menuItems = [
-    { icon: User, label: 'Profile', to: `/profile/${user?.uid}` },
-    { icon: List, label: 'Lists', to: '#' },
-    { icon: Bookmark, label: 'Bookmarks', to: '#' },
-    { icon: MessageSquare, label: 'Communities', to: '#' },
-    { icon: ShieldCheck, label: 'Verified', to: '#' },
+    { icon: User, label: t('profile'), to: `/profile/${user?.uid}` },
+    { icon: List, label: t('lists'), to: '/lists' },
+    { icon: Bookmark, label: t('bookmarks'), to: '/bookmarks' },
+    { icon: MessageSquare, label: t('communities'), to: '/communities' },
+    { icon: ShieldCheck, label: t('verified'), to: '/verified' },
   ];
 
   const settingsItems = [
-    { icon: Settings, label: 'Settings and privacy', to: '#' },
-    { icon: LogOut, label: 'Log out', onClick: handleLogout, className: 'text-red-500' },
+    { icon: Settings, label: t('settings'), to: '/settings' },
+    { icon: LogOut, label: t('logout'), onClick: handleLogout, className: 'text-red-500' },
   ];
 
   return (
@@ -53,19 +55,16 @@ export default function UserDrawer() {
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
             className="absolute top-0 left-0 bottom-0 w-[280px] bg-white shadow-2xl flex flex-col"
           >
-            {/* Header */}
-            <div className="p-4 flex items-center justify-between">
-              <h3 className="text-xl font-black tracking-tight">Account info</h3>
-              <button 
-                onClick={closeDrawer}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
             {/* User Info */}
             <div className="relative">
+              {/* Close Button Overlay */}
+              <button 
+                onClick={closeDrawer}
+                className="absolute top-4 right-4 z-10 p-2 bg-black/20 backdrop-blur-md text-white rounded-full hover:bg-black/40 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
               {/* Banner */}
               <div className="h-24 bg-gray-100 relative overflow-hidden">
                 {profile?.bannerURL && (
@@ -78,7 +77,7 @@ export default function UserDrawer() {
                 )}
               </div>
 
-              <div className="px-6 pb-4">
+              <div className="px-6">
                 <div className="relative -mt-8 mb-4">
                   <Link 
                     to={`/profile/${user?.uid}`} 
@@ -94,7 +93,7 @@ export default function UserDrawer() {
                   </Link>
                 </div>
 
-                <div className="space-y-1">
+                <div className="space-y-0.5 pb-4">
                   <Link 
                     to={`/profile/${user?.uid}`} 
                     onClick={closeDrawer}
@@ -103,17 +102,6 @@ export default function UserDrawer() {
                     <p className="text-lg font-black text-black tracking-tight group-hover:underline truncate">{profile?.displayName}</p>
                     <p className="text-sm text-gray-400 font-medium truncate">@{profile?.username}</p>
                   </Link>
-                </div>
-
-                <div className="flex items-center gap-4 pt-3">
-                  <div className="flex items-center gap-1 group cursor-pointer">
-                    <span className="font-black text-black text-sm">{profile?.followingCount || 0}</span>
-                    <span className="text-gray-400 font-medium text-sm group-hover:underline">Following</span>
-                  </div>
-                  <div className="flex items-center gap-1 group cursor-pointer">
-                    <span className="font-black text-black text-sm">{profile?.followersCount || 0}</span>
-                    <span className="text-gray-400 font-medium text-sm group-hover:underline">Followers</span>
-                  </div>
                 </div>
               </div>
             </div>
