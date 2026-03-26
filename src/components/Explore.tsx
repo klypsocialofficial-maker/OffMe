@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { db, collection, query, where, limit, onSnapshot, auth, doc } from '../firebase';
+import { db, collection, query, where, limit, onSnapshot, auth, doc, orderBy } from '../firebase';
 import { UserProfile } from '../types';
-import { Search, UserPlus, UserCheck, Loader2, MessageCircle } from 'lucide-react';
+import { Search, UserPlus, UserCheck, Loader2, MessageCircle, TrendingUp, Users } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useDrawer } from '../contexts/DrawerContext';
@@ -13,10 +13,34 @@ import { cn } from '../lib/utils';
 export default function Explore() {
   const [searchTerm, setSearchTerm] = useState('');
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [suggestedUsers, setSuggestedUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(true);
   const { openDrawer } = useDrawer();
   const { profile: currentUserProfile } = useProfile();
   const currentUser = auth.currentUser;
+
+  // Fetch suggested users (trending by followers)
+  useEffect(() => {
+    const q = query(
+      collection(db, 'users'),
+      orderBy('followersCount', 'desc'),
+      limit(10)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const usersData = snapshot.docs
+        .map(doc => ({ ...doc.data() } as UserProfile))
+        .filter(u => u.uid !== currentUser?.uid);
+      setSuggestedUsers(usersData);
+      setLoadingSuggestions(false);
+    }, (error) => {
+      console.error("Error fetching suggested users:", error);
+      setLoadingSuggestions(false);
+    });
+
+    return () => unsubscribe();
+  }, [currentUser?.uid]);
 
   useEffect(() => {
     if (!searchTerm.trim()) {
@@ -79,13 +103,42 @@ export default function Explore() {
       {/* Results */}
       <div className="p-4">
         {!searchTerm.trim() ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
-            <div className="w-20 h-20 bg-gray-50 rounded-3xl flex items-center justify-center">
-              <Search className="w-10 h-10 text-gray-300" />
-            </div>
+          <div className="space-y-8">
+            {/* Suggested Users Section */}
             <div>
-              <h3 className="text-xl font-black tracking-tight">Explore OffMe</h3>
-              <p className="text-gray-400 font-medium max-w-xs">Search for your friends or discover new creators by their username.</p>
+              <div className="flex items-center gap-2 mb-6">
+                <div className="p-2 bg-black text-white rounded-xl">
+                  <TrendingUp className="w-5 h-5" />
+                </div>
+                <h2 className="text-2xl font-black tracking-tight">Suggested for you</h2>
+              </div>
+
+              {loadingSuggestions ? (
+                <div className="flex justify-center py-10">
+                  <Loader2 className="w-8 h-8 animate-spin text-black" />
+                </div>
+              ) : suggestedUsers.length === 0 ? (
+                <div className="text-center py-10 bg-gray-50 rounded-3xl">
+                  <p className="text-gray-400 font-bold">No suggestions yet</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {suggestedUsers.map((user) => (
+                    <UserRow key={user.uid} user={user} />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Empty State / Info */}
+            <div className="flex flex-col items-center justify-center py-10 text-center space-y-4 border-t border-gray-100 pt-10">
+              <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center">
+                <Users className="w-8 h-8 text-gray-300" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black tracking-tight">Discover more</h3>
+                <p className="text-gray-400 font-medium max-w-xs text-sm">Search for your friends or discover new creators by their username.</p>
+              </div>
             </div>
           </div>
         ) : loading ? (

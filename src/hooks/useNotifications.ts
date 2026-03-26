@@ -1,14 +1,31 @@
 import { useState, useEffect } from 'react';
-import { messaging, getToken, onMessage, db, updateDoc, doc, auth, arrayUnion } from '../firebase';
+import { messaging, getToken, onMessage, db, updateDoc, doc, auth, arrayUnion, query, collection, where, onSnapshot } from '../firebase';
 import { User } from '../types';
 
 export function useNotifications(providedUser: User | null = null) {
   const [token, setToken] = useState<string | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [permission, setPermission] = useState<NotificationPermission>(
     typeof window !== 'undefined' ? Notification.permission : 'default'
   );
 
   const user = providedUser || (auth.currentUser as unknown as User);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const q = query(
+      collection(db, 'notifications'),
+      where('recipientId', '==', user.uid),
+      where('read', '==', false)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setUnreadCount(snapshot.size);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
 
   useEffect(() => {
     if (!user || !messaging) return;
@@ -81,5 +98,5 @@ export function useNotifications(providedUser: User | null = null) {
     }
   };
 
-  return { token, permission, requestPermission, disableNotifications };
+  return { token, unreadCount, permission, requestPermission, disableNotifications };
 }

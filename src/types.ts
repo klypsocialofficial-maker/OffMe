@@ -14,6 +14,8 @@ export interface UserProfile {
   postsCount: number;
 }
 
+export type User = UserProfile;
+
 export type NotificationType = 'like' | 'follow' | 'reply' | 'repost' | 'quote';
 
 export interface Notification {
