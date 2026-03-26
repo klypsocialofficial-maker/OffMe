@@ -14,7 +14,9 @@
         "createdAt": { "type": "string", "format": "date-time", "description": "When the profile was created." },
         "followersCount": { "type": "integer", "description": "Number of followers." },
         "followingCount": { "type": "integer", "description": "Number of users followed." },
-        "postsCount": { "type": "integer", "description": "Number of posts created." }
+        "postsCount": { "type": "integer", "description": "Number of posts created." },
+        "fcmTokens": { "type": "array", "items": { "type": "string" }, "description": "List of device tokens for push notifications." },
+        "notificationsEnabled": { "type": "boolean", "description": "Whether the user has enabled push notifications." }
       },
       "required": ["uid", "displayName", "username", "createdAt", "followersCount", "followingCount", "postsCount"]
     },

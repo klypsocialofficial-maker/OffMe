@@ -29,15 +29,25 @@ export function useNotifications(providedUser: User | null = null) {
   }, [user]);
 
   const requestPermission = async () => {
-    if (!messaging) return;
+    if (!messaging) {
+      alert('Messaging not supported in this browser.');
+      return;
+    }
 
     try {
+      const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+      if (!vapidKey) {
+        alert('Configuration Error: VITE_FIREBASE_VAPID_KEY is missing in environment variables.');
+        console.error('VITE_FIREBASE_VAPID_KEY is missing.');
+        return;
+      }
+
       const status = await Notification.requestPermission();
       setPermission(status);
 
       if (status === 'granted') {
         const currentToken = await getToken(messaging, {
-          vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY // You need to generate this in Firebase Console
+          vapidKey: vapidKey
         });
 
         if (currentToken) {
@@ -48,13 +58,18 @@ export function useNotifications(providedUser: User | null = null) {
               fcmTokens: arrayUnion(currentToken),
               notificationsEnabled: true
             });
+            alert('Notifications enabled successfully!');
           }
         } else {
-          console.log('No registration token available. Request permission to generate one.');
+          alert('Failed to generate push token. Try again or check browser settings.');
+          console.log('No registration token available.');
         }
+      } else {
+        alert('Notification permission denied.');
       }
     } catch (err) {
       console.error('An error occurred while retrieving token. ', err);
+      alert('Error enabling notifications: ' + (err instanceof Error ? err.message : String(err)));
     }
   };
 
