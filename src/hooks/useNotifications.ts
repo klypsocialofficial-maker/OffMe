@@ -1,66 +1,71 @@
-import { useState, useEffect, useCallback } from 'react';
-import { db, auth, messaging, getToken, onMessage, updateDoc, doc, arrayUnion } from '../firebase';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { useState, useEffect } from 'react';
+import { messaging, getToken, onMessage, db, updateDoc, doc, auth, arrayUnion } from '../firebase';
+import { User } from '../types';
 
-export function useNotifications() {
-  const [unreadCount, setUnreadCount] = useState(0);
+export function useNotifications(providedUser: User | null = null) {
+  const [token, setToken] = useState<string | null>(null);
   const [permission, setPermission] = useState<NotificationPermission>(
-    typeof Notification !== 'undefined' ? Notification.permission : 'default'
+    typeof window !== 'undefined' ? Notification.permission : 'default'
   );
-  const user = auth.currentUser;
 
-  const requestPermission = useCallback(async () => {
-    if (!messaging || typeof Notification === 'undefined') return;
+  const user = providedUser || (auth.currentUser as unknown as User);
+
+  useEffect(() => {
+    if (!user || !messaging) return;
+
+    // Listen for foreground messages
+    const unsubscribe = onMessage(messaging, (payload) => {
+      console.log('Message received. ', payload);
+      // You can show a toast or custom notification here
+      if (payload.notification) {
+        new Notification(payload.notification.title || 'New Message', {
+          body: payload.notification.body,
+          icon: payload.notification.image || '/icon-192x192.png',
+        });
+      }
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  const requestPermission = async () => {
+    if (!messaging) return;
 
     try {
       const status = await Notification.requestPermission();
       setPermission(status);
 
-      if (status === 'granted' && user) {
-        const token = await getToken(messaging, {
-          vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY
+      if (status === 'granted') {
+        const currentToken = await getToken(messaging, {
+          vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY // You need to generate this in Firebase Console
         });
 
-        if (token) {
-          console.log('FCM Token:', token);
-          // Save token to user profile
-          await updateDoc(doc(db, 'users', user.uid), {
-            fcmTokens: arrayUnion(token)
-          });
+        if (currentToken) {
+          setToken(currentToken);
+          // Save token to user profile in Firestore
+          if (user) {
+            await updateDoc(doc(db, 'users', user.uid), {
+              fcmTokens: arrayUnion(currentToken),
+              notificationsEnabled: true
+            });
+          }
+        } else {
+          console.log('No registration token available. Request permission to generate one.');
         }
       }
-    } catch (error) {
-      console.error('Error requesting notification permission:', error);
+    } catch (err) {
+      console.error('An error occurred while retrieving token. ', err);
     }
-  }, [user]);
+  };
 
-  useEffect(() => {
-    if (!user) return;
-
-    const q = query(
-      collection(db, 'notifications'),
-      where('recipientId', '==', user.uid),
-      where('read', '==', false)
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setUnreadCount(snapshot.size);
-    });
-
-    // Listen for foreground messages
-    let unsubscribeOnMessage: (() => void) | undefined;
-    if (messaging) {
-      unsubscribeOnMessage = onMessage(messaging, (payload) => {
-        console.log('Foreground message received:', payload);
-        // You could show a custom toast here
+  const disableNotifications = async () => {
+    if (user) {
+      await updateDoc(doc(db, 'users', user.uid), {
+        notificationsEnabled: false
       });
+      setPermission('default');
     }
+  };
 
-    return () => {
-      unsubscribe();
-      if (unsubscribeOnMessage) unsubscribeOnMessage();
-    };
-  }, [user]);
-
-  return { unreadCount, permission, requestPermission };
+  return { token, permission, requestPermission, disableNotifications };
 }

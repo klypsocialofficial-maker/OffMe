@@ -59,7 +59,10 @@ export default function Settings() {
         { 
           icon: Bell, 
           label: 'Push Notifications', 
-          desc: permission === 'granted' ? 'Notifications are enabled.' : 'Enable real-time push notifications.',
+          desc: permission === 'granted' ? 'Notifications are enabled.' : 
+                /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.matchMedia('(display-mode: standalone)').matches ?
+                'iOS: Add to Home Screen to enable notifications.' :
+                'Enable real-time push notifications.',
           onClick: permission !== 'granted' ? requestPermission : undefined,
           status: permission
         },

@@ -17,7 +17,7 @@ messaging.onBackgroundMessage((payload) => {
   const notificationTitle = payload.notification.title;
   const notificationOptions = {
     body: payload.notification.body,
-    icon: 'https://picsum.photos/seed/offme-icon-192/192/192'
+    icon: payload.notification.image || '/icon-192x192.png'
   };
 
   self.registration.showNotification(notificationTitle, notificationOptions);
