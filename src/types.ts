@@ -12,6 +12,8 @@ export interface UserProfile {
   followersCount: number;
   followingCount: number;
   postsCount: number;
+  interests?: { [topic: string]: number };
+  interactions?: { [userId: string]: number };
 }
 
 export type User = UserProfile;

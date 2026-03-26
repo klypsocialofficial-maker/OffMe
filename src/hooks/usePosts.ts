@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { auth, db, handleFirestoreError, OperationType } from '../firebase';
-import { collection, query, orderBy, limit, onSnapshot, where, getDocs } from 'firebase/firestore';
-import { Post } from '../types';
+import { collection, query, orderBy, limit, onSnapshot, where, getDocs, getDoc, doc } from 'firebase/firestore';
+import { Post, UserProfile } from '../types';
 
 export function usePosts(userId?: string, followingOnly?: boolean) {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -36,7 +36,7 @@ export function usePosts(userId?: string, followingOnly?: boolean) {
         collection(db, 'posts'),
         where('parentPostId', '==', null),
         orderBy('createdAt', 'desc'),
-        limit(50)
+        limit(150) // Fetch more for scoring
       );
     }
 
@@ -52,6 +52,48 @@ export function usePosts(userId?: string, followingOnly?: boolean) {
         const followingIds = followsSnapshot.docs.map(doc => doc.data().followingId);
         followingIds.push(user.uid); // Include own posts
         postsData = postsData.filter(post => followingIds.includes(post.authorUid));
+      } else if (!userId && user) {
+        // Personalize 'For You' feed
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            const userData = userDoc.data() as UserProfile;
+            const interests = userData.interests || {};
+            const interactions = userData.interactions || {};
+
+            postsData = postsData.map(post => {
+              let score = 0;
+              
+              // 1. Interaction Score (most interacted authors)
+              if (interactions[post.authorUid]) {
+                score += interactions[post.authorUid] * 2;
+              }
+
+              // 2. Interest Score (topic similarity)
+              const topics = post.content.match(/#\w+/g) || [];
+              const words = post.content.toLowerCase().split(/\W+/).filter(w => w.length > 3);
+              const allTopics = [...new Set([...topics, ...words])];
+
+              allTopics.forEach(topic => {
+                if (interests[topic]) {
+                  score += interests[topic];
+                }
+              });
+
+              // 3. Popularity Score
+              score += (post.likesCount || 0) * 0.5;
+              score += (post.repostsCount || 0) * 1;
+
+              // 4. Recency decay (posts are already ordered by desc, but we can add a small boost)
+              // Since they are already ordered, we don't strictly need this unless we want to mix them up.
+              
+              return { ...post, score };
+            }).sort((a: any, b: any) => (b.score || 0) - (a.score || 0))
+            .slice(0, 50); // Return top 50
+          }
+        } catch (error) {
+          console.error('Error personalizing feed:', error);
+        }
       }
 
       setPosts(postsData);

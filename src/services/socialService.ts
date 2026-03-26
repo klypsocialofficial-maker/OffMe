@@ -75,6 +75,9 @@ export const socialService = {
         likesCount: increment(1)
       });
 
+      // Update user interests and interactions
+      await this.updateUserEngagement(userId, post);
+
       // Create notification if not self-like
       if (userId !== post.authorUid) {
         await this.createNotification({
@@ -132,6 +135,9 @@ export const socialService = {
       await updateDoc(doc(db, 'posts', post.id), {
         repostsCount: increment(1)
       });
+
+      // Update user interests and interactions
+      await this.updateUserEngagement(userId, post);
 
       // Update user posts count
       await updateDoc(doc(db, 'users', userId), {
@@ -200,6 +206,9 @@ export const socialService = {
         quotesCount: increment(1)
       });
 
+      // Update user interests and interactions
+      await this.updateUserEngagement(userId, post);
+
       // Update user posts count
       await updateDoc(doc(db, 'users', userId), {
         postsCount: increment(1)
@@ -255,6 +264,38 @@ export const socialService = {
       });
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'notifications');
+    }
+  },
+
+  async updateUserEngagement(userId: string, post: Post) {
+    try {
+      const userRef = doc(db, 'users', userId);
+      const userDoc = await getDoc(userRef);
+      if (!userDoc.exists()) return;
+
+      const userData = userDoc.data() as UserProfile;
+      const interests = userData.interests || {};
+      const interactions = userData.interactions || {};
+
+      // Extract topics (hashtags and words > 3 chars)
+      const topics = post.content.match(/#\w+/g) || [];
+      const words = post.content.toLowerCase().split(/\W+/).filter(w => w.length > 3);
+      
+      const allTopics = [...new Set([...topics, ...words])];
+
+      allTopics.forEach(topic => {
+        interests[topic] = (interests[topic] || 0) + 1;
+      });
+
+      // Track interaction with author
+      interactions[post.authorUid] = (interactions[post.authorUid] || 0) + 1;
+
+      await updateDoc(userRef, {
+        interests,
+        interactions
+      });
+    } catch (error) {
+      console.error('Error updating user engagement:', error);
     }
   }
 };

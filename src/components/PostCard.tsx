@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { db, auth, handleFirestoreError, OperationType } from '../firebase';
-import { doc, updateDoc, increment, deleteDoc, onSnapshot, getDocs, query, collection, where } from 'firebase/firestore';
-import { Heart, MessageCircle, Repeat2, Share, Trash2, MoreHorizontal, MapPin, Calendar, Quote, X } from 'lucide-react';
+import { doc, updateDoc, increment, deleteDoc, onSnapshot, getDocs, query, collection, where, getDoc, orderBy, limit } from 'firebase/firestore';
+import { Heart, MessageCircle, Repeat2, Share, Trash2, MoreHorizontal, MapPin, Calendar, Quote, X, Users } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { Post } from '../types';
+import { Post, UserProfile } from '../types';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { socialService } from '../services/socialService';
@@ -23,6 +24,38 @@ const PostCard: React.FC<Props> = ({ post }) => {
   const [loading, setLoading] = useState(false);
   const [showQuoteForm, setShowQuoteForm] = useState(false);
   const [showReplyForm, setShowReplyForm] = useState(false);
+  const [likers, setLikers] = useState<UserProfile[]>([]);
+
+  useEffect(() => {
+    if (!post.id) return;
+    const q = query(
+      collection(db, 'likes'),
+      where('postId', '==', post.id),
+      orderBy('createdAt', 'desc'),
+      limit(5)
+    );
+
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      const userIds = snapshot.docs.map(doc => doc.data().userId);
+      if (userIds.length === 0) {
+        setLikers([]);
+        return;
+      }
+
+      const profiles: UserProfile[] = [];
+      for (const uid of userIds) {
+        // Skip current user in the likers list if we want to handle "You" separately
+        // but the prompt says show up to 3 profile pictures.
+        const userDoc = await getDoc(doc(db, 'users', uid));
+        if (userDoc.exists()) {
+          profiles.push({ uid: userDoc.id, ...userDoc.data() } as UserProfile);
+        }
+        if (profiles.length >= 3) break;
+      }
+      setLikers(profiles);
+    });
+    return () => unsubscribe();
+  }, [post.id]);
 
   useEffect(() => {
     setCurrentPost(post);
@@ -351,6 +384,57 @@ const PostCard: React.FC<Props> = ({ post }) => {
             <div className="flex items-center gap-1.5 text-blue-500 font-bold text-xs mt-3">
               <MapPin className="w-3.5 h-3.5" />
               <span>{displayPost.location.name || 'Location'}</span>
+            </div>
+          )}
+
+          {/* Liked by row */}
+          {displayPost.likesCount > 0 && likers.length > 0 && (
+            <div className="flex items-center gap-2 mt-4 py-2 border-y border-gray-50">
+              <div className="flex -space-x-2">
+                {likers.map((liker) => (
+                  <Link
+                    key={liker.uid}
+                    to={`/profile/${liker.uid}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="relative inline-block"
+                  >
+                    <img
+                      src={liker.photoURL || 'https://picsum.photos/seed/user/100/100'}
+                      alt={liker.displayName}
+                      className="w-6 h-6 rounded-full border-2 border-white object-cover hover:z-10 transition-all hover:scale-110"
+                      referrerPolicy="no-referrer"
+                    />
+                  </Link>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 font-medium">
+                {liked ? (
+                  displayPost.likesCount === 1 ? (
+                    <span className="font-bold text-black">You liked this</span>
+                  ) : (
+                    <>
+                      <span className="font-bold text-black">You</span> and{' '}
+                      <span className="font-bold text-black">
+                        {displayPost.likesCount - 1} {displayPost.likesCount - 1 === 1 ? 'other' : 'others'}
+                      </span>{' '}
+                      liked this
+                    </>
+                  )
+                ) : (
+                  <>
+                    <span className="font-bold text-black">{likers[0].displayName}</span>
+                    {displayPost.likesCount > 1 && (
+                      <>
+                        {' '}and{' '}
+                        <span className="font-bold text-black">
+                          {displayPost.likesCount - 1} {displayPost.likesCount - 1 === 1 ? 'other' : 'others'}
+                        </span>
+                      </>
+                    )}{' '}
+                    liked this
+                  </>
+                )}
+              </p>
             </div>
           )}
 
