@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db, auth, handleFirestoreError, OperationType } from '../firebase';
 import { doc, updateDoc, increment, deleteDoc, onSnapshot, getDocs, query, collection, where, getDoc, orderBy, limit } from 'firebase/firestore';
-import { Heart, MessageCircle, Repeat2, Share, Trash2, MoreHorizontal, MapPin, Calendar, Quote, X, Users } from 'lucide-react';
+import { Heart, MessageCircle, Repeat2, Share, Trash2, MoreHorizontal, MapPin, Calendar, Quote, X, Users, CheckCircle2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Post, UserProfile } from '../types';
 import { Link, useNavigate } from 'react-router-dom';
@@ -239,7 +239,12 @@ const PostCard: React.FC<Props> = ({ post }) => {
         <div className="flex-1 space-y-1 sm:space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-0">
-              <span className="font-black text-black tracking-tight hover:underline text-sm sm:text-base">{displayPost.authorName}</span>
+              <div className="flex items-center gap-1">
+                <span className="font-black text-black tracking-tight hover:underline text-sm sm:text-base">{displayPost.authorName}</span>
+                {displayPost.authorIsVerified && (
+                  <CheckCircle2 className="w-4 h-4 text-blue-500 fill-blue-500/10" />
+                )}
+              </div>
               <span className="text-gray-400 font-medium text-xs sm:text-sm">@{displayPost.authorUsername}</span>
               <span className="text-gray-300 font-bold text-[10px] sm:text-xs uppercase tracking-widest">• {displayTimeAgo}</span>
               {isScheduled && (
@@ -357,7 +362,12 @@ const PostCard: React.FC<Props> = ({ post }) => {
                   className="w-5 h-5 rounded-full object-cover"
                   referrerPolicy="no-referrer"
                 />
-                <span className="font-black text-black text-xs">{quotedPost.authorName}</span>
+                <div className="flex items-center gap-1">
+                  <span className="font-black text-black text-xs">{quotedPost.authorName}</span>
+                  {quotedPost.authorIsVerified && (
+                    <CheckCircle2 className="w-3 h-3 text-blue-500 fill-blue-500/10" />
+                  )}
+                </div>
                 <span className="text-gray-400 text-xs">@{quotedPost.authorUsername}</span>
               </div>
               <p className="text-sm text-gray-700 line-clamp-3">{quotedPost.content}</p>
