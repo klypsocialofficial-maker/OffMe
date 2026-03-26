@@ -37,7 +37,6 @@ export function useNotifications(providedUser: User | null = null) {
     try {
       const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
       if (!vapidKey) {
-        alert('Configuration Error: VITE_FIREBASE_VAPID_KEY is missing in environment variables.');
         console.error('VITE_FIREBASE_VAPID_KEY is missing.');
         return;
       }

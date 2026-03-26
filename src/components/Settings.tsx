@@ -60,10 +60,17 @@ export default function Settings() {
           icon: Bell, 
           label: 'Push Notifications', 
           desc: permission === 'granted' ? 'Notifications are enabled. Click to refresh token.' : 
+                !import.meta.env.VITE_FIREBASE_VAPID_KEY ? 'VAPID Key missing. Check instructions.' :
                 /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.matchMedia('(display-mode: standalone)').matches ?
                 'iOS: Add to Home Screen to enable notifications.' :
                 'Enable real-time push notifications.',
-          onClick: requestPermission,
+          onClick: () => {
+            if (!import.meta.env.VITE_FIREBASE_VAPID_KEY) {
+              alert('Please add VITE_FIREBASE_VAPID_KEY to AI Studio Settings first.');
+            } else {
+              requestPermission();
+            }
+          },
           status: permission
         },
         { 
