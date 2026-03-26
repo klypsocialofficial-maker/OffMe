@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { db, auth, handleFirestoreError, OperationType } from '../firebase';
 import { doc, updateDoc, increment, deleteDoc, onSnapshot, getDocs, query, collection, where } from 'firebase/firestore';
-import { Heart, MessageCircle, Repeat2, Share, Trash2, MoreHorizontal, MapPin, Calendar } from 'lucide-react';
+import { Heart, MessageCircle, Repeat2, Share, Trash2, MoreHorizontal, MapPin, Calendar, Quote, X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Post } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { socialService } from '../services/socialService';
 import { useProfile } from '../hooks/useProfile';
+import PostForm from './PostForm';
 
 interface Props {
   post: Post;
@@ -18,7 +19,10 @@ const PostCard: React.FC<Props> = ({ post }) => {
   const [reposted, setReposted] = useState(false);
   const [currentPost, setCurrentPost] = useState<Post>(post);
   const [repostedPost, setRepostedPost] = useState<Post | null>(null);
+  const [quotedPost, setQuotedPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showQuoteForm, setShowQuoteForm] = useState(false);
+  const [showReplyForm, setShowReplyForm] = useState(false);
 
   useEffect(() => {
     setCurrentPost(post);
@@ -57,6 +61,17 @@ const PostCard: React.FC<Props> = ({ post }) => {
       return () => unsubscribe();
     }
   }, [post.repostedPostId]);
+
+  useEffect(() => {
+    if (post.quotedPostId) {
+      const unsubscribe = onSnapshot(doc(db, 'posts', post.quotedPostId), (doc) => {
+        if (doc.exists()) {
+          setQuotedPost({ id: doc.id, ...doc.data() } as Post);
+        }
+      });
+      return () => unsubscribe();
+    }
+  }, [post.quotedPostId]);
 
   useEffect(() => {
     if (!user || !post.id) return;
@@ -301,6 +316,26 @@ const PostCard: React.FC<Props> = ({ post }) => {
             {displayPost.content}
           </p>
 
+          {quotedPost && (
+            <div className="mt-3 border border-gray-100 rounded-2xl p-4 hover:bg-gray-50 transition-colors">
+              <div className="flex items-center gap-2 mb-2">
+                <img
+                  src={quotedPost.authorPhoto || 'https://picsum.photos/seed/user/100/100'}
+                  className="w-5 h-5 rounded-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+                <span className="font-black text-black text-xs">{quotedPost.authorName}</span>
+                <span className="text-gray-400 text-xs">@{quotedPost.authorUsername}</span>
+              </div>
+              <p className="text-sm text-gray-700 line-clamp-3">{quotedPost.content}</p>
+              {quotedPost.imageUrl && (
+                <div className="mt-2 rounded-xl overflow-hidden border border-gray-50 max-h-40">
+                  <img src={quotedPost.imageUrl} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                </div>
+              )}
+            </div>
+          )}
+
           {displayPost.imageUrl && (
             <div className="mt-3 rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
               <img 
@@ -320,7 +355,13 @@ const PostCard: React.FC<Props> = ({ post }) => {
           )}
 
           <div className="flex items-center justify-between pt-4 text-gray-400">
-            <button className="flex items-center gap-2 group/btn hover:text-black transition-all p-2 hover:bg-gray-100 rounded-xl">
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowReplyForm(true);
+              }}
+              className="flex items-center gap-2 group/btn hover:text-black transition-all p-2 hover:bg-gray-100 rounded-xl"
+            >
               <MessageCircle className="w-5 h-5 group-hover/btn:scale-110 transition-transform" />
               <motion.span 
                 key={displayPost.repliesCount}
@@ -348,6 +389,23 @@ const PostCard: React.FC<Props> = ({ post }) => {
                 {displayPost.repostsCount || 0}
               </motion.span>
             </button>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowQuoteForm(true);
+              }}
+              className="flex items-center gap-2 group/btn hover:text-blue-500 transition-all p-2 hover:bg-blue-50 rounded-xl"
+            >
+              <Quote className="w-5 h-5 group-hover/btn:scale-110 transition-transform" />
+              <motion.span 
+                key={displayPost.quotesCount}
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-xs font-bold tracking-widest uppercase"
+              >
+                {displayPost.quotesCount || 0}
+              </motion.span>
+            </button>
             <button
               onClick={handleLike}
               className={cn(
@@ -371,6 +429,60 @@ const PostCard: React.FC<Props> = ({ post }) => {
           </div>
         </div>
       </div>
+      <AnimatePresence>
+        {showReplyForm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-2xl bg-white rounded-3xl overflow-hidden shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                <h3 className="text-lg font-black tracking-tight">Reply to Post</h3>
+                <button 
+                  onClick={() => setShowReplyForm(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <PostForm 
+                replyToPost={displayPost} 
+                onSuccess={() => setShowReplyForm(false)} 
+              />
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showQuoteForm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-2xl bg-white rounded-3xl overflow-hidden shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                <h3 className="text-lg font-black tracking-tight">Quote Post</h3>
+                <button 
+                  onClick={() => setShowQuoteForm(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <PostForm 
+                quotePost={displayPost} 
+                onSuccess={() => setShowQuoteForm(false)} 
+              />
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };

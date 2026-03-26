@@ -121,6 +121,8 @@ export const socialService = {
         likesCount: 0,
         repostsCount: 0,
         repliesCount: 0,
+        quotesCount: 0,
+        type: 'repost',
         repostedPostId: post.id
       };
 
@@ -169,6 +171,57 @@ export const socialService = {
       });
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, 'posts');
+    }
+  },
+
+  async quotePost(userId: string, post: Post, content: string, userProfile: UserProfile) {
+    try {
+      const quoteRef = doc(collection(db, 'posts'));
+      const quoteData: Post = {
+        id: quoteRef.id,
+        authorUid: userId,
+        authorName: userProfile.displayName,
+        authorUsername: userProfile.username,
+        authorPhoto: userProfile.photoURL,
+        content,
+        createdAt: serverTimestamp() as any,
+        likesCount: 0,
+        repostsCount: 0,
+        repliesCount: 0,
+        quotesCount: 0,
+        type: 'quote',
+        quotedPostId: post.id
+      };
+
+      await setDoc(quoteRef, quoteData);
+
+      // Update original post count
+      await updateDoc(doc(db, 'posts', post.id), {
+        quotesCount: increment(1)
+      });
+
+      // Update user posts count
+      await updateDoc(doc(db, 'users', userId), {
+        postsCount: increment(1)
+      });
+
+      // Create notification if not self-quote
+      if (userId !== post.authorUid) {
+        await this.createNotification({
+          recipientId: post.authorUid,
+          senderId: userId,
+          senderName: userProfile.displayName,
+          senderUsername: userProfile.username,
+          senderPhoto: userProfile.photoURL,
+          type: 'quote',
+          postId: post.id,
+          postContent: post.content
+        });
+      }
+      
+      return quoteRef.id;
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, 'posts');
     }
   },
 

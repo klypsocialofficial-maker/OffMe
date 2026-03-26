@@ -7,11 +7,16 @@ import { useProfile } from '../hooks/useProfile';
 import { imageService } from '../services/imageService';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 
+import { Post } from '../types';
+import { socialService } from '../services/socialService';
+
 interface Props {
   onSuccess?: () => void;
+  quotePost?: Post;
+  replyToPost?: Post;
 }
 
-export default function PostForm({ onSuccess }: Props) {
+export default function PostForm({ onSuccess, quotePost, replyToPost }: Props) {
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -69,46 +74,101 @@ export default function PostForm({ onSuccess }: Props) {
 
     setLoading(true);
     try {
-      let imageUrl = null;
-      if (selectedImage) {
-        imageUrl = await imageService.uploadImage(selectedImage);
+      if (quotePost) {
+        await socialService.quotePost(user.uid, quotePost, content.trim(), profile);
+      } else if (replyToPost) {
+        let imageUrl = null;
+        if (selectedImage) {
+          imageUrl = await imageService.uploadImage(selectedImage);
+        }
+
+        const postData: any = {
+          authorUid: user.uid,
+          authorName: profile.displayName || 'Anonymous',
+          authorUsername: profile.username || 'user',
+          content: content.trim(),
+          createdAt: serverTimestamp(),
+          likesCount: 0,
+          repostsCount: 0,
+          repliesCount: 0,
+          quotesCount: 0,
+          type: 'reply',
+          parentPostId: replyToPost.id,
+        };
+
+        if (profile.photoURL) {
+          postData.authorPhoto = profile.photoURL;
+        }
+
+        if (imageUrl) {
+          postData.imageUrl = imageUrl;
+        }
+
+        const docRef = await addDoc(collection(db, 'posts'), postData);
+        await updateDoc(docRef, { id: docRef.id });
+
+        // Update original post repliesCount
+        await updateDoc(doc(db, 'posts', replyToPost.id), {
+          repliesCount: increment(1)
+        });
+
+        // Create notification
+        if (user.uid !== replyToPost.authorUid) {
+          await socialService.createNotification({
+            recipientId: replyToPost.authorUid,
+            senderId: user.uid,
+            senderName: profile.displayName,
+            senderUsername: profile.username,
+            senderPhoto: profile.photoURL,
+            type: 'reply',
+            postId: replyToPost.id,
+            postContent: replyToPost.content
+          });
+        }
+      } else {
+        let imageUrl = null;
+        if (selectedImage) {
+          imageUrl = await imageService.uploadImage(selectedImage);
+        }
+
+        const postData: any = {
+          authorUid: user.uid,
+          authorName: profile.displayName || 'Anonymous',
+          authorUsername: profile.username || 'user',
+          content: content.trim(),
+          createdAt: serverTimestamp(),
+          likesCount: 0,
+          repostsCount: 0,
+          repliesCount: 0,
+          quotesCount: 0,
+          type: 'post',
+          parentPostId: null,
+        };
+
+        if (profile.photoURL) {
+          postData.authorPhoto = profile.photoURL;
+        }
+
+        if (imageUrl) {
+          postData.imageUrl = imageUrl;
+        }
+
+        if (location) {
+          postData.location = location;
+        }
+
+        if (scheduledFor) {
+          postData.scheduledFor = Timestamp.fromDate(new Date(scheduledFor));
+        }
+
+        const docRef = await addDoc(collection(db, 'posts'), postData);
+        await updateDoc(docRef, { id: docRef.id });
+
+        // Update user postsCount
+        await updateDoc(doc(db, 'users', user.uid), {
+          postsCount: increment(1)
+        });
       }
-
-      const postData: any = {
-        authorUid: user.uid,
-        authorName: profile.displayName || 'Anonymous',
-        authorUsername: profile.username || 'user',
-        content: content.trim(),
-        createdAt: serverTimestamp(),
-        likesCount: 0,
-        repostsCount: 0,
-        repliesCount: 0,
-        parentPostId: null,
-      };
-
-      if (profile.photoURL) {
-        postData.authorPhoto = profile.photoURL;
-      }
-
-      if (imageUrl) {
-        postData.imageUrl = imageUrl;
-      }
-
-      if (location) {
-        postData.location = location;
-      }
-
-      if (scheduledFor) {
-        postData.scheduledFor = Timestamp.fromDate(new Date(scheduledFor));
-      }
-
-      const docRef = await addDoc(collection(db, 'posts'), postData);
-      await updateDoc(docRef, { id: docRef.id });
-
-      // Update user postsCount
-      await updateDoc(doc(db, 'users', user.uid), {
-        postsCount: increment(1)
-      });
 
       // Reset form
       setContent('');
@@ -140,10 +200,35 @@ export default function PostForm({ onSuccess }: Props) {
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="What's on your mind?"
+              placeholder={quotePost ? "Add a comment..." : replyToPost ? "Post your reply" : "What's on your mind?"}
               className="w-full text-lg sm:text-xl font-medium text-black placeholder-gray-300 border-none focus:ring-0 resize-none min-h-[100px] sm:min-h-[120px] bg-transparent p-0 pt-1"
               maxLength={280}
             />
+
+            {replyToPost && (
+              <div className="mt-2 border-l-2 border-gray-100 pl-4 py-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-gray-400 text-xs">Replying to</span>
+                  <span className="text-blue-500 text-xs font-bold">@{replyToPost.authorUsername}</span>
+                </div>
+                <p className="text-xs text-gray-400 line-clamp-1 italic">"{replyToPost.content}"</p>
+              </div>
+            )}
+
+            {quotePost && (
+              <div className="mt-2 border border-gray-100 rounded-2xl p-4 bg-gray-50/50">
+                <div className="flex items-center gap-2 mb-1">
+                  <img
+                    src={quotePost.authorPhoto || 'https://picsum.photos/seed/user/100/100'}
+                    className="w-4 h-4 rounded-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                  <span className="font-black text-black text-xs">{quotePost.authorName}</span>
+                  <span className="text-gray-400 text-xs">@{quotePost.authorUsername}</span>
+                </div>
+                <p className="text-xs text-gray-600 line-clamp-2">{quotePost.content}</p>
+              </div>
+            )}
             
             <AnimatePresence>
               {selectedImage && (

@@ -27,12 +27,23 @@ service cloud.firestore {
     //   - authorName: string (required, 1-50 chars)
     //   - authorUsername: string (required, 3-20 chars)
     //   - authorPhoto: string (optional, URL)
-    //   - content: string (required, 1-280 chars)
+    //   - content: string (required, 0-280 chars)
     //   - createdAt: timestamp (required)
     //   - likesCount: integer (required, >= 0)
     //   - repostsCount: integer (required, >= 0)
     //   - repliesCount: integer (required, >= 0)
+    //   - quotesCount: integer (required, >= 0)
     //   - parentPostId: string (optional)
+    //   - repostedPostId: string (optional)
+    //   - quotedPostId: string (optional)
+    //   - type: string (required, enum: post, reply, repost, quote)
+    //
+    // Collection: reposts
+    // Document ID: userId_postId
+    // Fields:
+    //   - userId: string (required)
+    //   - postId: string (required)
+    //   - createdAt: timestamp (required)
     //
     // Collection: likes
     // Document ID: userId_postId
@@ -145,7 +156,7 @@ service cloud.firestore {
     }
 
     function isValidPost(data) {
-      return hasOnlyAllowedFields(['id', 'authorUid', 'authorName', 'authorUsername', 'authorPhoto', 'content', 'createdAt', 'likesCount', 'repostsCount', 'repliesCount', 'parentPostId', 'repostedPostId', 'imageUrl', 'location', 'scheduledFor']) &&
+      return hasOnlyAllowedFields(['id', 'authorUid', 'authorName', 'authorUsername', 'authorPhoto', 'content', 'createdAt', 'likesCount', 'repostsCount', 'repliesCount', 'quotesCount', 'parentPostId', 'repostedPostId', 'quotedPostId', 'type', 'imageUrl', 'location', 'scheduledFor']) &&
              data.authorUid == request.auth.uid &&
              data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 50 &&
              data.authorUsername is string && data.authorUsername.size() >= 3 && data.authorUsername.size() <= 20 &&
@@ -155,11 +166,21 @@ service cloud.firestore {
              data.likesCount is int && data.likesCount >= 0 &&
              data.repostsCount is int && data.repostsCount >= 0 &&
              data.repliesCount is int && data.repliesCount >= 0 &&
+             data.quotesCount is int && data.quotesCount >= 0 &&
+             data.type in ['post', 'reply', 'repost', 'quote'] &&
              (!('parentPostId' in data) || data.parentPostId == null || data.parentPostId is string) &&
              (!('repostedPostId' in data) || data.repostedPostId == null || data.repostedPostId is string) &&
+             (!('quotedPostId' in data) || data.quotedPostId == null || data.quotedPostId is string) &&
              (!('imageUrl' in data) || isValidOptionalUrl(data.imageUrl)) &&
              (!('location' in data) || (data.location is map && data.location.lat is number && data.location.lng is number)) &&
              (!('scheduledFor' in data) || data.scheduledFor is timestamp);
+    }
+
+    function isValidRepost(data) {
+      return hasOnlyAllowedFields(['userId', 'postId', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.postId is string &&
+             data.createdAt is timestamp;
     }
 
     function isValidLike(data) {
@@ -181,7 +202,7 @@ service cloud.firestore {
              data.id is string &&
              data.recipientId is string &&
              data.senderId == request.auth.uid &&
-             data.type in ['like', 'follow', 'reply', 'repost'] &&
+             data.type in ['like', 'follow', 'reply', 'repost', 'quote'] &&
              data.createdAt is timestamp &&
              data.read is bool;
     }
@@ -224,7 +245,7 @@ service cloud.firestore {
       allow create: if isAuthenticated() && isValidPost(request.resource.data);
       allow update: if isAuthenticated() && (
         (request.auth.uid == resource.data.authorUid && isValidPost(request.resource.data)) ||
-        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likesCount', 'repostsCount', 'repliesCount']))
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likesCount', 'repostsCount', 'repliesCount', 'quotesCount']))
       );
       allow delete: if isAuthenticated() && (request.auth.uid == resource.data.authorUid || isAdmin());
     }
@@ -232,6 +253,12 @@ service cloud.firestore {
     match /likes/{likeId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && isValidLike(request.resource.data) && likeId == request.auth.uid + "_" + request.resource.data.postId;
+      allow delete: if isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+
+    match /reposts/{repostId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidRepost(request.resource.data) && repostId == request.auth.uid + "_" + request.resource.data.postId;
       allow delete: if isAuthenticated() && request.auth.uid == resource.data.userId;
     }
 

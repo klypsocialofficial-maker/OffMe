@@ -20,7 +20,7 @@
     },
     "Post": {
       "title": "Post",
-      "description": "A post or reply shared by a user.",
+      "description": "A post, reply, repost, or quote shared by a user.",
       "type": "object",
       "properties": {
         "id": { "type": "string", "description": "The unique ID of the post." },
@@ -33,9 +33,24 @@
         "likesCount": { "type": "integer", "description": "Number of likes." },
         "repostsCount": { "type": "integer", "description": "Number of reposts." },
         "repliesCount": { "type": "integer", "description": "Number of replies." },
-        "parentPostId": { "type": "string", "description": "ID of the parent post if this is a reply." }
+        "quotesCount": { "type": "integer", "description": "Number of quotes." },
+        "parentPostId": { "type": "string", "description": "ID of the parent post if this is a reply." },
+        "repostedPostId": { "type": "string", "description": "ID of the original post if this is a repost." },
+        "quotedPostId": { "type": "string", "description": "ID of the post being quoted." },
+        "type": { "type": "string", "enum": ["post", "reply", "repost", "quote"], "description": "The type of post." }
       },
-      "required": ["id", "authorUid", "content", "createdAt"]
+      "required": ["id", "authorUid", "createdAt", "type"]
+    },
+    "Repost": {
+      "title": "Repost",
+      "description": "Represents a user reposting a post.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The UID of the user who reposted." },
+        "postId": { "type": "string", "description": "The ID of the post reposted." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the repost occurred." }
+      },
+      "required": ["userId", "postId", "createdAt"]
     },
     "Like": {
       "title": "Like",
@@ -118,6 +133,10 @@
     "/likes/{likeId}": {
       "schema": "Like",
       "description": "Likes on posts. ID is usually userId_postId."
+    },
+    "/reposts/{repostId}": {
+      "schema": "Repost",
+      "description": "Reposts on posts. ID is usually userId_postId."
     },
     "/follows/{followId}": {
       "schema": "Follow",

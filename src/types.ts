@@ -14,7 +14,7 @@ export interface UserProfile {
   postsCount: number;
 }
 
-export type NotificationType = 'like' | 'follow' | 'reply' | 'repost';
+export type NotificationType = 'like' | 'follow' | 'reply' | 'repost' | 'quote';
 
 export interface Notification {
   id: string;
@@ -41,8 +41,11 @@ export interface Post {
   likesCount: number;
   repostsCount: number;
   repliesCount: number;
+  quotesCount: number;
   parentPostId?: string | null;
   repostedPostId?: string | null;
+  quotedPostId?: string | null;
+  type: 'post' | 'reply' | 'repost' | 'quote';
   imageUrl?: string;
   location?: {
     lat: number;
