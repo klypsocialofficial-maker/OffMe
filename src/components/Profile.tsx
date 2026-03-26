@@ -5,7 +5,7 @@ import { doc, getDoc, collection, query, where, orderBy, onSnapshot, limit } fro
 import { UserProfile, Post } from '../types';
 import PostCard from './PostCard';
 import EditProfileModal from './EditProfileModal';
-import { ArrowLeft, Calendar, MapPin, Link as LinkIcon, Edit3, Loader2, UserPlus, UserMinus, MessageCircle, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Link as LinkIcon, Edit3, Loader2, UserPlus, UserMinus, MessageCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -230,12 +230,7 @@ export default function Profile() {
           <ArrowLeft className="w-5 h-5 text-black" />
         </button>
         <div>
-          <div className="flex items-center gap-1">
-            <h1 className="text-lg sm:text-xl font-black tracking-tighter text-black">{profile.displayName}</h1>
-            {profile.isVerified && (
-              <CheckCircle2 className="w-4 h-4 text-blue-500 fill-blue-500/10" />
-            )}
-          </div>
+          <h1 className="text-lg sm:text-xl font-black tracking-tighter text-black">{profile.displayName}</h1>
           <p className="text-[10px] sm:text-xs text-gray-400 font-bold uppercase tracking-widest">{profile.postsCount || 0} Posts</p>
         </div>
       </div>
@@ -264,12 +259,7 @@ export default function Profile() {
       <div className="mt-12 sm:mt-16 px-4 sm:px-6 pb-6 border-b border-gray-100 space-y-4">
         <div className="flex items-end justify-between gap-4">
           <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <h2 className="text-xl sm:text-2xl font-black tracking-tighter text-black truncate">{profile.displayName}</h2>
-              {profile.isVerified && (
-                <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500 fill-blue-500/10" />
-              )}
-            </div>
+            <h2 className="text-xl sm:text-2xl font-black tracking-tighter text-black truncate">{profile.displayName}</h2>
             <p className="text-sm sm:text-base text-gray-400 font-medium truncate">@{profile.username}</p>
           </div>
           

@@ -138,12 +138,10 @@ export default function Auth() {
         className="z-10 w-full max-w-md"
       >
         <div className="text-center mb-8">
-          <img 
-            src="https://ais-dev-xkl2fib5czd2tumiithtrb-554207583370.us-east1.run.app/input_file_0.png" 
-            alt="OffMe Logo" 
-            className="h-20 mx-auto mb-4 drop-shadow-xl"
-            referrerPolicy="no-referrer"
-          />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-black text-white mb-4 shadow-xl rotate-3">
+            <MessageCircle className="w-8 h-8" />
+          </div>
+          <h1 className="text-4xl font-black tracking-tighter text-black">OffMe.</h1>
         </div>
 
         <div className="bg-white rounded-3xl border border-gray-100 p-8 shadow-2xl shadow-black/5">

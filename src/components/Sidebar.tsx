@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, Search, Bell, Mail, User, LogOut, MessageCircle, PlusCircle, List, Bookmark, MessageSquare, ShieldCheck, Settings, CheckCircle2 } from 'lucide-react';
+import { Home, Search, Bell, Mail, User, LogOut, MessageCircle, PlusCircle, List, Bookmark, MessageSquare, ShieldCheck, Settings } from 'lucide-react';
 import { logout, auth } from '../firebase';
 import { cn } from '../lib/utils';
 import { useProfile } from '../hooks/useProfile';
@@ -81,12 +81,7 @@ export default function Sidebar() {
             referrerPolicy="no-referrer"
           />
           <div className="hidden xl:block overflow-hidden">
-            <div className="flex items-center gap-1">
-              <p className="text-sm font-bold text-black truncate">{profile?.displayName}</p>
-              {profile?.isVerified && (
-                <CheckCircle2 className="w-3.5 h-3.5 text-blue-500 fill-blue-500/10" />
-              )}
-            </div>
+            <p className="text-sm font-bold text-black truncate">{profile?.displayName}</p>
             <p className="text-xs text-gray-400 font-medium truncate">@{profile?.username}</p>
           </div>
         </div>

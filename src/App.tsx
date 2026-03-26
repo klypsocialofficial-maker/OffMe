@@ -35,16 +35,11 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-white gap-6">
-        <div className="relative">
-          <img 
-            src="https://ais-dev-xkl2fib5czd2tumiithtrb-554207583370.us-east1.run.app/input_file_0.png" 
-            alt="OffMe Logo" 
-            className="h-24 animate-pulse drop-shadow-2xl"
-            referrerPolicy="no-referrer"
-          />
-          <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-8 h-8 border-4 border-black/10 border-t-black rounded-full animate-spin" />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white gap-4">
+        <div className="w-16 h-16 rounded-3xl bg-black flex items-center justify-center shadow-2xl animate-pulse">
+          <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin" />
         </div>
+        <p className="text-sm font-black text-black uppercase tracking-[0.2em] animate-pulse">OffMe.</p>
       </div>
     );
   }
