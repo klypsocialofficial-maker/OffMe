@@ -25,6 +25,7 @@ const PostCard: React.FC<Props> = ({ post }) => {
   const [showQuoteForm, setShowQuoteForm] = useState(false);
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [likers, setLikers] = useState<UserProfile[]>([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!post.id) return;
@@ -221,6 +222,7 @@ const PostCard: React.FC<Props> = ({ post }) => {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
+      onClick={() => navigate(`/post/${displayPost.id}`)}
       className="p-4 sm:p-6 border-b border-gray-100 hover:bg-gray-50/50 transition-all duration-300 group cursor-pointer bg-white"
     >
       {post.repostedPostId && (
@@ -230,17 +232,35 @@ const PostCard: React.FC<Props> = ({ post }) => {
         </div>
       )}
       <div className="flex gap-3 sm:gap-4">
-        <img
-          src={displayPost.authorPhoto || 'https://picsum.photos/seed/user/100/100'}
-          alt={displayPost.authorName}
-          className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-white shadow-sm group-hover:shadow-md transition-shadow"
-          referrerPolicy="no-referrer"
-        />
+        <Link 
+          to={`/profile/${displayPost.authorUid}`}
+          onClick={(e) => e.stopPropagation()}
+          className="shrink-0"
+        >
+          <img
+            src={displayPost.authorPhoto || 'https://picsum.photos/seed/user/100/100'}
+            alt={displayPost.authorName}
+            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-white shadow-sm group-hover:shadow-md transition-shadow"
+            referrerPolicy="no-referrer"
+          />
+        </Link>
         <div className="flex-1 space-y-1 sm:space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-0">
-              <span className="font-black text-black tracking-tight hover:underline text-sm sm:text-base">{displayPost.authorName}</span>
-              <span className="text-gray-400 font-medium text-xs sm:text-sm">@{displayPost.authorUsername}</span>
+              <Link 
+                to={`/profile/${displayPost.authorUid}`}
+                onClick={(e) => e.stopPropagation()}
+                className="font-black text-black tracking-tight hover:underline text-sm sm:text-base"
+              >
+                {displayPost.authorName}
+              </Link>
+              <Link 
+                to={`/profile/${displayPost.authorUid}`}
+                onClick={(e) => e.stopPropagation()}
+                className="text-gray-400 font-medium text-xs sm:text-sm"
+              >
+                @{displayPost.authorUsername}
+              </Link>
               <span className="text-gray-300 font-bold text-[10px] sm:text-xs uppercase tracking-widest">• {displayTimeAgo}</span>
               {isScheduled && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 text-purple-600 rounded-full text-[10px] font-black uppercase tracking-widest">
@@ -350,7 +370,13 @@ const PostCard: React.FC<Props> = ({ post }) => {
           </p>
 
           {quotedPost && (
-            <div className="mt-3 border border-gray-100 rounded-2xl p-4 hover:bg-gray-50 transition-colors">
+            <div 
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/post/${quotedPost.id}`);
+              }}
+              className="mt-3 border border-gray-100 rounded-2xl p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+            >
               <div className="flex items-center gap-2 mb-2">
                 <img
                   src={quotedPost.authorPhoto || 'https://picsum.photos/seed/user/100/100'}
@@ -507,7 +533,10 @@ const PostCard: React.FC<Props> = ({ post }) => {
                 {displayPost.likesCount || 0}
               </motion.span>
             </button>
-            <button className="flex items-center gap-2 group/btn hover:text-black transition-all p-2 hover:bg-gray-100 rounded-xl">
+            <button 
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-2 group/btn hover:text-black transition-all p-2 hover:bg-gray-100 rounded-xl"
+            >
               <Share className="w-5 h-5 group-hover/btn:-translate-y-1 transition-transform" />
             </button>
           </div>

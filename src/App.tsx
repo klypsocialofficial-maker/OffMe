@@ -13,6 +13,7 @@ import Bookmarks from './components/Bookmarks';
 import Communities from './components/Communities';
 import Verified from './components/Verified';
 import Settings from './components/Settings';
+import PostView from './components/PostView';
 import AccessibilitySettings from './components/AccessibilitySettings';
 import HelpCenter from './components/HelpCenter';
 import LanguageSettings from './components/LanguageSettings';
@@ -141,6 +142,14 @@ export default function App() {
                 element={
                   <Layout>
                     <Settings />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/post/:postId"
+                element={
+                  <Layout>
+                    <PostView />
                   </Layout>
                 }
               />
