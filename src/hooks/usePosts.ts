@@ -12,31 +12,26 @@ export function usePosts(userId?: string, followingOnly?: boolean) {
     let q;
     
     if (followingOnly && user) {
-      // This is complex in Firestore without a separate collection for following posts
-      // For now, we'll fetch all posts and filter in memory if the following list is small
-      // OR we fetch from a 'feed' collection if we had one.
-      // Since we don't have a 'feed' collection, we'll fetch all and filter for now
-      // (In a real app, we'd use a cloud function to populate a user's feed)
       q = query(
         collection(db, 'posts'),
-        where('parentPostId', '==', null),
         orderBy('createdAt', 'desc'),
-        limit(100)
+        limit(200)
       );
     } else if (userId) {
+      // To avoid requiring a composite index on authorUid and createdAt,
+      // we query by authorUid and sort in memory.
+      // Note: This might not get the absolute newest if the user has > 100 posts,
+      // but it avoids the "missing index" error which breaks the profile.
       q = query(
         collection(db, 'posts'),
         where('authorUid', '==', userId),
-        where('parentPostId', '==', null),
-        orderBy('createdAt', 'desc'),
-        limit(50)
+        limit(100)
       );
     } else {
       q = query(
         collection(db, 'posts'),
-        where('parentPostId', '==', null),
         orderBy('createdAt', 'desc'),
-        limit(150) // Fetch more for scoring
+        limit(200) // Fetch more for scoring
       );
     }
 
@@ -45,6 +40,18 @@ export function usePosts(userId?: string, followingOnly?: boolean) {
         id: doc.id,
         ...doc.data(),
       })) as Post[];
+
+      // Sort in memory for the userId query
+      if (userId) {
+        postsData.sort((a, b) => {
+          const dateA = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+          const dateB = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+          return dateB - dateA;
+        });
+      }
+
+      // Filter out replies in memory to avoid composite index requirement
+      postsData = postsData.filter(post => !post.parentPostId);
 
       if (followingOnly && user) {
         // Fetch following list

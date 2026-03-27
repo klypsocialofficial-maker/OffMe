@@ -88,41 +88,29 @@ const PostView: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Header */}
-      <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 py-3 flex items-center gap-4">
-        <button
-          onClick={() => navigate(-1)}
-          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <div>
-          <h1 className="text-xl font-black tracking-tight">Post</h1>
-          <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Thread</p>
+      <div className="max-w-2xl mx-auto border-x border-gray-100 min-h-screen">
+        {/* Header */}
+        <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 py-3 flex items-center gap-4">
+          <button
+            onClick={() => navigate(-1)}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <h1 className="text-xl font-black tracking-tight">Post</h1>
+            <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Thread</p>
+          </div>
         </div>
-      </div>
 
-      <div className="max-w-2xl mx-auto">
         {/* Main Post */}
-        <div className="bg-white relative">
-          {replies.length > 0 && (
-            <div className="absolute top-[80px] bottom-0 left-[34px] sm:left-[42px] w-0.5 bg-gray-100 z-0" />
-          )}
+        <div className="bg-white">
           <PostCard post={post} isDetailed={true} />
         </div>
 
         {/* Reply Form */}
-        <div className="p-4 sm:p-6 border-b border-gray-100 bg-gray-50/30 relative">
-          {replies.length > 0 && (
-            <div className="absolute top-0 bottom-0 left-[34px] sm:left-[42px] w-0.5 bg-gray-100 z-0" />
-          )}
-          <div className="flex items-center gap-3 mb-4 ml-2 relative z-10">
-            <div className="w-1 h-4 bg-black rounded-full" />
-            <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Join the conversation</h3>
-          </div>
-          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden relative z-10">
-            <PostForm replyToPost={post} noBorder={true} />
-          </div>
+        <div className="border-b border-gray-100">
+          <PostForm replyToPost={post} noBorder={true} />
         </div>
 
         {/* Tabs */}
@@ -139,7 +127,7 @@ const PostView: React.FC = () => {
             </div>
             {activeTab === 'replies' && (
               <motion.div
-                layoutId="activeTab"
+                layoutId="activeTabPostView"
                 className="absolute bottom-0 left-4 right-4 h-1 bg-black rounded-full"
               />
             )}
@@ -156,7 +144,7 @@ const PostView: React.FC = () => {
             </div>
             {activeTab === 'quotes' && (
               <motion.div
-                layoutId="activeTab"
+                layoutId="activeTabPostView"
                 className="absolute bottom-0 left-4 right-4 h-1 bg-black rounded-full"
               />
             )}

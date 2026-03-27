@@ -372,7 +372,7 @@ export default function Profile() {
             {tab}
             {activeTab === tab && (
               <motion.div
-                layoutId="activeTab"
+                layoutId="activeTabProfile"
                 className="absolute bottom-0 left-0 right-0 h-1 bg-black"
               />
             )}

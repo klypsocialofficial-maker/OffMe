@@ -52,7 +52,7 @@ export default function Feed() {
             For You
             {activeTab === 'for-you' && (
               <motion.div
-                layoutId="activeTab"
+                layoutId="activeTabFeed"
                 className="absolute bottom-0 left-0 right-0 h-1 bg-black"
               />
             )}
@@ -67,7 +67,7 @@ export default function Feed() {
             Following
             {activeTab === 'following' && (
               <motion.div
-                layoutId="activeTab"
+                layoutId="activeTabFeed"
                 className="absolute bottom-0 left-0 right-0 h-1 bg-black"
               />
             )}
