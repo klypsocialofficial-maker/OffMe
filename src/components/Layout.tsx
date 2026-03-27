@@ -45,7 +45,7 @@ export default function Layout({ children }: Props) {
           {/* Right Sidebar (Search/Trends) - Desktop Only */}
           <div className="hidden lg:block w-80 xl:w-96 sticky top-0 h-screen p-6 space-y-6">
             <div className="bg-gray-50 rounded-3xl p-6 border border-gray-100">
-              <h2 className="text-xl font-black mb-4 tracking-tight">Trending</h2>
+              <h2 className="text-xl font-black mb-4 tracking-tight">Trending Topics</h2>
               <div className="space-y-4">
                 {['#OffMe', '#AIStudio', '#SocialWeb', '#FutureOfSocial'].map((tag) => (
                   <div key={tag} className="group cursor-pointer">

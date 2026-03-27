@@ -36,20 +36,22 @@ const PostView: React.FC = () => {
 
     const qReplies = query(
       collection(db, 'posts'),
-      where('parentPostId', '==', postId),
-      orderBy('createdAt', 'desc')
+      where('parentPostId', '==', postId)
     );
     const unsubscribeReplies = onSnapshot(qReplies, (snapshot) => {
-      setReplies(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Post)));
+      const repliesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Post));
+      repliesData.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+      setReplies(repliesData);
     });
 
     const qQuotes = query(
       collection(db, 'posts'),
-      where('quotedPostId', '==', postId),
-      orderBy('createdAt', 'desc')
+      where('quotedPostId', '==', postId)
     );
     const unsubscribeQuotes = onSnapshot(qQuotes, (snapshot) => {
-      setQuotes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Post)));
+      const quotesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Post));
+      quotesData.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+      setQuotes(quotesData);
     });
 
     return () => {

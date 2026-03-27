@@ -3,7 +3,16 @@ import { auth, db, handleFirestoreError, OperationType } from '../firebase';
 import { collection, query, orderBy, limit, onSnapshot, where, getDocs, getDoc, doc } from 'firebase/firestore';
 import { Post, UserProfile } from '../types';
 
-export function usePosts(userId?: string, followingOnly?: boolean) {
+export interface PostFilters {
+  hasMedia?: boolean;
+  hasLocation?: boolean;
+  dateRange?: {
+    start: Date | null;
+    end: Date | null;
+  };
+}
+
+export function usePosts(userId?: string, followingOnly?: boolean, filters?: PostFilters) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const user = auth.currentUser;
@@ -52,6 +61,32 @@ export function usePosts(userId?: string, followingOnly?: boolean) {
 
       // Filter out replies in memory to avoid composite index requirement
       postsData = postsData.filter(post => !post.parentPostId);
+
+      // Apply custom filters
+      if (filters) {
+        if (filters.hasMedia) {
+          postsData = postsData.filter(post => !!post.imageUrl);
+        }
+        if (filters.hasLocation) {
+          postsData = postsData.filter(post => !!post.location);
+        }
+        if (filters.dateRange) {
+          const { start, end } = filters.dateRange;
+          postsData = postsData.filter(post => {
+            if (!post.createdAt) return false;
+            const postDate = post.createdAt.toDate();
+            if (start && postDate < start) return false;
+            
+            // For end date, we want to include the whole day, so we adjust the end date to the end of the day
+            if (end) {
+              const endOfDay = new Date(end);
+              endOfDay.setHours(23, 59, 59, 999);
+              if (postDate > endOfDay) return false;
+            }
+            return true;
+          });
+        }
+      }
 
       if (followingOnly && user) {
         // Fetch following list
@@ -111,7 +146,7 @@ export function usePosts(userId?: string, followingOnly?: boolean) {
     });
 
     return () => unsubscribe();
-  }, [userId, followingOnly, user?.uid]);
+  }, [userId, followingOnly, user?.uid, filters?.hasMedia, filters?.hasLocation, filters?.dateRange?.start, filters?.dateRange?.end]);
 
   return { posts, loading };
 }

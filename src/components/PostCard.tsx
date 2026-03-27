@@ -41,13 +41,13 @@ const PostCard: React.FC<Props> = ({ post, isDetailed = false, showThreadLine = 
     if (!post.id) return;
     const q = query(
       collection(db, 'likes'),
-      where('postId', '==', post.id),
-      orderBy('createdAt', 'desc'),
-      limit(5)
+      where('postId', '==', post.id)
     );
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
-      const userIds = snapshot.docs.map(doc => doc.data().userId);
+      const likesData = snapshot.docs.map(doc => doc.data());
+      likesData.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+      const userIds = likesData.map(data => data.userId);
       if (userIds.length === 0) {
         setLikers([]);
         return;
@@ -116,11 +116,11 @@ const PostCard: React.FC<Props> = ({ post, isDetailed = false, showThreadLine = 
     const targetId = post.repostedPostId || post.id;
     const q = query(
       collection(db, 'posts'),
-      where('authorUid', '==', user.uid),
       where('repostedPostId', '==', targetId)
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      setReposted(!snapshot.empty);
+      const isReposted = snapshot.docs.some(doc => doc.data().authorUid === user.uid);
+      setReposted(isReposted);
     });
     return () => unsubscribe();
   }, [user, post.id, post.repostedPostId]);
@@ -155,12 +155,11 @@ const PostCard: React.FC<Props> = ({ post, isDetailed = false, showThreadLine = 
       if (reposted) {
         const q = query(
           collection(db, 'posts'),
-          where('authorUid', '==', user.uid),
           where('repostedPostId', '==', targetPost.id)
         );
         const snapshot = await getDocs(q);
-        if (!snapshot.empty) {
-          const repostDoc = snapshot.docs[0];
+        const repostDoc = snapshot.docs.find(doc => doc.data().authorUid === user.uid);
+        if (repostDoc) {
           await socialService.unrepostPost(user.uid, repostDoc.id, targetPost.id);
         }
       } else {
@@ -670,13 +669,20 @@ const PostCard: React.FC<Props> = ({ post, isDetailed = false, showThreadLine = 
               />
             </Link>
             <div className="flex-1 min-w-0 flex flex-col justify-center">
-              <Link 
-                to={`/profile/${displayPost.authorUid}`}
-                onClick={(e) => e.stopPropagation()}
-                className="font-bold text-gray-900 hover:underline text-base leading-tight truncate"
-              >
-                {displayPost.authorName}
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link 
+                  to={`/profile/${displayPost.authorUid}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="font-bold text-gray-900 hover:underline text-base leading-tight truncate"
+                >
+                  {displayPost.authorName}
+                </Link>
+                {displayPost.communityId && (
+                  <span className="bg-green-50 text-green-600 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest shrink-0">
+                    {displayPost.communityId === '1' ? 'AI Artists' : displayPost.communityId === '2' ? 'Web Devs' : 'Designers'}
+                  </span>
+                )}
+              </div>
               <Link 
                 to={`/profile/${displayPost.authorUid}`}
                 onClick={(e) => e.stopPropagation()}
@@ -788,6 +794,11 @@ const PostCard: React.FC<Props> = ({ post, isDetailed = false, showThreadLine = 
                   @{displayPost.authorUsername}
                 </Link>
                 <span className="text-gray-300 font-bold text-xs shrink-0">• {displayTimeAgo}</span>
+                {displayPost.communityId && (
+                  <span className="bg-green-50 text-green-600 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest ml-1 shrink-0 hidden sm:inline-block">
+                    {displayPost.communityId === '1' ? 'AI Artists' : displayPost.communityId === '2' ? 'Web Devs' : 'Designers'}
+                  </span>
+                )}
               </div>
               <div className="relative shrink-0 ml-2">
                 <button 

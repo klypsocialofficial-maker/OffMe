@@ -16,7 +16,9 @@
         "followingCount": { "type": "integer", "description": "Number of users followed." },
         "postsCount": { "type": "integer", "description": "Number of posts created." },
         "fcmTokens": { "type": "array", "items": { "type": "string" }, "description": "List of device tokens for push notifications." },
-        "notificationsEnabled": { "type": "boolean", "description": "Whether the user has enabled push notifications." }
+        "notificationsEnabled": { "type": "boolean", "description": "Whether the user has enabled push notifications." },
+        "interests": { "type": "object", "description": "User interests based on interactions." },
+        "interactions": { "type": "object", "description": "User interactions with other users." }
       },
       "required": ["uid", "displayName", "username", "createdAt", "followersCount", "followingCount", "postsCount"]
     },
@@ -39,7 +41,11 @@
         "parentPostId": { "type": "string", "description": "ID of the parent post if this is a reply." },
         "repostedPostId": { "type": "string", "description": "ID of the original post if this is a repost." },
         "quotedPostId": { "type": "string", "description": "ID of the post being quoted." },
-        "type": { "type": "string", "enum": ["post", "reply", "repost", "quote"], "description": "The type of post." }
+        "type": { "type": "string", "enum": ["post", "reply", "repost", "quote"], "description": "The type of post." },
+        "imageUrl": { "type": "string", "description": "Optional image URL attached to the post." },
+        "location": { "type": "object", "description": "Optional location data." },
+        "scheduledFor": { "type": "string", "format": "date-time", "description": "Optional scheduled time for the post." },
+        "communityId": { "type": "string", "description": "Optional ID of the community this post belongs to." }
       },
       "required": ["id", "authorUid", "createdAt", "type"]
     },

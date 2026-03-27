@@ -21,9 +21,7 @@ export default function Notifications() {
 
     const q = query(
       collection(db, 'notifications'),
-      where('recipientId', '==', user.uid),
-      orderBy('createdAt', 'desc'),
-      limit(50)
+      where('recipientId', '==', user.uid)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -31,11 +29,15 @@ export default function Notifications() {
         id: doc.id,
         ...doc.data()
       })) as Notification[];
-      setNotifications(notifs);
+      
+      notifs.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+      const limitedNotifs = notifs.slice(0, 50);
+      
+      setNotifications(limitedNotifs);
       setLoading(false);
 
       // Mark unread as read
-      notifs.forEach(n => {
+      limitedNotifs.forEach(n => {
         if (!n.read) {
           socialService.markNotificationAsRead(n.id);
         }

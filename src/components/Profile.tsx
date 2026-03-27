@@ -53,50 +53,16 @@ export default function Profile() {
     let unsubscribeLikes = () => {};
     let unsubscribeLikesInner = () => {};
 
-    if (activeTab === 'Posts') {
-      q = query(
-        collection(db, 'posts'),
-        where('authorUid', '==', userId),
-        where('parentPostId', '==', null),
-        orderBy('createdAt', 'desc'),
-        limit(50)
-      );
-    } else if (activeTab === 'Replies') {
-      q = query(
-        collection(db, 'posts'),
-        where('authorUid', '==', userId),
-        where('parentPostId', '!=', null),
-        orderBy('parentPostId'),
-        orderBy('createdAt', 'desc'),
-        limit(50)
-      );
-    } else if (activeTab === 'Highlights') {
-      q = query(
-        collection(db, 'posts'),
-        where('authorUid', '==', userId),
-        orderBy('likesCount', 'desc'),
-        orderBy('createdAt', 'desc'),
-        limit(20)
-      );
-    } else if (activeTab === 'Media') {
-      q = query(
-        collection(db, 'posts'),
-        where('authorUid', '==', userId),
-        where('imageUrl', '!=', null),
-        orderBy('imageUrl'),
-        orderBy('createdAt', 'desc'),
-        limit(50)
-      );
-    } else if (activeTab === 'Likes') {
+    if (activeTab === 'Likes') {
       const likesQuery = query(
         collection(db, 'likes'),
-        where('userId', '==', userId),
-        orderBy('createdAt', 'desc'),
-        limit(50)
+        where('userId', '==', userId)
       );
 
       unsubscribeLikes = onSnapshot(likesQuery, (snapshot) => {
-        const postIds = snapshot.docs.map(doc => doc.data().postId);
+        const likesData = snapshot.docs.map(doc => doc.data());
+        likesData.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+        const postIds = likesData.map(data => data.postId);
         if (postIds.length === 0) {
           setPosts([]);
           setLoading(false);
@@ -130,21 +96,40 @@ export default function Profile() {
         setLoading(false);
       });
     } else {
+      // Fetch all posts by user and filter/sort in memory to avoid composite indexes
       q = query(
         collection(db, 'posts'),
         where('authorUid', '==', userId),
-        orderBy('createdAt', 'desc'),
-        limit(50)
+        limit(200)
       );
     }
 
     if (q) {
       unsubscribePosts = onSnapshot(q, (snapshot) => {
-        const postsData = snapshot.docs.map((doc) => ({
+        let postsData = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         })) as Post[];
-        setPosts(postsData);
+
+        if (activeTab === 'Posts') {
+          postsData = postsData.filter(post => !post.parentPostId);
+          postsData.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+        } else if (activeTab === 'Replies') {
+          postsData = postsData.filter(post => !!post.parentPostId);
+          postsData.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+        } else if (activeTab === 'Highlights') {
+          postsData.sort((a, b) => {
+            if (b.likesCount !== a.likesCount) return b.likesCount - a.likesCount;
+            return (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0);
+          });
+        } else if (activeTab === 'Media') {
+          postsData = postsData.filter(post => !!post.imageUrl);
+          postsData.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+        } else {
+          postsData.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+        }
+
+        setPosts(postsData.slice(0, 50));
         setLoading(false);
       }, (err) => {
         console.error('Profile posts error:', err);

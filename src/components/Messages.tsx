@@ -19,12 +19,12 @@ export default function Messages() {
 
     const q = query(
       collection(db, 'conversations'),
-      where('participants', 'array-contains', user.uid),
-      orderBy('lastMessageAt', 'desc')
+      where('participants', 'array-contains', user.uid)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const convs = snapshot.docs.map(doc => ({ ...doc.data() } as Conversation));
+      convs.sort((a, b) => (b.lastMessageAt?.toMillis() || 0) - (a.lastMessageAt?.toMillis() || 0));
       setConversations(convs);
       setLoading(false);
     }, (error) => {

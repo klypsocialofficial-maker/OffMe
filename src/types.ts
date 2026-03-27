@@ -57,6 +57,7 @@ export interface Post {
     name?: string;
   };
   scheduledFor?: Timestamp;
+  communityId?: string;
 }
 
 export interface Like {

@@ -4,17 +4,23 @@ import { Post } from '../types';
 import PostCard from './PostCard';
 import PostForm from './PostForm';
 import { useDrawer } from '../contexts/DrawerContext';
-import { usePosts } from '../hooks/usePosts';
+import { usePosts, PostFilters } from '../hooks/usePosts';
 import { useLanguage } from '../contexts/LanguageContext';
 import { motion, AnimatePresence } from 'motion/react';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { Sparkles, Loader2, Filter, Image as ImageIcon, MapPin, Calendar } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 export default function Feed() {
   const [activeTab, setActiveTab] = useState<'for-you' | 'following'>('for-you');
-  const { posts, loading } = usePosts(undefined, activeTab === 'following');
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState<PostFilters>({});
+  const { posts, loading } = usePosts(undefined, activeTab === 'following', filters);
   const { openDrawer } = useDrawer();
   const { t } = useLanguage();
+
+  const activeFilterCount = (filters.hasMedia ? 1 : 0) + 
+                            (filters.hasLocation ? 1 : 0) + 
+                            (filters.dateRange?.start || filters.dateRange?.end ? 1 : 0);
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
@@ -35,10 +41,130 @@ export default function Feed() {
             </button>
             <h1 className="text-xl sm:text-2xl font-black tracking-tighter text-black">{t('home')}</h1>
           </div>
-          <div className="p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer">
-            <Sparkles className="w-5 h-5 text-black" />
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setShowFilters(!showFilters)}
+              className={cn(
+                "p-2 rounded-full transition-colors relative",
+                showFilters || activeFilterCount > 0 ? "bg-black text-white" : "hover:bg-gray-100 text-black"
+              )}
+            >
+              <Filter className="w-5 h-5" />
+              {activeFilterCount > 0 && !showFilters && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full border-2 border-white">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+            <div className="p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer">
+              <Sparkles className="w-5 h-5 text-black" />
+            </div>
           </div>
         </div>
+
+        {/* Filter Panel */}
+        <AnimatePresence>
+          {showFilters && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="border-t border-gray-100 bg-gray-50 overflow-hidden"
+            >
+              <div className="p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-sm uppercase tracking-widest text-gray-500">Filters</h3>
+                  <button 
+                    onClick={() => {
+                      setFilters({});
+                    }}
+                    className="text-xs font-bold text-gray-400 hover:text-black uppercase tracking-wider"
+                  >
+                    Clear All
+                  </button>
+                </div>
+                
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    onClick={() => setFilters(prev => ({ ...prev, hasMedia: !prev.hasMedia }))}
+                    className={cn(
+                      "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-colors",
+                      filters.hasMedia 
+                        ? "bg-black text-white" 
+                        : "bg-white text-gray-600 border border-gray-200 hover:border-black"
+                    )}
+                  >
+                    <ImageIcon className="w-4 h-4" />
+                    Has Media
+                  </button>
+                  
+                  <button
+                    onClick={() => setFilters(prev => ({ ...prev, hasLocation: !prev.hasLocation }))}
+                    className={cn(
+                      "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-colors",
+                      filters.hasLocation 
+                        ? "bg-black text-white" 
+                        : "bg-white text-gray-600 border border-gray-200 hover:border-black"
+                    )}
+                  >
+                    <MapPin className="w-4 h-4" />
+                    Has Location
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-bold text-gray-600">
+                    <Calendar className="w-4 h-4" />
+                    Date Range
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="date"
+                      value={filters.dateRange?.start ? filters.dateRange.start.toISOString().split('T')[0] : ''}
+                      onChange={(e) => {
+                        const date = e.target.value ? new Date(e.target.value) : null;
+                        if (date) {
+                          // Adjust for local timezone to avoid off-by-one day issues
+                          date.setMinutes(date.getMinutes() + date.getTimezoneOffset());
+                        }
+                        setFilters(prev => ({
+                          ...prev,
+                          dateRange: {
+                            ...prev.dateRange,
+                            start: date,
+                            end: prev.dateRange?.end || null
+                          }
+                        }));
+                      }}
+                      className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black"
+                    />
+                    <span className="text-gray-400 font-bold">to</span>
+                    <input
+                      type="date"
+                      value={filters.dateRange?.end ? filters.dateRange.end.toISOString().split('T')[0] : ''}
+                      onChange={(e) => {
+                        const date = e.target.value ? new Date(e.target.value) : null;
+                        if (date) {
+                          // Adjust for local timezone
+                          date.setMinutes(date.getMinutes() + date.getTimezoneOffset());
+                        }
+                        setFilters(prev => ({
+                          ...prev,
+                          dateRange: {
+                            ...prev.dateRange,
+                            start: prev.dateRange?.start || null,
+                            end: date
+                          }
+                        }));
+                      }}
+                      className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black"
+                    />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Tabs */}
         <div className="flex">

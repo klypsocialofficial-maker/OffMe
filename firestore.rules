@@ -142,7 +142,7 @@ service cloud.firestore {
     // ===============================================================
 
     function isValidUser(data) {
-      return hasOnlyAllowedFields(['uid', 'displayName', 'username', 'photoURL', 'bannerURL', 'bio', 'createdAt', 'role', 'followersCount', 'followingCount', 'postsCount', 'fcmTokens', 'notificationsEnabled']) &&
+      return hasOnlyAllowedFields(['uid', 'displayName', 'username', 'photoURL', 'bannerURL', 'bio', 'createdAt', 'role', 'followersCount', 'followingCount', 'postsCount', 'fcmTokens', 'notificationsEnabled', 'interests', 'interactions']) &&
              data.uid == request.auth.uid &&
              data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 50 &&
              data.username is string && data.username.size() >= 3 && data.username.size() <= 20 &&
@@ -154,11 +154,13 @@ service cloud.firestore {
              data.followingCount is int && data.followingCount >= 0 &&
              data.postsCount is int && data.postsCount >= 0 &&
              (!('fcmTokens' in data) || data.fcmTokens is list) &&
-             (!('notificationsEnabled' in data) || data.notificationsEnabled is bool);
+             (!('notificationsEnabled' in data) || data.notificationsEnabled is bool) &&
+             (!('interests' in data) || data.interests is map) &&
+             (!('interactions' in data) || data.interactions is map);
     }
 
     function isValidPost(data) {
-      return hasOnlyAllowedFields(['id', 'authorUid', 'authorName', 'authorUsername', 'authorPhoto', 'content', 'createdAt', 'likesCount', 'repostsCount', 'repliesCount', 'quotesCount', 'parentPostId', 'repostedPostId', 'quotedPostId', 'type', 'imageUrl', 'location', 'scheduledFor']) &&
+      return hasOnlyAllowedFields(['id', 'authorUid', 'authorName', 'authorUsername', 'authorPhoto', 'content', 'createdAt', 'likesCount', 'repostsCount', 'repliesCount', 'quotesCount', 'parentPostId', 'repostedPostId', 'quotedPostId', 'type', 'imageUrl', 'location', 'scheduledFor', 'communityId']) &&
              data.authorUid == request.auth.uid &&
              data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 50 &&
              data.authorUsername is string && data.authorUsername.size() >= 3 && data.authorUsername.size() <= 20 &&
@@ -174,8 +176,9 @@ service cloud.firestore {
              (!('repostedPostId' in data) || data.repostedPostId == null || data.repostedPostId is string) &&
              (!('quotedPostId' in data) || data.quotedPostId == null || data.quotedPostId is string) &&
              (!('imageUrl' in data) || isValidOptionalUrl(data.imageUrl)) &&
-             (!('location' in data) || (data.location is map && data.location.lat is number && data.location.lng is number)) &&
-             (!('scheduledFor' in data) || data.scheduledFor is timestamp);
+             (!('location' in data) || (data.location is map && data.location.lat is number && data.location.lng is number && (!('name' in data.location) || data.location.name is string))) &&
+             (!('scheduledFor' in data) || data.scheduledFor is timestamp) &&
+             (!('communityId' in data) || data.communityId is string);
     }
 
     function isValidRepost(data) {
@@ -237,7 +240,7 @@ service cloud.firestore {
       allow read: if true;
       allow create: if isOwner(userId) && isValidUser(request.resource.data) && (!('role' in request.resource.data) || request.resource.data.role == 'user');
       allow update: if isAuthenticated() && (
-        (isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role == resource.data.role || isAdmin())) ||
+        (isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.get('role', 'user') == resource.data.get('role', 'user') || isAdmin())) ||
         (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followersCount', 'followingCount', 'postsCount']))
       );
     }

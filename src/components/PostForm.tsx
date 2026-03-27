@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { db, auth, handleFirestoreError, OperationType } from '../firebase';
 import { collection, addDoc, serverTimestamp, doc, updateDoc, increment, Timestamp } from 'firebase/firestore';
-import { Image as ImageIcon, Smile, Calendar, MapPin, Send, X, MapPinOff } from 'lucide-react';
+import { Image as ImageIcon, Smile, Calendar, MapPin, Send, X, MapPinOff, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useProfile } from '../hooks/useProfile';
 import { imageService } from '../services/imageService';
@@ -26,10 +26,18 @@ export default function PostForm({ onSuccess, quotePost, replyToPost, noBorder =
   const [location, setLocation] = useState<{ lat: number; lng: number; name?: string } | null>(null);
   const [scheduledFor, setScheduledFor] = useState<string | null>(null);
   const [showScheduler, setShowScheduler] = useState(false);
+  const [communityId, setCommunityId] = useState<string | null>(null);
+  const [showCommunityPicker, setShowCommunityPicker] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { profile } = useProfile();
   const user = auth.currentUser;
+
+  const communities = [
+    { id: '1', name: 'AI Artists' },
+    { id: '2', name: 'Web Devs' },
+    { id: '3', name: 'Designers' },
+  ];
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -163,6 +171,10 @@ export default function PostForm({ onSuccess, quotePost, replyToPost, noBorder =
           postData.scheduledFor = Timestamp.fromDate(new Date(scheduledFor));
         }
 
+        if (communityId) {
+          postData.communityId = communityId;
+        }
+
         const docRef = await addDoc(collection(db, 'posts'), postData);
         await updateDoc(docRef, { id: docRef.id });
 
@@ -178,6 +190,8 @@ export default function PostForm({ onSuccess, quotePost, replyToPost, noBorder =
       setLocation(null);
       setScheduledFor(null);
       setShowScheduler(false);
+      setCommunityId(null);
+      setShowCommunityPicker(false);
       
       if (onSuccess) onSuccess();
     } catch (err) {
@@ -369,6 +383,56 @@ export default function PostForm({ onSuccess, quotePost, replyToPost, noBorder =
               >
                 {location ? <MapPin className="w-5 h-5" /> : <MapPinOff className="w-5 h-5" />}
               </button>
+
+              <div className="relative">
+                <button 
+                  type="button" 
+                  onClick={() => setShowCommunityPicker(!showCommunityPicker)}
+                  className={cn(
+                    "transition-all p-2 rounded-xl",
+                    communityId ? "text-green-500 bg-green-50" : "text-gray-400 hover:text-black hover:bg-gray-50"
+                  )}
+                >
+                  <Users className="w-5 h-5" />
+                </button>
+                <AnimatePresence>
+                  {showCommunityPicker && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      className="absolute bottom-full left-0 z-50 mb-2 bg-white p-2 rounded-2xl shadow-2xl border border-gray-100 w-[200px]"
+                    >
+                      <h4 className="text-xs font-black mb-2 px-2 text-gray-400 uppercase tracking-widest">Post to Community</h4>
+                      <div className="space-y-1">
+                        <button
+                          type="button"
+                          onClick={() => { setCommunityId(null); setShowCommunityPicker(false); }}
+                          className={cn(
+                            "w-full text-left px-3 py-2 rounded-xl text-sm font-bold transition-colors",
+                            !communityId ? "bg-gray-100 text-black" : "text-gray-600 hover:bg-gray-50"
+                          )}
+                        >
+                          My Feed (Public)
+                        </button>
+                        {communities.map(community => (
+                          <button
+                            key={community.id}
+                            type="button"
+                            onClick={() => { setCommunityId(community.id); setShowCommunityPicker(false); }}
+                            className={cn(
+                              "w-full text-left px-3 py-2 rounded-xl text-sm font-bold transition-colors",
+                              communityId === community.id ? "bg-green-50 text-green-600" : "text-gray-600 hover:bg-gray-50"
+                            )}
+                          >
+                            {community.name}
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
 
             <div className="flex items-center gap-3">
