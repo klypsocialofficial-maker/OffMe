@@ -9,14 +9,16 @@ import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 
 import { Post } from '../types';
 import { socialService } from '../services/socialService';
+import { cn } from '../lib/utils';
 
 interface Props {
   onSuccess?: () => void;
   quotePost?: Post;
   replyToPost?: Post;
+  noBorder?: boolean;
 }
 
-export default function PostForm({ onSuccess, quotePost, replyToPost }: Props) {
+export default function PostForm({ onSuccess, quotePost, replyToPost, noBorder = false }: Props) {
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -86,7 +88,6 @@ export default function PostForm({ onSuccess, quotePost, replyToPost }: Props) {
           authorUid: user.uid,
           authorName: profile.displayName || 'Anonymous',
           authorUsername: profile.username || 'user',
-          authorIsVerified: profile.isVerified || false,
           content: content.trim(),
           createdAt: serverTimestamp(),
           likesCount: 0,
@@ -136,7 +137,6 @@ export default function PostForm({ onSuccess, quotePost, replyToPost }: Props) {
           authorUid: user.uid,
           authorName: profile.displayName || 'Anonymous',
           authorUsername: profile.username || 'user',
-          authorIsVerified: profile.isVerified || false,
           content: content.trim(),
           createdAt: serverTimestamp(),
           likesCount: 0,
@@ -189,7 +189,10 @@ export default function PostForm({ onSuccess, quotePost, replyToPost }: Props) {
   };
 
   return (
-    <div className="p-4 sm:p-6 border-b border-gray-100 bg-white sm:shadow-sm relative">
+    <div className={cn(
+      "p-4 sm:p-6 relative bg-white",
+      !noBorder && "border-b border-gray-100 sm:shadow-sm"
+    )}>
       <div className="flex gap-3 sm:gap-4">
         <img
           src={user?.photoURL || 'https://picsum.photos/seed/user/100/100'}
@@ -395,8 +398,4 @@ export default function PostForm({ onSuccess, quotePost, replyToPost }: Props) {
       </div>
     </div>
   );
-}
-
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(' ');
 }

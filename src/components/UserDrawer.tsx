@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, User, Settings, LogOut, Bookmark, List, MessageSquare, ShieldCheck } from 'lucide-react';
+import { X, User, Settings, LogOut, Bookmark, List, MessageSquare } from 'lucide-react';
 import { useDrawer } from '../contexts/DrawerContext';
 import { useProfile } from '../hooks/useProfile';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -26,7 +26,6 @@ export default function UserDrawer() {
     { icon: List, label: t('lists'), to: '/lists' },
     { icon: Bookmark, label: t('bookmarks'), to: '/bookmarks' },
     { icon: MessageSquare, label: t('communities'), to: '/communities' },
-    { icon: ShieldCheck, label: t('verified'), to: '/verified' },
   ];
 
   const settingsItems = [

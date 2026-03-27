@@ -14,11 +14,6 @@ export function useProfile() {
           if (docSnap.exists()) {
             const data = docSnap.data() as UserProfile;
             setProfile({ uid: docSnap.id, ...data } as UserProfile);
-            
-            // Auto-verify founder @rulio
-            if (data.username === 'rulio' && !data.isVerified) {
-              updateDoc(doc(db, 'users', user.uid), { isVerified: true }).catch(console.error);
-            }
           }
           setLoading(false);
         });

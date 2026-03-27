@@ -13,9 +13,11 @@ import PostForm from './PostForm';
 
 interface Props {
   post: Post;
+  isDetailed?: boolean;
+  showThreadLine?: boolean;
 }
 
-const PostCard: React.FC<Props> = ({ post }) => {
+const PostCard: React.FC<Props> = ({ post, isDetailed = false, showThreadLine = false }) => {
   const [liked, setLiked] = useState(false);
   const [reposted, setReposted] = useState(false);
   const [currentPost, setCurrentPost] = useState<Post>(post);
@@ -24,6 +26,9 @@ const PostCard: React.FC<Props> = ({ post }) => {
   const [loading, setLoading] = useState(false);
   const [showQuoteForm, setShowQuoteForm] = useState(false);
   const [showReplyForm, setShowReplyForm] = useState(false);
+  const [showShareTooltip, setShowShareTooltip] = useState(false);
+  const [justLiked, setJustLiked] = useState(false);
+  const [justReposted, setJustReposted] = useState(false);
   const [likers, setLikers] = useState<UserProfile[]>([]);
   const navigate = useNavigate();
 
@@ -134,6 +139,8 @@ const PostCard: React.FC<Props> = ({ post }) => {
       if (liked) {
         await socialService.unlikePost(user.uid, post.id);
       } else {
+        setJustLiked(true);
+        setTimeout(() => setJustLiked(false), 1000);
         await socialService.likePost(user.uid, post, currentUserProfile);
       }
     } catch (err) {
@@ -163,6 +170,8 @@ const PostCard: React.FC<Props> = ({ post }) => {
           await socialService.unrepostPost(user.uid, repostDoc.id, targetPost.id);
         }
       } else {
+        setJustReposted(true);
+        setTimeout(() => setJustReposted(false), 1000);
         await socialService.repostPost(user.uid, targetPost, currentUserProfile);
       }
     } catch (err) {
@@ -189,6 +198,32 @@ const PostCard: React.FC<Props> = ({ post }) => {
     } finally {
       setLoading(false);
       setShowDeleteConfirm(false);
+    }
+  };
+
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const shareUrl = `${window.location.origin}/post/${displayPost.id}`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Post by ${displayPost.authorName}`,
+          text: displayPost.content,
+          url: shareUrl,
+        });
+      } catch (err) {
+        console.error('Error sharing:', err);
+      }
+    } else {
+      // Fallback: Copy to clipboard
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        setShowShareTooltip(true);
+        setTimeout(() => setShowShareTooltip(false), 2000);
+      } catch (err) {
+        console.error('Error copying to clipboard:', err);
+      }
     }
   };
 
@@ -222,8 +257,11 @@ const PostCard: React.FC<Props> = ({ post }) => {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      onClick={() => navigate(`/post/${displayPost.id}`)}
-      className="p-4 sm:p-6 border-b border-gray-100 hover:bg-gray-50/50 transition-all duration-300 group cursor-pointer bg-white"
+      onClick={() => !isDetailed && navigate(`/post/${displayPost.id}`)}
+      className={cn(
+        "p-4 sm:p-6 border-b border-gray-100 transition-all duration-300 group bg-white",
+        !isDetailed && "hover:bg-gray-50/50 cursor-pointer"
+      )}
     >
       {post.repostedPostId && (
         <div className="flex items-center gap-2 text-gray-400 text-xs font-black uppercase tracking-widest mb-3 ml-12">
@@ -231,45 +269,48 @@ const PostCard: React.FC<Props> = ({ post }) => {
           <span>{post.authorUid === user?.uid ? 'You' : post.authorName} reposted</span>
         </div>
       )}
-      <div className="flex gap-3 sm:gap-4">
-        <Link 
-          to={`/profile/${displayPost.authorUid}`}
-          onClick={(e) => e.stopPropagation()}
-          className="shrink-0"
-        >
-          <img
-            src={displayPost.authorPhoto || 'https://picsum.photos/seed/user/100/100'}
-            alt={displayPost.authorName}
-            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-white shadow-sm group-hover:shadow-md transition-shadow"
-            referrerPolicy="no-referrer"
-          />
-        </Link>
-        <div className="flex-1 space-y-1 sm:space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-0">
+      <div className={cn("flex gap-3 sm:gap-4", isDetailed && "flex-col")}>
+        <div className={cn("flex gap-3 sm:gap-4 relative", isDetailed && "items-center")}>
+          {showThreadLine && (
+            <div className="absolute top-12 bottom-0 left-5 sm:left-6 w-0.5 bg-gray-100 -mb-4" />
+          )}
+          <Link 
+            to={`/profile/${displayPost.authorUid}`}
+            onClick={(e) => e.stopPropagation()}
+            className="shrink-0"
+          >
+            <img
+              src={displayPost.authorPhoto || 'https://picsum.photos/seed/user/100/100'}
+              alt={displayPost.authorName}
+              className={cn(
+                "rounded-full object-cover border-2 border-white shadow-sm transition-all",
+                isDetailed ? "w-14 h-14 sm:w-16 sm:h-16 shadow-lg" : "w-10 h-10 sm:w-12 sm:h-12 group-hover:shadow-md"
+              )}
+              referrerPolicy="no-referrer"
+            />
+          </Link>
+          
+          {isDetailed && (
+            <div className="flex-1 min-w-0">
               <Link 
                 to={`/profile/${displayPost.authorUid}`}
                 onClick={(e) => e.stopPropagation()}
-                className="font-black text-black tracking-tight hover:underline text-sm sm:text-base"
+                className="font-black text-black tracking-tight hover:underline text-lg block"
               >
                 {displayPost.authorName}
               </Link>
               <Link 
                 to={`/profile/${displayPost.authorUid}`}
                 onClick={(e) => e.stopPropagation()}
-                className="text-gray-400 font-medium text-xs sm:text-sm"
+                className="text-gray-400 font-medium text-sm"
               >
                 @{displayPost.authorUsername}
               </Link>
-              <span className="text-gray-300 font-bold text-[10px] sm:text-xs uppercase tracking-widest">• {displayTimeAgo}</span>
-              {isScheduled && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 text-purple-600 rounded-full text-[10px] font-black uppercase tracking-widest">
-                  <Calendar className="w-3 h-3" />
-                  Scheduled
-                </span>
-              )}
             </div>
-            <div className="flex items-center gap-2 sm:opacity-0 group-hover:opacity-100 transition-opacity relative">
+          )}
+          
+          {isDetailed && (
+            <div className="flex items-center gap-2 relative">
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
@@ -277,9 +318,9 @@ const PostCard: React.FC<Props> = ({ post }) => {
                 }}
                 className="p-2 text-gray-400 hover:text-black hover:bg-gray-100 rounded-xl transition-all"
               >
-                <MoreHorizontal className="w-5 h-5" />
+                <MoreHorizontal className="w-6 h-6" />
               </button>
-
+              {/* Menu logic remains the same */}
               <AnimatePresence>
                 {isMenuOpen && (
                   <>
@@ -314,7 +355,7 @@ const PostCard: React.FC<Props> = ({ post }) => {
                         onClick={(e) => {
                           e.stopPropagation();
                           setIsMenuOpen(false);
-                          // Implement share logic if needed
+                          handleShare(e);
                         }}
                         className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 transition-colors font-bold text-sm"
                       >
@@ -326,7 +367,87 @@ const PostCard: React.FC<Props> = ({ post }) => {
                 )}
               </AnimatePresence>
             </div>
-          </div>
+          )}
+        </div>
+
+        <div className="flex-1 space-y-3 sm:space-y-4">
+          {!isDetailed && (
+            <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-0">
+                <Link 
+                  to={`/profile/${displayPost.authorUid}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="font-black text-black tracking-tight hover:underline text-sm sm:text-base"
+                >
+                  {displayPost.authorName}
+                </Link>
+                <Link 
+                  to={`/profile/${displayPost.authorUid}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-gray-400 font-medium text-sm"
+                >
+                  @{displayPost.authorUsername}
+                </Link>
+                <span className="text-gray-300 font-bold text-[10px] sm:text-xs uppercase tracking-widest">• {displayTimeAgo}</span>
+              </div>
+              <div className="flex items-center gap-2 sm:opacity-0 group-hover:opacity-100 transition-opacity relative">
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsMenuOpen(!isMenuOpen);
+                  }}
+                  className="p-2 text-gray-400 hover:text-black hover:bg-gray-100 rounded-xl transition-all"
+                >
+                  <MoreHorizontal className="w-5 h-5" />
+                </button>
+                <AnimatePresence>
+                  {isMenuOpen && (
+                    <>
+                      <div 
+                        className="fixed inset-0 z-30" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsMenuOpen(false);
+                        }} 
+                      />
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                        className="absolute right-0 top-full mt-1 w-48 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-40 overflow-hidden"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {user?.uid === post.authorUid && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setIsMenuOpen(false);
+                              setShowDeleteConfirm(true);
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-50 transition-colors font-bold text-sm"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Delete Post
+                          </button>
+                        )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsMenuOpen(false);
+                            handleShare(e);
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 transition-colors font-bold text-sm"
+                        >
+                          <Share className="w-4 h-4" />
+                          Share Post
+                        </button>
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+          )}
 
           <AnimatePresence>
             {showDeleteConfirm && (
@@ -365,7 +486,10 @@ const PostCard: React.FC<Props> = ({ post }) => {
             )}
           </AnimatePresence>
 
-          <p className="text-lg text-gray-800 font-medium leading-relaxed whitespace-pre-wrap">
+          <p className={cn(
+            "text-gray-800 font-medium leading-relaxed whitespace-pre-wrap",
+            isDetailed ? "text-xl sm:text-2xl" : "text-base sm:text-lg"
+          )}>
             {displayPost.content}
           </p>
 
@@ -396,11 +520,14 @@ const PostCard: React.FC<Props> = ({ post }) => {
           )}
 
           {displayPost.imageUrl && (
-            <div className="mt-3 rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
+            <div className={cn(
+              "mt-3 rounded-2xl overflow-hidden border border-gray-100 shadow-sm",
+              isDetailed ? "max-h-[600px]" : "max-h-[500px]"
+            )}>
               <img 
                 src={displayPost.imageUrl} 
                 alt="Post content" 
-                className="w-full max-h-[500px] object-cover hover:scale-105 transition-transform duration-700"
+                className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
                 referrerPolicy="no-referrer"
               />
             </div>
@@ -413,9 +540,38 @@ const PostCard: React.FC<Props> = ({ post }) => {
             </div>
           )}
 
-          {/* Liked by row */}
+          {isDetailed && (
+            <div className="py-4 border-y border-gray-50 flex flex-wrap gap-6 text-sm">
+              <div className="flex items-center gap-1">
+                <span className="font-black text-black">{displayPost.repostsCount || 0}</span>
+                <span className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Reposts</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="font-black text-black">{displayPost.quotesCount || 0}</span>
+                <span className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Quotes</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="font-black text-black">{displayPost.likesCount || 0}</span>
+                <span className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Likes</span>
+              </div>
+              <div className="flex items-center gap-1 ml-auto">
+                <span className="text-gray-400 font-bold text-[10px] uppercase tracking-widest">
+                  {displayPost.createdAt ? new Intl.DateTimeFormat('en-US', { 
+                    hour: 'numeric', 
+                    minute: 'numeric', 
+                    hour12: true,
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                  }).format(displayPost.createdAt.toDate()) : 'Just now'}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Liked by row - only show if not detailed or if we want it there too */}
           {displayPost.likesCount > 0 && likers.length > 0 && (
-            <div className="flex items-center gap-2 mt-4 py-2 border-y border-gray-50">
+            <div className="flex items-center gap-2 py-2 border-b border-gray-50">
               <div className="flex -space-x-2">
                 {likers.map((liker) => (
                   <Link
@@ -464,7 +620,10 @@ const PostCard: React.FC<Props> = ({ post }) => {
             </div>
           )}
 
-          <div className="flex items-center justify-between pt-4 text-gray-400">
+          <div className={cn(
+            "flex items-center justify-between pt-2 text-gray-400",
+            isDetailed && "px-4 py-2 bg-gray-50/50 rounded-2xl border border-gray-100"
+          )}>
             <button 
               onClick={(e) => {
                 e.stopPropagation();
@@ -482,14 +641,39 @@ const PostCard: React.FC<Props> = ({ post }) => {
                 {displayPost.repliesCount || 0}
               </motion.span>
             </button>
-            <button 
+            <motion.button 
+              whileTap={{ scale: 0.9 }}
               onClick={handleRepost}
               className={cn(
-                "flex items-center gap-2 group/btn transition-all p-2 rounded-xl",
+                "flex items-center gap-2 group/btn transition-all p-2 rounded-xl relative",
                 reposted ? "text-green-500 bg-green-50" : "hover:text-green-500 hover:bg-green-50"
               )}
             >
-              <Repeat2 className={cn("w-5 h-5 group-hover/btn:rotate-180 transition-transform duration-500", reposted && "scale-110")} />
+              <AnimatePresence>
+                {justReposted && (
+                  <>
+                    <motion.div
+                      initial={{ scale: 0.5, opacity: 1 }}
+                      animate={{ scale: 2, opacity: 0 }}
+                      exit={{ opacity: 0 }}
+                      className="absolute inset-0 bg-green-400/20 rounded-full pointer-events-none"
+                    />
+                    <motion.span
+                      initial={{ y: 0, opacity: 1 }}
+                      animate={{ y: -20, opacity: 0 }}
+                      className="absolute -top-4 left-1/2 -translate-x-1/2 text-green-600 font-black text-[10px]"
+                    >
+                      +1
+                    </motion.span>
+                  </>
+                )}
+              </AnimatePresence>
+              <motion.div
+                animate={reposted ? { rotate: 180, scale: [1, 1.2, 1] } : { rotate: 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 15 }}
+              >
+                <Repeat2 className={cn("w-5 h-5 transition-transform duration-500")} />
+              </motion.div>
               <motion.span 
                 key={displayPost.repostsCount}
                 initial={{ opacity: 0, y: -5 }}
@@ -498,8 +682,9 @@ const PostCard: React.FC<Props> = ({ post }) => {
               >
                 {displayPost.repostsCount || 0}
               </motion.span>
-            </button>
-            <button 
+            </motion.button>
+            <motion.button 
+              whileTap={{ scale: 0.9 }}
               onClick={(e) => {
                 e.stopPropagation();
                 setShowQuoteForm(true);
@@ -515,15 +700,40 @@ const PostCard: React.FC<Props> = ({ post }) => {
               >
                 {displayPost.quotesCount || 0}
               </motion.span>
-            </button>
-            <button
+            </motion.button>
+            <motion.button
+              whileTap={{ scale: 0.9 }}
               onClick={handleLike}
               className={cn(
-                "flex items-center gap-2 group/btn transition-all p-2 rounded-xl",
+                "flex items-center gap-2 group/btn transition-all p-2 rounded-xl relative",
                 liked ? "text-red-500 bg-red-50" : "hover:text-red-500 hover:bg-red-50"
               )}
             >
-              <Heart className={cn("w-5 h-5 group-hover/btn:scale-125 transition-transform", liked && "fill-current")} />
+              <AnimatePresence>
+                {justLiked && (
+                  <>
+                    <motion.div
+                      initial={{ scale: 0.5, opacity: 1 }}
+                      animate={{ scale: 2, opacity: 0 }}
+                      exit={{ opacity: 0 }}
+                      className="absolute inset-0 bg-red-400/20 rounded-full pointer-events-none"
+                    />
+                    <motion.span
+                      initial={{ y: 0, opacity: 1 }}
+                      animate={{ y: -20, opacity: 0 }}
+                      className="absolute -top-4 left-1/2 -translate-x-1/2 text-red-600 font-black text-[10px]"
+                    >
+                      +1
+                    </motion.span>
+                  </>
+                )}
+              </AnimatePresence>
+              <motion.div
+                animate={liked ? { scale: [1, 1.4, 1] } : { scale: 1 }}
+                transition={{ type: "spring", stiffness: 400, damping: 10 }}
+              >
+                <Heart className={cn("w-5 h-5 transition-transform", liked && "fill-current")} />
+              </motion.div>
               <motion.span 
                 key={displayPost.likesCount}
                 initial={{ opacity: 0, y: -5 }}
@@ -532,13 +742,28 @@ const PostCard: React.FC<Props> = ({ post }) => {
               >
                 {displayPost.likesCount || 0}
               </motion.span>
-            </button>
-            <button 
-              onClick={(e) => e.stopPropagation()}
-              className="flex items-center gap-2 group/btn hover:text-black transition-all p-2 hover:bg-gray-100 rounded-xl"
-            >
-              <Share className="w-5 h-5 group-hover/btn:-translate-y-1 transition-transform" />
-            </button>
+            </motion.button>
+            <div className="relative">
+              <motion.button 
+                whileTap={{ scale: 0.9 }}
+                onClick={handleShare}
+                className="flex items-center gap-2 group/btn hover:text-black transition-all p-2 hover:bg-gray-100 rounded-xl"
+              >
+                <Share className="w-5 h-5 group-hover/btn:-translate-y-1 transition-transform" />
+              </motion.button>
+              <AnimatePresence>
+                {showShareTooltip && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                    animate={{ opacity: 1, y: -40, scale: 1 }}
+                    exit={{ opacity: 0, y: -50, scale: 0.8 }}
+                    className="absolute left-1/2 -translate-x-1/2 px-3 py-1 bg-black text-white text-[10px] font-black uppercase tracking-widest rounded-lg pointer-events-none whitespace-nowrap z-50"
+                  >
+                    Link Copied!
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
       </div>

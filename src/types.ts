@@ -9,7 +9,6 @@ export interface UserProfile {
   bio?: string;
   createdAt: Timestamp;
   role?: 'user' | 'admin';
-  isVerified?: boolean;
   followersCount: number;
   followingCount: number;
   postsCount: number;
@@ -41,7 +40,6 @@ export interface Post {
   authorName: string;
   authorUsername: string;
   authorPhoto?: string;
-  authorIsVerified?: boolean;
   content: string;
   createdAt: Timestamp;
   likesCount: number;

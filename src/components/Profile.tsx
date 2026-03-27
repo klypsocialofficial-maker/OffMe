@@ -232,9 +232,6 @@ export default function Profile() {
         <div>
           <div className="flex items-center gap-1">
             <h1 className="text-lg sm:text-xl font-black tracking-tighter text-black">{profile.displayName}</h1>
-            {profile.isVerified && (
-              <CheckCircle2 className="w-4 h-4 text-blue-500 fill-blue-500/10" />
-            )}
           </div>
           <p className="text-[10px] sm:text-xs text-gray-400 font-bold uppercase tracking-widest">{profile.postsCount || 0} Posts</p>
         </div>
@@ -266,9 +263,6 @@ export default function Profile() {
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
               <h2 className="text-xl sm:text-2xl font-black tracking-tighter text-black truncate">{profile.displayName}</h2>
-              {profile.isVerified && (
-                <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500 fill-blue-500/10" />
-              )}
             </div>
             <p className="text-sm sm:text-base text-gray-400 font-medium truncate">@{profile.username}</p>
           </div>

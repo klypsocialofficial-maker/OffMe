@@ -7,6 +7,7 @@ import PostCard from './PostCard';
 import PostForm from './PostForm';
 import { ArrowLeft, Loader2, MessageCircle, Quote as QuoteIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { cn } from '../lib/utils';
 
 const PostView: React.FC = () => {
   const { postId } = useParams<{ postId: string }>();
@@ -103,86 +104,115 @@ const PostView: React.FC = () => {
 
       <div className="max-w-2xl mx-auto">
         {/* Main Post */}
-        <div className="border-b-4 border-gray-50">
-          <PostCard post={post} />
+        <div className="bg-white relative">
+          {replies.length > 0 && (
+            <div className="absolute top-[80px] bottom-0 left-[34px] sm:left-[42px] w-0.5 bg-gray-100 z-0" />
+          )}
+          <PostCard post={post} isDetailed={true} />
         </div>
 
         {/* Reply Form */}
-        <div className="p-4 border-b border-gray-100">
-          <h3 className="text-sm font-black uppercase tracking-widest text-gray-400 mb-4 ml-2">Post your reply</h3>
-          <PostForm replyToPost={post} />
+        <div className="p-4 sm:p-6 border-b border-gray-100 bg-gray-50/30 relative">
+          {replies.length > 0 && (
+            <div className="absolute top-0 bottom-0 left-[34px] sm:left-[42px] w-0.5 bg-gray-100 z-0" />
+          )}
+          <div className="flex items-center gap-3 mb-4 ml-2 relative z-10">
+            <div className="w-1 h-4 bg-black rounded-full" />
+            <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Join the conversation</h3>
+          </div>
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden relative z-10">
+            <PostForm replyToPost={post} noBorder={true} />
+          </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-100">
+        <div className="flex border-b border-gray-100 sticky top-[65px] bg-white/80 backdrop-blur-md z-10 px-2">
           <button
             onClick={() => setActiveTab('replies')}
-            className={`flex-1 py-4 text-sm font-black uppercase tracking-widest transition-colors relative ${
+            className={`flex-1 py-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative ${
               activeTab === 'replies' ? 'text-black' : 'text-gray-400 hover:text-gray-600'
             }`}
           >
             <div className="flex items-center justify-center gap-2">
-              <MessageCircle className="w-4 h-4" />
-              Replies ({replies.length})
+              <MessageCircle className={cn("w-4 h-4", activeTab === 'replies' ? "text-blue-500" : "text-gray-300")} />
+              Replies <span className="opacity-50">({replies.length})</span>
             </div>
             {activeTab === 'replies' && (
               <motion.div
                 layoutId="activeTab"
-                className="absolute bottom-0 left-0 right-0 h-1 bg-black"
+                className="absolute bottom-0 left-4 right-4 h-1 bg-black rounded-full"
               />
             )}
           </button>
           <button
             onClick={() => setActiveTab('quotes')}
-            className={`flex-1 py-4 text-sm font-black uppercase tracking-widest transition-colors relative ${
+            className={`flex-1 py-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative ${
               activeTab === 'quotes' ? 'text-black' : 'text-gray-400 hover:text-gray-600'
             }`}
           >
             <div className="flex items-center justify-center gap-2">
-              <QuoteIcon className="w-4 h-4" />
-              Quotes ({quotes.length})
+              <QuoteIcon className={cn("w-4 h-4", activeTab === 'quotes' ? "text-purple-500" : "text-gray-300")} />
+              Quotes <span className="opacity-50">({quotes.length})</span>
             </div>
             {activeTab === 'quotes' && (
               <motion.div
                 layoutId="activeTab"
-                className="absolute bottom-0 left-0 right-0 h-1 bg-black"
+                className="absolute bottom-0 left-4 right-4 h-1 bg-black rounded-full"
               />
             )}
           </button>
         </div>
 
         {/* Content */}
-        <div className="pb-20">
+        <div className="pb-20 bg-gray-50/10">
           <AnimatePresence mode="wait">
             {activeTab === 'replies' ? (
               <motion.div
                 key="replies"
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 10 }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
                 className="divide-y divide-gray-50"
               >
                 {replies.length > 0 ? (
-                  replies.map((reply) => <PostCard key={reply.id} post={reply} />)
+                  replies.map((reply, index) => (
+                    <PostCard 
+                      key={reply.id} 
+                      post={reply} 
+                      showThreadLine={index < replies.length - 1} 
+                    />
+                  ))
                 ) : (
-                  <div className="p-12 text-center">
-                    <p className="text-gray-400 font-medium">No replies yet. Be the first to reply!</p>
+                  <div className="p-20 text-center flex flex-col items-center gap-4">
+                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center">
+                      <MessageCircle className="w-8 h-8 text-gray-200" />
+                    </div>
+                    <div>
+                      <p className="text-black font-black uppercase tracking-widest text-xs mb-1">No replies yet</p>
+                      <p className="text-gray-400 text-sm font-medium">Be the first to share your thoughts!</p>
+                    </div>
                   </div>
                 )}
               </motion.div>
             ) : (
               <motion.div
                 key="quotes"
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
                 className="divide-y divide-gray-50"
               >
                 {quotes.length > 0 ? (
                   quotes.map((quote) => <PostCard key={quote.id} post={quote} />)
                 ) : (
-                  <div className="p-12 text-center">
-                    <p className="text-gray-400 font-medium">No quotes yet.</p>
+                  <div className="p-20 text-center flex flex-col items-center gap-4">
+                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center">
+                      <QuoteIcon className="w-8 h-8 text-gray-200" />
+                    </div>
+                    <div>
+                      <p className="text-black font-black uppercase tracking-widest text-xs mb-1">No quotes yet</p>
+                      <p className="text-gray-400 text-sm font-medium">This post hasn't been quoted yet.</p>
+                    </div>
                   </div>
                 )}
               </motion.div>

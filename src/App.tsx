@@ -11,7 +11,6 @@ import Chat from './components/Chat';
 import Lists from './components/Lists';
 import Bookmarks from './components/Bookmarks';
 import Communities from './components/Communities';
-import Verified from './components/Verified';
 import Settings from './components/Settings';
 import PostView from './components/PostView';
 import AccessibilitySettings from './components/AccessibilitySettings';
@@ -126,14 +125,6 @@ export default function App() {
                 element={
                   <Layout>
                     <Communities />
-                  </Layout>
-                }
-              />
-              <Route
-                path="/verified"
-                element={
-                  <Layout>
-                    <Verified />
                   </Layout>
                 }
               />

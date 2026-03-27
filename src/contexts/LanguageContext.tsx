@@ -16,7 +16,6 @@ export const translations: Translations = {
   bookmarks: { en: 'Bookmarks', pt: 'Itens Salvos', es: 'Guardados', fr: 'Signets', de: 'Lesezeichen', it: 'Segnalibri', ja: 'ブックマーク', ko: '북마크', zh: '书签', ru: 'Закладки', ar: 'الإشارات المرجعية', hi: 'बुकमार्क' },
   lists: { en: 'Lists', pt: 'Listas', es: 'Listas', fr: 'Listes', de: 'Listen', it: 'Liste', ja: 'リスト', ko: '리스트', zh: '列表', ru: 'Списки', ar: 'القوائم', hi: 'सूचियां' },
   communities: { en: 'Communities', pt: 'Comunidades', es: 'Comunidades', fr: 'Communautés', de: 'Communities', it: 'Community', ja: 'コミュニティ', ko: '커뮤니티', zh: '社区', ru: 'Сообщества', ar: 'المجتمعات', hi: 'समुदाय' },
-  verified: { en: 'Verified', pt: 'Verificado', es: 'Verificado', fr: 'Vérifié', de: 'Verifiziert', it: 'Verificato', ja: '認証済み', ko: '인증됨', zh: '已认证', ru: 'Подтверждено', ar: 'موثق', hi: 'सत्यापित' },
   profile: { en: 'Profile', pt: 'Perfil', es: 'Perfil', fr: 'Profil', de: 'Profil', it: 'Profilo', ja: 'プロフィール', ko: '프로필', zh: '个人资料', ru: 'Профиль', ar: 'الملف الشخصي', hi: 'प्रोफ़ाइल' },
   settings: { en: 'Settings', pt: 'Configurações', es: 'Configuración', fr: 'Paramètres', de: 'Einstellungen', it: 'Impostazioni', ja: '設定', ko: '설정', zh: '设置', ru: 'Настройки', ar: 'الإعدادات', hi: 'सेटिंग्स' },
   post: { en: 'Post', pt: 'Postar', es: 'Postear', fr: 'Poster', de: 'Posten', it: 'Posta', ja: 'ポスト', ko: '게시', zh: '发布', ru: 'Опубликовать', ar: 'نشر', hi: 'पोस्ट करें' },
