@@ -6,7 +6,7 @@
 
 @layer utilities {
   .liquid-glass {
-    @apply bg-white/40 backdrop-blur-[40px] border border-white/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.05)];
+    @apply bg-white/40 backdrop-blur-[40px] border-x border-b border-white/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.05)];
   }
   
   .liquid-glass-dark {
@@ -14,7 +14,7 @@
   }
 
   .liquid-glass-card {
-    @apply bg-white/60 backdrop-blur-[20px] border border-white/60 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.05)];
+    @apply bg-white/60 backdrop-blur-[20px] sm:border-x sm:border-b border-white/60 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.05)];
   }
 }
 
