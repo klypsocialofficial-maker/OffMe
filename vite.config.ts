@@ -18,7 +18,7 @@ export default defineConfig(({mode}) => {
           description: 'Um app social responsivo como Twitter/Threads',
           theme_color: '#f8f9fa',
           background_color: '#f8f9fa',
-          display: 'standalone',
+          display: 'fullscreen',
           orientation: 'portrait',
           start_url: '/',
           icons: [
