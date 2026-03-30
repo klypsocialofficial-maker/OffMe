@@ -115,8 +115,8 @@ export default function Home() {
       </header>
 
       {/* Main Feed */}
-      <main className="w-full max-w-2xl border-r border-white/20 min-h-screen pb-20 sm:pb-0 liquid-glass-card z-10">
-        <div className="sticky top-0 bg-white/40 backdrop-blur-xl z-30 border-b border-white/20 px-4 py-4">
+      <main className="w-full max-w-2xl border-r border-white/20 min-h-[100dvh] pb-24 sm:pb-0 liquid-glass-card z-10">
+        <div className="sticky top-0 bg-white/40 backdrop-blur-xl z-30 border-b border-white/20 px-4 py-4 pt-[calc(1rem+env(safe-area-inset-top))]">
           <h1 className="text-xl font-bold">Início</h1>
         </div>
 
@@ -212,7 +212,7 @@ export default function Home() {
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="sm:hidden fixed bottom-0 left-0 right-0 bg-white/60 backdrop-blur-xl border-t border-white/20 flex justify-around p-3 z-50 shadow-[0_-8px_32px_0_rgba(0,0,0,0.05)]">
+      <nav className="sm:hidden fixed bottom-0 left-0 right-0 bg-white/60 backdrop-blur-xl border-t border-white/20 flex justify-around p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] z-50 shadow-[0_-8px_32px_0_rgba(0,0,0,0.05)]">
         <a href="#" className="p-2 text-black"><HomeIcon className="w-6 h-6" /></a>
         <a href="#" className="p-2 text-gray-500"><Search className="w-6 h-6" /></a>
         <a href="#" className="p-2 text-gray-500"><Bell className="w-6 h-6" /></a>
