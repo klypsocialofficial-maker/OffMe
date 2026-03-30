@@ -8,7 +8,12 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
+import Layout from './components/Layout';
 import Home from './pages/Home';
+import Explore from './pages/Explore';
+import Notifications from './pages/Notifications';
+import Messages from './pages/Messages';
+import Profile from './pages/Profile';
 import PWABadge from './components/PWABadge';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -32,10 +37,16 @@ export default function App() {
             path="/" 
             element={
               <PrivateRoute>
-                <Home />
+                <Layout />
               </PrivateRoute>
             } 
-          />
+          >
+            <Route index element={<Home />} />
+            <Route path="explore" element={<Explore />} />
+            <Route path="notifications" element={<Notifications />} />
+            <Route path="messages" element={<Messages />} />
+            <Route path="profile" element={<Profile />} />
+          </Route>
         </Routes>
         <PWABadge />
       </Router>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Home as HomeIcon, Search, Bell, Mail, User as UserIcon, Send, Image as ImageIcon } from 'lucide-react';
+import { User as UserIcon, Send, Image as ImageIcon } from 'lucide-react';
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 
@@ -103,75 +103,11 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen text-gray-900 flex justify-center relative">
-      {/* Decorative background blobs for Home */}
-      <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-400/10 blur-[120px] pointer-events-none" />
-      <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-purple-400/10 blur-[120px] pointer-events-none" />
-      
-      {/* Sidebar Navigation */}
-      <header className="hidden sm:flex flex-col w-64 border-r border-white/20 px-4 py-6 sticky top-0 h-screen liquid-glass-card z-20">
-        <div className="flex items-center mb-8 px-4">
-          <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center text-white font-bold text-xl">
-            O
-          </div>
-          <span className="ml-3 font-bold text-xl tracking-tight">OffMe</span>
-        </div>
-        
-        <nav className="flex-1 space-y-2 mt-8">
-          <a href="#" className="flex items-center space-x-4 px-4 py-3 bg-black/5 rounded-2xl font-bold transition-all hover:bg-black/10">
-            <HomeIcon className="w-6 h-6" />
-            <span className="text-lg">Início</span>
-          </a>
-          <a href="#" className="flex items-center space-x-4 px-4 py-3 hover:bg-black/5 rounded-2xl transition-all">
-            <Search className="w-6 h-6" />
-            <span className="text-lg">Explorar</span>
-          </a>
-          <a href="#" className="flex items-center space-x-4 px-4 py-3 hover:bg-black/5 rounded-2xl transition-all">
-            <Bell className="w-6 h-6" />
-            <span className="text-lg">Notificações</span>
-          </a>
-          <a href="#" className="flex items-center space-x-4 px-4 py-3 hover:bg-black/5 rounded-2xl transition-all">
-            <Mail className="w-6 h-6" />
-            <span className="text-lg">Mensagens</span>
-          </a>
-          <a href="#" className="flex items-center space-x-4 px-4 py-3 hover:bg-black/5 rounded-2xl transition-all">
-            <UserIcon className="w-6 h-6" />
-            <span className="text-lg">Perfil</span>
-          </a>
-        </nav>
-
-        <div className="mt-auto">
-          <button 
-            onClick={logout}
-            className="flex items-center space-x-4 px-4 py-3 w-full hover:bg-red-500/10 rounded-2xl transition-all text-red-500"
-          >
-            <LogOut className="w-6 h-6" />
-            <span className="text-lg font-medium">Sair</span>
-          </button>
-          
-          {userProfile && (
-            <div className="mt-4 flex items-center px-4 py-3">
-              <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
-                {userProfile.photoURL ? (
-                  <img src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full object-cover" />
-                ) : (
-                  <UserIcon className="w-full h-full p-2 text-gray-400" />
-                )}
-              </div>
-              <div className="ml-3 overflow-hidden">
-                <p className="font-bold text-sm truncate">{userProfile.displayName}</p>
-                <p className="text-gray-500 text-sm truncate">@{userProfile.username}</p>
-              </div>
-            </div>
-          )}
-        </div>
-      </header>
-
-      {/* Main Feed */}
-      <main className="w-full max-w-2xl min-h-[100dvh] pb-24 sm:pb-0 liquid-glass-card z-10">
-        <div className="sticky top-0 bg-white/20 backdrop-blur-3xl backdrop-saturate-200 z-30 px-4 py-4 pt-[calc(1rem+env(safe-area-inset-top))]">
-          <h1 className="text-xl font-bold">Início</h1>
-        </div>
+    <div className="w-full h-full bg-white/50">
+      {/* Sticky Header with Liquid Glass */}
+      <div className="sticky top-0 bg-white/40 backdrop-blur-3xl backdrop-saturate-200 z-30 px-4 py-4 pt-[calc(1rem+env(safe-area-inset-top))] border-b border-gray-100/50">
+        <h1 className="text-xl font-bold">Início</h1>
+      </div>
 
         {/* Create Post */}
         <div className="p-4 border-b border-white/20 flex space-x-4 bg-white/20">
@@ -262,15 +198,6 @@ export default function Home() {
             ))
           )}
         </div>
-      </main>
-
-      {/* Mobile Bottom Navigation */}
-      <nav className="sm:hidden fixed bottom-0 left-0 right-0 bg-white/20 backdrop-blur-3xl backdrop-saturate-200 flex justify-around p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] z-50 shadow-[0_-8px_32px_0_rgba(0,0,0,0.04)]">
-        <a href="#" className="p-2 text-black"><HomeIcon className="w-6 h-6" /></a>
-        <a href="#" className="p-2 text-gray-500"><Search className="w-6 h-6" /></a>
-        <a href="#" className="p-2 text-gray-500"><Bell className="w-6 h-6" /></a>
-        <a href="#" className="p-2 text-gray-500"><Mail className="w-6 h-6" /></a>
-      </nav>
     </div>
   );
 }

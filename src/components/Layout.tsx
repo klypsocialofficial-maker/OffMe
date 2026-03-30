@@ -1,0 +1,128 @@
+import React from 'react';
+import { Outlet, useLocation, Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { LogOut, Home as HomeIcon, Search, Bell, Mail, User as UserIcon } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+
+const navItems = [
+  { path: '/', icon: HomeIcon, label: 'Início' },
+  { path: '/explore', icon: Search, label: 'Explorar' },
+  { path: '/notifications', icon: Bell, label: 'Notificações' },
+  { path: '/messages', icon: Mail, label: 'Mensagens' },
+  { path: '/profile', icon: UserIcon, label: 'Perfil' },
+];
+
+export default function Layout() {
+  const { userProfile, logout } = useAuth();
+  const location = useLocation();
+
+  return (
+    <div className="min-h-screen text-gray-900 flex justify-center relative bg-white">
+      {/* Decorative background blobs to make the glass effect visible */}
+      <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-400/10 blur-[120px] pointer-events-none" />
+      <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-purple-400/10 blur-[120px] pointer-events-none" />
+      
+      {/* Sidebar Navigation (Desktop) */}
+      <header className="hidden sm:flex flex-col w-64 border-r border-gray-100 px-4 py-6 sticky top-0 h-screen z-20">
+        <div className="flex items-center mb-8 px-4">
+          <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center text-white font-bold text-xl">
+            O
+          </div>
+          <span className="ml-3 font-bold text-xl tracking-tight">OffMe</span>
+        </div>
+        
+        <nav className="flex-1 space-y-2 mt-8 relative">
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex items-center space-x-4 px-4 py-3 rounded-2xl transition-all relative z-10 ${
+                  isActive ? 'font-bold text-black' : 'text-gray-600 hover:bg-black/5'
+                }`}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="desktop-active-tab"
+                    className="absolute inset-0 bg-black/5 rounded-2xl -z-10"
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  />
+                )}
+                <item.icon className="w-6 h-6" />
+                <span className="text-lg">{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="mt-auto">
+          <button 
+            onClick={logout}
+            className="flex items-center space-x-4 px-4 py-3 w-full hover:bg-red-500/10 rounded-2xl transition-all text-red-500"
+          >
+            <LogOut className="w-6 h-6" />
+            <span className="text-lg font-medium">Sair</span>
+          </button>
+          
+          {userProfile && (
+            <div className="mt-4 flex items-center px-4 py-3">
+              <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+                {userProfile.photoURL ? (
+                  <img src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full object-cover" />
+                ) : (
+                  <UserIcon className="w-full h-full p-2 text-gray-400" />
+                )}
+              </div>
+              <div className="ml-3 overflow-hidden">
+                <p className="font-bold text-sm truncate">{userProfile.displayName}</p>
+                <p className="text-gray-500 text-sm truncate">@{userProfile.username}</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </header>
+
+      {/* Main Content Area */}
+      <main className="w-full max-w-2xl min-h-[100dvh] pb-24 sm:pb-0 z-10 relative">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, y: 10, filter: 'blur(4px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, y: -10, filter: 'blur(4px)' }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="h-full"
+          >
+            <Outlet />
+          </motion.div>
+        </AnimatePresence>
+      </main>
+
+      {/* Mobile Bottom Navigation with Liquid Glass */}
+      <nav className="sm:hidden fixed bottom-0 left-0 right-0 bg-white/40 backdrop-blur-3xl backdrop-saturate-200 flex justify-around p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] z-50 shadow-[0_-8px_32px_0_rgba(0,0,0,0.04)] border-t border-white/50">
+        {navItems.slice(0, 4).map((item) => {
+          const isActive = location.pathname === item.path;
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`relative p-3 rounded-full transition-colors z-10 ${
+                isActive ? 'text-black' : 'text-gray-500'
+              }`}
+            >
+              {isActive && (
+                <motion.div
+                  layoutId="mobile-active-tab"
+                  className="absolute inset-0 bg-black/10 rounded-full -z-10 backdrop-blur-md"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              )}
+              <item.icon className="w-6 h-6" />
+            </Link>
+          );
+        })}
+      </nav>
+    </div>
+  );
+}
