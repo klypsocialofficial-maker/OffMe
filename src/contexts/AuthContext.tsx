@@ -8,7 +8,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 
 enum OperationType {
   CREATE = 'create',
@@ -102,12 +102,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    let unsubscribeProfile: () => void;
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user) {
-        try {
-          const docRef = doc(db, 'users', user.uid);
-          const docSnap = await getDoc(docRef);
+        const docRef = doc(db, 'users', user.uid);
+        unsubscribeProfile = onSnapshot(docRef, (docSnap) => {
           if (docSnap.exists()) {
             setUserProfile(docSnap.data() as UserProfile);
           } else {
@@ -122,16 +122,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               followers: []
             });
           }
-        } catch (error) {
+          setLoading(false);
+        }, (error) => {
           handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
-        }
+          setLoading(false);
+        });
       } else {
         setUserProfile(null);
+        setLoading(false);
+        if (unsubscribeProfile) unsubscribeProfile();
       }
-      setLoading(false);
     });
 
-    return unsubscribe;
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeProfile) unsubscribeProfile();
+    };
   }, []);
 
   const loginWithGoogle = async () => {

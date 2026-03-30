@@ -15,6 +15,10 @@ service cloud.firestore {
     //   - username: string (required) - User's chosen username
     //   - displayName: string (required) - User's display name
     //   - photoURL: string (optional) - URL of the user's profile photo
+    //   - bannerURL: string (optional) - URL of the user's banner photo
+    //   - bio: string (optional) - User's bio
+    //   - location: string (optional) - User's location
+    //   - website: string (optional) - User's website link
     //   - following: list (optional) - List of UIDs this user follows
     //   - followers: list (optional) - List of UIDs following this user
     //
@@ -22,13 +26,36 @@ service cloud.firestore {
     // Document ID: {postId}
     // Fields:
     //   - content: string (required) - Text content of the post
+    //   - imageUrl: string (optional) - URL of the attached image
     //   - authorId: string (required, immutable) - UID of the author
     //   - authorName: string (required) - Display name of the author
     //   - authorUsername: string (required) - Username of the author
     //   - authorPhoto: string (optional) - Photo URL of the author
     //   - createdAt: timestamp (required, immutable) - Time the post was created
+    //   - updatedAt: timestamp (optional) - Time the post was updated
+    //   - isEdited: boolean (optional) - Whether the post was edited
     //   - likesCount: number (required) - Number of likes
     //   - repliesCount: number (required) - Number of replies
+    //
+    // Collection: notifications
+    // Document ID: {notificationId}
+    // Fields:
+    //   - recipientId: string (required) - UID of the recipient
+    //   - senderId: string (required) - UID of the sender
+    //   - senderName: string (required) - Name of the sender
+    //   - senderPhoto: string (optional) - Photo of the sender
+    //   - type: string (required) - Type of notification (like, follow, reply)
+    //   - content: string (optional) - Content related to the notification
+    //   - createdAt: timestamp (required) - Time created
+    //   - read: boolean (required) - Whether it was read
+    //
+    // Collection: conversations
+    // Document ID: {conversationId}
+    // Fields:
+    //   - participants: list (required) - List of UIDs
+    //   - participantInfo: map (required) - Map of UID to user info
+    //   - lastMessage: string (optional) - Last message content
+    //   - updatedAt: timestamp (required) - Last update time
     //
     // ===============================================================
 
@@ -73,24 +100,31 @@ service cloud.firestore {
     // ===============================================================
 
     function isValidUser(data) {
-      return hasOnlyAllowedFields(['uid', 'email', 'username', 'displayName', 'photoURL', 'following', 'followers']) &&
+      return hasOnlyAllowedFields(['uid', 'email', 'username', 'displayName', 'photoURL', 'bannerURL', 'bio', 'location', 'website', 'following', 'followers']) &&
              data.uid is string && data.uid == request.auth.uid &&
              data.email is string && isValidEmail(data.email) &&
              data.username is string && data.username.size() > 0 && data.username.size() <= 30 &&
              data.displayName is string && data.displayName.size() > 0 && data.displayName.size() <= 50 &&
              (!('photoURL' in data) || data.photoURL == '' || (data.photoURL is string && data.photoURL.size() <= 2000)) &&
+             (!('bannerURL' in data) || data.bannerURL == '' || (data.bannerURL is string && data.bannerURL.size() <= 2000)) &&
+             (!('bio' in data) || data.bio == '' || (data.bio is string && data.bio.size() <= 160)) &&
+             (!('location' in data) || data.location == '' || (data.location is string && data.location.size() <= 30)) &&
+             (!('website' in data) || data.website == '' || (data.website is string && data.website.size() <= 100)) &&
              (!('following' in data) || data.following is list) &&
              (!('followers' in data) || data.followers is list);
     }
 
     function isValidPost(data) {
-      return hasOnlyAllowedFields(['content', 'authorId', 'authorName', 'authorUsername', 'authorPhoto', 'createdAt', 'likesCount', 'repliesCount']) &&
-             data.content is string && data.content.size() > 0 && data.content.size() <= 1000 &&
+      return hasOnlyAllowedFields(['content', 'imageUrl', 'authorId', 'authorName', 'authorUsername', 'authorPhoto', 'createdAt', 'updatedAt', 'isEdited', 'likesCount', 'repliesCount']) &&
+             data.content is string && data.content.size() >= 0 && data.content.size() <= 1000 &&
+             (!('imageUrl' in data) || data.imageUrl == null || (data.imageUrl is string && data.imageUrl.size() <= 2000)) &&
              data.authorId is string && data.authorId == request.auth.uid &&
              data.authorName is string && data.authorName.size() > 0 && data.authorName.size() <= 50 &&
              data.authorUsername is string && data.authorUsername.size() > 0 && data.authorUsername.size() <= 30 &&
              (!('authorPhoto' in data) || data.authorPhoto == '' || (data.authorPhoto is string && data.authorPhoto.size() <= 2000)) &&
              data.createdAt is timestamp &&
+             (!('updatedAt' in data) || data.updatedAt is timestamp) &&
+             (!('isEdited' in data) || data.isEdited is bool) &&
              data.likesCount is number && data.likesCount >= 0 &&
              data.repliesCount is number && data.repliesCount >= 0;
     }
@@ -100,8 +134,8 @@ service cloud.firestore {
     // ===============================================================
 
     match /users/{userId} {
-      // Users can only read and write their own profile
-      allow read: if isOwner(userId);
+      // Anyone authenticated can read basic user info for search/profiles
+      allow read: if isAuthenticated();
       allow create: if isOwner(userId) && isValidUser(request.resource.data);
       allow update: if isOwner(userId) && isValidUser(request.resource.data) && uidNotModified();
       allow delete: if isOwner(userId);
@@ -123,6 +157,20 @@ service cloud.firestore {
                     request.resource.data.createdAt == resource.data.createdAt;
                     
       allow delete: if isDocOwner();
+    }
+    
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && resource.data.recipientId == request.auth.uid;
+      // For now, allow any authenticated user to create a notification (e.g. when they like/follow)
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && resource.data.recipientId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.recipientId == request.auth.uid;
+    }
+    
+    match /conversations/{conversationId} {
+      allow read: if isAuthenticated() && request.auth.uid in resource.data.participants;
+      allow create: if isAuthenticated() && request.auth.uid in request.resource.data.participants;
+      allow update: if isAuthenticated() && request.auth.uid in resource.data.participants;
     }
   }
 }

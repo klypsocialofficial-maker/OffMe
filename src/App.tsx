@@ -13,6 +13,7 @@ import Home from './pages/Home';
 import Explore from './pages/Explore';
 import Notifications from './pages/Notifications';
 import Messages from './pages/Messages';
+import Chat from './pages/Chat';
 import Profile from './pages/Profile';
 import PWABadge from './components/PWABadge';
 
@@ -45,6 +46,7 @@ export default function App() {
             <Route path="explore" element={<Explore />} />
             <Route path="notifications" element={<Notifications />} />
             <Route path="messages" element={<Messages />} />
+            <Route path="messages/:conversationId" element={<Chat />} />
             <Route path="profile" element={<Profile />} />
           </Route>
         </Routes>

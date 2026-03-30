@@ -1,9 +1,63 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { User as UserIcon, Calendar, MapPin, Link as LinkIcon } from 'lucide-react';
+import EditProfileModal from '../components/EditProfileModal';
+import { auth } from '../firebase';
+
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string;
+    email?: string | null;
+    emailVerified?: boolean;
+    isAnonymous?: boolean;
+    tenantId?: string | null;
+    providerInfo: {
+      providerId: string;
+      displayName: string | null;
+      email: string | null;
+      photoUrl: string | null;
+    }[];
+  }
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth?.currentUser?.uid,
+      email: auth?.currentUser?.email,
+      emailVerified: auth?.currentUser?.emailVerified,
+      isAnonymous: auth?.currentUser?.isAnonymous,
+      tenantId: auth?.currentUser?.tenantId,
+      providerInfo: auth?.currentUser?.providerData.map(provider => ({
+        providerId: provider.providerId,
+        displayName: provider.displayName,
+        email: provider.email,
+        photoUrl: provider.photoURL
+      })) || []
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
 
 export default function Profile() {
   const { userProfile } = useAuth();
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   if (!userProfile) return null;
 
@@ -16,6 +70,9 @@ export default function Profile() {
       
       {/* Cover Photo */}
       <div className="h-32 sm:h-48 bg-gray-200 w-full relative">
+        {(userProfile as any)?.bannerURL && (
+          <img src={(userProfile as any).bannerURL} alt="Banner" className="w-full h-full object-cover" />
+        )}
         {/* Profile Photo */}
         <div className="absolute -bottom-16 left-4 w-32 h-32 rounded-full border-4 border-white bg-white overflow-hidden shadow-sm">
           {userProfile.photoURL ? (
@@ -33,24 +90,33 @@ export default function Profile() {
             <h2 className="text-2xl font-bold">{userProfile.displayName}</h2>
             <p className="text-gray-500">@{userProfile.username}</p>
           </div>
-          <button className="px-4 py-1.5 border border-gray-300 rounded-full font-bold hover:bg-gray-50 transition-colors">
+          <button 
+            onClick={() => setIsEditModalOpen(true)}
+            className="px-4 py-1.5 border border-gray-300 rounded-full font-bold hover:bg-gray-50 transition-colors"
+          >
             Editar perfil
           </button>
         </div>
 
-        <p className="mt-4 text-gray-900">
-          Bem-vindo ao meu perfil no OffMe! 🚀
+        <p className="mt-4 text-gray-900 whitespace-pre-wrap">
+          {(userProfile as any)?.bio || 'Bem-vindo ao meu perfil no OffMe! 🚀'}
         </p>
 
         <div className="flex flex-wrap gap-y-2 gap-x-4 mt-4 text-gray-500 text-sm">
-          <div className="flex items-center space-x-1">
-            <MapPin className="w-4 h-4" />
-            <span>Brasil</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <LinkIcon className="w-4 h-4" />
-            <a href="#" className="text-blue-500 hover:underline">meusite.com</a>
-          </div>
+          {(userProfile as any)?.location && (
+            <div className="flex items-center space-x-1">
+              <MapPin className="w-4 h-4" />
+              <span>{(userProfile as any).location}</span>
+            </div>
+          )}
+          {(userProfile as any)?.website && (
+            <div className="flex items-center space-x-1">
+              <LinkIcon className="w-4 h-4" />
+              <a href={(userProfile as any).website.startsWith('http') ? (userProfile as any).website : `https://${(userProfile as any).website}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                {(userProfile as any).website.replace(/^https?:\/\//, '')}
+              </a>
+            </div>
+          )}
           <div className="flex items-center space-x-1">
             <Calendar className="w-4 h-4" />
             <span>Entrou em Março de 2026</span>
@@ -59,10 +125,10 @@ export default function Profile() {
 
         <div className="flex space-x-4 mt-4 text-sm">
           <button className="hover:underline">
-            <span className="font-bold text-black">120</span> <span className="text-gray-500">Seguindo</span>
+            <span className="font-bold text-black">{userProfile.following?.length || 0}</span> <span className="text-gray-500">Seguindo</span>
           </button>
           <button className="hover:underline">
-            <span className="font-bold text-black">1.5k</span> <span className="text-gray-500">Seguidores</span>
+            <span className="font-bold text-black">{userProfile.followers?.length || 0}</span> <span className="text-gray-500">Seguidores</span>
           </button>
         </div>
       </div>
@@ -87,6 +153,14 @@ export default function Profile() {
       <div className="p-8 text-center text-gray-500">
         Ainda não há posts.
       </div>
+
+      <EditProfileModal 
+        isOpen={isEditModalOpen} 
+        onClose={() => setIsEditModalOpen(false)} 
+        userProfile={userProfile}
+        handleFirestoreError={handleFirestoreError}
+        OperationType={OperationType}
+      />
     </div>
   );
 }
