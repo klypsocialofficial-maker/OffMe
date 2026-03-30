@@ -15,6 +15,8 @@ service cloud.firestore {
     //   - username: string (required) - User's chosen username
     //   - displayName: string (required) - User's display name
     //   - photoURL: string (optional) - URL of the user's profile photo
+    //   - following: list (optional) - List of UIDs this user follows
+    //   - followers: list (optional) - List of UIDs following this user
     //
     // Collection: posts
     // Document ID: {postId}
@@ -71,12 +73,14 @@ service cloud.firestore {
     // ===============================================================
 
     function isValidUser(data) {
-      return hasOnlyAllowedFields(['uid', 'email', 'username', 'displayName', 'photoURL']) &&
+      return hasOnlyAllowedFields(['uid', 'email', 'username', 'displayName', 'photoURL', 'following', 'followers']) &&
              data.uid is string && data.uid == request.auth.uid &&
              data.email is string && isValidEmail(data.email) &&
              data.username is string && data.username.size() > 0 && data.username.size() <= 30 &&
              data.displayName is string && data.displayName.size() > 0 && data.displayName.size() <= 50 &&
-             (!('photoURL' in data) || data.photoURL == '' || (data.photoURL is string && data.photoURL.size() <= 2000));
+             (!('photoURL' in data) || data.photoURL == '' || (data.photoURL is string && data.photoURL.size() <= 2000)) &&
+             (!('following' in data) || data.following is list) &&
+             (!('followers' in data) || data.followers is list);
     }
 
     function isValidPost(data) {

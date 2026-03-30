@@ -67,6 +67,8 @@ interface UserProfile {
   username: string;
   displayName: string;
   photoURL: string;
+  following?: string[];
+  followers?: string[];
 }
 
 interface AuthContextType {
@@ -115,7 +117,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               email: user.email || '',
               username: user.email?.split('@')[0] || 'user',
               displayName: user.displayName || 'User',
-              photoURL: user.photoURL || ''
+              photoURL: user.photoURL || '',
+              following: [],
+              followers: []
             });
           }
         } catch (error) {
@@ -152,7 +156,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email: user.email || '',
         username: user.email?.split('@')[0] || 'user',
         displayName: user.displayName || 'User',
-        photoURL: user.photoURL || ''
+        photoURL: user.photoURL || '',
+        following: [],
+        followers: []
       };
       try {
         await setDoc(docRef, newProfile);
@@ -173,7 +179,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email: user.email || '',
       username: username,
       displayName: name,
-      photoURL: ''
+      photoURL: '',
+      following: [],
+      followers: []
     };
     try {
       await setDoc(doc(db, 'users', user.uid), newProfile);

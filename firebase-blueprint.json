@@ -9,7 +9,9 @@
         "email": { "type": "string", "format": "email", "description": "The user's email address." },
         "username": { "type": "string", "description": "The user's chosen username." },
         "displayName": { "type": "string", "description": "The user's display name." },
-        "photoURL": { "type": "string", "description": "The URL of the user's profile photo." }
+        "photoURL": { "type": "string", "description": "The URL of the user's profile photo." },
+        "following": { "type": "array", "items": { "type": "string" }, "description": "Array of UIDs this user follows." },
+        "followers": { "type": "array", "items": { "type": "string" }, "description": "Array of UIDs following this user." }
       },
       "required": ["uid", "email", "username", "displayName"]
     },

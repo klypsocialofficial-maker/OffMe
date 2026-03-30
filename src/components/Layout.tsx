@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Outlet, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Home as HomeIcon, Search, Bell, Mail, User as UserIcon } from 'lucide-react';
+import { LogOut, Home as HomeIcon, Search, Bell, Mail, User as UserIcon, Bookmark, List, Zap, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 const navItems = [
@@ -15,6 +15,10 @@ const navItems = [
 export default function Layout() {
   const { userProfile, logout } = useAuth();
   const location = useLocation();
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  const openDrawer = () => setIsDrawerOpen(true);
+  const closeDrawer = () => setIsDrawerOpen(false);
 
   return (
     <div className="min-h-screen text-gray-900 flex justify-center relative bg-white">
@@ -84,7 +88,7 @@ export default function Layout() {
       </header>
 
       {/* Main Content Area */}
-      <main className="w-full max-w-2xl min-h-[100dvh] pb-24 sm:pb-0 z-10 relative">
+      <main className="w-full max-w-2xl min-h-[100dvh] pb-24 sm:pb-0 z-10 relative border-r border-gray-100">
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
@@ -94,13 +98,13 @@ export default function Layout() {
             transition={{ duration: 0.3, ease: "easeOut" }}
             className="h-full"
           >
-            <Outlet />
+            <Outlet context={{ openDrawer }} />
           </motion.div>
         </AnimatePresence>
       </main>
 
       {/* Mobile Bottom Navigation with Liquid Glass */}
-      <nav className="sm:hidden fixed bottom-0 left-0 right-0 bg-white/40 backdrop-blur-3xl backdrop-saturate-200 flex justify-around p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] z-50 shadow-[0_-8px_32px_0_rgba(0,0,0,0.04)] border-t border-white/50">
+      <nav className="sm:hidden fixed bottom-0 left-0 right-0 bg-white/40 backdrop-blur-3xl backdrop-saturate-200 flex justify-around p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] z-40 shadow-[0_-8px_32px_0_rgba(0,0,0,0.04)] border-t border-white/50">
         {navItems.slice(0, 4).map((item) => {
           const isActive = location.pathname === item.path;
           return (
@@ -123,6 +127,76 @@ export default function Layout() {
           );
         })}
       </nav>
+
+      {/* Mobile Drawer Overlay & Panel */}
+      <AnimatePresence>
+        {isDrawerOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={closeDrawer}
+              className="fixed inset-0 bg-black/40 z-50 sm:hidden"
+            />
+            <motion.div
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed top-0 left-0 bottom-0 w-[280px] bg-white z-50 sm:hidden shadow-2xl flex flex-col"
+            >
+              <div className="p-4 border-b border-gray-100 pt-[calc(1rem+env(safe-area-inset-top))]">
+                <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden mb-3">
+                  {userProfile?.photoURL ? (
+                    <img src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full object-cover" />
+                  ) : (
+                    <UserIcon className="w-full h-full p-2 text-gray-400" />
+                  )}
+                </div>
+                <h2 className="font-bold text-lg leading-tight">{userProfile?.displayName}</h2>
+                <p className="text-gray-500 text-sm">@{userProfile?.username}</p>
+                
+                <div className="flex space-x-4 mt-4 text-sm">
+                  <div className="hover:underline cursor-pointer">
+                    <span className="font-bold text-black">{userProfile?.following?.length || 0}</span> <span className="text-gray-500">Seguindo</span>
+                  </div>
+                  <div className="hover:underline cursor-pointer">
+                    <span className="font-bold text-black">{userProfile?.followers?.length || 0}</span> <span className="text-gray-500">Seguidores</span>
+                  </div>
+                </div>
+              </div>
+              
+              <nav className="flex-1 overflow-y-auto py-2">
+                <Link to="/profile" onClick={closeDrawer} className="flex items-center px-4 py-4 text-xl font-bold hover:bg-gray-100 transition-colors">
+                  <UserIcon className="mr-4 w-6 h-6" /> Perfil
+                </Link>
+                <a href="#" className="flex items-center px-4 py-4 text-xl font-bold hover:bg-gray-100 transition-colors">
+                  <Zap className="mr-4 w-6 h-6" /> Premium
+                </a>
+                <a href="#" className="flex items-center px-4 py-4 text-xl font-bold hover:bg-gray-100 transition-colors">
+                  <Bookmark className="mr-4 w-6 h-6" /> Itens salvos
+                </a>
+                <a href="#" className="flex items-center px-4 py-4 text-xl font-bold hover:bg-gray-100 transition-colors">
+                  <List className="mr-4 w-6 h-6" /> Listas
+                </a>
+                <a href="#" className="flex items-center px-4 py-4 text-xl font-bold hover:bg-gray-100 transition-colors">
+                  <Settings className="mr-4 w-6 h-6" /> Configurações
+                </a>
+              </nav>
+              
+              <div className="p-4 border-t border-gray-100 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+                <button 
+                  onClick={() => { closeDrawer(); logout(); }} 
+                  className="flex items-center font-bold text-red-500 hover:bg-red-50 w-full p-3 rounded-xl transition-colors"
+                >
+                  <LogOut className="mr-4 w-6 h-6" /> Sair
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

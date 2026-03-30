@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { User as UserIcon, Send, Image as ImageIcon } from 'lucide-react';
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, where } from 'firebase/firestore';
 import { db, auth } from '../firebase';
+import { useOutletContext } from 'react-router-dom';
 
 enum OperationType {
   CREATE = 'create',
@@ -57,14 +58,27 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 
 export default function Home() {
   const { userProfile, logout } = useAuth();
+  const { openDrawer } = useOutletContext<{ openDrawer: () => void }>();
   const [posts, setPosts] = useState<any[]>([]);
   const [newPost, setNewPost] = useState('');
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'foryou' | 'following'>('foryou');
 
   useEffect(() => {
     if (!db) return;
     
-    const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
+    let q;
+    if (activeTab === 'foryou') {
+      q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
+    } else {
+      const following = userProfile?.following || [];
+      if (following.length === 0) {
+        setPosts([]);
+        return;
+      }
+      q = query(collection(db, 'posts'), where('authorId', 'in', following), orderBy('createdAt', 'desc'));
+    }
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const postsData = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -76,7 +90,7 @@ export default function Home() {
     });
 
     return unsubscribe;
-  }, []);
+  }, [activeTab, userProfile]);
 
   const handlePost = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,9 +118,45 @@ export default function Home() {
 
   return (
     <div className="w-full h-full bg-white/50">
-      {/* Sticky Header with Liquid Glass */}
-      <div className="sticky top-0 bg-white/40 backdrop-blur-3xl backdrop-saturate-200 z-30 px-4 py-4 pt-[calc(1rem+env(safe-area-inset-top))] border-b border-gray-100/50">
-        <h1 className="text-xl font-bold">Início</h1>
+      {/* Sticky Header with Liquid Glass & Tabs */}
+      <div className="sticky top-0 bg-white/40 backdrop-blur-3xl backdrop-saturate-200 z-30 pt-[calc(0.5rem+env(safe-area-inset-top))] border-b border-gray-100/50">
+        
+        {/* Mobile Top Bar (Avatar + Logo) */}
+        <div className="flex items-center justify-between px-4 pb-2 sm:hidden">
+          <button onClick={openDrawer} className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+            {userProfile?.photoURL ? (
+              <img src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full object-cover" />
+            ) : (
+              <UserIcon className="w-full h-full p-1.5 text-gray-400" />
+            )}
+          </button>
+          <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center text-white font-bold">
+            O
+          </div>
+          <div className="w-8 h-8" /> {/* Spacer for centering */}
+        </div>
+
+        {/* Tabs */}
+        <div className="flex w-full">
+          <button 
+            onClick={() => setActiveTab('foryou')} 
+            className={`flex-1 hover:bg-black/5 transition-colors relative py-4 text-center font-bold ${activeTab === 'foryou' ? 'text-black' : 'text-gray-500'}`}
+          >
+            Para você
+            {activeTab === 'foryou' && (
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-blue-500 rounded-full" />
+            )}
+          </button>
+          <button 
+            onClick={() => setActiveTab('following')} 
+            className={`flex-1 hover:bg-black/5 transition-colors relative py-4 text-center font-bold ${activeTab === 'following' ? 'text-black' : 'text-gray-500'}`}
+          >
+            Seguindo
+            {activeTab === 'following' && (
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-blue-500 rounded-full" />
+            )}
+          </button>
+        </div>
       </div>
 
         {/* Create Post */}
@@ -146,7 +196,9 @@ export default function Home() {
         <div>
           {posts.length === 0 ? (
             <div className="p-8 text-center text-gray-500">
-              Nenhum post ainda. Seja o primeiro a postar!
+              {activeTab === 'foryou' 
+                ? "Nenhum post ainda. Seja o primeiro a postar!"
+                : "Você ainda não segue ninguém ou eles não postaram nada."}
             </div>
           ) : (
             posts.map(post => (
