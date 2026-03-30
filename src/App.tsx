@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
 import Home from './pages/Home';
+import PWABadge from './components/PWABadge';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { currentUser, loading } = useAuth();
@@ -36,6 +37,7 @@ export default function App() {
             } 
           />
         </Routes>
+        <PWABadge />
       </Router>
     </AuthProvider>
   );
