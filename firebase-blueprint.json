@@ -1,0 +1,43 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user profile in the application.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The user's unique ID." },
+        "email": { "type": "string", "format": "email", "description": "The user's email address." },
+        "username": { "type": "string", "description": "The user's chosen username." },
+        "displayName": { "type": "string", "description": "The user's display name." },
+        "photoURL": { "type": "string", "description": "The URL of the user's profile photo." }
+      },
+      "required": ["uid", "email", "username", "displayName"]
+    },
+    "Post": {
+      "title": "Post",
+      "description": "A post created by a user.",
+      "type": "object",
+      "properties": {
+        "content": { "type": "string", "description": "The text content of the post." },
+        "authorId": { "type": "string", "description": "The UID of the user who created the post." },
+        "authorName": { "type": "string", "description": "The display name of the author." },
+        "authorUsername": { "type": "string", "description": "The username of the author." },
+        "authorPhoto": { "type": "string", "description": "The photo URL of the author." },
+        "createdAt": { "type": "timestamp", "description": "The time the post was created." },
+        "likesCount": { "type": "number", "description": "The number of likes the post has received." },
+        "repliesCount": { "type": "number", "description": "The number of replies the post has received." }
+      },
+      "required": ["content", "authorId", "authorName", "authorUsername", "createdAt", "likesCount", "repliesCount"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Stores user profiles."
+    },
+    "/posts/{postId}": {
+      "schema": { "$ref": "#/entities/Post" },
+      "description": "Stores posts created by users."
+    }
+  }
+}

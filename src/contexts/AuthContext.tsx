@@ -10,6 +10,57 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string;
+    email?: string | null;
+    emailVerified?: boolean;
+    isAnonymous?: boolean;
+    tenantId?: string | null;
+    providerInfo: {
+      providerId: string;
+      displayName: string | null;
+      email: string | null;
+      photoUrl: string | null;
+    }[];
+  }
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth?.currentUser?.uid,
+      email: auth?.currentUser?.email,
+      emailVerified: auth?.currentUser?.emailVerified,
+      isAnonymous: auth?.currentUser?.isAnonymous,
+      tenantId: auth?.currentUser?.tenantId,
+      providerInfo: auth?.currentUser?.providerData.map(provider => ({
+        providerId: provider.providerId,
+        displayName: provider.displayName,
+        email: provider.email,
+        photoUrl: provider.photoURL
+      })) || []
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
+
 interface UserProfile {
   uid: string;
   email: string;
@@ -68,7 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             });
           }
         } catch (error) {
-          console.error("Error fetching user profile:", error);
+          handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
         }
       } else {
         setUserProfile(null);
@@ -86,7 +137,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     // Check if user exists in db
     const docRef = doc(db, 'users', user.uid);
-    const docSnap = await getDoc(docRef);
+    let docSnap;
+    try {
+      docSnap = await getDoc(docRef);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
+      return;
+    }
     
     if (!docSnap.exists()) {
       // Create new user profile
@@ -97,7 +154,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         displayName: user.displayName || 'User',
         photoURL: user.photoURL || ''
       };
-      await setDoc(docRef, newProfile);
+      try {
+        await setDoc(docRef, newProfile);
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, `users/${user.uid}`);
+      }
       setUserProfile(newProfile);
     }
   };
@@ -114,7 +175,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       displayName: name,
       photoURL: ''
     };
-    await setDoc(doc(db, 'users', user.uid), newProfile);
+    try {
+      await setDoc(doc(db, 'users', user.uid), newProfile);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, `users/${user.uid}`);
+    }
     setUserProfile(newProfile);
   };
 
