@@ -15,6 +15,10 @@ import Notifications from './pages/Notifications';
 import Messages from './pages/Messages';
 import Chat from './pages/Chat';
 import Profile from './pages/Profile';
+import Premium from './pages/Premium';
+import Bookmarks from './pages/Bookmarks';
+import Lists from './pages/Lists';
+import Settings from './pages/Settings';
 import PWABadge from './components/PWABadge';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -48,6 +52,10 @@ export default function App() {
             <Route path="messages" element={<Messages />} />
             <Route path="messages/:conversationId" element={<Chat />} />
             <Route path="profile" element={<Profile />} />
+            <Route path="premium" element={<Premium />} />
+            <Route path="bookmarks" element={<Bookmarks />} />
+            <Route path="lists" element={<Lists />} />
+            <Route path="settings" element={<Settings />} />
           </Route>
         </Routes>
         <PWABadge />

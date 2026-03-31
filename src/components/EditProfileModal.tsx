@@ -155,8 +155,8 @@ export default function EditProfileModal({ isOpen, onClose, userProfile, handleF
 
   if (cropImageSrc) {
     return (
-      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black">
-        <div className="relative w-full h-full max-w-2xl max-h-[80vh]">
+      <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black">
+        <div className="relative w-full flex-1 max-w-2xl">
           <Cropper
             image={cropImageSrc}
             crop={crop}
@@ -168,16 +168,16 @@ export default function EditProfileModal({ isOpen, onClose, userProfile, handleF
             onZoomChange={setZoom}
           />
         </div>
-        <div className="absolute bottom-4 left-0 right-0 flex justify-center space-x-4">
+        <div className="w-full p-6 bg-black flex justify-center space-x-4 z-10 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
           <button 
             onClick={() => { setCropImageSrc(null); setCropType(null); }}
-            className="bg-white text-black px-6 py-2 rounded-full font-bold"
+            className="bg-gray-800 text-white px-8 py-3 rounded-full font-bold hover:bg-gray-700 transition-colors"
           >
             Cancelar
           </button>
           <button 
             onClick={handleSaveCrop}
-            className="bg-blue-500 text-white px-6 py-2 rounded-full font-bold"
+            className="bg-blue-500 text-white px-8 py-3 rounded-full font-bold hover:bg-blue-600 transition-colors"
           >
             Aplicar
           </button>

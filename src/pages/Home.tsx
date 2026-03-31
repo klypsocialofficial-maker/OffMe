@@ -151,9 +151,11 @@ export default function Home() {
 
   const canEditPost = (post: any) => {
     if (post.authorId !== userProfile?.uid) return false;
-    if (userProfile?.isPremium) return true;
+    if ((userProfile as any)?.isPremium) return true;
     
-    if (!post.createdAt) return false;
+    // If createdAt is null, it's a pending local write, so it was just created
+    if (!post.createdAt) return true;
+    
     const postTime = post.createdAt.toDate ? post.createdAt.toDate().getTime() : new Date().getTime();
     const now = new Date().getTime();
     const diffMinutes = (now - postTime) / (1000 * 60);
@@ -164,9 +166,9 @@ export default function Home() {
     <div className="w-full h-full bg-white/50 relative">
       {/* Sticky Header with Liquid Glass & Tabs */}
       <div className="sticky top-0 bg-white/40 backdrop-blur-3xl backdrop-saturate-200 z-30 pt-[calc(0.5rem+env(safe-area-inset-top))] border-b border-gray-100/50">
-        
-        {/* Mobile Top Bar (Avatar + Logo) */}
-        <div className="flex items-center justify-between px-4 pb-2 sm:hidden">
+
+        {/* Mobile Top Bar (Avatar Only) */}
+        <div className="flex items-center px-4 pb-2 sm:hidden">
           <button onClick={openDrawer} className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
             {userProfile?.photoURL ? (
               <img src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full object-cover" />
@@ -174,17 +176,18 @@ export default function Home() {
               <UserIcon className="w-full h-full p-1.5 text-gray-400" />
             )}
           </button>
-          <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center text-white font-bold">
-            O
-          </div>
-          <div className="w-8 h-8" /> {/* Spacer for centering */}
         </div>
 
         {/* Tabs */}
-        <div className="flex w-full">
+        <div className="flex w-full" role="tablist" aria-label="Feed tabs">
           <button 
+            role="tab"
+            aria-selected={activeTab === 'foryou'}
+            aria-controls="feed-panel"
+            id="tab-foryou"
+            tabIndex={activeTab === 'foryou' ? 0 : -1}
             onClick={() => setActiveTab('foryou')} 
-            className={`flex-1 hover:bg-black/5 transition-colors relative py-4 text-center font-bold ${activeTab === 'foryou' ? 'text-black' : 'text-gray-500'}`}
+            className={`flex-1 hover:bg-black/5 transition-colors relative py-4 text-center font-bold focus-visible:outline-none focus-visible:bg-black/5 ${activeTab === 'foryou' ? 'text-black' : 'text-gray-500'}`}
           >
             Para você
             {activeTab === 'foryou' && (
@@ -192,8 +195,13 @@ export default function Home() {
             )}
           </button>
           <button 
+            role="tab"
+            aria-selected={activeTab === 'following'}
+            aria-controls="feed-panel"
+            id="tab-following"
+            tabIndex={activeTab === 'following' ? 0 : -1}
             onClick={() => setActiveTab('following')} 
-            className={`flex-1 hover:bg-black/5 transition-colors relative py-4 text-center font-bold ${activeTab === 'following' ? 'text-black' : 'text-gray-500'}`}
+            className={`flex-1 hover:bg-black/5 transition-colors relative py-4 text-center font-bold focus-visible:outline-none focus-visible:bg-black/5 ${activeTab === 'following' ? 'text-black' : 'text-gray-500'}`}
           >
             Seguindo
             {activeTab === 'following' && (
@@ -203,41 +211,14 @@ export default function Home() {
         </div>
       </div>
 
-        {/* Create Post (Desktop Only) */}
-        <div className="hidden sm:flex p-4 border-b border-white/20 space-x-4 bg-white/20">
-          <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
-            {userProfile?.photoURL ? (
-              <img src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full object-cover" />
-            ) : (
-              <UserIcon className="w-full h-full p-2 text-gray-400" />
-            )}
-          </div>
-          <form onSubmit={handlePost} className="flex-1">
-            <textarea
-              value={newPost}
-              onChange={(e) => setNewPost(e.target.value)}
-              placeholder="O que está acontecendo?"
-              className="w-full bg-transparent text-xl outline-none resize-none min-h-[80px] placeholder-gray-500"
-            />
-            <div className="flex justify-between items-center mt-4 pt-4 border-t border-white/20">
-              <div className="flex space-x-2 text-blue-500">
-                <button type="button" className="p-2 hover:bg-blue-500/10 rounded-full transition-colors">
-                  <ImageIcon className="w-5 h-5" />
-                </button>
-              </div>
-              <button
-                type="submit"
-                disabled={!newPost.trim() || loading}
-                className="bg-black/90 text-white px-6 py-2 rounded-full font-bold hover:bg-black disabled:opacity-50 transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
-              >
-                Postar
-              </button>
-            </div>
-          </form>
-        </div>
-
         {/* Posts List */}
-        <div>
+        <div 
+          role="tabpanel" 
+          id="feed-panel" 
+          aria-labelledby={`tab-${activeTab}`}
+          tabIndex={0}
+          className="focus-visible:outline-none"
+        >
           {posts.length === 0 ? (
             <div className="p-8 text-center text-gray-500">
               {activeTab === 'foryou' 

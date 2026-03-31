@@ -154,7 +154,11 @@ service cloud.firestore {
       allow update: if isDocOwner() && 
                     isValidPost(request.resource.data) &&
                     request.resource.data.authorId == resource.data.authorId &&
-                    request.resource.data.createdAt == resource.data.createdAt;
+                    request.resource.data.createdAt == resource.data.createdAt &&
+                    (
+                      request.time.toMillis() <= resource.data.createdAt.toMillis() + (3 * 60 * 1000) ||
+                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isPremium', false) == true
+                    );
                     
       allow delete: if isDocOwner();
     }

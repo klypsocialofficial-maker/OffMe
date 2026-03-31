@@ -10,6 +10,10 @@ const navItems = [
   { path: '/notifications', icon: Bell, label: 'Notificações' },
   { path: '/messages', icon: Mail, label: 'Mensagens' },
   { path: '/profile', icon: UserIcon, label: 'Perfil' },
+  { path: '/premium', icon: Zap, label: 'Premium' },
+  { path: '/bookmarks', icon: Bookmark, label: 'Itens salvos' },
+  { path: '/lists', icon: List, label: 'Listas' },
+  { path: '/settings', icon: Settings, label: 'Configurações' },
 ];
 
 export default function Layout() {
@@ -171,18 +175,18 @@ export default function Layout() {
                 <Link to="/profile" onClick={closeDrawer} className="flex items-center px-4 py-4 text-xl font-bold hover:bg-gray-100 transition-colors">
                   <UserIcon className="mr-4 w-6 h-6" /> Perfil
                 </Link>
-                <a href="#" className="flex items-center px-4 py-4 text-xl font-bold hover:bg-gray-100 transition-colors">
+                <Link to="/premium" onClick={closeDrawer} className="flex items-center px-4 py-4 text-xl font-bold hover:bg-gray-100 transition-colors">
                   <Zap className="mr-4 w-6 h-6" /> Premium
-                </a>
-                <a href="#" className="flex items-center px-4 py-4 text-xl font-bold hover:bg-gray-100 transition-colors">
+                </Link>
+                <Link to="/bookmarks" onClick={closeDrawer} className="flex items-center px-4 py-4 text-xl font-bold hover:bg-gray-100 transition-colors">
                   <Bookmark className="mr-4 w-6 h-6" /> Itens salvos
-                </a>
-                <a href="#" className="flex items-center px-4 py-4 text-xl font-bold hover:bg-gray-100 transition-colors">
+                </Link>
+                <Link to="/lists" onClick={closeDrawer} className="flex items-center px-4 py-4 text-xl font-bold hover:bg-gray-100 transition-colors">
                   <List className="mr-4 w-6 h-6" /> Listas
-                </a>
-                <a href="#" className="flex items-center px-4 py-4 text-xl font-bold hover:bg-gray-100 transition-colors">
+                </Link>
+                <Link to="/settings" onClick={closeDrawer} className="flex items-center px-4 py-4 text-xl font-bold hover:bg-gray-100 transition-colors">
                   <Settings className="mr-4 w-6 h-6" /> Configurações
-                </a>
+                </Link>
               </nav>
               
               <div className="p-4 border-t border-gray-100 pb-[calc(1rem+env(safe-area-inset-bottom))]">
