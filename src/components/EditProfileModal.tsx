@@ -35,8 +35,6 @@ export default function EditProfileModal({ isOpen, onClose, userProfile, handleF
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
 
-  if (!isOpen) return null;
-
   const onCropComplete = useCallback((croppedArea: any, croppedAreaPixels: any) => {
     setCroppedAreaPixels(croppedAreaPixels);
   }, []);
@@ -126,8 +124,8 @@ export default function EditProfileModal({ isOpen, onClose, userProfile, handleF
     try {
       setLoading(true);
       
-      let newAvatarUrl = userProfile.photoURL;
-      let newBannerUrl = userProfile.bannerURL;
+      let newAvatarUrl = userProfile.photoURL || '';
+      let newBannerUrl = userProfile.bannerURL || '';
 
       if (avatarFile) {
         newAvatarUrl = await uploadToImgBB(avatarFile);
@@ -152,6 +150,8 @@ export default function EditProfileModal({ isOpen, onClose, userProfile, handleF
       setLoading(false);
     }
   };
+
+  if (!isOpen) return null;
 
   if (cropImageSrc) {
     return (
