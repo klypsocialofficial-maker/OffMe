@@ -144,7 +144,10 @@ export default function Messages() {
           <div className="flex flex-col items-center justify-center p-12 text-center text-gray-500 mt-10">
             <p className="text-3xl font-bold text-black mb-4">Bem-vindo à sua caixa de entrada!</p>
             <p className="mb-8">Envie uma mensagem, compartilhe posts e converse de forma privada.</p>
-            <button className="bg-black text-white px-8 py-3 rounded-full font-bold hover:bg-gray-800 transition-colors">
+            <button 
+              onClick={() => navigate('/explore')}
+              className="bg-black text-white px-8 py-3 rounded-full font-bold hover:bg-gray-800 transition-colors"
+            >
               Nova mensagem
             </button>
           </div>

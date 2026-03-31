@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { User as UserIcon, Image as ImageIcon, X } from 'lucide-react';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, doc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../firebase';
 import { uploadToImgBB } from '../lib/imgbb';
 
@@ -10,9 +10,10 @@ interface CreatePostModalProps {
   userProfile: any;
   handleFirestoreError: (error: unknown, op: any, path: string) => void;
   OperationType: any;
+  replyTo?: any;
 }
 
-export default function CreatePostModal({ isOpen, onClose, userProfile, handleFirestoreError, OperationType }: CreatePostModalProps) {
+export default function CreatePostModal({ isOpen, onClose, userProfile, handleFirestoreError, OperationType, replyTo }: CreatePostModalProps) {
   const [content, setContent] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -55,8 +56,30 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
         authorPhoto: userProfile.photoURL,
         createdAt: serverTimestamp(),
         likesCount: 0,
-        repliesCount: 0
+        repliesCount: 0,
+        replyToId: replyTo?.id || null,
+        replyToUsername: replyTo?.authorUsername || null
       });
+
+      if (replyTo) {
+        await updateDoc(doc(db, 'posts', replyTo.id), {
+          repliesCount: increment(1)
+        });
+        
+        if (replyTo.authorId !== userProfile.uid) {
+          await addDoc(collection(db, 'notifications'), {
+            recipientId: replyTo.authorId,
+            senderId: userProfile.uid,
+            senderName: userProfile.displayName,
+            senderPhoto: userProfile.photoURL || null,
+            type: 'reply',
+            postId: replyTo.id,
+            read: false,
+            createdAt: serverTimestamp()
+          });
+        }
+      }
+
       setContent('');
       removeImage();
       onClose();
@@ -79,7 +102,7 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
             disabled={(!content.trim() && !imageFile) || loading}
             className="bg-black text-white px-5 py-1.5 rounded-full font-bold hover:bg-gray-800 disabled:opacity-50 transition-colors"
           >
-            {loading ? 'Postando...' : 'Postar'}
+            {loading ? 'Postando...' : (replyTo ? 'Responder' : 'Postar')}
           </button>
         </div>
         <div className="p-4 flex space-x-4 overflow-y-auto">
@@ -91,10 +114,15 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
             )}
           </div>
           <div className="flex-1">
+            {replyTo && (
+              <div className="mb-2 text-sm text-gray-500">
+                Respondendo a <span className="text-blue-500">@{replyTo.authorUsername}</span>
+              </div>
+            )}
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="O que está acontecendo?"
+              placeholder={replyTo ? "Poste sua resposta" : "O que está acontecendo?"}
               className="w-full bg-transparent text-xl outline-none resize-none min-h-[120px] placeholder-gray-500"
               autoFocus
             />

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, User as UserIcon } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useOutletContext, Link, useNavigate } from 'react-router-dom';
-import { collection, query, where, onSnapshot, limit, addDoc, serverTimestamp, getDocs } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, limit, addDoc, serverTimestamp, getDocs, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 
 enum OperationType {
@@ -113,33 +113,116 @@ export default function Explore() {
     }
   };
 
+  const handleFollowClick = async (otherUser: any) => {
+    if (!userProfile?.uid || !db) return;
+    
+    const isFollowing = userProfile.following?.includes(otherUser.id);
+    
+    try {
+      // Update current user's following list
+      await updateDoc(doc(db, 'users', userProfile.uid), {
+        following: isFollowing ? arrayRemove(otherUser.id) : arrayUnion(otherUser.id)
+      });
+      
+      // Update target user's followers list
+      await updateDoc(doc(db, 'users', otherUser.id), {
+        followers: isFollowing ? arrayRemove(userProfile.uid) : arrayUnion(userProfile.uid)
+      });
+      
+      // Create notification if following
+      if (!isFollowing) {
+        await addDoc(collection(db, 'notifications'), {
+          recipientId: otherUser.id,
+          senderId: userProfile.uid,
+          senderName: userProfile.displayName,
+          senderPhoto: userProfile.photoURL || null,
+          type: 'follow',
+          read: false,
+          createdAt: serverTimestamp()
+        });
+      }
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, 'users');
+    }
+  };
+
   useEffect(() => {
-    if (!searchQuery.trim() || !db) {
+    const cleanQuery = searchQuery.trim().replace(/^@/, '');
+    
+    if (!cleanQuery || !db) {
       setSearchResults([]);
       return;
     }
 
     setLoading(true);
-    const q = query(
+    
+    // We run multiple queries to simulate a more flexible search
+    // 1. Exact case match for username
+    const qUsername = query(
       collection(db, 'users'),
-      where('username', '>=', searchQuery.toLowerCase()),
-      where('username', '<=', searchQuery.toLowerCase() + '\uf8ff'),
+      where('username', '>=', cleanQuery),
+      where('username', '<=', cleanQuery + '\uf8ff'),
+      limit(10)
+    );
+    
+    // 2. Lowercase match for username (common case)
+    const qUsernameLower = query(
+      collection(db, 'users'),
+      where('username', '>=', cleanQuery.toLowerCase()),
+      where('username', '<=', cleanQuery.toLowerCase() + '\uf8ff'),
       limit(10)
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const results = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setSearchResults(results);
-      setLoading(false);
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'users');
-      setLoading(false);
-    });
+    // 3. Exact case match for displayName
+    const qDisplayName = query(
+      collection(db, 'users'),
+      where('displayName', '>=', cleanQuery),
+      where('displayName', '<=', cleanQuery + '\uf8ff'),
+      limit(10)
+    );
 
-    return unsubscribe;
+    // 4. Capitalized match for displayName (e.g. "joao" -> "Joao")
+    const capitalizedQuery = cleanQuery.charAt(0).toUpperCase() + cleanQuery.slice(1).toLowerCase();
+    const qDisplayNameCap = query(
+      collection(db, 'users'),
+      where('displayName', '>=', capitalizedQuery),
+      where('displayName', '<=', capitalizedQuery + '\uf8ff'),
+      limit(10)
+    );
+
+    const fetchResults = async () => {
+      try {
+        const [snap1, snap2, snap3, snap4] = await Promise.all([
+          getDocs(qUsername),
+          getDocs(qUsernameLower),
+          getDocs(qDisplayName),
+          getDocs(qDisplayNameCap)
+        ]);
+
+        const resultsMap = new Map();
+        
+        const addDocs = (snapshot: any) => {
+          snapshot.docs.forEach((doc: any) => {
+            if (!resultsMap.has(doc.id)) {
+              resultsMap.set(doc.id, { id: doc.id, ...doc.data() });
+            }
+          });
+        };
+
+        addDocs(snap1);
+        addDocs(snap2);
+        addDocs(snap3);
+        addDocs(snap4);
+
+        setSearchResults(Array.from(resultsMap.values()).slice(0, 20));
+      } catch (error) {
+        console.error("Error searching users:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchResults();
   }, [searchQuery]);
 
   return (
@@ -199,8 +282,18 @@ export default function Explore() {
                       >
                         Mensagem
                       </button>
-                      <button className="px-4 py-1.5 bg-black text-white rounded-full font-bold text-sm hover:bg-gray-800 transition-colors">
-                        Seguir
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleFollowClick(user);
+                        }}
+                        className={`px-4 py-1.5 rounded-full font-bold text-sm transition-colors ${
+                          userProfile.following?.includes(user.id)
+                            ? 'bg-white text-black border border-gray-300 hover:bg-red-50 hover:text-red-600 hover:border-red-200'
+                            : 'bg-black text-white hover:bg-gray-800'
+                        }`}
+                      >
+                        {userProfile.following?.includes(user.id) ? 'Seguindo' : 'Seguir'}
                       </button>
                     </div>
                   )}

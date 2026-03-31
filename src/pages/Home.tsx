@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { User as UserIcon, Send, Image as ImageIcon, MoreHorizontal, Trash2, Edit2, BarChart2, Plus } from 'lucide-react';
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, where, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, where, deleteDoc, doc, updateDoc, limit, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { useOutletContext } from 'react-router-dom';
 import CreatePostModal from '../components/CreatePostModal';
@@ -70,27 +70,26 @@ export default function Home() {
   const [editingPost, setEditingPost] = useState<any>(null);
   const [editContent, setEditContent] = useState('');
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
+  const [replyToPost, setReplyToPost] = useState<any | null>(null);
 
   useEffect(() => {
     if (!db) return;
     
-    let q;
-    if (activeTab === 'foryou') {
-      q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
-    } else {
-      const following = userProfile?.following || [];
-      if (following.length === 0) {
-        setPosts([]);
-        return;
-      }
-      q = query(collection(db, 'posts'), where('authorId', 'in', following), orderBy('createdAt', 'desc'));
-    }
+    // Always fetch recent posts, then filter client-side for 'following' tab
+    // This avoids the 10-item limit of Firestore 'in' queries
+    const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(100));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const postsData = snapshot.docs.map(doc => ({
+      let postsData: any[] = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
+
+      if (activeTab === 'following') {
+        const following = userProfile?.following || [];
+        postsData = postsData.filter(post => following.includes(post.authorId));
+      }
+
       setPosts(postsData);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'posts');
@@ -146,6 +145,70 @@ export default function Home() {
       setActiveMenuPostId(null);
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `posts/${postId}`);
+    }
+  };
+
+  const handleFollowClick = async (authorId: string, authorName: string, authorPhoto: string | null) => {
+    if (!userProfile?.uid || !db || authorId === userProfile.uid) return;
+    
+    const isFollowing = userProfile.following?.includes(authorId);
+    
+    try {
+      // Update current user's following list
+      await updateDoc(doc(db, 'users', userProfile.uid), {
+        following: isFollowing ? arrayRemove(authorId) : arrayUnion(authorId)
+      });
+      
+      // Update target user's followers list
+      await updateDoc(doc(db, 'users', authorId), {
+        followers: isFollowing ? arrayRemove(userProfile.uid) : arrayUnion(userProfile.uid)
+      });
+      
+      // Create notification if following
+      if (!isFollowing) {
+        await addDoc(collection(db, 'notifications'), {
+          recipientId: authorId,
+          senderId: userProfile.uid,
+          senderName: userProfile.displayName,
+          senderPhoto: userProfile.photoURL || null,
+          type: 'follow',
+          read: false,
+          createdAt: serverTimestamp()
+        });
+      }
+      
+      setActiveMenuPostId(null);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, 'users');
+    }
+  };
+
+  const handleLikePost = async (post: any) => {
+    if (!userProfile?.uid || !db) return;
+    
+    const isLiked = post.likes?.includes(userProfile.uid);
+    const postRef = doc(db, 'posts', post.id);
+    
+    try {
+      await updateDoc(postRef, {
+        likes: isLiked ? arrayRemove(userProfile.uid) : arrayUnion(userProfile.uid),
+        likesCount: isLiked ? Math.max(0, (post.likesCount || 0) - 1) : (post.likesCount || 0) + 1
+      });
+      
+      if (!isLiked && post.authorId !== userProfile.uid) {
+        await addDoc(collection(db, 'notifications'), {
+          recipientId: post.authorId,
+          senderId: userProfile.uid,
+          senderName: userProfile.displayName,
+          senderPhoto: userProfile.photoURL || null,
+          type: 'like',
+          postId: post.id,
+          read: false,
+          createdAt: serverTimestamp()
+        });
+      }
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, 'posts');
     }
   };
 
@@ -260,7 +323,7 @@ export default function Home() {
                       
                       {activeMenuPostId === post.id && (
                         <div className="absolute right-0 mt-1 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-10" onClick={(e) => e.stopPropagation()}>
-                          {post.authorId === userProfile?.uid && (
+                          {post.authorId === userProfile?.uid ? (
                             <>
                               <button 
                                 onClick={() => handleDeletePost(post.id)}
@@ -287,6 +350,14 @@ export default function Home() {
                                 <span>Editar post</span>
                               </button>
                             </>
+                          ) : (
+                            <button 
+                              onClick={() => handleFollowClick(post.authorId, post.authorName, post.authorPhoto)}
+                              className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                            >
+                              <UserIcon className="w-4 h-4" />
+                              <span>{userProfile?.following?.includes(post.authorId) ? 'Deixar de seguir' : 'Seguir'} @{post.authorUsername}</span>
+                            </button>
                           )}
                           
                           <button 
@@ -335,6 +406,11 @@ export default function Home() {
                     </div>
                   ) : (
                     <>
+                      {post.replyToUsername && (
+                        <div className="mt-1 text-sm text-gray-500">
+                          Respondendo a <span className="text-blue-500">@{post.replyToUsername}</span>
+                        </div>
+                      )}
                       <p className="mt-1 text-gray-900 whitespace-pre-wrap break-words">{post.content}</p>
                       {post.imageUrl && (
                         <div className="mt-3 rounded-2xl overflow-hidden border border-gray-200">
@@ -345,7 +421,13 @@ export default function Home() {
                   )}
                   
                   <div className="flex justify-between mt-4 text-gray-500 max-w-md">
-                    <button className="flex items-center space-x-2 hover:text-blue-500 transition-colors group">
+                    <button 
+                      onClick={() => {
+                        setReplyToPost(post);
+                        setIsCreateModalOpen(true);
+                      }}
+                      className="flex items-center space-x-2 hover:text-blue-500 transition-colors group"
+                    >
                       <div className="p-2 group-hover:bg-blue-50 rounded-full">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
                       </div>
@@ -356,9 +438,12 @@ export default function Home() {
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
                       </div>
                     </button>
-                    <button className="flex items-center space-x-2 hover:text-red-500 transition-colors group">
+                    <button 
+                      onClick={() => handleLikePost(post)}
+                      className={`flex items-center space-x-2 transition-colors group ${post.likes?.includes(userProfile?.uid) ? 'text-red-500' : 'hover:text-red-500'}`}
+                    >
                       <div className="p-2 group-hover:bg-red-50 rounded-full">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                        <svg className="w-5 h-5" fill={post.likes?.includes(userProfile?.uid) ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
                       </div>
                       <span className="text-sm">{post.likesCount || 0}</span>
                     </button>
@@ -384,10 +469,14 @@ export default function Home() {
 
         <CreatePostModal 
           isOpen={isCreateModalOpen} 
-          onClose={() => setIsCreateModalOpen(false)} 
+          onClose={() => {
+            setIsCreateModalOpen(false);
+            setReplyToPost(null);
+          }} 
           userProfile={userProfile}
           handleFirestoreError={handleFirestoreError}
           OperationType={OperationType}
+          replyTo={replyToPost}
         />
 
         {/* Stats Modal Placeholder */}
