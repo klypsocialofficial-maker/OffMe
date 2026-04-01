@@ -817,7 +817,7 @@ export default function Home() {
         {/* Mobile FAB */}
         <button
           onClick={() => setIsCreateModalOpen(true)}
-          className="sm:hidden fixed bottom-20 right-4 w-14 h-14 bg-blue-500 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-blue-600 transition-colors z-40"
+          className="sm:hidden fixed bottom-20 right-4 w-14 h-14 bg-blue-500 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-blue-600 transition-colors z-50"
         >
           <Plus className="w-6 h-6" />
         </button>
