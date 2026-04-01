@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { User as UserIcon, Send, Image as ImageIcon, MoreHorizontal, Trash2, Edit2, BarChart2, Plus, Search, Filter, Calendar, X, Heart, Repeat, MessageCircle } from 'lucide-react';
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, where, deleteDoc, doc, updateDoc, limit, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, where, deleteDoc, doc, updateDoc, limit, arrayUnion, arrayRemove, startAfter, getDocs, QueryDocumentSnapshot } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import CreatePostModal from '../components/CreatePostModal';
@@ -101,6 +101,11 @@ export default function Home() {
   const [selectedStatsPost, setSelectedStatsPost] = useState<any>(null);
   const [replyToPost, setReplyToPost] = useState<any | null>(null);
 
+  // Infinite Scroll State
+  const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const observer = useRef<IntersectionObserver | null>(null);
+
   // Filter States
   const [searchKeyword, setSearchKeyword] = useState('');
   const [searchAuthor, setSearchAuthor] = useState('');
@@ -108,34 +113,59 @@ export default function Home() {
   const [endDate, setEndDate] = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
-  useEffect(() => {
+  const fetchPosts = useCallback(async (isInitial = false) => {
     if (!db) return;
     
-    setIsFetching(true);
-    // Always fetch recent posts, then filter client-side for 'following' tab
-    // This avoids the 10-item limit of Firestore 'in' queries
-    const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(100));
+    try {
+      let q = query(
+        collection(db, 'posts'),
+        orderBy('createdAt', 'desc'),
+        limit(20)
+      );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      let postsData: any[] = snapshot.docs.map(doc => ({
+      if (!isInitial && lastVisible) {
+        q = query(q, startAfter(lastVisible));
+      }
+
+      const snapshot = await getDocs(q);
+      
+      if (snapshot.empty) {
+        setHasMore(false);
+        return;
+      }
+
+      const newPosts = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
 
-      if (activeTab === 'following') {
-        const following = userProfile?.following || [];
-        postsData = postsData.filter(post => following.includes(post.authorId));
-      }
-
-      setPosts(postsData);
+      setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
+      setPosts(prev => isInitial ? newPosts : [...prev, ...newPosts]);
       setIsFetching(false);
-    }, (error) => {
+    } catch (error) {
       handleFirestoreError(error, OperationType.LIST, 'posts');
       setIsFetching(false);
-    });
+    }
+  }, [lastVisible]);
 
-    return unsubscribe;
-  }, [activeTab, userProfile]);
+  useEffect(() => {
+    setPosts([]);
+    setLastVisible(null);
+    setHasMore(true);
+    setIsFetching(true);
+    fetchPosts(true);
+  }, [activeTab]); // Re-fetch when tab changes
+
+  const lastPostElementRef = useCallback((node: HTMLDivElement | null) => {
+    if (isFetching) return;
+    if (observer.current) observer.current.disconnect();
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore) {
+        fetchPosts();
+      }
+    });
+    if (node) observer.current.observe(node);
+  }, [isFetching, hasMore, fetchPosts]);
 
   const handlePost = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -503,282 +533,286 @@ export default function Home() {
             </div>
           ) : (
             <div className="px-4 space-y-4 pb-20">
-              {filteredPosts.map(post => (
-                <article 
-                  key={post.id} 
-                  onClick={() => navigate(`/post/${post.id}`)}
-                  className="group relative p-4 bg-white/60 backdrop-blur-md rounded-2xl shadow-sm border border-white/40 hover:bg-white/80 transition-all cursor-pointer flex space-x-4"
-                >
-                  {/* Quick Actions Hover Overlay */}
-                  <div className="absolute top-3 right-12 opacity-0 group-hover:opacity-100 transition-opacity flex items-center space-x-1 bg-white/90 backdrop-blur-sm rounded-full shadow-sm border border-gray-100 p-1 z-10">
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setReplyToPost(post);
-                        setIsCreateModalOpen(true);
-                      }}
-                      className="p-2 hover:bg-blue-50 text-gray-500 hover:text-blue-500 rounded-full transition-colors"
-                      title="Responder"
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                    </button>
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRepost(post);
-                      }}
-                      className={`p-2 rounded-full transition-colors ${post.reposts?.includes(userProfile?.uid) ? 'bg-green-50 text-green-500' : 'hover:bg-green-50 text-gray-500 hover:text-green-500'}`}
-                      title="Repostar"
-                    >
-                      <Repeat className="w-4 h-4" />
-                    </button>
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleLikePost(post);
-                      }}
-                      className={`p-2 rounded-full transition-colors ${post.likes?.includes(userProfile?.uid) ? 'bg-red-50 text-red-500' : 'hover:bg-red-50 text-gray-500 hover:text-red-500'}`}
-                      title="Curtir"
-                    >
-                      <Heart className={`w-4 h-4 ${post.likes?.includes(userProfile?.uid) ? 'fill-current' : ''}`} />
-                    </button>
-                  </div>
-
-                  <div 
-                    className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 cursor-pointer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/profile/${post.authorId}`);
-                    }}
+              {filteredPosts.map((post, index) => {
+                const isLastPost = filteredPosts.length === index + 1;
+                return (
+                  <article 
+                    key={post.id} 
+                    ref={isLastPost ? lastPostElementRef : null}
+                    onClick={() => navigate(`/post/${post.id}`)}
+                    className="group relative p-4 bg-white/60 backdrop-blur-md rounded-2xl shadow-sm border border-white/40 hover:bg-white/80 transition-all cursor-pointer flex space-x-4"
                   >
-                  {post.authorPhoto ? (
-                    <img src={post.authorPhoto} alt={post.authorName} className="w-full h-full object-cover" />
-                  ) : (
-                    <UserIcon className="w-full h-full p-2 text-gray-400" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between w-full">
+                    {/* Quick Actions Hover Overlay */}
+                    <div className="absolute top-3 right-12 opacity-0 group-hover:opacity-100 transition-opacity flex items-center space-x-1 bg-white/90 backdrop-blur-sm rounded-full shadow-sm border border-gray-100 p-1 z-10">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setReplyToPost(post);
+                          setIsCreateModalOpen(true);
+                        }}
+                        className="p-2 hover:bg-blue-50 text-gray-500 hover:text-blue-500 rounded-full transition-colors"
+                        title="Responder"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRepost(post);
+                        }}
+                        className={`p-2 rounded-full transition-colors ${post.reposts?.includes(userProfile?.uid) ? 'bg-green-50 text-green-500' : 'hover:bg-green-50 text-gray-500 hover:text-green-500'}`}
+                        title="Repostar"
+                      >
+                        <Repeat className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleLikePost(post);
+                        }}
+                        className={`p-2 rounded-full transition-colors ${post.likes?.includes(userProfile?.uid) ? 'bg-red-50 text-red-500' : 'hover:bg-red-50 text-gray-500 hover:text-red-500'}`}
+                        title="Curtir"
+                      >
+                        <Heart className={`w-4 h-4 ${post.likes?.includes(userProfile?.uid) ? 'fill-current' : ''}`} />
+                      </button>
+                    </div>
+
                     <div 
-                      className="flex items-center space-x-1 min-w-0 cursor-pointer"
+                      className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 cursor-pointer"
                       onClick={(e) => {
                         e.stopPropagation();
                         navigate(`/profile/${post.authorId}`);
                       }}
                     >
-                      <span className="font-bold truncate hover:underline">{post.authorName}</span>
-                      {(post.authorVerified || post.authorUsername === 'Rulio') && <VerifiedBadge className="w-4 h-4 text-blue-500 flex-shrink-0" />}
-                      <span className="text-gray-500 truncate">@{post.authorUsername}</span>
-                      {post.authorId !== userProfile?.uid && (
-                        <>
-                          <span className="text-gray-500">·</span>
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleFollowClick(post.authorId, post.authorName, post.authorPhoto);
-                            }}
-                            className={`text-sm font-bold hover:underline ${userProfile?.following?.includes(post.authorId) ? 'text-gray-500' : 'text-blue-500'}`}
-                          >
-                            {userProfile?.following?.includes(post.authorId) ? 'Seguindo' : 'Seguir'}
-                          </button>
-                        </>
-                      )}
-                      <span className="text-gray-500">·</span>
-                      <span className="text-gray-500 text-sm">
-                        {post.createdAt?.toDate ? new Date(post.createdAt.toDate()).toLocaleDateString() : 'Agora mesmo'}
-                      </span>
-                      {post.isEdited && <span className="text-gray-400 text-xs">(editado)</span>}
+                    {post.authorPhoto ? (
+                      <img src={post.authorPhoto} alt={post.authorName} className="w-full h-full object-cover" />
+                    ) : (
+                      <UserIcon className="w-full h-full p-2 text-gray-400" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between w-full">
+                      <div 
+                        className="flex items-center space-x-1 min-w-0 cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/profile/${post.authorId}`);
+                        }}
+                      >
+                        <span className="font-bold truncate hover:underline">{post.authorName}</span>
+                        {(post.authorVerified || post.authorUsername === 'Rulio') && <VerifiedBadge className="w-4 h-4 text-blue-500 flex-shrink-0" />}
+                        <span className="text-gray-500 truncate">@{post.authorUsername}</span>
+                        {post.authorId !== userProfile?.uid && (
+                          <>
+                            <span className="text-gray-500">·</span>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleFollowClick(post.authorId, post.authorName, post.authorPhoto);
+                              }}
+                              className={`text-sm font-bold hover:underline ${userProfile?.following?.includes(post.authorId) ? 'text-gray-500' : 'text-blue-500'}`}
+                            >
+                              {userProfile?.following?.includes(post.authorId) ? 'Seguindo' : 'Seguir'}
+                            </button>
+                          </>
+                        )}
+                        <span className="text-gray-500">·</span>
+                        <span className="text-gray-500 text-sm">
+                          {post.createdAt?.toDate ? new Date(post.createdAt.toDate()).toLocaleDateString() : 'Agora mesmo'}
+                        </span>
+                        {post.isEdited && <span className="text-gray-400 text-xs">(editado)</span>}
+                      </div>
+                      
+                      <div className="relative">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveMenuPostId(activeMenuPostId === post.id ? null : post.id);
+                          }}
+                          className="p-2 hover:bg-blue-50 rounded-full transition-colors text-gray-500 hover:text-blue-500"
+                        >
+                          <MoreHorizontal className="w-5 h-5" />
+                        </button>
+                        
+                        {activeMenuPostId === post.id && (
+                          <div className="absolute right-0 mt-1 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-10" onClick={(e) => e.stopPropagation()}>
+                            {post.authorId === userProfile?.uid ? (
+                              <>
+                                <button 
+                                  onClick={() => handleDeletePost(post.id)}
+                                  className="w-full text-left px-4 py-2 text-red-500 hover:bg-gray-50 flex items-center space-x-2"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                  <span>Apagar post</span>
+                                </button>
+                                
+                                <button 
+                                  onClick={() => {
+                                    if (canEditPost(post)) {
+                                      setEditingPost(post);
+                                      setEditContent(post.content);
+                                      setActiveMenuPostId(null);
+                                    } else {
+                                      alert('O tempo de edição (3 minutos) expirou. Assine o Premium para editar a qualquer momento.');
+                                      setActiveMenuPostId(null);
+                                    }
+                                  }}
+                                  className={`w-full text-left px-4 py-2 flex items-center space-x-2 ${canEditPost(post) ? 'text-gray-700 hover:bg-gray-50' : 'text-gray-400 cursor-not-allowed'}`}
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                  <span>Editar post</span>
+                                </button>
+                              </>
+                            ) : (
+                              <button 
+                                onClick={() => handleFollowClick(post.authorId, post.authorName, post.authorPhoto)}
+                                className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                              >
+                                <UserIcon className="w-4 h-4" />
+                                <span>{userProfile?.following?.includes(post.authorId) ? 'Deixar de seguir' : 'Seguir'} @{post.authorUsername}</span>
+                              </button>
+                            )}
+                            
+                            <button 
+                              onClick={() => {
+                                if (userProfile?.isPremium) {
+                                  setSelectedStatsPost(post);
+                                  setIsStatsModalOpen(true);
+                                  setActiveMenuPostId(null);
+                                } else {
+                                  alert('Estatísticas avançadas são um recurso Premium. Assine para ver o desempenho dos seus posts!');
+                                  setActiveMenuPostId(null);
+                                }
+                              }}
+                              className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                            >
+                              <BarChart2 className="w-4 h-4" />
+                              <span>Ver estatísticas</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                     
-                    <div className="relative">
+                    {editingPost?.id === post.id ? (
+                      <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+                        <textarea
+                          value={editContent}
+                          onChange={(e) => setEditContent(e.target.value)}
+                          className="w-full bg-white border border-gray-200 rounded-xl p-3 outline-none resize-none min-h-[80px]"
+                          autoFocus
+                        />
+                        <div className="flex justify-end space-x-2 mt-2">
+                          <button 
+                            onClick={() => setEditingPost(null)}
+                            className="px-4 py-1.5 rounded-full font-bold hover:bg-gray-100 transition-colors"
+                          >
+                            Cancelar
+                          </button>
+                          <button 
+                            onClick={() => handleEditPost(post.id)}
+                            disabled={!editContent.trim() || editContent === post.content}
+                            className="bg-black text-white px-4 py-1.5 rounded-full font-bold hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                          >
+                            Salvar
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        {post.replyToUsername && (
+                          <div className="mt-1 text-sm text-gray-500">
+                            Respondendo a <span className="text-blue-500">@{post.replyToUsername}</span>
+                          </div>
+                        )}
+                        <p className="mt-1 text-gray-900 whitespace-pre-wrap break-words">{post.content}</p>
+                        {post.imageUrl && (
+                          <div className="mt-3 rounded-2xl overflow-hidden border border-gray-200">
+                            <img src={post.imageUrl} alt="Post attachment" className="w-full h-auto max-h-96 object-cover" />
+                          </div>
+                        )}
+                      </>
+                    )}
+                    
+                    <div className="flex justify-between mt-4 text-gray-500 max-w-md">
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();
-                          setActiveMenuPostId(activeMenuPostId === post.id ? null : post.id);
+                          setReplyToPost(post);
+                          setIsCreateModalOpen(true);
                         }}
-                        className="p-2 hover:bg-blue-50 rounded-full transition-colors text-gray-500 hover:text-blue-500"
+                        className="flex items-center space-x-2 hover:text-blue-500 transition-colors group"
                       >
-                        <MoreHorizontal className="w-5 h-5" />
+                        <div className="p-2 group-hover:bg-blue-50 rounded-full">
+                          <MessageCircle className="w-5 h-5" />
+                        </div>
+                        <span className="text-sm">{post.repliesCount || 0}</span>
                       </button>
-                      
-                      {activeMenuPostId === post.id && (
-                        <div className="absolute right-0 mt-1 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-10" onClick={(e) => e.stopPropagation()}>
-                          {post.authorId === userProfile?.uid ? (
-                            <>
-                              <button 
-                                onClick={() => handleDeletePost(post.id)}
-                                className="w-full text-left px-4 py-2 text-red-500 hover:bg-gray-50 flex items-center space-x-2"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                                <span>Apagar post</span>
-                              </button>
-                              
-                              <button 
-                                onClick={() => {
-                                  if (canEditPost(post)) {
-                                    setEditingPost(post);
-                                    setEditContent(post.content);
-                                    setActiveMenuPostId(null);
-                                  } else {
-                                    alert('O tempo de edição (3 minutos) expirou. Assine o Premium para editar a qualquer momento.');
-                                    setActiveMenuPostId(null);
-                                  }
-                                }}
-                                className={`w-full text-left px-4 py-2 flex items-center space-x-2 ${canEditPost(post) ? 'text-gray-700 hover:bg-gray-50' : 'text-gray-400 cursor-not-allowed'}`}
-                              >
-                                <Edit2 className="w-4 h-4" />
-                                <span>Editar post</span>
-                              </button>
-                            </>
-                          ) : (
-                            <button 
-                              onClick={() => handleFollowClick(post.authorId, post.authorName, post.authorPhoto)}
-                              className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
-                            >
-                              <UserIcon className="w-4 h-4" />
-                              <span>{userProfile?.following?.includes(post.authorId) ? 'Deixar de seguir' : 'Seguir'} @{post.authorUsername}</span>
-                            </button>
-                          )}
-                          
-                          <button 
-                            onClick={() => {
-                              if (userProfile?.isPremium) {
-                                setSelectedStatsPost(post);
-                                setIsStatsModalOpen(true);
-                                setActiveMenuPostId(null);
-                              } else {
-                                alert('Estatísticas avançadas são um recurso Premium. Assine para ver o desempenho dos seus posts!');
-                                setActiveMenuPostId(null);
-                              }
-                            }}
-                            className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
-                          >
-                            <BarChart2 className="w-4 h-4" />
-                            <span>Ver estatísticas</span>
-                          </button>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRepost(post);
+                        }}
+                        className={`flex items-center space-x-2 transition-colors group ${post.reposts?.includes(userProfile?.uid) ? 'text-green-500' : 'hover:text-green-500'}`}
+                      >
+                        <motion.div 
+                          whileTap={{ scale: 0.8 }}
+                          className="p-2 group-hover:bg-green-50 rounded-full"
+                        >
+                          <Repeat className={`w-5 h-5 ${post.reposts?.includes(userProfile?.uid) ? 'stroke-[3px]' : ''}`} />
+                        </motion.div>
+                        <span className="text-sm">{post.repostsCount || 0}</span>
+                      </button>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleLikePost(post);
+                        }}
+                        className={`flex items-center space-x-2 transition-colors group ${post.likes?.includes(userProfile?.uid) ? 'text-red-500' : 'hover:text-red-500'}`}
+                      >
+                        <motion.div 
+                          whileTap={{ scale: 0.8 }}
+                          className="p-2 group-hover:bg-red-50 rounded-full"
+                        >
+                          <Heart className={`w-5 h-5 ${post.likes?.includes(userProfile?.uid) ? 'fill-current' : ''}`} />
+                        </motion.div>
+                        <span className="text-sm">{post.likesCount || 0}</span>
+                      </button>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (userProfile?.isPremium) {
+                            setSelectedStatsPost(post);
+                            setIsStatsModalOpen(true);
+                          } else {
+                            alert('Estatísticas avançadas são um recurso Premium. Assine para ver o desempenho dos seus posts!');
+                          }
+                        }}
+                        className="flex items-center space-x-2 hover:text-blue-500 transition-colors group"
+                      >
+                        <div className="p-2 group-hover:bg-blue-50 rounded-full">
+                          <BarChart2 className="w-5 h-5" />
                         </div>
-                      )}
+                      </button>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Share functionality could be added here
+                        }}
+                        className="flex items-center space-x-2 hover:text-blue-500 transition-colors group"
+                      >
+                        <div className="p-2 group-hover:bg-blue-50 rounded-full">
+                          <Send className="w-5 h-5" />
+                        </div>
+                      </button>
                     </div>
                   </div>
-                  
-                  {editingPost?.id === post.id ? (
-                    <div className="mt-2" onClick={(e) => e.stopPropagation()}>
-                      <textarea
-                        value={editContent}
-                        onChange={(e) => setEditContent(e.target.value)}
-                        className="w-full bg-white border border-gray-200 rounded-xl p-3 outline-none resize-none min-h-[80px]"
-                        autoFocus
-                      />
-                      <div className="flex justify-end space-x-2 mt-2">
-                        <button 
-                          onClick={() => setEditingPost(null)}
-                          className="px-4 py-1.5 rounded-full font-bold hover:bg-gray-100 transition-colors"
-                        >
-                          Cancelar
-                        </button>
-                        <button 
-                          onClick={() => handleEditPost(post.id)}
-                          disabled={!editContent.trim() || editContent === post.content}
-                          className="bg-black text-white px-4 py-1.5 rounded-full font-bold hover:bg-gray-800 disabled:opacity-50 transition-colors"
-                        >
-                          Salvar
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      {post.replyToUsername && (
-                        <div className="mt-1 text-sm text-gray-500">
-                          Respondendo a <span className="text-blue-500">@{post.replyToUsername}</span>
-                        </div>
-                      )}
-                      <p className="mt-1 text-gray-900 whitespace-pre-wrap break-words">{post.content}</p>
-                      {post.imageUrl && (
-                        <div className="mt-3 rounded-2xl overflow-hidden border border-gray-200">
-                          <img src={post.imageUrl} alt="Post attachment" className="w-full h-auto max-h-96 object-cover" />
-                        </div>
-                      )}
-                    </>
-                  )}
-                  
-                  <div className="flex justify-between mt-4 text-gray-500 max-w-md">
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setReplyToPost(post);
-                        setIsCreateModalOpen(true);
-                      }}
-                      className="flex items-center space-x-2 hover:text-blue-500 transition-colors group"
-                    >
-                      <div className="p-2 group-hover:bg-blue-50 rounded-full">
-                        <MessageCircle className="w-5 h-5" />
-                      </div>
-                      <span className="text-sm">{post.repliesCount || 0}</span>
-                    </button>
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRepost(post);
-                      }}
-                      className={`flex items-center space-x-2 transition-colors group ${post.reposts?.includes(userProfile?.uid) ? 'text-green-500' : 'hover:text-green-500'}`}
-                    >
-                      <motion.div 
-                        whileTap={{ scale: 0.8 }}
-                        className="p-2 group-hover:bg-green-50 rounded-full"
-                      >
-                        <Repeat className={`w-5 h-5 ${post.reposts?.includes(userProfile?.uid) ? 'stroke-[3px]' : ''}`} />
-                      </motion.div>
-                      <span className="text-sm">{post.repostsCount || 0}</span>
-                    </button>
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleLikePost(post);
-                      }}
-                      className={`flex items-center space-x-2 transition-colors group ${post.likes?.includes(userProfile?.uid) ? 'text-red-500' : 'hover:text-red-500'}`}
-                    >
-                      <motion.div 
-                        whileTap={{ scale: 0.8 }}
-                        className="p-2 group-hover:bg-red-50 rounded-full"
-                      >
-                        <Heart className={`w-5 h-5 ${post.likes?.includes(userProfile?.uid) ? 'fill-current' : ''}`} />
-                      </motion.div>
-                      <span className="text-sm">{post.likesCount || 0}</span>
-                    </button>
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (userProfile?.isPremium) {
-                          setSelectedStatsPost(post);
-                          setIsStatsModalOpen(true);
-                        } else {
-                          alert('Estatísticas avançadas são um recurso Premium. Assine para ver o desempenho dos seus posts!');
-                        }
-                      }}
-                      className="flex items-center space-x-2 hover:text-blue-500 transition-colors group"
-                    >
-                      <div className="p-2 group-hover:bg-blue-50 rounded-full">
-                        <BarChart2 className="w-5 h-5" />
-                      </div>
-                    </button>
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // Share functionality could be added here
-                      }}
-                      className="flex items-center space-x-2 hover:text-blue-500 transition-colors group"
-                    >
-                      <div className="p-2 group-hover:bg-blue-50 rounded-full">
-                        <Send className="w-5 h-5" />
-                      </div>
-                    </button>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-      </div>
+                </article>
+                );
+              })}
+        </div>
+      )}
+    </div>
 
         {/* Mobile FAB */}
         <button

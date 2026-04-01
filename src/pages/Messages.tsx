@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, User as UserIcon, Send } from 'lucide-react';
+import { Mail, User as UserIcon, Send, MoreHorizontal, Trash2, Archive } from 'lucide-react';
 import VerifiedBadge from '../components/VerifiedBadge';
 import { useAuth } from '../contexts/AuthContext';
 import { useOutletContext, useNavigate } from 'react-router-dom';
-import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 
 enum OperationType {
@@ -70,6 +70,7 @@ export default function Messages() {
     const q = query(
       collection(db, 'conversations'),
       where('participants', 'array-contains', userProfile.uid),
+      where('archived', '!=', true),
       orderBy('updatedAt', 'desc')
     );
 
@@ -87,6 +88,25 @@ export default function Messages() {
 
     return unsubscribe;
   }, [userProfile?.uid]);
+
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!confirm('Tem certeza que deseja apagar esta conversa?')) return;
+    try {
+      await deleteDoc(doc(db, 'conversations', id));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `conversations/${id}`);
+    }
+  };
+
+  const handleArchive = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    try {
+      await updateDoc(doc(db, 'conversations', id), { archived: true });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `conversations/${id}`);
+    }
+  };
 
   return (
     <div className="w-full h-full bg-white/50">
@@ -119,7 +139,7 @@ export default function Messages() {
                 <div 
                   key={conversation.id} 
                   onClick={() => navigate(`/messages/${conversation.id}`)}
-                  className="p-4 hover:bg-black/5 transition-colors flex items-center space-x-4 cursor-pointer"
+                  className="p-4 hover:bg-black/5 transition-colors flex items-center space-x-4 cursor-pointer relative"
                 >
                   <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
                     {otherParticipantInfo?.photoURL ? (
@@ -150,6 +170,14 @@ export default function Messages() {
                             </span>
                           )}
                         </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <button onClick={(e) => handleDelete(e, conversation.id)} className="p-2 hover:bg-red-100 rounded-full text-red-500">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                        <button onClick={(e) => handleArchive(e, conversation.id)} className="p-2 hover:bg-gray-100 rounded-full text-gray-500">
+                          <Archive className="w-4 h-4" />
+                        </button>
                       </div>
                 </div>
               );
