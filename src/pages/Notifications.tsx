@@ -137,11 +137,11 @@ export default function Notifications() {
                   {notification.type === 'repost' && <Repeat className="w-6 h-6 text-green-600" />}
                 </div>
                 <div className="flex-1">
-                  <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden mb-2">
+                  <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden mb-2 flex-shrink-0">
                     {notification.senderPhoto ? (
                       <img src={notification.senderPhoto} alt={notification.senderName} className="w-full h-full object-cover" />
                     ) : (
-                      <UserIcon className="w-full h-full p-1.5 text-gray-400" />
+                      <UserIcon className="w-full h-full p-2 text-gray-400" />
                     )}
                   </div>
                   <p className="text-gray-900">

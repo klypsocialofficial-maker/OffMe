@@ -282,12 +282,14 @@ export default function Chat() {
               <div className={`flex w-full ${isMine ? 'justify-end' : 'justify-start'}`}>
                 {!isMine && (
                   <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 mr-2 self-end mb-1">
-                    {showAvatar && (
+                    {showAvatar ? (
                       otherParticipantInfo?.photoURL ? (
                         <img src={otherParticipantInfo.photoURL} alt={otherParticipantInfo.displayName} className="w-full h-full object-cover" />
                       ) : (
                         <UserIcon className="w-full h-full p-1.5 text-gray-400" />
                       )
+                    ) : (
+                      <div className="w-8 h-8" /> // Placeholder to maintain alignment
                     )}
                   </div>
                 )}
