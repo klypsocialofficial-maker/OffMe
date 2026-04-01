@@ -63,7 +63,8 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
         reposts: [],
         replyToId: replyTo?.id || null,
         replyToUsername: replyTo?.authorUsername || null,
-        replyToVerified: replyTo?.authorVerified || replyTo?.authorUsername === 'Rulio' || false
+        replyToVerified: replyTo?.authorVerified || replyTo?.authorUsername === 'Rulio' || false,
+        threadId: replyTo?.threadId || replyTo?.id || null
       });
 
       if (replyTo) {

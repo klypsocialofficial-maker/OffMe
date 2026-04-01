@@ -86,8 +86,8 @@ export default function PostDetail() {
 
     const repliesQuery = query(
       collection(db, 'posts'),
-      where('replyToId', '==', postId),
-      orderBy('createdAt', 'desc')
+      where('threadId', '==', postId),
+      orderBy('createdAt', 'asc')
     );
 
     const unsubscribeReplies = onSnapshot(repliesQuery, (snapshot) => {
@@ -237,48 +237,76 @@ export default function PostDetail() {
               <p className="text-gray-500">Nenhuma resposta ainda. Seja o primeiro a responder!</p>
             </div>
           ) : (
-            replies.map((reply) => (
-              <article 
-                key={reply.id} 
-                className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex space-x-4 cursor-pointer hover:bg-gray-50 transition-colors"
-                onClick={() => navigate(`/post/${reply.id}`)}
-              >
-                <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
-                  {reply.authorPhoto ? (
-                    <img src={reply.authorPhoto} alt={reply.authorName} className="w-full h-full object-cover" />
-                  ) : (
-                    <UserIcon className="w-full h-full p-2 text-gray-400" />
-                  )}
+            (() => {
+              const buildTree = (replies: any[], parentId: string | null): any[] => {
+                return replies
+                  .filter(reply => reply.replyToId === parentId)
+                  .map(reply => ({
+                    ...reply,
+                    children: buildTree(replies, reply.id)
+                  }));
+              };
+
+              const ReplyComponent: React.FC<{ reply: any, depth?: number }> = ({ reply, depth = 0 }) => (
+                <div style={{ marginLeft: depth * 20 }}>
+                  <article 
+                    className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex space-x-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/post/${reply.id}`);
+                    }}
+                  >
+                    <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+                      {reply.authorPhoto ? (
+                        <img src={reply.authorPhoto} alt={reply.authorName} className="w-full h-full object-cover" />
+                      ) : (
+                        <UserIcon className="w-full h-full p-2 text-gray-400" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-1">
+                        <span className="font-bold truncate">{reply.authorName}</span>
+                        {(reply.authorVerified || reply.authorUsername === 'Rulio') && <VerifiedBadge />}
+                        <span className="text-gray-500 truncate text-sm">@{reply.authorUsername}</span>
+                      </div>
+                      <p className="mt-1 text-gray-900 whitespace-pre-wrap break-words">{reply.content}</p>
+                      {reply.imageUrl && (
+                        <div className="mt-3 rounded-xl overflow-hidden border border-gray-100">
+                          <img src={reply.imageUrl} alt="Reply attachment" className="w-full h-auto max-h-60 object-cover" />
+                        </div>
+                      )}
+                      <div className="flex justify-between mt-3 text-gray-500 max-w-[200px]">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setReplyToPost(reply);
+                            setIsCreateModalOpen(true);
+                          }}
+                          className="flex items-center space-x-1 hover:text-blue-500"
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                          <span className="text-xs">{reply.repliesCount || 0}</span>
+                        </button>
+                        <div className="flex items-center space-x-1">
+                          <Repeat className="w-4 h-4" />
+                          <span className="text-xs">{reply.repostsCount || 0}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <Heart className="w-4 h-4" />
+                          <span className="text-xs">{reply.likesCount || 0}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                  {reply.children.map((child: any) => (
+                    <ReplyComponent key={child.id} reply={child} depth={depth + 1} />
+                  ))}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center space-x-1">
-                    <span className="font-bold truncate">{reply.authorName}</span>
-                    {(reply.authorVerified || reply.authorUsername === 'Rulio') && <VerifiedBadge />}
-                    <span className="text-gray-500 truncate text-sm">@{reply.authorUsername}</span>
-                  </div>
-                  <p className="mt-1 text-gray-900 whitespace-pre-wrap break-words">{reply.content}</p>
-                  {reply.imageUrl && (
-                    <div className="mt-3 rounded-xl overflow-hidden border border-gray-100">
-                      <img src={reply.imageUrl} alt="Reply attachment" className="w-full h-auto max-h-60 object-cover" />
-                    </div>
-                  )}
-                  <div className="flex justify-between mt-3 text-gray-500 max-w-[200px]">
-                    <div className="flex items-center space-x-1">
-                      <MessageCircle className="w-4 h-4" />
-                      <span className="text-xs">{reply.repliesCount || 0}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <Repeat className="w-4 h-4" />
-                      <span className="text-xs">{reply.repostsCount || 0}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <Heart className="w-4 h-4" />
-                      <span className="text-xs">{reply.likesCount || 0}</span>
-                    </div>
-                  </div>
-                </div>
-              </article>
-            ))
+              );
+
+              const replyTree = buildTree(replies, postId || null);
+              return replyTree.map(reply => <ReplyComponent key={reply.id} reply={reply} />);
+            })()
           )}
         </div>
       </div>
