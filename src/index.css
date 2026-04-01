@@ -16,6 +16,17 @@
   .liquid-glass-card {
     @apply bg-white/60 backdrop-blur-[20px] sm:border-x sm:border-b border-white/60 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.05)];
   }
+
+  .shimmer {
+    background: linear-gradient(to right, #f6f7f8 8%, #edeef1 18%, #f6f7f8 33%);
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite linear;
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
 }
 
 html, body {

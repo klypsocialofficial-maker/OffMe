@@ -27,9 +27,12 @@
         "authorPhoto": { "type": "string", "description": "The photo URL of the author." },
         "createdAt": { "type": "timestamp", "description": "The time the post was created." },
         "likesCount": { "type": "number", "description": "The number of likes the post has received." },
-        "repliesCount": { "type": "number", "description": "The number of replies the post has received." }
+        "repliesCount": { "type": "number", "description": "The number of replies the post has received." },
+        "repostsCount": { "type": "number", "description": "The number of reposts the post has received." },
+        "likes": { "type": "array", "items": { "type": "string" }, "description": "Array of UIDs who liked the post." },
+        "reposts": { "type": "array", "items": { "type": "string" }, "description": "Array of UIDs who reposted the post." }
       },
-      "required": ["content", "authorId", "authorName", "authorUsername", "createdAt", "likesCount", "repliesCount"]
+      "required": ["content", "authorId", "authorName", "authorUsername", "createdAt", "likesCount", "repliesCount", "repostsCount"]
     }
   },
   "firestore": {

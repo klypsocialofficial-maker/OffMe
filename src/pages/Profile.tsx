@@ -5,6 +5,7 @@ import EditProfileModal from '../components/EditProfileModal';
 import CreatePostModal from '../components/CreatePostModal';
 import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, arrayRemove, arrayUnion, addDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
+import { motion, AnimatePresence } from 'motion/react';
 
 enum OperationType {
   CREATE = 'create',
@@ -60,6 +61,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 export default function Profile() {
   const { userProfile } = useAuth();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'posts' | 'replies' | 'media' | 'likes'>('posts');
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeMenuPostId, setActiveMenuPostId] = useState<string | null>(null);
@@ -71,26 +73,93 @@ export default function Profile() {
   useEffect(() => {
     if (!userProfile?.uid || !db) return;
 
-    const q = query(
-      collection(db, 'posts'),
-      where('authorId', '==', userProfile.uid),
-      orderBy('createdAt', 'desc')
-    );
+    setLoading(true);
+    let unsubscribe: () => void;
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const results = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setPosts(results);
-      setLoading(false);
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'posts');
-      setLoading(false);
-    });
+    if (activeTab === 'posts') {
+      // Fetch user's posts and reposted posts
+      const q1 = query(
+        collection(db, 'posts'),
+        where('authorId', '==', userProfile.uid),
+        orderBy('createdAt', 'desc')
+      );
+      const q2 = query(
+        collection(db, 'posts'),
+        where('reposts', 'array-contains', userProfile.uid),
+        orderBy('createdAt', 'desc')
+      );
 
-    return unsubscribe;
-  }, [userProfile?.uid]);
+      const unsub1 = onSnapshot(q1, (snapshot1) => {
+        const unsub2 = onSnapshot(q2, (snapshot2) => {
+          const results1 = snapshot1.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          const results2 = snapshot2.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          
+          // Merge and remove duplicates (if user reposts their own post)
+          const merged = [...results1, ...results2];
+          const unique = Array.from(new Map(merged.map(item => [item.id, item])).values());
+          
+          // Filter out replies for the main "Posts" tab
+          const filtered = unique.filter((post: any) => !post.replyToId);
+          
+          // Sort by createdAt
+          filtered.sort((a: any, b: any) => {
+            const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date();
+            const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date();
+            return dateB - dateA;
+          });
+
+          setPosts(filtered);
+          setLoading(false);
+        }, (error) => {
+          handleFirestoreError(error, OperationType.LIST, 'posts_reposts');
+          setLoading(false);
+        });
+        unsubscribe = unsub2;
+      }, (error) => {
+        handleFirestoreError(error, OperationType.LIST, 'posts_author');
+        setLoading(false);
+      });
+      unsubscribe = unsub1;
+    } else {
+      let q;
+      if (activeTab === 'likes') {
+        q = query(
+          collection(db, 'posts'),
+          where('likes', 'array-contains', userProfile.uid),
+          orderBy('createdAt', 'desc')
+        );
+      } else {
+        q = query(
+          collection(db, 'posts'),
+          where('authorId', '==', userProfile.uid),
+          orderBy('createdAt', 'desc')
+        );
+      }
+
+      unsubscribe = onSnapshot(q, (snapshot) => {
+        let results = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+
+        if (activeTab === 'replies') {
+          results = results.filter(post => post.replyToId);
+        } else if (activeTab === 'media') {
+          results = results.filter(post => post.imageUrl);
+        }
+
+        setPosts(results);
+        setLoading(false);
+      }, (error) => {
+        handleFirestoreError(error, OperationType.LIST, 'posts');
+        setLoading(false);
+      });
+    }
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, [userProfile?.uid, activeTab]);
 
   const handleLikePost = async (post: any) => {
     if (!userProfile?.uid || !db) return;
@@ -111,6 +180,35 @@ export default function Profile() {
           senderName: userProfile.displayName,
           senderPhoto: userProfile.photoURL || null,
           type: 'like',
+          postId: post.id,
+          read: false,
+          createdAt: serverTimestamp()
+        });
+      }
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, 'posts');
+    }
+  };
+
+  const handleRepost = async (post: any) => {
+    if (!userProfile?.uid || !db) return;
+    
+    const isReposted = post.reposts?.includes(userProfile.uid);
+    const postRef = doc(db, 'posts', post.id);
+    
+    try {
+      await updateDoc(postRef, {
+        reposts: isReposted ? arrayRemove(userProfile.uid) : arrayUnion(userProfile.uid),
+        repostsCount: isReposted ? Math.max(0, (post.repostsCount || 0) - 1) : (post.repostsCount || 0) + 1
+      });
+      
+      if (!isReposted && post.authorId !== userProfile.uid) {
+        await addDoc(collection(db, 'notifications'), {
+          recipientId: post.authorId,
+          senderId: userProfile.uid,
+          senderName: userProfile.displayName,
+          senderPhoto: userProfile.photoURL || null,
+          type: 'repost',
           postId: post.id,
           read: false,
           createdAt: serverTimestamp()
@@ -235,28 +333,58 @@ export default function Profile() {
 
       {/* Tabs */}
       <div className="flex border-b border-gray-100">
-        <button className="flex-1 py-4 font-bold text-black relative hover:bg-black/5 transition-colors">
+        <button 
+          onClick={() => setActiveTab('posts')}
+          className={`flex-1 py-4 font-bold relative hover:bg-black/5 transition-colors ${activeTab === 'posts' ? 'text-black' : 'text-gray-500'}`}
+        >
           Posts
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-blue-500 rounded-full" />
+          {activeTab === 'posts' && (
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-blue-500 rounded-full" />
+          )}
         </button>
-        <button className="flex-1 py-4 font-medium text-gray-500 hover:bg-black/5 transition-colors">
+        <button 
+          onClick={() => setActiveTab('replies')}
+          className={`flex-1 py-4 font-bold relative hover:bg-black/5 transition-colors ${activeTab === 'replies' ? 'text-black' : 'text-gray-500'}`}
+        >
           Respostas
+          {activeTab === 'replies' && (
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-blue-500 rounded-full" />
+          )}
         </button>
-        <button className="flex-1 py-4 font-medium text-gray-500 hover:bg-black/5 transition-colors">
+        <button 
+          onClick={() => setActiveTab('media')}
+          className={`flex-1 py-4 font-bold relative hover:bg-black/5 transition-colors ${activeTab === 'media' ? 'text-black' : 'text-gray-500'}`}
+        >
           Mídia
+          {activeTab === 'media' && (
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-blue-500 rounded-full" />
+          )}
         </button>
-        <button className="flex-1 py-4 font-medium text-gray-500 hover:bg-black/5 transition-colors">
+        <button 
+          onClick={() => setActiveTab('likes')}
+          className={`flex-1 py-4 font-bold relative hover:bg-black/5 transition-colors ${activeTab === 'likes' ? 'text-black' : 'text-gray-500'}`}
+        >
           Curtidas
+          {activeTab === 'likes' && (
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-blue-500 rounded-full" />
+          )}
         </button>
       </div>
 
       <div className="pb-20">
         {loading ? (
-          <div className="p-8 text-center text-gray-500">Carregando posts...</div>
+          <div className="p-8 text-center text-gray-500">Carregando...</div>
         ) : posts.length > 0 ? (
           <div className="divide-y divide-gray-100">
             {posts.map((post) => (
               <article key={post.id} className="p-4 hover:bg-black/5 transition-colors cursor-pointer">
+                {/* Repost Indicator */}
+                {post.reposts?.includes(userProfile?.uid) && activeTab === 'posts' && (
+                  <div className="flex items-center space-x-2 text-gray-500 text-xs font-bold mb-2 ml-10">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                    <span>Você repostou</span>
+                  </div>
+                )}
                 <div className="flex space-x-3">
                   <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gray-200 overflow-hidden">
                     {post.authorPhoto ? (
@@ -390,18 +518,28 @@ export default function Profile() {
                         </div>
                         <span className="text-sm">{post.repliesCount || 0}</span>
                       </button>
-                      <button className="flex items-center space-x-2 hover:text-green-500 transition-colors group">
-                        <div className="p-2 group-hover:bg-green-50 rounded-full">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
-                        </div>
+                      <button 
+                        onClick={() => handleRepost(post)}
+                        className={`flex items-center space-x-2 transition-colors group ${post.reposts?.includes(userProfile?.uid) ? 'text-green-500' : 'hover:text-green-500'}`}
+                      >
+                        <motion.div 
+                          whileTap={{ scale: 0.8 }}
+                          className="p-2 group-hover:bg-green-50 rounded-full"
+                        >
+                          <svg className="w-5 h-5" fill={post.reposts?.includes(userProfile?.uid) ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                        </motion.div>
+                        <span className="text-sm">{post.repostsCount || 0}</span>
                       </button>
                       <button 
                         onClick={() => handleLikePost(post)}
                         className={`flex items-center space-x-2 transition-colors group ${post.likes?.includes(userProfile?.uid) ? 'text-red-500' : 'hover:text-red-500'}`}
                       >
-                        <div className="p-2 group-hover:bg-red-50 rounded-full">
+                        <motion.div 
+                          whileTap={{ scale: 0.8 }}
+                          className="p-2 group-hover:bg-red-50 rounded-full"
+                        >
                           <svg className="w-5 h-5" fill={post.likes?.includes(userProfile?.uid) ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
-                        </div>
+                        </motion.div>
                         <span className="text-sm">{post.likesCount || 0}</span>
                       </button>
                       <button className="flex items-center space-x-2 hover:text-blue-500 transition-colors group">
@@ -417,7 +555,10 @@ export default function Profile() {
           </div>
         ) : (
           <div className="p-8 text-center text-gray-500">
-            Ainda não há posts.
+            {activeTab === 'posts' && "Ainda não há posts."}
+            {activeTab === 'replies' && "Ainda não há respostas."}
+            {activeTab === 'media' && "Ainda não há mídia."}
+            {activeTab === 'likes' && "Você ainda não curtiu nenhum post."}
           </div>
         )}
       </div>

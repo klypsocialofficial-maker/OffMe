@@ -3,6 +3,7 @@ import { User as UserIcon, Image as ImageIcon, X } from 'lucide-react';
 import { addDoc, collection, serverTimestamp, doc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../firebase';
 import { uploadToImgBB } from '../lib/imgbb';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -19,8 +20,6 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  if (!isOpen) return null;
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -57,6 +56,9 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
         createdAt: serverTimestamp(),
         likesCount: 0,
         repliesCount: 0,
+        repostsCount: 0,
+        likes: [],
+        reposts: [],
         replyToId: replyTo?.id || null,
         replyToUsername: replyTo?.authorUsername || null
       });
@@ -91,71 +93,103 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-10 sm:pt-20 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="flex items-center justify-between p-4 border-b border-gray-100">
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-            <X className="w-5 h-5" />
-          </button>
-          <button
-            onClick={handlePost}
-            disabled={(!content.trim() && !imageFile) || loading}
-            className="bg-black text-white px-5 py-1.5 rounded-full font-bold hover:bg-gray-800 disabled:opacity-50 transition-colors"
-          >
-            {loading ? 'Postando...' : (replyTo ? 'Responder' : 'Postar')}
-          </button>
-        </div>
-        <div className="p-4 flex space-x-4 overflow-y-auto">
-          <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
-            {userProfile?.photoURL ? (
-              <img src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full object-cover" />
-            ) : (
-              <UserIcon className="w-full h-full p-2 text-gray-400" />
-            )}
-          </div>
-          <div className="flex-1">
-            {replyTo && (
-              <div className="mb-2 text-sm text-gray-500">
-                Respondendo a <span className="text-blue-500">@{replyTo.authorUsername}</span>
-              </div>
-            )}
-            <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder={replyTo ? "Poste sua resposta" : "O que está acontecendo?"}
-              className="w-full bg-transparent text-xl outline-none resize-none min-h-[120px] placeholder-gray-500"
-              autoFocus
-            />
-            {imagePreview && (
-              <div className="relative mt-2 rounded-2xl overflow-hidden border border-gray-200">
-                <button
-                  onClick={removeImage}
-                  className="absolute top-2 right-2 p-1.5 bg-black/50 hover:bg-black/70 text-white rounded-full backdrop-blur-md transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-                <img src={imagePreview} alt="Preview" className="w-full h-auto max-h-80 object-cover" />
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="p-4 border-t border-gray-100 flex items-center text-blue-500">
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            ref={fileInputRef}
-            onChange={handleImageChange}
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm"
           />
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="p-2 hover:bg-blue-50 rounded-full transition-colors"
+
+          {/* Bottom Sheet */}
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-[32px] shadow-2xl overflow-hidden flex flex-col h-[60vh] sm:h-[50vh] max-w-2xl mx-auto"
           >
-            <ImageIcon className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-    </div>
+            {/* Handle bar for visual cue */}
+            <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mt-3 mb-1" />
+
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+              <button
+                onClick={handlePost}
+                disabled={(!content.trim() && !imageFile) || loading}
+                className="bg-black text-white px-6 py-2 rounded-full font-bold hover:bg-gray-800 disabled:opacity-50 transition-colors shadow-lg shadow-black/10"
+              >
+                {loading ? 'Postando...' : (replyTo ? 'Responder' : 'Postar')}
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="flex space-x-4">
+                <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 border-2 border-white shadow-sm">
+                  {userProfile?.photoURL ? (
+                    <img src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full object-cover" />
+                  ) : (
+                    <UserIcon className="w-full h-full p-2 text-gray-400" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  {replyTo && (
+                    <div className="mb-2 text-sm text-gray-500 font-medium">
+                      Respondendo a <span className="text-blue-500">@{replyTo.authorUsername}</span>
+                    </div>
+                  )}
+                  <textarea
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    placeholder={replyTo ? "Poste sua resposta" : "O que está acontecendo?"}
+                    className="w-full bg-transparent text-xl outline-none resize-none min-h-[150px] placeholder-gray-400"
+                    autoFocus
+                  />
+                  {imagePreview && (
+                    <div className="relative mt-4 rounded-2xl overflow-hidden border border-gray-100 shadow-sm group">
+                      <button
+                        onClick={removeImage}
+                        className="absolute top-3 right-3 p-2 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-md transition-all scale-90 group-hover:scale-100"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                      <img src={imagePreview} alt="Preview" className="w-full h-auto max-h-64 object-cover" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 border-t border-gray-100 flex items-center bg-gray-50/50">
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                ref={fileInputRef}
+                onChange={handleImageChange}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="p-3 hover:bg-blue-50 text-blue-500 rounded-full transition-all hover:scale-110 active:scale-95"
+                title="Adicionar imagem"
+              >
+                <ImageIcon className="w-6 h-6" />
+              </button>
+              
+              <div className="ml-auto text-xs text-gray-400 font-medium">
+                {content.length} / 280
+              </div>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
   );
 }

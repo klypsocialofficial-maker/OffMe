@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { User as UserIcon, Send, Image as ImageIcon, MoreHorizontal, Trash2, Edit2, BarChart2, Plus } from 'lucide-react';
+import { User as UserIcon, Send, Image as ImageIcon, MoreHorizontal, Trash2, Edit2, BarChart2, Plus, Search, Filter, Calendar, X } from 'lucide-react';
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, where, deleteDoc, doc, updateDoc, limit, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { useOutletContext } from 'react-router-dom';
 import CreatePostModal from '../components/CreatePostModal';
 import { uploadToImgBB } from '../lib/imgbb';
+import { motion, AnimatePresence } from 'motion/react';
 
 enum OperationType {
   CREATE = 'create',
@@ -58,12 +59,37 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
   throw new Error(JSON.stringify(errInfo));
 }
 
+const PostSkeleton = () => (
+  <div className="p-4 bg-white/60 backdrop-blur-md rounded-2xl shadow-sm border border-white/40 overflow-hidden mb-4 mx-4">
+    <div className="flex space-x-3">
+      <div className="w-12 h-12 bg-gray-200 rounded-full flex-shrink-0 shimmer" />
+      <div className="flex-1 space-y-3 py-1">
+        <div className="flex items-center space-x-2">
+          <div className="h-4 bg-gray-200 rounded w-24 shimmer" />
+          <div className="h-4 bg-gray-200 rounded w-16 shimmer" />
+        </div>
+        <div className="space-y-2">
+          <div className="h-4 bg-gray-200 rounded w-full shimmer" />
+          <div className="h-4 bg-gray-200 rounded w-5/6 shimmer" />
+        </div>
+        <div className="flex justify-between max-w-md pt-2">
+          <div className="h-8 w-8 bg-gray-100 rounded-full shimmer" />
+          <div className="h-8 w-8 bg-gray-100 rounded-full shimmer" />
+          <div className="h-8 w-8 bg-gray-100 rounded-full shimmer" />
+          <div className="h-8 w-8 bg-gray-100 rounded-full shimmer" />
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
 export default function Home() {
   const { userProfile, logout } = useAuth();
   const { openDrawer } = useOutletContext<{ openDrawer: () => void }>();
   const [posts, setPosts] = useState<any[]>([]);
   const [newPost, setNewPost] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(true);
   const [activeTab, setActiveTab] = useState<'foryou' | 'following'>('foryou');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [activeMenuPostId, setActiveMenuPostId] = useState<string | null>(null);
@@ -72,9 +98,17 @@ export default function Home() {
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
   const [replyToPost, setReplyToPost] = useState<any | null>(null);
 
+  // Filter States
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [searchAuthor, setSearchAuthor] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+
   useEffect(() => {
     if (!db) return;
     
+    setIsFetching(true);
     // Always fetch recent posts, then filter client-side for 'following' tab
     // This avoids the 10-item limit of Firestore 'in' queries
     const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(100));
@@ -91,8 +125,10 @@ export default function Home() {
       }
 
       setPosts(postsData);
+      setIsFetching(false);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'posts');
+      setIsFetching(false);
     });
 
     return unsubscribe;
@@ -112,7 +148,10 @@ export default function Home() {
         authorPhoto: userProfile.photoURL,
         createdAt: serverTimestamp(),
         likesCount: 0,
-        repliesCount: 0
+        repliesCount: 0,
+        repostsCount: 0,
+        likes: [],
+        reposts: []
       });
       setNewPost('');
     } catch (error) {
@@ -121,6 +160,31 @@ export default function Home() {
       setLoading(false);
     }
   };
+
+  const filteredPosts = posts.filter(post => {
+    // Keyword filter
+    if (searchKeyword && !post.content.toLowerCase().includes(searchKeyword.toLowerCase())) {
+      return false;
+    }
+    // Author filter
+    if (searchAuthor && !(
+      post.authorName.toLowerCase().includes(searchAuthor.toLowerCase()) || 
+      post.authorUsername.toLowerCase().includes(searchAuthor.toLowerCase())
+    )) {
+      return false;
+    }
+    // Date range filter
+    if (startDate || endDate) {
+      const postDate = post.createdAt?.toDate ? post.createdAt.toDate() : new Date();
+      if (startDate && postDate < new Date(startDate)) return false;
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        if (postDate > end) return false;
+      }
+    }
+    return true;
+  });
 
   const handleDeletePost = async (postId: string) => {
     if (!db || !userProfile) return;
@@ -212,6 +276,35 @@ export default function Home() {
     }
   };
 
+  const handleRepost = async (post: any) => {
+    if (!userProfile?.uid || !db) return;
+    
+    const isReposted = post.reposts?.includes(userProfile.uid);
+    const postRef = doc(db, 'posts', post.id);
+    
+    try {
+      await updateDoc(postRef, {
+        reposts: isReposted ? arrayRemove(userProfile.uid) : arrayUnion(userProfile.uid),
+        repostsCount: isReposted ? Math.max(0, (post.repostsCount || 0) - 1) : (post.repostsCount || 0) + 1
+      });
+      
+      if (!isReposted && post.authorId !== userProfile.uid) {
+        await addDoc(collection(db, 'notifications'), {
+          recipientId: post.authorId,
+          senderId: userProfile.uid,
+          senderName: userProfile.displayName,
+          senderPhoto: userProfile.photoURL || null,
+          type: 'repost',
+          postId: post.id,
+          read: false,
+          createdAt: serverTimestamp()
+        });
+      }
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, 'posts');
+    }
+  };
+
   const canEditPost = (post: any) => {
     if (post.authorId !== userProfile?.uid) return false;
     if ((userProfile as any)?.isPremium) return true;
@@ -242,7 +335,7 @@ export default function Home() {
         </div>
 
         {/* Tabs */}
-        <div className="flex w-full" role="tablist" aria-label="Feed tabs">
+        <div className="flex w-full border-b border-gray-100/50" role="tablist" aria-label="Feed tabs">
           <button 
             role="tab"
             aria-selected={activeTab === 'foryou'}
@@ -271,7 +364,110 @@ export default function Home() {
               <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-blue-500 rounded-full" />
             )}
           </button>
+          <button 
+            onClick={() => setShowFilters(!showFilters)}
+            className={`px-4 hover:bg-black/5 transition-colors flex items-center justify-center ${showFilters ? 'text-blue-500' : 'text-gray-500'}`}
+            title="Filtros"
+          >
+            <Filter className="w-5 h-5" />
+          </button>
         </div>
+
+        {/* Filter Bar */}
+        <AnimatePresence>
+          {showFilters && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden bg-white/60 backdrop-blur-md border-b border-gray-100"
+            >
+              <div className="p-4 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Keyword Search */}
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input 
+                      type="text"
+                      placeholder="Palavras-chave..."
+                      value={searchKeyword}
+                      onChange={(e) => setSearchKeyword(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 bg-gray-100/50 border border-transparent focus:border-blue-500 focus:bg-white rounded-xl outline-none text-sm transition-all"
+                    />
+                    {searchKeyword && (
+                      <button onClick={() => setSearchKeyword('')} className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <X className="w-4 h-4 text-gray-400" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Author Search */}
+                  <div className="relative">
+                    <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input 
+                      type="text"
+                      placeholder="Autor (@usuario ou nome)..."
+                      value={searchAuthor}
+                      onChange={(e) => setSearchAuthor(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 bg-gray-100/50 border border-transparent focus:border-blue-500 focus:bg-white rounded-xl outline-none text-sm transition-all"
+                    />
+                    {searchAuthor && (
+                      <button onClick={() => setSearchAuthor('')} className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <X className="w-4 h-4 text-gray-400" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Date Start */}
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    <div className="flex-1 flex items-center space-x-2">
+                      <span className="text-xs text-gray-500 whitespace-nowrap">De:</span>
+                      <input 
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        className="flex-1 px-3 py-2 bg-gray-100/50 border border-transparent focus:border-blue-500 focus:bg-white rounded-xl outline-none text-sm transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Date End */}
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    <div className="flex-1 flex items-center space-x-2">
+                      <span className="text-xs text-gray-500 whitespace-nowrap">Até:</span>
+                      <input 
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        className="flex-1 px-3 py-2 bg-gray-100/50 border border-transparent focus:border-blue-500 focus:bg-white rounded-xl outline-none text-sm transition-all"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {(searchKeyword || searchAuthor || startDate || endDate) && (
+                  <div className="flex justify-end">
+                    <button 
+                      onClick={() => {
+                        setSearchKeyword('');
+                        setSearchAuthor('');
+                        setStartDate('');
+                        setEndDate('');
+                      }}
+                      className="text-xs text-red-500 font-bold hover:underline"
+                    >
+                      Limpar filtros
+                    </button>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
         {/* Posts List */}
@@ -280,17 +476,26 @@ export default function Home() {
           id="feed-panel" 
           aria-labelledby={`tab-${activeTab}`}
           tabIndex={0}
-          className="focus-visible:outline-none"
+          className="focus-visible:outline-none pt-4"
         >
-          {posts.length === 0 ? (
+          {isFetching ? (
+            <div className="space-y-4">
+              {[...Array(5)].map((_, i) => (
+                <PostSkeleton key={i} />
+              ))}
+            </div>
+          ) : filteredPosts.length === 0 ? (
             <div className="p-8 text-center text-gray-500">
-              {activeTab === 'foryou' 
-                ? "Nenhum post ainda. Seja o primeiro a postar!"
-                : "Você ainda não segue ninguém ou eles não postaram nada."}
+              {searchKeyword || searchAuthor || startDate || endDate 
+                ? "Nenhum post corresponde aos seus filtros."
+                : (activeTab === 'foryou' 
+                    ? "Nenhum post ainda. Seja o primeiro a postar!"
+                    : "Você ainda não segue ninguém ou eles não postaram nada.")}
             </div>
           ) : (
-            posts.map(post => (
-              <article key={post.id} className="p-4 border-b border-white/20 hover:bg-white/30 transition-all cursor-pointer flex space-x-4">
+            <div className="px-4 space-y-4 pb-20">
+              {filteredPosts.map(post => (
+                <article key={post.id} className="p-4 bg-white/60 backdrop-blur-md rounded-2xl shadow-sm border border-white/40 hover:bg-white/80 transition-all cursor-pointer flex space-x-4">
                 <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
                   {post.authorPhoto ? (
                     <img src={post.authorPhoto} alt={post.authorName} className="w-full h-full object-cover" />
@@ -433,18 +638,28 @@ export default function Home() {
                       </div>
                       <span className="text-sm">{post.repliesCount || 0}</span>
                     </button>
-                    <button className="flex items-center space-x-2 hover:text-green-500 transition-colors group">
-                      <div className="p-2 group-hover:bg-green-50 rounded-full">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
-                      </div>
+                    <button 
+                      onClick={() => handleRepost(post)}
+                      className={`flex items-center space-x-2 transition-colors group ${post.reposts?.includes(userProfile?.uid) ? 'text-green-500' : 'hover:text-green-500'}`}
+                    >
+                      <motion.div 
+                        whileTap={{ scale: 0.8 }}
+                        className="p-2 group-hover:bg-green-50 rounded-full"
+                      >
+                        <svg className="w-5 h-5" fill={post.reposts?.includes(userProfile?.uid) ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                      </motion.div>
+                      <span className="text-sm">{post.repostsCount || 0}</span>
                     </button>
                     <button 
                       onClick={() => handleLikePost(post)}
                       className={`flex items-center space-x-2 transition-colors group ${post.likes?.includes(userProfile?.uid) ? 'text-red-500' : 'hover:text-red-500'}`}
                     >
-                      <div className="p-2 group-hover:bg-red-50 rounded-full">
+                      <motion.div 
+                        whileTap={{ scale: 0.8 }}
+                        className="p-2 group-hover:bg-red-50 rounded-full"
+                      >
                         <svg className="w-5 h-5" fill={post.likes?.includes(userProfile?.uid) ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
-                      </div>
+                      </motion.div>
                       <span className="text-sm">{post.likesCount || 0}</span>
                     </button>
                     <button className="flex items-center space-x-2 hover:text-blue-500 transition-colors group">
@@ -455,9 +670,10 @@ export default function Home() {
                   </div>
                 </div>
               </article>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
+      </div>
 
         {/* Mobile FAB */}
         <button
