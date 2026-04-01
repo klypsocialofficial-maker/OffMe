@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, User as UserIcon, Heart, UserPlus, MessageCircle } from 'lucide-react';
+import { Bell, User as UserIcon, Heart, UserPlus, MessageCircle, Repeat } from 'lucide-react';
 import VerifiedBadge from '../components/VerifiedBadge';
 import { useAuth } from '../contexts/AuthContext';
 import { useOutletContext, useNavigate } from 'react-router-dom';
-import { collection, query, where, orderBy, onSnapshot, limit } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, limit, doc, updateDoc, writeBatch, getDocs } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 
 enum OperationType {
@@ -81,6 +81,16 @@ export default function Notifications() {
       }));
       setNotifications(results);
       setLoading(false);
+
+      // Mark unread notifications as read
+      const unreadDocs = snapshot.docs.filter(doc => !doc.data().read);
+      if (unreadDocs.length > 0) {
+        const batch = writeBatch(db);
+        unreadDocs.forEach(d => {
+          batch.update(doc(db, 'notifications', d.id), { read: true });
+        });
+        batch.commit().catch(err => console.error("Error marking as read:", err));
+      }
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'notifications');
       setLoading(false);
@@ -112,17 +122,19 @@ export default function Notifications() {
                 onClick={() => {
                   if (notification.postId) {
                     navigate(`/post/${notification.postId}`);
-                  } else if (notification.type === 'follow') {
-                    // Navigate to sender's profile (could be improved if we had a profile route with username/id)
-                    navigate('/profile'); 
+                  } else if (notification.type === 'follow' && notification.senderId) {
+                    navigate(`/profile/${notification.senderId}`); 
                   }
                 }}
-                className="p-4 hover:bg-black/5 transition-colors flex space-x-4 cursor-pointer"
+                className={`p-4 transition-colors flex space-x-4 cursor-pointer ${
+                  notification.read ? 'hover:bg-black/5' : 'bg-blue-50/50 hover:bg-blue-50'
+                }`}
               >
                 <div className="flex-shrink-0 pt-1">
                   {notification.type === 'like' && <Heart className="w-6 h-6 text-red-500 fill-current" />}
                   {notification.type === 'follow' && <UserPlus className="w-6 h-6 text-blue-500" />}
                   {notification.type === 'reply' && <MessageCircle className="w-6 h-6 text-green-500" />}
+                  {notification.type === 'repost' && <Repeat className="w-6 h-6 text-green-600" />}
                 </div>
                 <div className="flex-1">
                   <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden mb-2">
@@ -140,6 +152,7 @@ export default function Notifications() {
                     {notification.type === 'like' && 'curtiu seu post'}
                     {notification.type === 'follow' && 'começou a seguir você'}
                     {notification.type === 'reply' && 'respondeu ao seu post'}
+                    {notification.type === 'repost' && 'repostou seu post'}
                   </p>
                   {notification.content && (
                     <p className="text-gray-500 mt-1 line-clamp-2">{notification.content}</p>

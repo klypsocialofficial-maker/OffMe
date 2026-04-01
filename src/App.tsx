@@ -53,6 +53,7 @@ export default function App() {
             <Route path="messages" element={<Messages />} />
             <Route path="messages/:conversationId" element={<Chat />} />
             <Route path="profile" element={<Profile />} />
+            <Route path="profile/:userId" element={<Profile />} />
             <Route path="post/:postId" element={<PostDetail />} />
             <Route path="premium" element={<Premium />} />
             <Route path="bookmarks" element={<Bookmarks />} />

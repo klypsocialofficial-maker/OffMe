@@ -21,6 +21,7 @@ service cloud.firestore {
     //   - website: string (optional) - User's website link
     //   - following: list (optional) - List of UIDs this user follows
     //   - followers: list (optional) - List of UIDs following this user
+    //   - isVerified: boolean (optional) - Whether the user is verified
     //
     // Collection: posts
     // Document ID: {postId}
@@ -31,11 +32,15 @@ service cloud.firestore {
     //   - authorName: string (required) - Display name of the author
     //   - authorUsername: string (required) - Username of the author
     //   - authorPhoto: string (optional) - Photo URL of the author
+    //   - authorVerified: boolean (optional) - Whether the author is verified
     //   - createdAt: timestamp (required, immutable) - Time the post was created
     //   - updatedAt: timestamp (optional) - Time the post was updated
     //   - isEdited: boolean (optional) - Whether the post was edited
     //   - likesCount: number (required) - Number of likes
     //   - repliesCount: number (required) - Number of replies
+    //   - replyToId: string (optional) - ID of the post being replied to
+    //   - replyToUsername: string (optional) - Username of the author being replied to
+    //   - replyToVerified: boolean (optional) - Whether the author being replied to is verified
     //
     // Collection: notifications
     // Document ID: {notificationId}
@@ -43,7 +48,9 @@ service cloud.firestore {
     //   - recipientId: string (required) - UID of the recipient
     //   - senderId: string (required) - UID of the sender
     //   - senderName: string (required) - Name of the sender
+    //   - senderUsername: string (required) - Username of the sender
     //   - senderPhoto: string (optional) - Photo of the sender
+    //   - senderVerified: boolean (optional) - Whether the sender is verified
     //   - type: string (required) - Type of notification (like, follow, reply)
     //   - content: string (optional) - Content related to the notification
     //   - createdAt: timestamp (required) - Time created
@@ -100,7 +107,7 @@ service cloud.firestore {
     // ===============================================================
 
     function isValidUser(data) {
-      return hasOnlyAllowedFields(['uid', 'email', 'username', 'displayName', 'photoURL', 'bannerURL', 'bio', 'location', 'website', 'following', 'followers']) &&
+      return hasOnlyAllowedFields(['uid', 'email', 'username', 'displayName', 'photoURL', 'bannerURL', 'bio', 'location', 'website', 'following', 'followers', 'isVerified']) &&
              data.uid is string && data.uid == request.auth.uid &&
              data.email is string && isValidEmail(data.email) &&
              data.username is string && data.username.size() > 0 && data.username.size() <= 30 &&
@@ -111,17 +118,19 @@ service cloud.firestore {
              (!('location' in data) || data.location == '' || (data.location is string && data.location.size() <= 30)) &&
              (!('website' in data) || data.website == '' || (data.website is string && data.website.size() <= 100)) &&
              (!('following' in data) || data.following is list) &&
-             (!('followers' in data) || data.followers is list);
+             (!('followers' in data) || data.followers is list) &&
+             (!('isVerified' in data) || data.isVerified is bool);
     }
 
     function isValidPost(data) {
-      return hasOnlyAllowedFields(['content', 'imageUrl', 'authorId', 'authorName', 'authorUsername', 'authorPhoto', 'createdAt', 'updatedAt', 'isEdited', 'likesCount', 'repliesCount', 'replyToId', 'replyToUsername', 'likes', 'repostsCount', 'reposts']) &&
+      return hasOnlyAllowedFields(['content', 'imageUrl', 'authorId', 'authorName', 'authorUsername', 'authorPhoto', 'authorVerified', 'createdAt', 'updatedAt', 'isEdited', 'likesCount', 'repliesCount', 'replyToId', 'replyToUsername', 'replyToVerified', 'likes', 'repostsCount', 'reposts']) &&
              data.content is string && data.content.size() >= 0 && data.content.size() <= 1000 &&
              (!('imageUrl' in data) || data.imageUrl == null || (data.imageUrl is string && data.imageUrl.size() <= 2000)) &&
              data.authorId is string && data.authorId == request.auth.uid &&
              data.authorName is string && data.authorName.size() > 0 && data.authorName.size() <= 50 &&
              data.authorUsername is string && data.authorUsername.size() > 0 && data.authorUsername.size() <= 30 &&
              (!('authorPhoto' in data) || data.authorPhoto == null || data.authorPhoto == '' || (data.authorPhoto is string && data.authorPhoto.size() <= 2000)) &&
+             (!('authorVerified' in data) || data.authorVerified is bool) &&
              data.createdAt is timestamp &&
              (!('updatedAt' in data) || data.updatedAt is timestamp) &&
              (!('isEdited' in data) || data.isEdited is bool) &&
@@ -130,6 +139,7 @@ service cloud.firestore {
              (!('repostsCount' in data) || data.repostsCount is number && data.repostsCount >= 0) &&
              (!('replyToId' in data) || data.replyToId == null || (data.replyToId is string && data.replyToId.size() <= 100)) &&
              (!('replyToUsername' in data) || data.replyToUsername == null || (data.replyToUsername is string && data.replyToUsername.size() <= 30)) &&
+             (!('replyToVerified' in data) || data.replyToVerified is bool) &&
              (!('likes' in data) || data.likes is list) &&
              (!('reposts' in data) || data.reposts is list);
     }
@@ -224,6 +234,13 @@ service cloud.firestore {
         allow create: if isAuthenticated() && 
                       request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants &&
                       request.resource.data.senderId == request.auth.uid;
+        allow update: if isAuthenticated() && 
+                      request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants &&
+                      (
+                        (resource.data.senderId == request.auth.uid) || 
+                        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']))
+                      );
+        allow delete: if isAuthenticated() && resource.data.senderId == request.auth.uid;
       }
     }
   }

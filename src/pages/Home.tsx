@@ -544,7 +544,13 @@ export default function Home() {
                     </button>
                   </div>
 
-                  <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+                  <div 
+                    className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/profile/${post.authorId}`);
+                    }}
+                  >
                   {post.authorPhoto ? (
                     <img src={post.authorPhoto} alt={post.authorName} className="w-full h-full object-cover" />
                   ) : (
@@ -553,10 +559,30 @@ export default function Home() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between w-full">
-                    <div className="flex items-center space-x-1 min-w-0">
-                      <span className="font-bold truncate">{post.authorName}</span>
+                    <div 
+                      className="flex items-center space-x-1 min-w-0 cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/profile/${post.authorId}`);
+                      }}
+                    >
+                      <span className="font-bold truncate hover:underline">{post.authorName}</span>
                       {(post.authorVerified || post.authorUsername === 'Rulio') && <VerifiedBadge className="w-4 h-4 text-blue-500 flex-shrink-0" />}
                       <span className="text-gray-500 truncate">@{post.authorUsername}</span>
+                      {post.authorId !== userProfile?.uid && (
+                        <>
+                          <span className="text-gray-500">·</span>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleFollowClick(post.authorId, post.authorName, post.authorPhoto);
+                            }}
+                            className={`text-sm font-bold hover:underline ${userProfile?.following?.includes(post.authorId) ? 'text-gray-500' : 'text-blue-500'}`}
+                          >
+                            {userProfile?.following?.includes(post.authorId) ? 'Seguindo' : 'Seguir'}
+                          </button>
+                        </>
+                      )}
                       <span className="text-gray-500">·</span>
                       <span className="text-gray-500 text-sm">
                         {post.createdAt?.toDate ? new Date(post.createdAt.toDate()).toLocaleDateString() : 'Agora mesmo'}

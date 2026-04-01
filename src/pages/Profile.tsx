@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { User as UserIcon, Calendar, MapPin, Link as LinkIcon, Edit2, Trash2, BarChart2, MessageCircle, Heart, Send, MoreHorizontal } from 'lucide-react';
 import EditProfileModal from '../components/EditProfileModal';
 import CreatePostModal from '../components/CreatePostModal';
 import VerifiedBadge from '../components/VerifiedBadge';
-import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, arrayRemove, arrayUnion, addDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, arrayRemove, arrayUnion, addDoc, serverTimestamp, deleteDoc, getDocs } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -62,7 +62,9 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 
 export default function Profile() {
   const { userProfile } = useAuth();
+  const { userId } = useParams();
   const navigate = useNavigate();
+  const [profileUser, setProfileUser] = useState<any>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'posts' | 'replies' | 'media' | 'likes'>('posts');
   const [posts, setPosts] = useState<any[]>([]);
@@ -74,7 +76,28 @@ export default function Profile() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   useEffect(() => {
-    if (!userProfile?.uid || !db) return;
+    if (!db) return;
+
+    if (userId) {
+      // Fetch other user's profile
+      const unsubscribe = onSnapshot(doc(db, 'users', userId), (docSnap) => {
+        if (docSnap.exists()) {
+          setProfileUser({ uid: docSnap.id, ...docSnap.data() });
+        } else {
+          setProfileUser(null);
+        }
+      }, (error) => {
+        handleFirestoreError(error, OperationType.GET, `users/${userId}`);
+      });
+      return () => unsubscribe();
+    } else {
+      // Use current user's profile
+      setProfileUser(userProfile);
+    }
+  }, [userId, userProfile, db]);
+
+  useEffect(() => {
+    if (!profileUser?.uid || !db) return;
 
     setLoading(true);
     let unsubscribe: () => void;
@@ -83,12 +106,12 @@ export default function Profile() {
       // Fetch user's posts and reposted posts
       const q1 = query(
         collection(db, 'posts'),
-        where('authorId', '==', userProfile.uid),
+        where('authorId', '==', profileUser.uid),
         orderBy('createdAt', 'desc')
       );
       const q2 = query(
         collection(db, 'posts'),
-        where('reposts', 'array-contains', userProfile.uid),
+        where('reposts', 'array-contains', profileUser.uid),
         orderBy('createdAt', 'desc')
       );
 
@@ -128,13 +151,13 @@ export default function Profile() {
       if (activeTab === 'likes') {
         q = query(
           collection(db, 'posts'),
-          where('likes', 'array-contains', userProfile.uid),
+          where('likes', 'array-contains', profileUser.uid),
           orderBy('createdAt', 'desc')
         );
       } else {
         q = query(
           collection(db, 'posts'),
-          where('authorId', '==', userProfile.uid),
+          where('authorId', '==', profileUser.uid),
           orderBy('createdAt', 'desc')
         );
       }
@@ -162,7 +185,7 @@ export default function Profile() {
     return () => {
       if (unsubscribe) unsubscribe();
     };
-  }, [userProfile?.uid, activeTab]);
+  }, [profileUser?.uid, activeTab, db]);
 
   const handleLikePost = async (post: any) => {
     if (!userProfile?.uid || !db) return;
@@ -226,6 +249,90 @@ export default function Profile() {
     }
   };
 
+  const handleMessageClick = async () => {
+    if (!userProfile?.uid || !profileUser?.uid || !db || profileUser.uid === userProfile.uid) return;
+    
+    try {
+      // Check if conversation already exists
+      const q = query(
+        collection(db, 'conversations'),
+        where('participants', 'array-contains', userProfile.uid)
+      );
+      
+      const snapshot = await getDocs(q);
+      let existingConversationId = null;
+      
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.participants.includes(profileUser.uid)) {
+          existingConversationId = doc.id;
+        }
+      });
+
+      if (existingConversationId) {
+        navigate(`/messages/${existingConversationId}`);
+      } else {
+        // Create new conversation
+        const newConversationRef = await addDoc(collection(db, 'conversations'), {
+          participants: [userProfile.uid, profileUser.uid],
+          participantInfo: {
+            [userProfile.uid]: {
+              displayName: userProfile.displayName,
+              username: userProfile.username,
+              photoURL: userProfile.photoURL || null
+            },
+            [profileUser.uid]: {
+              displayName: profileUser.displayName,
+              username: profileUser.username,
+              photoURL: profileUser.photoURL || null
+            }
+          },
+          lastMessage: '',
+          updatedAt: serverTimestamp(),
+          createdAt: serverTimestamp()
+        });
+        navigate(`/messages/${newConversationRef.id}`);
+      }
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, 'conversations');
+    }
+  };
+
+  const handleFollowClick = async () => {
+    if (!userProfile?.uid || !profileUser?.uid || !db || profileUser.uid === userProfile.uid) return;
+    
+    const isFollowing = userProfile.following?.includes(profileUser.uid);
+    
+    try {
+      // Update current user's following list
+      await updateDoc(doc(db, 'users', userProfile.uid), {
+        following: isFollowing ? arrayRemove(profileUser.uid) : arrayUnion(profileUser.uid)
+      });
+      
+      // Update target user's followers list
+      await updateDoc(doc(db, 'users', profileUser.uid), {
+        followers: isFollowing ? arrayRemove(userProfile.uid) : arrayUnion(userProfile.uid)
+      });
+      
+      // Create notification if following
+      if (!isFollowing) {
+        await addDoc(collection(db, 'notifications'), {
+          recipientId: profileUser.uid,
+          senderId: userProfile.uid,
+          senderName: userProfile.displayName,
+          senderUsername: userProfile.username,
+          senderPhoto: userProfile.photoURL || null,
+          senderVerified: userProfile.isVerified || userProfile.username === 'Rulio',
+          type: 'follow',
+          read: false,
+          createdAt: serverTimestamp()
+        });
+      }
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, 'users');
+    }
+  };
+
   const handleDeletePost = async (postId: string) => {
     if (!db || !userProfile?.uid) return;
     if (window.confirm('Tem certeza que deseja apagar este post?')) {
@@ -264,27 +371,29 @@ export default function Profile() {
     }
   };
 
-  if (!userProfile) return null;
+  if (!profileUser) return (
+    <div className="p-8 text-center text-gray-500">Usuário não encontrado</div>
+  );
 
   return (
     <div className="w-full h-full bg-white/50">
       <div className="sticky top-0 bg-white/40 backdrop-blur-3xl backdrop-saturate-200 z-30 px-4 py-4 pt-[calc(1rem+env(safe-area-inset-top))] border-b border-gray-100/50">
         <div className="flex items-center space-x-1">
-          <h1 className="text-xl font-bold">{userProfile.displayName}</h1>
-          {(userProfile.isVerified || userProfile.username === 'Rulio') && <VerifiedBadge />}
+          <h1 className="text-xl font-bold">{profileUser.displayName}</h1>
+          {(profileUser.isVerified || profileUser.username === 'Rulio') && <VerifiedBadge />}
         </div>
         <p className="text-xs text-gray-500">{posts.length} posts</p>
       </div>
       
       {/* Cover Photo */}
       <div className="h-32 sm:h-48 bg-gray-200 w-full relative">
-        {(userProfile as any)?.bannerURL && (
-          <img src={(userProfile as any).bannerURL} alt="Banner" className="w-full h-full object-cover" />
+        {(profileUser as any)?.bannerURL && (
+          <img src={(profileUser as any).bannerURL} alt="Banner" className="w-full h-full object-cover" />
         )}
         {/* Profile Photo */}
         <div className="absolute -bottom-16 left-4 w-32 h-32 rounded-full border-4 border-white bg-white overflow-hidden shadow-sm">
-          {userProfile.photoURL ? (
-            <img src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full object-cover" />
+          {profileUser.photoURL ? (
+            <img src={profileUser.photoURL} alt={profileUser.displayName} className="w-full h-full object-cover" />
           ) : (
             <UserIcon className="w-full h-full p-4 text-gray-400 bg-gray-100" />
           )}
@@ -296,35 +405,61 @@ export default function Profile() {
         <div className="flex justify-between items-start">
           <div>
             <div className="flex items-center space-x-1">
-              <h2 className="text-2xl font-bold">{userProfile.displayName}</h2>
-              {(userProfile.isVerified || userProfile.username === 'Rulio') && <VerifiedBadge className="w-6 h-6 text-blue-500" />}
+              <h2 className="text-2xl font-bold">{profileUser.displayName}</h2>
+              {(profileUser.isVerified || profileUser.username === 'Rulio') && <VerifiedBadge className="w-6 h-6 text-blue-500" />}
             </div>
-            <p className="text-gray-500">@{userProfile.username}</p>
+            <p className="text-gray-500">@{profileUser.username}</p>
           </div>
-          <button 
-            onClick={() => setIsEditModalOpen(true)}
-            className="px-4 py-1.5 border border-gray-300 rounded-full font-bold hover:bg-gray-50 transition-colors"
-          >
-            Editar perfil
-          </button>
+          {profileUser.uid === userProfile?.uid ? (
+            <button 
+              onClick={() => setIsEditModalOpen(true)}
+              className="px-4 py-1.5 border border-gray-300 rounded-full font-bold hover:bg-gray-50 transition-colors"
+            >
+              Editar perfil
+            </button>
+          ) : (
+            <div className="flex space-x-2">
+              <button 
+                onClick={handleMessageClick}
+                className="p-2 border border-gray-300 rounded-full hover:bg-gray-50 transition-colors"
+              >
+                <MessageCircle className="w-5 h-5" />
+              </button>
+              <button 
+                onClick={handleFollowClick}
+                className={`px-6 py-1.5 rounded-full font-bold transition-colors ${
+                  userProfile?.following?.includes(profileUser.uid)
+                    ? 'border border-gray-300 hover:border-red-500 hover:text-red-500 hover:bg-red-50 group'
+                    : 'bg-black text-white hover:bg-gray-800'
+                }`}
+              >
+                {userProfile?.following?.includes(profileUser.uid) ? (
+                  <>
+                    <span className="group-hover:hidden">Seguindo</span>
+                    <span className="hidden group-hover:inline">Deixar de seguir</span>
+                  </>
+                ) : 'Seguir'}
+              </button>
+            </div>
+          )}
         </div>
 
         <p className="mt-4 text-gray-900 whitespace-pre-wrap">
-          {(userProfile as any)?.bio || 'Bem-vindo ao meu perfil no OffMe! 🚀'}
+          {(profileUser as any)?.bio || 'Bem-vindo ao meu perfil no OffMe! 🚀'}
         </p>
 
         <div className="flex flex-wrap gap-y-2 gap-x-4 mt-4 text-gray-500 text-sm">
-          {(userProfile as any)?.location && (
+          {(profileUser as any)?.location && (
             <div className="flex items-center space-x-1">
               <MapPin className="w-4 h-4" />
-              <span>{(userProfile as any).location}</span>
+              <span>{(profileUser as any).location}</span>
             </div>
           )}
-          {(userProfile as any)?.website && (
+          {(profileUser as any)?.website && (
             <div className="flex items-center space-x-1">
               <LinkIcon className="w-4 h-4" />
-              <a href={(userProfile as any).website.startsWith('http') ? (userProfile as any).website : `https://${(userProfile as any).website}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
-                {(userProfile as any).website.replace(/^https?:\/\//, '')}
+              <a href={(profileUser as any).website.startsWith('http') ? (profileUser as any).website : `https://${(profileUser as any).website}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                {(profileUser as any).website.replace(/^https?:\/\//, '')}
               </a>
             </div>
           )}
@@ -336,10 +471,10 @@ export default function Profile() {
 
         <div className="flex space-x-4 mt-4 text-sm">
           <button className="hover:underline">
-            <span className="font-bold text-black">{userProfile.following?.length || 0}</span> <span className="text-gray-500">Seguindo</span>
+            <span className="font-bold text-black">{profileUser.following?.length || 0}</span> <span className="text-gray-500">Seguindo</span>
           </button>
           <button className="hover:underline">
-            <span className="font-bold text-black">{userProfile.followers?.length || 0}</span> <span className="text-gray-500">Seguidores</span>
+            <span className="font-bold text-black">{profileUser.followers?.length || 0}</span> <span className="text-gray-500">Seguidores</span>
           </button>
         </div>
       </div>

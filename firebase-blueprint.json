@@ -10,6 +10,7 @@
         "username": { "type": "string", "description": "The user's chosen username." },
         "displayName": { "type": "string", "description": "The user's display name." },
         "photoURL": { "type": "string", "description": "The URL of the user's profile photo." },
+        "isVerified": { "type": "boolean", "description": "Whether the user is verified." },
         "following": { "type": "array", "items": { "type": "string" }, "description": "Array of UIDs this user follows." },
         "followers": { "type": "array", "items": { "type": "string" }, "description": "Array of UIDs following this user." }
       },
@@ -25,14 +26,66 @@
         "authorName": { "type": "string", "description": "The display name of the author." },
         "authorUsername": { "type": "string", "description": "The username of the author." },
         "authorPhoto": { "type": "string", "description": "The photo URL of the author." },
+        "authorVerified": { "type": "boolean", "description": "Whether the author is verified." },
         "createdAt": { "type": "timestamp", "description": "The time the post was created." },
         "likesCount": { "type": "number", "description": "The number of likes the post has received." },
         "repliesCount": { "type": "number", "description": "The number of replies the post has received." },
         "repostsCount": { "type": "number", "description": "The number of reposts the post has received." },
+        "replyToId": { "type": "string", "description": "The ID of the post being replied to." },
+        "replyToUsername": { "type": "string", "description": "The username of the author being replied to." },
+        "replyToVerified": { "type": "boolean", "description": "Whether the author being replied to is verified." },
         "likes": { "type": "array", "items": { "type": "string" }, "description": "Array of UIDs who liked the post." },
         "reposts": { "type": "array", "items": { "type": "string" }, "description": "Array of UIDs who reposted the post." }
       },
       "required": ["content", "authorId", "authorName", "authorUsername", "createdAt", "likesCount", "repliesCount", "repostsCount"]
+    },
+    "Conversation": {
+      "title": "Conversation",
+      "description": "A direct message conversation between two users.",
+      "type": "object",
+      "properties": {
+        "participants": { "type": "array", "items": { "type": "string" }, "description": "Array of UIDs participating in the conversation." },
+        "participantInfo": { "type": "object", "description": "Metadata for each participant." },
+        "lastMessage": { "type": "string", "description": "The text of the most recent message." },
+        "lastMessageSenderId": { "type": "string", "description": "The UID of the user who sent the last message." },
+        "unreadCount": { "type": "object", "description": "Map of userId to unread message count." },
+        "typing": { "type": "object", "description": "Map of userId to boolean typing status." },
+        "updatedAt": { "type": "timestamp", "description": "The time of the last update." },
+        "createdAt": { "type": "timestamp", "description": "The time the conversation was created." }
+      },
+      "required": ["participants", "participantInfo", "updatedAt", "createdAt"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "A message within a conversation.",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string", "description": "The text content of the message." },
+        "senderId": { "type": "string", "description": "The UID of the user who sent the message." },
+        "createdAt": { "type": "timestamp", "description": "The time the message was sent." },
+        "isDeleted": { "type": "boolean", "description": "Whether the message has been deleted." },
+        "read": { "type": "boolean", "description": "Whether the message has been read by the recipient." }
+      },
+      "required": ["text", "senderId", "createdAt"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "A notification sent to a user.",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["like", "follow", "reply"], "description": "The type of notification." },
+        "recipientId": { "type": "string", "description": "The UID of the user receiving the notification." },
+        "senderId": { "type": "string", "description": "The UID of the user who triggered the notification." },
+        "senderName": { "type": "string", "description": "The display name of the sender." },
+        "senderUsername": { "type": "string", "description": "The username of the sender." },
+        "senderPhoto": { "type": "string", "description": "The photo URL of the sender." },
+        "senderVerified": { "type": "boolean", "description": "Whether the sender is verified." },
+        "postId": { "type": "string", "description": "The ID of the post related to the notification." },
+        "content": { "type": "string", "description": "The content of the notification (e.g., reply text)." },
+        "read": { "type": "boolean", "description": "Whether the notification has been read." },
+        "createdAt": { "type": "timestamp", "description": "The time the notification was created." }
+      },
+      "required": ["type", "recipientId", "senderId", "senderName", "senderUsername", "read", "createdAt"]
     }
   },
   "firestore": {
@@ -43,6 +96,18 @@
     "/posts/{postId}": {
       "schema": { "$ref": "#/entities/Post" },
       "description": "Stores posts created by users."
+    },
+    "/conversations/{conversationId}": {
+      "schema": { "$ref": "#/entities/Conversation" },
+      "description": "Stores direct message conversations."
+    },
+    "/conversations/{conversationId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/Message" },
+      "description": "Stores messages within a conversation."
+    },
+    "/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/Notification" },
+      "description": "Stores user notifications."
     }
   }
 }

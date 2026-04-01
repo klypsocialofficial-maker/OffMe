@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { LogOut, Home as HomeIcon, Search, Bell, Mail, User as UserIcon, Bookmark, List, Zap, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import VerifiedBadge from './VerifiedBadge';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db } from '../firebase';
 
 const navItems = [
   { path: '/', icon: HomeIcon, label: 'Início' },
@@ -21,6 +23,23 @@ export default function Layout() {
   const { userProfile, logout } = useAuth();
   const location = useLocation();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!userProfile?.uid || !db) return;
+
+    const q = query(
+      collection(db, 'notifications'),
+      where('recipientId', '==', userProfile.uid),
+      where('read', '==', false)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setUnreadCount(snapshot.size);
+    });
+
+    return unsubscribe;
+  }, [userProfile?.uid]);
 
   const openDrawer = () => setIsDrawerOpen(true);
   const closeDrawer = () => setIsDrawerOpen(false);
@@ -58,7 +77,14 @@ export default function Layout() {
                     transition={{ type: "spring", stiffness: 300, damping: 30 }}
                   />
                 )}
-                <item.icon className="w-6 h-6" />
+                <div className="relative">
+                  <item.icon className="w-6 h-6" />
+                  {item.path === '/notifications' && unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </div>
                 <span className="text-lg">{item.label}</span>
               </Link>
             );
@@ -130,7 +156,14 @@ export default function Layout() {
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 />
               )}
-              <item.icon className="w-6 h-6" />
+              <div className="relative">
+                <item.icon className="w-6 h-6" />
+                {item.path === '/notifications' && unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </div>
             </Link>
           );
         })}

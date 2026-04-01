@@ -259,7 +259,11 @@ export default function Explore() {
           ) : searchResults.length > 0 ? (
             <div className="divide-y divide-gray-100">
               {searchResults.map(user => (
-                <div key={user.id} className="p-4 hover:bg-black/5 transition-colors flex items-center justify-between cursor-pointer">
+                <div 
+                  key={user.id} 
+                  className="p-4 hover:bg-black/5 transition-colors flex items-center justify-between cursor-pointer"
+                  onClick={() => navigate(`/profile/${user.id}`)}
+                >
                   <div className="flex items-center space-x-3">
                     <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
                       {user.photoURL ? (

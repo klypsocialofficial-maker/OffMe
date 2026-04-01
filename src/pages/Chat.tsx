@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, Image as ImageIcon, User as UserIcon } from 'lucide-react';
+import { ArrowLeft, Send, Image as ImageIcon, User as UserIcon, Trash2 } from 'lucide-react';
 import VerifiedBadge from '../components/VerifiedBadge';
 import { useAuth } from '../contexts/AuthContext';
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, getDoc, updateDoc, deleteDoc, writeBatch, increment } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 
 enum OperationType {
@@ -65,7 +66,11 @@ export default function Chat() {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [conversation, setConversation] = useState<any>(null);
+  const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const [otherUserTyping, setOtherUserTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -91,6 +96,13 @@ export default function Chat() {
 
     fetchConversation();
 
+    // Reset unread count for current user
+    if (userProfile?.uid) {
+      updateDoc(doc(db, 'conversations', conversationId), {
+        [`unreadCount.${userProfile.uid}`]: 0
+      }).catch(err => console.error("Error resetting unread count:", err));
+    }
+
     const q = query(
       collection(db, 'conversations', conversationId, 'messages'),
       orderBy('createdAt', 'asc')
@@ -104,6 +116,20 @@ export default function Chat() {
       setMessages(results);
       setLoading(false);
       setTimeout(scrollToBottom, 100);
+
+      // Mark unread messages from other user as read
+      if (userProfile?.uid) {
+        const unreadFromOther = snapshot.docs.filter(d => 
+          d.data().senderId !== userProfile.uid && !d.data().read
+        );
+        if (unreadFromOther.length > 0) {
+          const batch = writeBatch(db);
+          unreadFromOther.forEach(d => {
+            batch.update(doc(db, 'conversations', conversationId, 'messages', d.id), { read: true });
+          });
+          batch.commit().catch(err => console.error("Error marking messages as read:", err));
+        }
+      }
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, `conversations/${conversationId}/messages`);
       setLoading(false);
@@ -112,12 +138,61 @@ export default function Chat() {
     return unsubscribe;
   }, [conversationId, navigate]);
 
+  useEffect(() => {
+    if (!conversationId || !db || !userProfile?.uid) return;
+
+    // Listen for other user typing
+    const unsubscribe = onSnapshot(doc(db, 'conversations', conversationId), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const otherId = data.participants.find((id: string) => id !== userProfile.uid);
+        if (otherId && data.typing) {
+          setOtherUserTyping(!!data.typing[otherId]);
+        }
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      // Clear our typing status when leaving
+      updateDoc(doc(db, 'conversations', conversationId), {
+        [`typing.${userProfile.uid}`]: false
+      }).catch(() => {});
+    };
+  }, [conversationId, userProfile?.uid]);
+
+  const handleTyping = () => {
+    if (!conversationId || !userProfile?.uid || !db) return;
+
+    if (!isTyping) {
+      setIsTyping(true);
+      updateDoc(doc(db, 'conversations', conversationId), {
+        [`typing.${userProfile.uid}`]: true
+      }).catch(() => {});
+    }
+
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+      updateDoc(doc(db, 'conversations', conversationId), {
+        [`typing.${userProfile.uid}`]: false
+      }).catch(() => {});
+    }, 3000);
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !userProfile?.uid || !conversationId || !db) return;
 
     const messageText = newMessage.trim();
     setNewMessage(''); // Optimistic clear
+    
+    // Clear typing status immediately on send
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    setIsTyping(false);
+    updateDoc(doc(db, 'conversations', conversationId), {
+      [`typing.${userProfile.uid}`]: false
+    }).catch(() => {});
 
     try {
       // Add message to subcollection
@@ -125,17 +200,37 @@ export default function Chat() {
         text: messageText,
         senderId: userProfile.uid,
         createdAt: serverTimestamp(),
+        read: false
       });
 
       // Update conversation metadata
+      const otherId = conversation.participants.find((id: string) => id !== userProfile.uid);
       await updateDoc(doc(db, 'conversations', conversationId), {
         lastMessage: messageText,
+        lastMessageSenderId: userProfile.uid,
         updatedAt: serverTimestamp(),
+        [`unreadCount.${otherId}`]: increment(1)
       });
       
       scrollToBottom();
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, `conversations/${conversationId}/messages`);
+    }
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!conversationId || !db) return;
+    
+    try {
+      // Soft delete: mark as deleted
+      await updateDoc(doc(db, 'conversations', conversationId, 'messages', messageId), {
+        isDeleted: true,
+        text: 'Mensagem apagada',
+        updatedAt: serverTimestamp()
+      });
+      setSelectedMessageId(null);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `conversations/${conversationId}/messages/${messageId}`);
     }
   };
 
@@ -172,38 +267,94 @@ export default function Chat() {
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4" onClick={() => setSelectedMessageId(null)}>
         {messages.map((msg, index) => {
           const isMine = msg.senderId === userProfile?.uid;
           const showAvatar = !isMine && (index === 0 || messages[index - 1].senderId !== msg.senderId);
+          const isSelected = selectedMessageId === msg.id;
 
           return (
-            <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
-              {!isMine && (
-                <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 mr-2 self-end mb-1">
-                  {showAvatar && (
-                    otherParticipantInfo?.photoURL ? (
-                      <img src={otherParticipantInfo.photoURL} alt={otherParticipantInfo.displayName} className="w-full h-full object-cover" />
-                    ) : (
-                      <UserIcon className="w-full h-full p-1.5 text-gray-400" />
-                    )
+            <div key={msg.id} className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}>
+              <div className={`flex w-full ${isMine ? 'justify-end' : 'justify-start'}`}>
+                {!isMine && (
+                  <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 mr-2 self-end mb-1">
+                    {showAvatar && (
+                      otherParticipantInfo?.photoURL ? (
+                        <img src={otherParticipantInfo.photoURL} alt={otherParticipantInfo.displayName} className="w-full h-full object-cover" />
+                      ) : (
+                        <UserIcon className="w-full h-full p-1.5 text-gray-400" />
+                      )
+                    )}
+                  </div>
+                )}
+                <div 
+                  onClick={(e) => {
+                    if (isMine && !msg.isDeleted) {
+                      e.stopPropagation();
+                      setSelectedMessageId(isSelected ? null : msg.id);
+                    }
+                  }}
+                  className={`max-w-[75%] rounded-2xl px-4 py-2 cursor-pointer transition-all ${
+                    isMine 
+                      ? msg.isDeleted 
+                        ? 'bg-gray-100 text-gray-400 italic rounded-br-sm border border-gray-200'
+                        : 'bg-blue-500 text-white rounded-br-sm hover:bg-blue-600' 
+                      : msg.isDeleted
+                        ? 'bg-gray-50 text-gray-400 italic rounded-bl-sm border border-gray-100'
+                        : 'bg-gray-100 text-black rounded-bl-sm'
+                  } ${isSelected ? 'ring-2 ring-blue-300 ring-offset-2' : ''}`}
+                >
+                  <p className="break-words text-sm">{msg.text}</p>
+                  {isMine && !msg.isDeleted && (
+                    <div className="flex justify-end mt-1">
+                      <span className={`text-[10px] ${msg.read ? 'text-blue-100' : 'text-blue-200'}`}>
+                        {msg.read ? 'Lido' : 'Enviado'}
+                      </span>
+                    </div>
                   )}
                 </div>
-              )}
-              <div 
-                className={`max-w-[75%] rounded-2xl px-4 py-2 ${
-                  isMine 
-                    ? 'bg-blue-500 text-white rounded-br-sm' 
-                    : 'bg-gray-100 text-black rounded-bl-sm'
-                }`}
-              >
-                <p className="break-words">{msg.text}</p>
               </div>
+              
+              {/* Delete Action (Mobile-friendly "long-press" simulation via click) */}
+              {isSelected && isMine && !msg.isDeleted && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-1 flex items-center space-x-2"
+                >
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteMessage(msg.id);
+                    }}
+                    className="flex items-center space-x-1 text-xs text-red-500 font-medium hover:bg-red-50 px-2 py-1 rounded-full transition-colors"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    <span>Apagar para todos</span>
+                  </button>
+                </motion.div>
+              )}
             </div>
           );
         })}
-        <div ref={messagesEndRef} />
-      </div>
+          {otherUserTyping && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex justify-start mb-2"
+            >
+              <div className="bg-gray-100 px-4 py-2 rounded-2xl rounded-tl-none text-xs text-gray-500 italic flex items-center space-x-2">
+                <div className="flex space-x-1">
+                  <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+                <span>Digitando...</span>
+              </div>
+            </motion.div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
 
       {/* Input Area */}
       <div className="p-3 border-t border-gray-100 bg-white">
@@ -214,7 +365,10 @@ export default function Chat() {
           <input
             type="text"
             value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
+            onChange={(e) => {
+              setNewMessage(e.target.value);
+              handleTyping();
+            }}
             placeholder="Comece uma mensagem"
             className="flex-1 bg-transparent outline-none py-2"
           />
