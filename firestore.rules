@@ -242,6 +242,10 @@ service cloud.firestore {
                       );
         allow delete: if isAuthenticated() && resource.data.senderId == request.auth.uid;
       }
+      
+      // Allow participants to update conversation metadata (like unreadCount)
+      allow update: if isAuthenticated() && request.auth.uid in resource.data.participants &&
+                    request.resource.data.diff(resource.data).affectedKeys().hasAny(['unreadCount', 'lastMessage', 'lastMessageSenderId', 'updatedAt', 'typing']);
     }
   }
 }
