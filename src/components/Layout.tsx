@@ -23,22 +23,44 @@ export default function Layout() {
   const { userProfile, logout } = useAuth();
   const location = useLocation();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
 
   useEffect(() => {
     if (!userProfile?.uid || !db) return;
 
-    const q = query(
+    // Listen for unread notifications
+    const notificationsQuery = query(
       collection(db, 'notifications'),
       where('recipientId', '==', userProfile.uid),
       where('read', '==', false)
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setUnreadCount(snapshot.size);
+    const unsubscribeNotifications = onSnapshot(notificationsQuery, (snapshot) => {
+      setUnreadNotificationsCount(snapshot.size);
     });
 
-    return unsubscribe;
+    // Listen for unread messages in conversations
+    const conversationsQuery = query(
+      collection(db, 'conversations'),
+      where('participants', 'array-contains', userProfile.uid)
+    );
+
+    const unsubscribeMessages = onSnapshot(conversationsQuery, (snapshot) => {
+      let totalUnread = 0;
+      snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        if (data.unreadCount && data.unreadCount[userProfile.uid]) {
+          totalUnread += data.unreadCount[userProfile.uid];
+        }
+      });
+      setUnreadMessagesCount(totalUnread);
+    });
+
+    return () => {
+      unsubscribeNotifications();
+      unsubscribeMessages();
+    };
   }, [userProfile?.uid]);
 
   const openDrawer = () => setIsDrawerOpen(true);
@@ -79,9 +101,14 @@ export default function Layout() {
                 )}
                 <div className="relative">
                   <item.icon className="w-6 h-6" />
-                  {item.path === '/notifications' && unreadCount > 0 && (
+                  {item.path === '/notifications' && unreadNotificationsCount > 0 && (
                     <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">
-                      {unreadCount > 9 ? '9+' : unreadCount}
+                      {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+                    </span>
+                  )}
+                  {item.path === '/messages' && unreadMessagesCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">
+                      {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
                     </span>
                   )}
                 </div>
@@ -158,9 +185,14 @@ export default function Layout() {
               )}
               <div className="relative">
                 <item.icon className="w-6 h-6" />
-                {item.path === '/notifications' && unreadCount > 0 && (
+                {item.path === '/notifications' && unreadNotificationsCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">
-                    {unreadCount > 9 ? '9+' : unreadCount}
+                    {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+                  </span>
+                )}
+                {item.path === '/messages' && unreadMessagesCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">
+                    {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
                   </span>
                 )}
               </div>

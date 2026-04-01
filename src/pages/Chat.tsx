@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, Image as ImageIcon, User as UserIcon, Trash2 } from 'lucide-react';
+import { ArrowLeft, Send, Image as ImageIcon, User as UserIcon, Trash2, Check, CheckCheck } from 'lucide-react';
 import VerifiedBadge from '../components/VerifiedBadge';
 import { useAuth } from '../contexts/AuthContext';
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, getDoc, updateDoc, deleteDoc, writeBatch, increment } from 'firebase/firestore';
@@ -126,6 +126,10 @@ export default function Chat() {
           const batch = writeBatch(db);
           unreadFromOther.forEach(d => {
             batch.update(doc(db, 'conversations', conversationId, 'messages', d.id), { read: true });
+          });
+          // Also reset unreadCount in the conversation document
+          batch.update(doc(db, 'conversations', conversationId), {
+            [`unreadCount.${userProfile.uid}`]: 0
           });
           batch.commit().catch(err => console.error("Error marking messages as read:", err));
         }
@@ -306,10 +310,15 @@ export default function Chat() {
                 >
                   <p className="break-words text-sm">{msg.text}</p>
                   {isMine && !msg.isDeleted && (
-                    <div className="flex justify-end mt-1">
-                      <span className={`text-[10px] ${msg.read ? 'text-blue-100' : 'text-blue-200'}`}>
-                        {msg.read ? 'Lido' : 'Enviado'}
+                    <div className="flex justify-end mt-1 items-center space-x-1">
+                      <span className="text-[10px] opacity-70">
+                        {msg.createdAt?.toDate ? new Date(msg.createdAt.toDate()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                       </span>
+                      {msg.read ? (
+                        <CheckCheck className="w-3 h-3 text-blue-200" />
+                      ) : (
+                        <Check className="w-3 h-3 text-blue-100" />
+                      )}
                     </div>
                   )}
                 </div>

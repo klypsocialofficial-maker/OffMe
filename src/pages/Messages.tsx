@@ -128,18 +128,29 @@ export default function Messages() {
                       <UserIcon className="w-full h-full p-2 text-gray-400" />
                     )}
                   </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-baseline">
-                        <div className="flex items-center space-x-1 truncate">
-                          <p className="font-bold text-black truncate">{otherParticipantInfo?.displayName || 'Usuário'}</p>
-                          {(otherParticipantInfo?.isVerified || otherParticipantInfo?.username === 'Rulio') && <VerifiedBadge />}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-baseline">
+                          <div className="flex items-center space-x-1 truncate">
+                            <p className={`font-bold text-black truncate ${conversation.unreadCount?.[userProfile?.uid] ? 'font-black' : ''}`}>
+                              {otherParticipantInfo?.displayName || 'Usuário'}
+                            </p>
+                            {(otherParticipantInfo?.isVerified || otherParticipantInfo?.username === 'Rulio') && <VerifiedBadge />}
+                          </div>
+                          <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
+                            {conversation.updatedAt?.toDate ? new Date(conversation.updatedAt.toDate()).toLocaleDateString() : ''}
+                          </span>
                         </div>
-                        <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
-                          {conversation.updatedAt?.toDate ? new Date(conversation.updatedAt.toDate()).toLocaleDateString() : ''}
-                        </span>
+                        <div className="flex justify-between items-center">
+                          <p className={`text-sm truncate flex-1 ${conversation.unreadCount?.[userProfile?.uid] ? 'text-black font-bold' : 'text-gray-500'}`}>
+                            {conversation.lastMessage || 'Nova conversa'}
+                          </p>
+                          {conversation.unreadCount?.[userProfile?.uid] > 0 && (
+                            <span className="ml-2 bg-blue-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full">
+                              {conversation.unreadCount[userProfile.uid]}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <p className="text-gray-500 text-sm truncate">{conversation.lastMessage || 'Nova conversa'}</p>
-                    </div>
                 </div>
               );
             })}
