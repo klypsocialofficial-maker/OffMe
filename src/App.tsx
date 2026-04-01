@@ -15,6 +15,7 @@ import Notifications from './pages/Notifications';
 import Messages from './pages/Messages';
 import Chat from './pages/Chat';
 import Profile from './pages/Profile';
+import PostDetail from './pages/PostDetail';
 import Premium from './pages/Premium';
 import Bookmarks from './pages/Bookmarks';
 import Lists from './pages/Lists';
@@ -52,6 +53,7 @@ export default function App() {
             <Route path="messages" element={<Messages />} />
             <Route path="messages/:conversationId" element={<Chat />} />
             <Route path="profile" element={<Profile />} />
+            <Route path="post/:postId" element={<PostDetail />} />
             <Route path="premium" element={<Premium />} />
             <Route path="bookmarks" element={<Bookmarks />} />
             <Route path="lists" element={<Lists />} />

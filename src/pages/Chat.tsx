@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send, Image as ImageIcon, User as UserIcon } from 'lucide-react';
+import VerifiedBadge from '../components/VerifiedBadge';
 import { useAuth } from '../contexts/AuthContext';
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
@@ -161,7 +162,10 @@ export default function Chat() {
             )}
           </div>
           <div>
-            <h2 className="font-bold leading-tight">{otherParticipantInfo?.displayName || 'Usuário'}</h2>
+            <div className="flex items-center space-x-1">
+              <h2 className="font-bold leading-tight">{otherParticipantInfo?.displayName || 'Usuário'}</h2>
+              {(otherParticipantInfo?.isVerified || otherParticipantInfo?.username === 'Rulio') && <VerifiedBadge />}
+            </div>
             <p className="text-xs text-gray-500">@{otherParticipantInfo?.username || 'usuario'}</p>
           </div>
         </div>

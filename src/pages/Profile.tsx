@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { User as UserIcon, Calendar, MapPin, Link as LinkIcon, Edit2, Trash2, BarChart2, MessageCircle, Heart, Send, MoreHorizontal } from 'lucide-react';
 import EditProfileModal from '../components/EditProfileModal';
 import CreatePostModal from '../components/CreatePostModal';
+import VerifiedBadge from '../components/VerifiedBadge';
 import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, arrayRemove, arrayUnion, addDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { motion, AnimatePresence } from 'motion/react';
@@ -60,6 +62,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 
 export default function Profile() {
   const { userProfile } = useAuth();
+  const navigate = useNavigate();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'posts' | 'replies' | 'media' | 'likes'>('posts');
   const [posts, setPosts] = useState<any[]>([]);
@@ -178,7 +181,9 @@ export default function Profile() {
           recipientId: post.authorId,
           senderId: userProfile.uid,
           senderName: userProfile.displayName,
+          senderUsername: userProfile.username,
           senderPhoto: userProfile.photoURL || null,
+          senderVerified: userProfile.isVerified || userProfile.username === 'Rulio',
           type: 'like',
           postId: post.id,
           read: false,
@@ -207,7 +212,9 @@ export default function Profile() {
           recipientId: post.authorId,
           senderId: userProfile.uid,
           senderName: userProfile.displayName,
+          senderUsername: userProfile.username,
           senderPhoto: userProfile.photoURL || null,
+          senderVerified: userProfile.isVerified || userProfile.username === 'Rulio',
           type: 'repost',
           postId: post.id,
           read: false,
@@ -262,8 +269,11 @@ export default function Profile() {
   return (
     <div className="w-full h-full bg-white/50">
       <div className="sticky top-0 bg-white/40 backdrop-blur-3xl backdrop-saturate-200 z-30 px-4 py-4 pt-[calc(1rem+env(safe-area-inset-top))] border-b border-gray-100/50">
-        <h1 className="text-xl font-bold">{userProfile.displayName}</h1>
-        <p className="text-xs text-gray-500">0 posts</p>
+        <div className="flex items-center space-x-1">
+          <h1 className="text-xl font-bold">{userProfile.displayName}</h1>
+          {(userProfile.isVerified || userProfile.username === 'Rulio') && <VerifiedBadge />}
+        </div>
+        <p className="text-xs text-gray-500">{posts.length} posts</p>
       </div>
       
       {/* Cover Photo */}
@@ -285,7 +295,10 @@ export default function Profile() {
       <div className="px-4 pt-20 pb-4 border-b border-gray-100">
         <div className="flex justify-between items-start">
           <div>
-            <h2 className="text-2xl font-bold">{userProfile.displayName}</h2>
+            <div className="flex items-center space-x-1">
+              <h2 className="text-2xl font-bold">{userProfile.displayName}</h2>
+              {(userProfile.isVerified || userProfile.username === 'Rulio') && <VerifiedBadge className="w-6 h-6 text-blue-500" />}
+            </div>
             <p className="text-gray-500">@{userProfile.username}</p>
           </div>
           <button 
@@ -377,7 +390,11 @@ export default function Profile() {
         ) : posts.length > 0 ? (
           <div className="divide-y divide-gray-100">
             {posts.map((post) => (
-              <article key={post.id} className="p-4 hover:bg-black/5 transition-colors cursor-pointer">
+              <article 
+                key={post.id} 
+                onClick={() => navigate(`/post/${post.id}`)}
+                className="p-4 hover:bg-black/5 transition-colors cursor-pointer"
+              >
                 {/* Repost Indicator */}
                 {post.reposts?.includes(userProfile?.uid) && activeTab === 'posts' && (
                   <div className="flex items-center space-x-2 text-gray-500 text-xs font-bold mb-2 ml-10">
@@ -397,6 +414,7 @@ export default function Profile() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-1 truncate">
                         <span className="font-bold text-gray-900 truncate">{post.authorName}</span>
+                        {(post.authorVerified || post.authorUsername === 'Rulio') && <VerifiedBadge />}
                         <span className="text-gray-500 truncate">@{post.authorUsername}</span>
                         <span className="text-gray-500">·</span>
                         <span className="text-gray-500 flex-shrink-0">

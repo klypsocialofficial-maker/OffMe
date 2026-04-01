@@ -3,6 +3,7 @@ import { Outlet, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { LogOut, Home as HomeIcon, Search, Bell, Mail, User as UserIcon, Bookmark, List, Zap, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import VerifiedBadge from './VerifiedBadge';
 
 const navItems = [
   { path: '/', icon: HomeIcon, label: 'Início' },
@@ -83,7 +84,10 @@ export default function Layout() {
                 )}
               </div>
               <div className="ml-3 overflow-hidden">
-                <p className="font-bold text-sm truncate">{userProfile.displayName}</p>
+                <div className="flex items-center space-x-1">
+                  <p className="font-bold text-sm truncate">{userProfile.displayName}</p>
+                  {(userProfile.isVerified || userProfile.username === 'Rulio') && <VerifiedBadge className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />}
+                </div>
                 <p className="text-gray-500 text-sm truncate">@{userProfile.username}</p>
               </div>
             </div>
@@ -158,7 +162,10 @@ export default function Layout() {
                     <UserIcon className="w-full h-full p-2 text-gray-400" />
                   )}
                 </div>
-                <h2 className="font-bold text-lg leading-tight">{userProfile?.displayName}</h2>
+                <div className="flex items-center space-x-1">
+                  <h2 className="font-bold text-lg leading-tight">{userProfile?.displayName}</h2>
+                  {(userProfile?.isVerified || userProfile?.username === 'Rulio') && <VerifiedBadge className="w-4 h-4 text-blue-500 flex-shrink-0" />}
+                </div>
                 <p className="text-gray-500 text-sm">@{userProfile?.username}</p>
                 
                 <div className="flex space-x-4 mt-4 text-sm">

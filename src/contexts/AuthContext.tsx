@@ -69,6 +69,7 @@ interface UserProfile {
   photoURL: string;
   following?: string[];
   followers?: string[];
+  isVerified?: boolean;
 }
 
 interface AuthContextType {

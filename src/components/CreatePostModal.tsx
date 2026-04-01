@@ -4,6 +4,7 @@ import { addDoc, collection, serverTimestamp, doc, updateDoc, increment } from '
 import { db } from '../firebase';
 import { uploadToImgBB } from '../lib/imgbb';
 import { motion, AnimatePresence } from 'motion/react';
+import VerifiedBadge from './VerifiedBadge';
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -53,6 +54,7 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
         authorName: userProfile.displayName,
         authorUsername: userProfile.username,
         authorPhoto: userProfile.photoURL,
+        authorVerified: userProfile.isVerified || userProfile.username === 'Rulio',
         createdAt: serverTimestamp(),
         likesCount: 0,
         repliesCount: 0,
@@ -60,7 +62,8 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
         likes: [],
         reposts: [],
         replyToId: replyTo?.id || null,
-        replyToUsername: replyTo?.authorUsername || null
+        replyToUsername: replyTo?.authorUsername || null,
+        replyToVerified: replyTo?.authorVerified || replyTo?.authorUsername === 'Rulio' || false
       });
 
       if (replyTo) {
@@ -73,7 +76,9 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
             recipientId: replyTo.authorId,
             senderId: userProfile.uid,
             senderName: userProfile.displayName,
+            senderUsername: userProfile.username,
             senderPhoto: userProfile.photoURL || null,
+            senderVerified: userProfile.isVerified || userProfile.username === 'Rulio',
             type: 'reply',
             postId: replyTo.id,
             read: false,
@@ -140,8 +145,10 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
                 </div>
                 <div className="flex-1">
                   {replyTo && (
-                    <div className="mb-2 text-sm text-gray-500 font-medium">
-                      Respondendo a <span className="text-blue-500">@{replyTo.authorUsername}</span>
+                    <div className="mb-2 text-sm text-gray-500 font-medium flex items-center space-x-1">
+                      <span>Respondendo a</span>
+                      <span className="text-blue-500">@{replyTo.authorUsername}</span>
+                      {(replyTo.authorVerified || replyTo.authorUsername === 'Rulio') && <VerifiedBadge className="w-3.5 h-3.5 text-blue-500" />}
                     </div>
                   )}
                   <textarea

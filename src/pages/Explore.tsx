@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, User as UserIcon } from 'lucide-react';
+import VerifiedBadge from '../components/VerifiedBadge';
 import { useAuth } from '../contexts/AuthContext';
 import { useOutletContext, Link, useNavigate } from 'react-router-dom';
 import { collection, query, where, onSnapshot, limit, addDoc, serverTimestamp, getDocs, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
@@ -135,7 +136,9 @@ export default function Explore() {
           recipientId: otherUser.id,
           senderId: userProfile.uid,
           senderName: userProfile.displayName,
+          senderUsername: userProfile.username,
           senderPhoto: userProfile.photoURL || null,
+          senderVerified: userProfile.isVerified || userProfile.username === 'Rulio',
           type: 'follow',
           read: false,
           createdAt: serverTimestamp()
@@ -266,7 +269,10 @@ export default function Explore() {
                       )}
                     </div>
                     <div>
-                      <p className="font-bold text-black">{user.displayName}</p>
+                      <div className="flex items-center space-x-1">
+                        <p className="font-bold text-black">{user.displayName}</p>
+                        {(user.isVerified || user.username === 'Rulio') && <VerifiedBadge />}
+                      </div>
                       <p className="text-gray-500 text-sm">@{user.username}</p>
                       <p className="text-gray-700 text-sm mt-1 line-clamp-1">{user.bio}</p>
                     </div>

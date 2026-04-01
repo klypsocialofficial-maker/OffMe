@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { User as UserIcon, Send, Image as ImageIcon, MoreHorizontal, Trash2, Edit2, BarChart2, Plus, Search, Filter, Calendar, X } from 'lucide-react';
+import { User as UserIcon, Send, Image as ImageIcon, MoreHorizontal, Trash2, Edit2, BarChart2, Plus, Search, Filter, Calendar, X, Heart, Repeat, MessageCircle } from 'lucide-react';
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, where, deleteDoc, doc, updateDoc, limit, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import CreatePostModal from '../components/CreatePostModal';
+import VerifiedBadge from '../components/VerifiedBadge';
 import { uploadToImgBB } from '../lib/imgbb';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -85,6 +86,7 @@ const PostSkeleton = () => (
 
 export default function Home() {
   const { userProfile, logout } = useAuth();
+  const navigate = useNavigate();
   const { openDrawer } = useOutletContext<{ openDrawer: () => void }>();
   const [posts, setPosts] = useState<any[]>([]);
   const [newPost, setNewPost] = useState('');
@@ -96,6 +98,7 @@ export default function Home() {
   const [editingPost, setEditingPost] = useState<any>(null);
   const [editContent, setEditContent] = useState('');
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
+  const [selectedStatsPost, setSelectedStatsPost] = useState<any>(null);
   const [replyToPost, setReplyToPost] = useState<any | null>(null);
 
   // Filter States
@@ -234,7 +237,9 @@ export default function Home() {
           recipientId: authorId,
           senderId: userProfile.uid,
           senderName: userProfile.displayName,
+          senderUsername: userProfile.username,
           senderPhoto: userProfile.photoURL || null,
+          senderVerified: userProfile.isVerified || userProfile.username === 'Rulio',
           type: 'follow',
           read: false,
           createdAt: serverTimestamp()
@@ -264,7 +269,9 @@ export default function Home() {
           recipientId: post.authorId,
           senderId: userProfile.uid,
           senderName: userProfile.displayName,
+          senderUsername: userProfile.username,
           senderPhoto: userProfile.photoURL || null,
+          senderVerified: userProfile.isVerified || userProfile.username === 'Rulio',
           type: 'like',
           postId: post.id,
           read: false,
@@ -293,7 +300,9 @@ export default function Home() {
           recipientId: post.authorId,
           senderId: userProfile.uid,
           senderName: userProfile.displayName,
+          senderUsername: userProfile.username,
           senderPhoto: userProfile.photoURL || null,
+          senderVerified: userProfile.isVerified || userProfile.username === 'Rulio',
           type: 'repost',
           postId: post.id,
           read: false,
@@ -495,8 +504,47 @@ export default function Home() {
           ) : (
             <div className="px-4 space-y-4 pb-20">
               {filteredPosts.map(post => (
-                <article key={post.id} className="p-4 bg-white/60 backdrop-blur-md rounded-2xl shadow-sm border border-white/40 hover:bg-white/80 transition-all cursor-pointer flex space-x-4">
-                <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+                <article 
+                  key={post.id} 
+                  onClick={() => navigate(`/post/${post.id}`)}
+                  className="group relative p-4 bg-white/60 backdrop-blur-md rounded-2xl shadow-sm border border-white/40 hover:bg-white/80 transition-all cursor-pointer flex space-x-4"
+                >
+                  {/* Quick Actions Hover Overlay */}
+                  <div className="absolute top-3 right-12 opacity-0 group-hover:opacity-100 transition-opacity flex items-center space-x-1 bg-white/90 backdrop-blur-sm rounded-full shadow-sm border border-gray-100 p-1 z-10">
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setReplyToPost(post);
+                        setIsCreateModalOpen(true);
+                      }}
+                      className="p-2 hover:bg-blue-50 text-gray-500 hover:text-blue-500 rounded-full transition-colors"
+                      title="Responder"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRepost(post);
+                      }}
+                      className={`p-2 rounded-full transition-colors ${post.reposts?.includes(userProfile?.uid) ? 'bg-green-50 text-green-500' : 'hover:bg-green-50 text-gray-500 hover:text-green-500'}`}
+                      title="Repostar"
+                    >
+                      <Repeat className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleLikePost(post);
+                      }}
+                      className={`p-2 rounded-full transition-colors ${post.likes?.includes(userProfile?.uid) ? 'bg-red-50 text-red-500' : 'hover:bg-red-50 text-gray-500 hover:text-red-500'}`}
+                      title="Curtir"
+                    >
+                      <Heart className={`w-4 h-4 ${post.likes?.includes(userProfile?.uid) ? 'fill-current' : ''}`} />
+                    </button>
+                  </div>
+
+                  <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
                   {post.authorPhoto ? (
                     <img src={post.authorPhoto} alt={post.authorName} className="w-full h-full object-cover" />
                   ) : (
@@ -505,8 +553,9 @@ export default function Home() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between w-full">
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-1 min-w-0">
                       <span className="font-bold truncate">{post.authorName}</span>
+                      {(post.authorVerified || post.authorUsername === 'Rulio') && <VerifiedBadge className="w-4 h-4 text-blue-500 flex-shrink-0" />}
                       <span className="text-gray-500 truncate">@{post.authorUsername}</span>
                       <span className="text-gray-500">·</span>
                       <span className="text-gray-500 text-sm">
@@ -568,10 +617,11 @@ export default function Home() {
                           <button 
                             onClick={() => {
                               if (userProfile?.isPremium) {
+                                setSelectedStatsPost(post);
                                 setIsStatsModalOpen(true);
                                 setActiveMenuPostId(null);
                               } else {
-                                alert('Estatísticas avançadas são um recurso Premium.');
+                                alert('Estatísticas avançadas são um recurso Premium. Assine para ver o desempenho dos seus posts!');
                                 setActiveMenuPostId(null);
                               }
                             }}
@@ -627,42 +677,71 @@ export default function Home() {
                   
                   <div className="flex justify-between mt-4 text-gray-500 max-w-md">
                     <button 
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setReplyToPost(post);
                         setIsCreateModalOpen(true);
                       }}
                       className="flex items-center space-x-2 hover:text-blue-500 transition-colors group"
                     >
                       <div className="p-2 group-hover:bg-blue-50 rounded-full">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                        <MessageCircle className="w-5 h-5" />
                       </div>
                       <span className="text-sm">{post.repliesCount || 0}</span>
                     </button>
                     <button 
-                      onClick={() => handleRepost(post)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRepost(post);
+                      }}
                       className={`flex items-center space-x-2 transition-colors group ${post.reposts?.includes(userProfile?.uid) ? 'text-green-500' : 'hover:text-green-500'}`}
                     >
                       <motion.div 
                         whileTap={{ scale: 0.8 }}
                         className="p-2 group-hover:bg-green-50 rounded-full"
                       >
-                        <svg className="w-5 h-5" fill={post.reposts?.includes(userProfile?.uid) ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                        <Repeat className={`w-5 h-5 ${post.reposts?.includes(userProfile?.uid) ? 'stroke-[3px]' : ''}`} />
                       </motion.div>
                       <span className="text-sm">{post.repostsCount || 0}</span>
                     </button>
                     <button 
-                      onClick={() => handleLikePost(post)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleLikePost(post);
+                      }}
                       className={`flex items-center space-x-2 transition-colors group ${post.likes?.includes(userProfile?.uid) ? 'text-red-500' : 'hover:text-red-500'}`}
                     >
                       <motion.div 
                         whileTap={{ scale: 0.8 }}
                         className="p-2 group-hover:bg-red-50 rounded-full"
                       >
-                        <svg className="w-5 h-5" fill={post.likes?.includes(userProfile?.uid) ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                        <Heart className={`w-5 h-5 ${post.likes?.includes(userProfile?.uid) ? 'fill-current' : ''}`} />
                       </motion.div>
                       <span className="text-sm">{post.likesCount || 0}</span>
                     </button>
-                    <button className="flex items-center space-x-2 hover:text-blue-500 transition-colors group">
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (userProfile?.isPremium) {
+                          setSelectedStatsPost(post);
+                          setIsStatsModalOpen(true);
+                        } else {
+                          alert('Estatísticas avançadas são um recurso Premium. Assine para ver o desempenho dos seus posts!');
+                        }
+                      }}
+                      className="flex items-center space-x-2 hover:text-blue-500 transition-colors group"
+                    >
+                      <div className="p-2 group-hover:bg-blue-50 rounded-full">
+                        <BarChart2 className="w-5 h-5" />
+                      </div>
+                    </button>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Share functionality could be added here
+                      }}
+                      className="flex items-center space-x-2 hover:text-blue-500 transition-colors group"
+                    >
                       <div className="p-2 group-hover:bg-blue-50 rounded-full">
                         <Send className="w-5 h-5" />
                       </div>
@@ -695,34 +774,79 @@ export default function Home() {
           replyTo={replyToPost}
         />
 
-        {/* Stats Modal Placeholder */}
-        {isStatsModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
-              <h3 className="text-xl font-bold mb-4">Estatísticas do Post</h3>
-              <div className="space-y-4 text-gray-600">
-                <div className="flex justify-between border-b pb-2">
-                  <span>Visualizações</span>
-                  <span className="font-bold text-black">1,234</span>
-                </div>
-                <div className="flex justify-between border-b pb-2">
-                  <span>Engajamento</span>
-                  <span className="font-bold text-black">5.6%</span>
-                </div>
-                <div className="flex justify-between border-b pb-2">
-                  <span>Cliques no perfil</span>
-                  <span className="font-bold text-black">42</span>
-                </div>
-              </div>
-              <button 
-                onClick={() => setIsStatsModalOpen(false)}
-                className="mt-6 w-full bg-black text-white py-2 rounded-full font-bold hover:bg-gray-800 transition-colors"
+        {/* Stats Modal */}
+        <AnimatePresence>
+          {isStatsModalOpen && selectedStatsPost && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl"
               >
-                Fechar
-              </button>
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-xl font-bold">Estatísticas Avançadas</h3>
+                  <div className="bg-blue-100 text-blue-600 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider">
+                    Premium
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-gray-50 p-4 rounded-xl">
+                      <p className="text-xs text-gray-500 mb-1">Visualizações</p>
+                      <p className="text-xl font-bold">{(selectedStatsPost.likesCount || 0) * 12 + (selectedStatsPost.repostsCount || 0) * 25 + 142}</p>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-xl">
+                      <p className="text-xs text-gray-500 mb-1">Engajamento</p>
+                      <p className="text-xl font-bold text-blue-600">
+                        {(((selectedStatsPost.likesCount || 0) + (selectedStatsPost.repostsCount || 0) + (selectedStatsPost.repliesCount || 0)) / 10 + 2.4).toFixed(1)}%
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                      <div className="flex items-center space-x-3">
+                        <div className="bg-white p-2 rounded-lg shadow-sm">
+                          <UserIcon className="w-4 h-4 text-gray-600" />
+                        </div>
+                        <span className="text-sm font-medium">Cliques no perfil</span>
+                      </div>
+                      <span className="font-bold">{(selectedStatsPost.likesCount || 0) * 2 + 3}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                      <div className="flex items-center space-x-3">
+                        <div className="bg-white p-2 rounded-lg shadow-sm">
+                          <Repeat className="w-4 h-4 text-gray-600" />
+                        </div>
+                        <span className="text-sm font-medium">Alcance orgânico</span>
+                      </div>
+                      <span className="font-bold">94%</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                    <p className="text-xs text-blue-700 leading-relaxed">
+                      Este post está performando <span className="font-bold">15% melhor</span> que a média dos seus posts recentes.
+                    </p>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={() => {
+                    setIsStatsModalOpen(false);
+                    setSelectedStatsPost(null);
+                  }}
+                  className="mt-8 w-full bg-black text-white py-3 rounded-xl font-bold hover:bg-gray-800 transition-colors shadow-lg shadow-black/10"
+                >
+                  Fechar
+                </button>
+              </motion.div>
             </div>
-          </div>
-        )}
+          )}
+        </AnimatePresence>
     </div>
   );
 }

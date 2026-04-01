@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, User as UserIcon, Heart, UserPlus, MessageCircle } from 'lucide-react';
+import VerifiedBadge from '../components/VerifiedBadge';
 import { useAuth } from '../contexts/AuthContext';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import { collection, query, where, orderBy, onSnapshot, limit } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 
@@ -58,6 +59,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 
 export default function Notifications() {
   const { userProfile } = useAuth();
+  const navigate = useNavigate();
   const { openDrawer } = useOutletContext<{ openDrawer: () => void }>();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -105,7 +107,18 @@ export default function Notifications() {
         ) : notifications.length > 0 ? (
           <div className="divide-y divide-gray-100">
             {notifications.map(notification => (
-              <div key={notification.id} className="p-4 hover:bg-black/5 transition-colors flex space-x-4 cursor-pointer">
+              <div 
+                key={notification.id} 
+                onClick={() => {
+                  if (notification.postId) {
+                    navigate(`/post/${notification.postId}`);
+                  } else if (notification.type === 'follow') {
+                    // Navigate to sender's profile (could be improved if we had a profile route with username/id)
+                    navigate('/profile'); 
+                  }
+                }}
+                className="p-4 hover:bg-black/5 transition-colors flex space-x-4 cursor-pointer"
+              >
                 <div className="flex-shrink-0 pt-1">
                   {notification.type === 'like' && <Heart className="w-6 h-6 text-red-500 fill-current" />}
                   {notification.type === 'follow' && <UserPlus className="w-6 h-6 text-blue-500" />}
@@ -120,7 +133,10 @@ export default function Notifications() {
                     )}
                   </div>
                   <p className="text-gray-900">
-                    <span className="font-bold">{notification.senderName}</span>{' '}
+                    <span className="flex items-center space-x-1">
+                      <span className="font-bold">{notification.senderName}</span>
+                      {(notification.senderVerified || notification.senderUsername === 'Rulio') && <VerifiedBadge />}
+                    </span>{' '}
                     {notification.type === 'like' && 'curtiu seu post'}
                     {notification.type === 'follow' && 'começou a seguir você'}
                     {notification.type === 'reply' && 'respondeu ao seu post'}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, User as UserIcon, Send } from 'lucide-react';
+import VerifiedBadge from '../components/VerifiedBadge';
 import { useAuth } from '../contexts/AuthContext';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -127,15 +128,18 @@ export default function Messages() {
                       <UserIcon className="w-full h-full p-2 text-gray-400" />
                     )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-baseline">
-                      <p className="font-bold text-black truncate">{otherParticipantInfo?.displayName || 'Usuário'}</p>
-                      <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
-                        {conversation.updatedAt?.toDate ? new Date(conversation.updatedAt.toDate()).toLocaleDateString() : ''}
-                      </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-baseline">
+                        <div className="flex items-center space-x-1 truncate">
+                          <p className="font-bold text-black truncate">{otherParticipantInfo?.displayName || 'Usuário'}</p>
+                          {(otherParticipantInfo?.isVerified || otherParticipantInfo?.username === 'Rulio') && <VerifiedBadge />}
+                        </div>
+                        <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
+                          {conversation.updatedAt?.toDate ? new Date(conversation.updatedAt.toDate()).toLocaleDateString() : ''}
+                        </span>
+                      </div>
+                      <p className="text-gray-500 text-sm truncate">{conversation.lastMessage || 'Nova conversa'}</p>
                     </div>
-                    <p className="text-gray-500 text-sm truncate">{conversation.lastMessage || 'Nova conversa'}</p>
-                  </div>
                 </div>
               );
             })}
