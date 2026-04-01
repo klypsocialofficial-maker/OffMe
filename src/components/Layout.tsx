@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Home as HomeIcon, Search, Bell, Mail, User as UserIcon, Bookmark, List, Zap, Settings, Menu } from 'lucide-react';
+import { LogOut, Home as HomeIcon, Search, Bell, Mail, User as UserIcon, Bookmark, List, Zap, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import VerifiedBadge from './VerifiedBadge';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
@@ -199,9 +199,6 @@ export default function Layout() {
             </Link>
           );
         })}
-        <button onClick={openDrawer} className="p-3 text-gray-500">
-          <Menu className="w-6 h-6" />
-        </button>
       </nav>
 
       {/* Mobile Drawer Overlay & Panel */}
