@@ -165,7 +165,7 @@ export default function Layout() {
       </main>
 
       {/* Mobile Bottom Navigation with Liquid Glass Floating Pill (iOS 26 Style) */}
-      <div className="sm:hidden fixed bottom-8 left-1/2 -translate-x-1/2 w-[92%] max-w-md z-40">
+      <div className="sm:hidden fixed bottom-8 left-1/2 -translate-x-1/2 w-[92%] max-w-md z-40 mobile-navbar-container transition-all duration-300">
         <nav className="liquid-glass-pill rounded-[2.5rem] flex justify-around p-2.5 relative overflow-hidden group">
           {/* Iridescent Border Effect */}
           <div className="absolute inset-0 rounded-[2.5rem] border border-white/40 pointer-events-none" />
