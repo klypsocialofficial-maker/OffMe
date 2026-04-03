@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { User as UserIcon, Send, Image as ImageIcon, MoreHorizontal, Trash2, Edit2, BarChart2, Plus, Search, Filter, Calendar, X, Heart, Repeat, MessageCircle } from 'lucide-react';
+import { User as UserIcon, Send, MoreHorizontal, Trash2, Edit2, BarChart2, Plus, Heart, Repeat, MessageCircle } from 'lucide-react';
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, where, deleteDoc, doc, updateDoc, limit, arrayUnion, arrayRemove, startAfter, getDocs, QueryDocumentSnapshot } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import CreatePostModal from '../components/CreatePostModal';
+import TrendingPosts from '../components/TrendingPosts';
 import VerifiedBadge from '../components/VerifiedBadge';
 import { uploadToImgBB } from '../lib/imgbb';
 import { motion, AnimatePresence } from 'motion/react';
@@ -106,13 +107,6 @@ export default function Home() {
   const [hasMore, setHasMore] = useState(true);
   const observer = useRef<IntersectionObserver | null>(null);
 
-  // Filter States
-  const [searchKeyword, setSearchKeyword] = useState('');
-  const [searchAuthor, setSearchAuthor] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
-
   const fetchPosts = useCallback(async (isInitial = false) => {
     if (!db) return;
     
@@ -193,31 +187,6 @@ export default function Home() {
       setLoading(false);
     }
   };
-
-  const filteredPosts = posts.filter(post => {
-    // Keyword filter
-    if (searchKeyword && !post.content.toLowerCase().includes(searchKeyword.toLowerCase())) {
-      return false;
-    }
-    // Author filter
-    if (searchAuthor && !(
-      post.authorName.toLowerCase().includes(searchAuthor.toLowerCase()) || 
-      post.authorUsername.toLowerCase().includes(searchAuthor.toLowerCase())
-    )) {
-      return false;
-    }
-    // Date range filter
-    if (startDate || endDate) {
-      const postDate = post.createdAt?.toDate ? post.createdAt.toDate() : new Date();
-      if (startDate && postDate < new Date(startDate)) return false;
-      if (endDate) {
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        if (postDate > end) return false;
-      }
-    }
-    return true;
-  });
 
   const handleDeletePost = async (postId: string) => {
     if (!db || !userProfile) return;
@@ -403,111 +372,10 @@ export default function Home() {
               <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-blue-500 rounded-full" />
             )}
           </button>
-          <button 
-            onClick={() => setShowFilters(!showFilters)}
-            className={`px-4 hover:bg-black/5 transition-colors flex items-center justify-center ${showFilters ? 'text-blue-500' : 'text-gray-500'}`}
-            title="Filtros"
-          >
-            <Filter className="w-5 h-5" />
-          </button>
         </div>
-
-        {/* Filter Bar */}
-        <AnimatePresence>
-          {showFilters && (
-            <motion.div 
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden bg-white/60 backdrop-blur-md border-b border-gray-100"
-            >
-              <div className="p-4 space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Keyword Search */}
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input 
-                      type="text"
-                      placeholder="Palavras-chave..."
-                      value={searchKeyword}
-                      onChange={(e) => setSearchKeyword(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 bg-gray-100/50 border border-transparent focus:border-blue-500 focus:bg-white rounded-xl outline-none text-sm transition-all"
-                    />
-                    {searchKeyword && (
-                      <button onClick={() => setSearchKeyword('')} className="absolute right-3 top-1/2 -translate-y-1/2">
-                        <X className="w-4 h-4 text-gray-400" />
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Author Search */}
-                  <div className="relative">
-                    <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input 
-                      type="text"
-                      placeholder="Autor (@usuario ou nome)..."
-                      value={searchAuthor}
-                      onChange={(e) => setSearchAuthor(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 bg-gray-100/50 border border-transparent focus:border-blue-500 focus:bg-white rounded-xl outline-none text-sm transition-all"
-                    />
-                    {searchAuthor && (
-                      <button onClick={() => setSearchAuthor('')} className="absolute right-3 top-1/2 -translate-y-1/2">
-                        <X className="w-4 h-4 text-gray-400" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Date Start */}
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                    <div className="flex-1 flex items-center space-x-2">
-                      <span className="text-xs text-gray-500 whitespace-nowrap">De:</span>
-                      <input 
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                        className="flex-1 px-3 py-2 bg-gray-100/50 border border-transparent focus:border-blue-500 focus:bg-white rounded-xl outline-none text-sm transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Date End */}
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                    <div className="flex-1 flex items-center space-x-2">
-                      <span className="text-xs text-gray-500 whitespace-nowrap">Até:</span>
-                      <input 
-                        type="date"
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                        className="flex-1 px-3 py-2 bg-gray-100/50 border border-transparent focus:border-blue-500 focus:bg-white rounded-xl outline-none text-sm transition-all"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {(searchKeyword || searchAuthor || startDate || endDate) && (
-                  <div className="flex justify-end">
-                    <button 
-                      onClick={() => {
-                        setSearchKeyword('');
-                        setSearchAuthor('');
-                        setStartDate('');
-                        setEndDate('');
-                      }}
-                      className="text-xs text-red-500 font-bold hover:underline"
-                    >
-                      Limpar filtros
-                    </button>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
+
+      <TrendingPosts />
 
         {/* Posts List */}
         <div 
@@ -523,18 +391,16 @@ export default function Home() {
                 <PostSkeleton key={i} />
               ))}
             </div>
-          ) : filteredPosts.length === 0 ? (
+          ) : posts.length === 0 ? (
             <div className="p-8 text-center text-gray-500">
-              {searchKeyword || searchAuthor || startDate || endDate 
-                ? "Nenhum post corresponde aos seus filtros."
-                : (activeTab === 'foryou' 
-                    ? "Nenhum post ainda. Seja o primeiro a postar!"
-                    : "Você ainda não segue ninguém ou eles não postaram nada.")}
+              {activeTab === 'foryou' 
+                ? "Nenhum post ainda. Seja o primeiro a postar!"
+                : "Você ainda não segue ninguém ou eles não postaram nada."}
             </div>
           ) : (
             <div className="px-4 space-y-4 pb-20">
-              {filteredPosts.map((post, index) => {
-                const isLastPost = filteredPosts.length === index + 1;
+              {posts.map((post, index) => {
+                const isLastPost = posts.length === index + 1;
                 return (
                   <article 
                     key={post.id} 
