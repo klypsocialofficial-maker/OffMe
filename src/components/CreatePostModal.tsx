@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { User as UserIcon, Image as ImageIcon, X } from 'lucide-react';
-import { addDoc, collection, serverTimestamp, doc, updateDoc, increment } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, doc, updateDoc, increment, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { uploadToImgBB } from '../lib/imgbb';
 import { motion, AnimatePresence } from 'motion/react';
@@ -67,8 +67,10 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
         imageUrl = await uploadToImgBB(imageFile);
       }
 
-      await addDoc(collection(db, 'posts'), {
-        content: content.trim(),
+      const postContent = content.trim();
+      
+      const newPostRef = await addDoc(collection(db, 'posts'), {
+        content: postContent,
         imageUrl,
         authorId: userProfile.uid,
         authorName: userProfile.displayName || '',
@@ -87,6 +89,37 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
         threadId: replyTo?.threadId || replyTo?.id || null
       });
 
+      // Handle mentions
+      const mentions = postContent.match(/@(\w+)/g);
+      const mentionedUsernames = mentions ? [...new Set(mentions.map(m => m.substring(1)))] : [];
+
+      if (mentionedUsernames.length > 0) {
+        for (const username of mentionedUsernames) {
+          if (username === userProfile.username) continue; // Don't notify self
+          
+          const userQuery = query(collection(db, 'users'), where('username', '==', username));
+          const userSnapshot = await getDocs(userQuery);
+          
+          if (!userSnapshot.empty) {
+            const mentionedUserId = userSnapshot.docs[0].id;
+            
+            await addDoc(collection(db, 'notifications'), {
+              recipientId: mentionedUserId,
+              senderId: userProfile.uid,
+              senderName: userProfile.displayName,
+              senderUsername: userProfile.username,
+              senderPhoto: userProfile.photoURL || null,
+              senderVerified: userProfile.isVerified || userProfile.username === 'Rulio',
+              type: 'mention',
+              postId: newPostRef.id,
+              content: postContent,
+              read: false,
+              createdAt: serverTimestamp()
+            });
+          }
+        }
+      }
+
       if (replyTo) {
         await updateDoc(doc(db, 'posts', replyTo.id), {
           repliesCount: increment(1)
@@ -101,7 +134,8 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
             senderPhoto: userProfile.photoURL || null,
             senderVerified: userProfile.isVerified || userProfile.username === 'Rulio',
             type: 'reply',
-            postId: replyTo.id,
+            postId: newPostRef.id,
+            content: postContent,
             read: false,
             createdAt: serverTimestamp()
           });

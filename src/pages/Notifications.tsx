@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, User as UserIcon, Heart, UserPlus, MessageCircle, Repeat } from 'lucide-react';
+import { Bell, User as UserIcon, Heart, UserPlus, MessageCircle, Repeat, AtSign } from 'lucide-react';
 import VerifiedBadge from '../components/VerifiedBadge';
 import { useAuth } from '../contexts/AuthContext';
 import { useOutletContext, useNavigate } from 'react-router-dom';
@@ -135,6 +135,7 @@ export default function Notifications() {
                   {notification.type === 'follow' && <UserPlus className="w-6 h-6 text-blue-500" />}
                   {notification.type === 'reply' && <MessageCircle className="w-6 h-6 text-green-500" />}
                   {notification.type === 'repost' && <Repeat className="w-6 h-6 text-green-600" />}
+                  {notification.type === 'mention' && <AtSign className="w-6 h-6 text-purple-500" />}
                 </div>
                 <div className="flex-1">
                   <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden mb-2 flex-shrink-0">
@@ -153,6 +154,7 @@ export default function Notifications() {
                     {notification.type === 'follow' && 'começou a seguir você'}
                     {notification.type === 'reply' && 'respondeu ao seu post'}
                     {notification.type === 'repost' && 'repostou seu post'}
+                    {notification.type === 'mention' && 'mencionou você'}
                   </p>
                   {notification.content && (
                     <p className="text-gray-500 mt-1 line-clamp-2">{notification.content}</p>

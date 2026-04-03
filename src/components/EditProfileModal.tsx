@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { X, Camera } from 'lucide-react';
 import Cropper from 'react-easy-crop';
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, serverTimestamp, writeBatch, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { uploadToImgBB } from '../lib/imgbb';
 
@@ -146,8 +146,10 @@ export default function EditProfileModal({ isOpen, onClose, userProfile, handleF
         newBannerUrl = await uploadToImgBB(bannerFile);
       }
 
+      const newDisplayName = displayName.trim();
+
       await updateDoc(doc(db, 'users', userProfile.uid), {
-        displayName: displayName.trim(),
+        displayName: newDisplayName,
         bio: bio.trim(),
         location: location.trim(),
         website: website.trim(),
@@ -156,6 +158,47 @@ export default function EditProfileModal({ isOpen, onClose, userProfile, handleF
         bannerURL: newBannerUrl,
         updatedAt: serverTimestamp(),
       });
+
+      // Update all posts by this user
+      const postsQuery = query(collection(db, 'posts'), where('authorId', '==', userProfile.uid));
+      const postsSnapshot = await getDocs(postsQuery);
+      
+      // Update all notifications sent by this user
+      const notifsQuery = query(collection(db, 'notifications'), where('senderId', '==', userProfile.uid));
+      const notifsSnapshot = await getDocs(notifsQuery);
+
+      // Update conversations
+      const convsQuery = query(collection(db, 'conversations'), where('participants', 'array-contains', userProfile.uid));
+      const convsSnapshot = await getDocs(convsQuery);
+
+      const allDocs = [...postsSnapshot.docs, ...notifsSnapshot.docs, ...convsSnapshot.docs];
+      
+      // Chunk into batches of 500 (Firestore limit)
+      for (let i = 0; i < allDocs.length; i += 500) {
+        const batch = writeBatch(db);
+        const chunk = allDocs.slice(i, i + 500);
+        
+        chunk.forEach(docSnap => {
+          if (docSnap.ref.path.includes('posts/')) {
+            batch.update(docSnap.ref, {
+              authorName: newDisplayName,
+              authorPhoto: newAvatarUrl
+            });
+          } else if (docSnap.ref.path.includes('notifications/')) {
+            batch.update(docSnap.ref, {
+              senderName: newDisplayName,
+              senderPhoto: newAvatarUrl
+            });
+          } else if (docSnap.ref.path.includes('conversations/')) {
+            batch.update(docSnap.ref, {
+              [`participantInfo.${userProfile.uid}.displayName`]: newDisplayName,
+              [`participantInfo.${userProfile.uid}.photoURL`]: newAvatarUrl
+            });
+          }
+        });
+        
+        await batch.commit();
+      }
 
       onClose();
     } catch (error) {
