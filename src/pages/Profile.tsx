@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { User as UserIcon, Calendar, MapPin, Link as LinkIcon, Edit2, Trash2, BarChart2, MessageCircle, Heart, Send, MoreHorizontal, ArrowLeft, Search, Share, Briefcase } from 'lucide-react';
+import { User as UserIcon, Calendar, MapPin, Link as LinkIcon, Edit2, Trash2, BarChart2, MessageCircle, Heart, Send, MoreHorizontal, ArrowLeft, Search, Share, Briefcase, Plus } from 'lucide-react';
 import EditProfileModal from '../components/EditProfileModal';
 import CreatePostModal from '../components/CreatePostModal';
 import VerifiedBadge from '../components/VerifiedBadge';
@@ -792,6 +792,13 @@ export default function Profile() {
         handleFirestoreError={handleFirestoreError}
         OperationType={OperationType}
       />
+
+      <button
+        onClick={() => setIsCreateModalOpen(true)}
+        className="sm:hidden fixed bottom-32 right-6 w-14 h-14 bg-black text-white rounded-full shadow-2xl flex items-center justify-center hover:bg-gray-900 transition-colors z-[100] mobile-fab transition-all duration-300"
+      >
+        <Plus className="w-6 h-6" />
+      </button>
 
       <CreatePostModal 
         isOpen={isCreateModalOpen} 
