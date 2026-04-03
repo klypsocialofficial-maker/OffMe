@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, onSnapshot, collection, query, where, orderBy, serverTimestamp, addDoc } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where, orderBy, serverTimestamp, addDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { User as UserIcon, ArrowLeft, MoreHorizontal, Trash2, Edit2, BarChart2, Heart, Repeat, MessageCircle, Share2 } from 'lucide-react';
@@ -69,6 +69,13 @@ export default function PostDetail() {
   const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [replyToPost, setReplyToPost] = useState<any>(null);
+  const [activeMenuPostId, setActiveMenuPostId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = () => setActiveMenuPostId(null);
+    window.addEventListener('click', handleClickOutside);
+    return () => window.removeEventListener('click', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     if (!postId || !db) return;
@@ -103,6 +110,31 @@ export default function PostDetail() {
       unsubscribeReplies();
     };
   }, [postId]);
+
+  const handleDeleteReply = async (replyId: string) => {
+    if (!db || !userProfile) return;
+    if (window.confirm('Tem certeza que deseja excluir esta resposta?')) {
+      try {
+        await deleteDoc(doc(db, 'posts', replyId));
+      } catch (error) {
+        handleFirestoreError(error, OperationType.DELETE, `posts/${replyId}`);
+      }
+    }
+  };
+
+  const handleDeletePost = async (id: string) => {
+    if (!db || !userProfile) return;
+    if (window.confirm('Tem certeza que deseja apagar este post?')) {
+      try {
+        await deleteDoc(doc(db, 'posts', id));
+        if (id === postId) {
+          navigate(-1);
+        }
+      } catch (error) {
+        handleFirestoreError(error, OperationType.DELETE, `posts/${id}`);
+      }
+    }
+  };
 
   if (loading) {
     return (
@@ -156,9 +188,33 @@ export default function PostDetail() {
                   </div>
                   <div className="text-gray-500">@{post.authorUsername}</div>
                 </div>
-                <button className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500">
-                  <MoreHorizontal className="w-5 h-5" />
-                </button>
+                <div className="relative">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveMenuPostId(activeMenuPostId === post.id ? null : post.id);
+                    }}
+                    className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500"
+                  >
+                    <MoreHorizontal className="w-5 h-5" />
+                  </button>
+                  
+                  {activeMenuPostId === post.id && (
+                    <div className="absolute right-0 mt-1 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-10" onClick={(e) => e.stopPropagation()}>
+                      {post.authorId === userProfile?.uid ? (
+                        <button 
+                          onClick={() => handleDeletePost(post.id)}
+                          className="w-full text-left px-4 py-2 text-red-500 hover:bg-gray-50 flex items-center space-x-2"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <span>Apagar post</span>
+                        </button>
+                      ) : (
+                        <div className="px-4 py-2 text-gray-500 text-sm">Nenhuma ação disponível</div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -264,10 +320,23 @@ export default function PostDetail() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-1">
-                        <span className="font-bold truncate">{reply.authorName}</span>
-                        {(reply.authorVerified || reply.authorUsername === 'Rulio') && <VerifiedBadge />}
-                        <span className="text-gray-500 truncate text-sm">@{reply.authorUsername}</span>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-1">
+                          <span className="font-bold truncate">{reply.authorName}</span>
+                          {(reply.authorVerified || reply.authorUsername === 'Rulio') && <VerifiedBadge />}
+                          <span className="text-gray-500 truncate text-sm">@{reply.authorUsername}</span>
+                        </div>
+                        {userProfile?.uid === reply.authorId && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteReply(reply.id);
+                            }}
+                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                       <p className="mt-1 text-gray-900 whitespace-pre-wrap break-words">{reply.content}</p>
                       {reply.imageUrl && (

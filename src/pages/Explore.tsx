@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, User as UserIcon } from 'lucide-react';
 import VerifiedBadge from '../components/VerifiedBadge';
+import TrendingPosts from '../components/TrendingPosts';
 import { useAuth } from '../contexts/AuthContext';
 import { useOutletContext, Link, useNavigate } from 'react-router-dom';
 import { collection, query, where, onSnapshot, limit, addDoc, serverTimestamp, getDocs, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
@@ -316,9 +317,12 @@ export default function Explore() {
             </div>
           )
         ) : (
-          <div className="p-8 text-center text-gray-500">
-            <p className="text-xl font-bold mb-2">Descubra novos conteúdos</p>
-            <p>Busque por usuários para começar a seguir.</p>
+          <div className="py-6">
+            <TrendingPosts />
+            <div className="p-8 text-center text-gray-500">
+              <p className="text-xl font-bold mb-2">Descubra novos conteúdos</p>
+              <p>Busque por usuários para começar a seguir.</p>
+            </div>
           </div>
         )}
       </div>
