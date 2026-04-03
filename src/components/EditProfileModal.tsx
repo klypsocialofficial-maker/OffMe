@@ -18,6 +18,7 @@ export default function EditProfileModal({ isOpen, onClose, userProfile, handleF
   const [bio, setBio] = useState(userProfile?.bio || '');
   const [location, setLocation] = useState(userProfile?.location || '');
   const [website, setWebsite] = useState(userProfile?.website || '');
+  const [category, setCategory] = useState(userProfile?.category || '');
   const [loading, setLoading] = useState(false);
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -139,6 +140,7 @@ export default function EditProfileModal({ isOpen, onClose, userProfile, handleF
         bio: bio.trim(),
         location: location.trim(),
         website: website.trim(),
+        category: category.trim(),
         photoURL: newAvatarUrl,
         bannerURL: newBannerUrl,
       });
@@ -288,6 +290,18 @@ export default function EditProfileModal({ isOpen, onClose, userProfile, handleF
                 className="w-full border border-gray-300 rounded-md px-3 py-3 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
                 placeholder="Seu site"
                 maxLength={100}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-sm text-gray-500 px-1">Categoria</label>
+              <input
+                type="text"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full border border-gray-300 rounded-md px-3 py-3 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                placeholder="Ex: Artist, Designer, Developer"
+                maxLength={30}
               />
             </div>
           </div>

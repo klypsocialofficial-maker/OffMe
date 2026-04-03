@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { User as UserIcon, Calendar, MapPin, Link as LinkIcon, Edit2, Trash2, BarChart2, MessageCircle, Heart, Send, MoreHorizontal } from 'lucide-react';
+import { User as UserIcon, Calendar, MapPin, Link as LinkIcon, Edit2, Trash2, BarChart2, MessageCircle, Heart, Send, MoreHorizontal, ArrowLeft, Search, Share, Briefcase } from 'lucide-react';
 import EditProfileModal from '../components/EditProfileModal';
 import CreatePostModal from '../components/CreatePostModal';
 import VerifiedBadge from '../components/VerifiedBadge';
@@ -376,111 +376,144 @@ export default function Profile() {
   );
 
   return (
-    <div className="w-full h-full bg-white/50">
-      <div className="sticky top-0 bg-white/40 backdrop-blur-3xl backdrop-saturate-200 z-30 px-4 py-4 pt-[calc(1rem+env(safe-area-inset-top))] border-b border-gray-100/50">
-        <div className="flex items-center space-x-1">
-          <h1 className="text-xl font-bold">{profileUser.displayName}</h1>
-          {(profileUser.isVerified || profileUser.username === 'Rulio') && <VerifiedBadge />}
-        </div>
-        <p className="text-xs text-gray-500">{posts.length} posts</p>
-      </div>
-      
-      {/* Cover Photo */}
-      <div className="h-32 sm:h-48 bg-gray-200 w-full relative">
-        {(profileUser as any)?.bannerURL && (
-          <img src={(profileUser as any).bannerURL} alt="Banner" className="w-full h-full object-cover" />
-        )}
-        {/* Profile Photo */}
-        <div className="absolute -bottom-16 left-4 w-32 h-32 rounded-full border-4 border-white bg-white overflow-hidden shadow-sm">
-          {profileUser.photoURL ? (
-            <img src={profileUser.photoURL} alt={profileUser.displayName} className="w-full h-full object-cover" />
+    <div className="w-full h-full bg-white">
+      {/* Profile Header with Cover Photo and Action Buttons */}
+      <div className="relative">
+        {/* Cover Photo */}
+        <div className="h-48 sm:h-64 bg-black w-full relative overflow-hidden">
+          {profileUser.bannerURL ? (
+            <img src={profileUser.bannerURL} alt="Banner" className="w-full h-full object-cover opacity-80" />
           ) : (
-            <UserIcon className="w-full h-full p-4 text-gray-400 bg-gray-100" />
+            <div className="w-full h-full bg-gradient-to-b from-gray-800 to-black opacity-90" />
           )}
+          
+          {/* Top Action Bar (Floating on Cover) */}
+          <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-20 pt-[calc(1rem+env(safe-area-inset-top))]">
+            <button 
+              onClick={() => navigate(-1)} 
+              className="p-2 bg-black/40 backdrop-blur-md text-white rounded-full hover:bg-black/60 transition-all active:scale-90"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div className="flex space-x-2">
+              <button className="p-2 bg-black/40 backdrop-blur-md text-white rounded-full hover:bg-black/60 transition-all active:scale-90">
+                <Search className="w-5 h-5" />
+              </button>
+              {profileUser.uid === userProfile?.uid && (
+                <button 
+                  onClick={() => setIsEditModalOpen(true)}
+                  className="p-2 bg-black/40 backdrop-blur-md text-white rounded-full hover:bg-black/60 transition-all active:scale-90"
+                >
+                  <Edit2 className="w-5 h-5" />
+                </button>
+              )}
+              <button className="p-2 bg-black/40 backdrop-blur-md text-white rounded-full hover:bg-black/60 transition-all active:scale-90">
+                <Share className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Profile Photo (Overlapping) */}
+        <div className="absolute -bottom-12 left-6 z-10">
+          <div className="w-28 h-28 sm:w-32 h-32 rounded-full border-[5px] border-white bg-white overflow-hidden shadow-xl">
+            {profileUser.photoURL ? (
+              <img src={profileUser.photoURL} alt={profileUser.displayName} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                <UserIcon className="w-12 h-12 text-gray-300" />
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Profile Info */}
-      <div className="px-4 pt-20 pb-4 border-b border-gray-100">
+      {/* Profile Details */}
+      <div className="px-6 pt-16 pb-6">
         <div className="flex justify-between items-start">
-          <div>
+          <div className="flex-1 min-w-0">
             <div className="flex items-center space-x-1">
-              <h2 className="text-2xl font-bold">{profileUser.displayName}</h2>
-              {(profileUser.isVerified || profileUser.username === 'Rulio') && <VerifiedBadge className="w-6 h-6 text-black" />}
+              <h2 className="text-3xl font-black tracking-tight text-black truncate">
+                {profileUser.displayName}
+              </h2>
+              {(profileUser.isVerified || profileUser.username === 'Rulio') && (
+                <VerifiedBadge className="w-6 h-6 text-black flex-shrink-0" />
+              )}
             </div>
-            <p className="text-gray-500">@{profileUser.username}</p>
+            <p className="text-gray-500 font-medium text-lg">@{profileUser.username}</p>
           </div>
-          {profileUser.uid === userProfile?.uid ? (
-            <button 
-              onClick={() => setIsEditModalOpen(true)}
-              className="px-4 py-1.5 border border-gray-300 rounded-full font-bold hover:bg-gray-50 transition-colors"
-            >
-              Editar perfil
-            </button>
-          ) : (
+          
+          {profileUser.uid !== userProfile?.uid && (
             <div className="flex space-x-2">
               <button 
                 onClick={handleMessageClick}
-                className="p-2 border border-gray-300 rounded-full hover:bg-gray-50 transition-colors"
+                className="p-2.5 border border-gray-200 rounded-full hover:bg-gray-50 transition-all active:scale-95"
               >
-                <MessageCircle className="w-5 h-5" />
+                <MessageCircle className="w-5 h-5 text-black" />
               </button>
               <button 
                 onClick={handleFollowClick}
-                className={`px-6 py-1.5 rounded-full font-bold transition-colors ${
+                className={`px-8 py-2.5 rounded-full font-black text-sm transition-all active:scale-95 ${
                   userProfile?.following?.includes(profileUser.uid)
-                    ? 'border border-gray-300 hover:border-red-500 hover:text-red-500 hover:bg-red-50 group'
-                    : 'bg-black text-white hover:bg-gray-800'
+                    ? 'border border-gray-200 text-gray-600 hover:bg-gray-50'
+                    : 'bg-black text-white hover:bg-gray-900 shadow-lg shadow-black/10'
                 }`}
               >
-                {userProfile?.following?.includes(profileUser.uid) ? (
-                  <>
-                    <span className="group-hover:hidden">Seguindo</span>
-                    <span className="hidden group-hover:inline">Deixar de seguir</span>
-                  </>
-                ) : 'Seguir'}
+                {userProfile?.following?.includes(profileUser.uid) ? 'Seguindo' : 'Seguir'}
               </button>
             </div>
           )}
         </div>
 
-        <p className="mt-4 text-gray-900 whitespace-pre-wrap">
-          {(profileUser as any)?.bio || 'Bem-vindo ao meu perfil no OffMe! 🚀'}
-        </p>
+        {/* Bio with Stylized Look */}
+        {profileUser.bio && (
+          <p className="mt-4 text-gray-800 text-lg font-medium leading-relaxed max-w-xl">
+            {profileUser.bio}
+          </p>
+        )}
 
-        <div className="flex flex-wrap gap-y-2 gap-x-4 mt-4 text-gray-500 text-sm">
-          {(profileUser as any)?.location && (
-            <div className="flex items-center space-x-1">
+        {/* Metadata Grid */}
+        <div className="flex flex-wrap gap-y-3 gap-x-6 mt-6 text-gray-500 font-medium">
+          {profileUser.category && (
+            <div className="flex items-center space-x-2">
+              <Briefcase className="w-4 h-4" />
+              <span>{profileUser.category}</span>
+            </div>
+          )}
+          {profileUser.location && (
+            <div className="flex items-center space-x-2">
               <MapPin className="w-4 h-4" />
-              <span>{(profileUser as any).location}</span>
+              <span>{profileUser.location}</span>
             </div>
           )}
-          {(profileUser as any)?.website && (
-            <div className="flex items-center space-x-1">
-              <LinkIcon className="w-4 h-4" />
-              <a href={(profileUser as any).website.startsWith('http') ? (profileUser as any).website : `https://${(profileUser as any).website}`} target="_blank" rel="noopener noreferrer" className="text-black hover:underline">
-                {(profileUser as any).website.replace(/^https?:\/\//, '')}
-              </a>
-            </div>
-          )}
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center space-x-2">
             <Calendar className="w-4 h-4" />
-            <span>Entrou em Março de 2026</span>
+            <div className="flex items-center">
+              <span>
+                Entrou em {profileUser.createdAt 
+                  ? new Date(profileUser.createdAt.toDate()).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) 
+                  : new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+              </span>
+              <MoreHorizontal className="w-3 h-3 ml-1" />
+            </div>
           </div>
         </div>
 
-        <div className="flex space-x-4 mt-4 text-sm">
-          <button className="hover:underline">
-            <span className="font-bold text-black">{profileUser.following?.length || 0}</span> <span className="text-gray-500">Seguindo</span>
+        {/* Stats */}
+        <div className="flex space-x-6 mt-6">
+          <button className="flex items-center space-x-1.5 group">
+            <span className="font-black text-black text-lg">{profileUser.following?.length || 0}</span>
+            <span className="text-gray-500 font-medium group-hover:underline">Seguindo</span>
           </button>
-          <button className="hover:underline">
-            <span className="font-bold text-black">{profileUser.followers?.length || 0}</span> <span className="text-gray-500">Seguidores</span>
+          <button className="flex items-center space-x-1.5 group">
+            <span className="font-black text-black text-lg">{profileUser.followers?.length || 0}</span>
+            <span className="text-gray-500 font-medium group-hover:underline">Seguidores</span>
           </button>
         </div>
       </div>
 
       {/* Tabs Switcher */}
-      <div className="flex justify-center py-4 border-b border-gray-100/50">
+      <div className="sticky top-0 bg-white/80 backdrop-blur-xl z-20 flex justify-center py-4 border-b border-gray-100">
         <nav className="liquid-glass-pill p-1 rounded-full flex items-center relative overflow-hidden border border-white/40 shadow-sm">
           <button 
             onClick={() => setActiveTab('posts')}
