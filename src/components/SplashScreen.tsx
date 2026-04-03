@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { Ghost } from 'lucide-react';
 
 export default function SplashScreen({ onComplete }: { onComplete: () => void }) {
   const [isVisible, setIsVisible] = useState(true);
@@ -47,9 +48,13 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
               }}
               className="flex items-center justify-center"
             >
-              <div className="w-16 h-16 bg-black rounded-3xl flex items-center justify-center text-white font-bold text-3xl shadow-2xl shadow-black/20">
-                O
-              </div>
+              <motion.div 
+                animate={{ y: [0, -8, 0] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                className="w-16 h-16 bg-black rounded-3xl flex items-center justify-center text-white shadow-2xl shadow-black/20"
+              >
+                <Ghost className="w-8 h-8" />
+              </motion.div>
               <motion.span 
                 initial={{ x: -10, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
