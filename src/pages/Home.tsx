@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { User as UserIcon, Send, MoreHorizontal, Trash2, Edit2, BarChart2, Plus, Heart, Repeat, MessageCircle } from 'lucide-react';
+import { User as UserIcon, Send, MoreHorizontal, Trash2, Edit2, BarChart2, Plus, Heart, Repeat, MessageCircle, ArrowUp } from 'lucide-react';
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, where, deleteDoc, doc, updateDoc, limit, arrayUnion, arrayRemove, startAfter, getDocs, QueryDocumentSnapshot } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { useOutletContext, useNavigate } from 'react-router-dom';
@@ -89,11 +89,27 @@ export default function Home() {
   const { userProfile, logout } = useAuth();
   const navigate = useNavigate();
   const { openDrawer } = useOutletContext<{ openDrawer: () => void }>();
-  const [posts, setPosts] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'foryou' | 'following'>('foryou');
+  const [fetchedPosts, setFetchedPosts] = useState<any[]>([]);
+  const [displayedPosts, setDisplayedPosts] = useState<any[]>([]);
+  const [pendingPostsCount, setPendingPostsCount] = useState(0);
+  const isInitialLoadRef = useRef(true);
+  const displayedPostsRef = useRef<any[]>([]);
+
+  useEffect(() => {
+    displayedPostsRef.current = displayedPosts;
+  }, [displayedPosts]);
+
+  useEffect(() => {
+    isInitialLoadRef.current = true;
+    setDisplayedPosts([]);
+    setFetchedPosts([]);
+    setPendingPostsCount(0);
+  }, [activeTab]);
+
   const [newPost, setNewPost] = useState('');
   const [loading, setLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
-  const [activeTab, setActiveTab] = useState<'foryou' | 'following'>('foryou');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [activeMenuPostId, setActiveMenuPostId] = useState<string | null>(null);
   const [editingPost, setEditingPost] = useState<any>(null);
@@ -126,7 +142,7 @@ export default function Home() {
         );
       } else {
         // Not following anyone
-        setPosts([]);
+        setFetchedPosts([]);
         setIsFetching(false);
         return;
       }
@@ -138,16 +154,63 @@ export default function Home() {
         ...doc.data()
       }));
       
-      setPosts(newPosts);
+      setFetchedPosts(newPosts);
       setIsFetching(false);
     }, (error) => {
       console.error("Feed error:", error);
       setIsFetching(false);
-      setPosts([]);
+      setFetchedPosts([]);
     });
 
     return () => unsubscribe();
   }, [activeTab, db, userProfile?.following]);
+
+  useEffect(() => {
+    if (isInitialLoadRef.current) {
+      if (fetchedPosts.length > 0) {
+        setDisplayedPosts(fetchedPosts);
+        setPendingPostsCount(0);
+        isInitialLoadRef.current = false;
+      } else if (!isFetching) {
+        setDisplayedPosts([]);
+        isInitialLoadRef.current = false;
+      }
+      return;
+    }
+
+    const current = displayedPostsRef.current;
+    if (current.length === 0) {
+      setDisplayedPosts(fetchedPosts);
+      setPendingPostsCount(0);
+      return;
+    }
+
+    const currentIds = new Set(current.map(p => p.id));
+    const newPostsAtTop = [];
+    for (const p of fetchedPosts) {
+      if (!currentIds.has(p.id)) {
+        newPostsAtTop.push(p);
+      } else {
+        break;
+      }
+    }
+
+    const hasMyPost = newPostsAtTop.some(p => p.authorId === userProfile?.uid);
+
+    if (hasMyPost) {
+      setDisplayedPosts(fetchedPosts);
+      setPendingPostsCount(0);
+    } else {
+      setPendingPostsCount(newPostsAtTop.length);
+      
+      const fetchedMap = new Map(fetchedPosts.map(p => [p.id, p]));
+      const nextDisplayed = current
+        .filter(p => fetchedMap.has(p.id))
+        .map(p => fetchedMap.get(p.id));
+        
+      setDisplayedPosts(nextDisplayed);
+    }
+  }, [fetchedPosts, userProfile?.uid, isFetching]);
 
   const handlePost = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -371,6 +434,32 @@ export default function Home() {
         </div>
       </div>
 
+      {/* New Posts Banner */}
+      <div className="sticky top-[110px] sm:top-[90px] z-20 flex justify-center pointer-events-none w-full">
+        <AnimatePresence>
+          {pendingPostsCount > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: -20, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.9 }}
+              className="absolute"
+            >
+              <button
+                onClick={() => {
+                  setDisplayedPosts(fetchedPosts);
+                  setPendingPostsCount(0);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="bg-black text-white px-5 py-2 rounded-full shadow-lg font-bold text-sm pointer-events-auto hover:bg-gray-800 transition-transform active:scale-95 flex items-center space-x-2"
+              >
+                <ArrowUp className="w-4 h-4" />
+                <span>Mostrar {pendingPostsCount} {pendingPostsCount === 1 ? 'novo post' : 'novos posts'}</span>
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
       <TrendingPosts autoHide={true} />
 
         {/* Posts List */}
@@ -387,7 +476,7 @@ export default function Home() {
                 <PostSkeleton key={i} />
               ))}
             </div>
-          ) : posts.length === 0 ? (
+          ) : displayedPosts.length === 0 ? (
             <div className="p-12 text-center">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <MessageCircle className="w-8 h-8 text-gray-300" />
@@ -399,7 +488,7 @@ export default function Home() {
             </div>
           ) : (
             <div className="px-4 space-y-4 pb-20">
-              {posts.map((post) => {
+              {displayedPosts.map((post) => {
                 return (
                   <article 
                     key={post.id} 
