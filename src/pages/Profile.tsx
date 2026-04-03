@@ -479,44 +479,62 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex border-b border-gray-100">
-        <button 
-          onClick={() => setActiveTab('posts')}
-          className={`flex-1 py-4 font-bold relative hover:bg-black/5 transition-colors ${activeTab === 'posts' ? 'text-black' : 'text-gray-500'}`}
-        >
-          Posts
-          {activeTab === 'posts' && (
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-black rounded-full" />
-          )}
-        </button>
-        <button 
-          onClick={() => setActiveTab('replies')}
-          className={`flex-1 py-4 font-bold relative hover:bg-black/5 transition-colors ${activeTab === 'replies' ? 'text-black' : 'text-gray-500'}`}
-        >
-          Respostas
-          {activeTab === 'replies' && (
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-black rounded-full" />
-          )}
-        </button>
-        <button 
-          onClick={() => setActiveTab('media')}
-          className={`flex-1 py-4 font-bold relative hover:bg-black/5 transition-colors ${activeTab === 'media' ? 'text-black' : 'text-gray-500'}`}
-        >
-          Mídia
-          {activeTab === 'media' && (
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-black rounded-full" />
-          )}
-        </button>
-        <button 
-          onClick={() => setActiveTab('likes')}
-          className={`flex-1 py-4 font-bold relative hover:bg-black/5 transition-colors ${activeTab === 'likes' ? 'text-black' : 'text-gray-500'}`}
-        >
-          Curtidas
-          {activeTab === 'likes' && (
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-black rounded-full" />
-          )}
-        </button>
+      {/* Tabs Switcher */}
+      <div className="flex justify-center py-4 border-b border-gray-100/50">
+        <nav className="liquid-glass-pill p-1 rounded-full flex items-center relative overflow-hidden border border-white/40 shadow-sm">
+          <button 
+            onClick={() => setActiveTab('posts')}
+            className={`relative px-5 py-2 text-xs font-black uppercase tracking-widest transition-colors duration-300 z-10 ${activeTab === 'posts' ? 'text-black' : 'text-gray-500 hover:text-black'}`}
+          >
+            {activeTab === 'posts' && (
+              <motion.div
+                layoutId="profile-tab-blob"
+                className="absolute inset-0 bg-white/60 rounded-full -z-10 shadow-sm"
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              />
+            )}
+            Posts
+          </button>
+          <button 
+            onClick={() => setActiveTab('replies')}
+            className={`relative px-5 py-2 text-xs font-black uppercase tracking-widest transition-colors duration-300 z-10 ${activeTab === 'replies' ? 'text-black' : 'text-gray-500 hover:text-black'}`}
+          >
+            {activeTab === 'replies' && (
+              <motion.div
+                layoutId="profile-tab-blob"
+                className="absolute inset-0 bg-white/60 rounded-full -z-10 shadow-sm"
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              />
+            )}
+            Respostas
+          </button>
+          <button 
+            onClick={() => setActiveTab('media')}
+            className={`relative px-5 py-2 text-xs font-black uppercase tracking-widest transition-colors duration-300 z-10 ${activeTab === 'media' ? 'text-black' : 'text-gray-500 hover:text-black'}`}
+          >
+            {activeTab === 'media' && (
+              <motion.div
+                layoutId="profile-tab-blob"
+                className="absolute inset-0 bg-white/60 rounded-full -z-10 shadow-sm"
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              />
+            )}
+            Mídia
+          </button>
+          <button 
+            onClick={() => setActiveTab('likes')}
+            className={`relative px-5 py-2 text-xs font-black uppercase tracking-widest transition-colors duration-300 z-10 ${activeTab === 'likes' ? 'text-black' : 'text-gray-500 hover:text-black'}`}
+          >
+            {activeTab === 'likes' && (
+              <motion.div
+                layoutId="profile-tab-blob"
+                className="absolute inset-0 bg-white/60 rounded-full -z-10 shadow-sm"
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              />
+            )}
+            Curtidas
+          </button>
+        </nav>
       </div>
 
       <div className="pb-20">

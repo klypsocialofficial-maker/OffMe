@@ -31,10 +31,10 @@ const TrendingPosts: React.FC = () => {
   if (trendingPosts.length === 0) return null;
 
   return (
-    <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-5 rounded-3xl border border-indigo-100 shadow-sm mb-6">
+    <div className="liquid-glass-pill p-5 rounded-3xl border border-white/40 shadow-sm mb-6 mx-4">
       <div className="flex items-center space-x-2 mb-4">
-        <TrendingUp className="w-5 h-5 text-indigo-600" />
-        <h2 className="text-lg font-bold text-indigo-900">Em Alta</h2>
+        <TrendingUp className="w-5 h-5 text-black" />
+        <h2 className="text-lg font-bold text-black uppercase tracking-tight">Em Alta</h2>
       </div>
       <div className="space-y-4">
         {trendingPosts.map((post, index) => (
@@ -44,11 +44,11 @@ const TrendingPosts: React.FC = () => {
             onClick={() => navigate(`/post/${post.id}`)}
           >
             <div className="flex items-start space-x-3">
-              <span className="text-xl font-bold text-indigo-300 group-hover:text-indigo-500 transition-colors">
+              <span className="text-xl font-black text-black/20 group-hover:text-black transition-colors">
                 #{index + 1}
               </span>
               <div>
-                <p className="text-sm font-medium text-gray-800 line-clamp-2 group-hover:text-indigo-700 transition-colors">
+                <p className="text-sm font-medium text-gray-800 line-clamp-2 group-hover:text-black transition-colors">
                   {post.content}
                 </p>
                 <div className="flex items-center space-x-3 mt-1 text-xs text-gray-500">

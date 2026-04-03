@@ -6,7 +6,13 @@
 
 @layer utilities {
   .liquid-glass {
-    @apply bg-white/40 backdrop-blur-[40px] border-x border-b border-white/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.05)];
+    @apply bg-white/20 backdrop-blur-[32px] border border-white/40 shadow-[0_20px_50px_rgba(0,0,0,0.1)];
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1));
+  }
+  
+  .liquid-glass-pill {
+    @apply bg-white/10 backdrop-blur-[40px] border border-white/30 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)];
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.05) 100%);
   }
   
   .liquid-glass-dark {

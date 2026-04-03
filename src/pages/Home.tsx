@@ -330,36 +330,43 @@ export default function Home() {
           </button>
         </div>
 
-        {/* Tabs */}
-        <div className="flex w-full border-b border-gray-100/50" role="tablist" aria-label="Feed tabs">
-          <button 
-            role="tab"
-            aria-selected={activeTab === 'foryou'}
-            aria-controls="feed-panel"
-            id="tab-foryou"
-            tabIndex={activeTab === 'foryou' ? 0 : -1}
-            onClick={() => setActiveTab('foryou')} 
-            className={`flex-1 hover:bg-black/5 transition-colors relative py-4 text-center font-bold focus-visible:outline-none focus-visible:bg-black/5 ${activeTab === 'foryou' ? 'text-black' : 'text-gray-500'}`}
-          >
-            Para você
-            {activeTab === 'foryou' && (
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-black rounded-full" />
-            )}
-          </button>
-          <button 
-            role="tab"
-            aria-selected={activeTab === 'following'}
-            aria-controls="feed-panel"
-            id="tab-following"
-            tabIndex={activeTab === 'following' ? 0 : -1}
-            onClick={() => setActiveTab('following')} 
-            className={`flex-1 hover:bg-black/5 transition-colors relative py-4 text-center font-bold focus-visible:outline-none focus-visible:bg-black/5 ${activeTab === 'following' ? 'text-black' : 'text-gray-500'}`}
-          >
-            Seguindo
-            {activeTab === 'following' && (
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-black rounded-full" />
-            )}
-          </button>
+        {/* Feed Header & Tabs */}
+        <div className="px-4 py-4 space-y-4">
+          {/* Liquid Glass Tab Switcher */}
+          <div className="flex justify-center">
+            <nav className="liquid-glass-pill p-1 rounded-full flex items-center relative overflow-hidden border border-white/40 shadow-sm">
+              <button
+                onClick={() => setActiveTab('foryou')}
+                className={`relative px-6 py-2 text-xs font-black uppercase tracking-widest transition-colors duration-300 z-10 ${
+                  activeTab === 'foryou' ? 'text-black' : 'text-gray-500 hover:text-black'
+                }`}
+              >
+                {activeTab === 'foryou' && (
+                  <motion.div
+                    layoutId="feed-tab-blob"
+                    className="absolute inset-0 bg-white/60 rounded-full -z-10 shadow-sm"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                )}
+                Para você
+              </button>
+              <button
+                onClick={() => setActiveTab('following')}
+                className={`relative px-6 py-2 text-xs font-black uppercase tracking-widest transition-colors duration-300 z-10 ${
+                  activeTab === 'following' ? 'text-black' : 'text-gray-500 hover:text-black'
+                }`}
+              >
+                {activeTab === 'following' && (
+                  <motion.div
+                    layoutId="feed-tab-blob"
+                    className="absolute inset-0 bg-white/60 rounded-full -z-10 shadow-sm"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                )}
+                Seguindo
+              </button>
+            </nav>
+          </div>
         </div>
       </div>
 
@@ -380,10 +387,14 @@ export default function Home() {
               ))}
             </div>
           ) : posts.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              {activeTab === 'foryou' 
-                ? "Nenhum post ainda. Seja o primeiro a postar!"
-                : "Você ainda não segue ninguém ou eles não postaram nada."}
+            <div className="p-12 text-center">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <MessageCircle className="w-8 h-8 text-gray-300" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-1">Nenhum post ainda</h3>
+              <p className="text-sm text-gray-500 max-w-[200px] mx-auto">
+                Seja o primeiro a compartilhar algo com o mundo!
+              </p>
             </div>
           ) : (
             <div className="px-4 space-y-4 pb-20">
