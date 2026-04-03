@@ -186,6 +186,7 @@ service cloud.firestore {
                     request.resource.data.authorId == resource.data.authorId &&
                     request.resource.data.createdAt == resource.data.createdAt &&
                     (
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['authorName', 'authorPhoto', 'authorUsername', 'authorVerified']) ||
                       request.time.toMillis() <= resource.data.createdAt.toMillis() + (3 * 60 * 1000) ||
                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isPremium', false) == true
                     )) ||
@@ -224,7 +225,10 @@ service cloud.firestore {
       allow read: if isAuthenticated() && resource.data.recipientId == request.auth.uid;
       // For now, allow any authenticated user to create a notification (e.g. when they like/follow)
       allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && resource.data.recipientId == request.auth.uid;
+      allow update: if isAuthenticated() && (
+                      resource.data.recipientId == request.auth.uid ||
+                      (resource.data.senderId == request.auth.uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['senderName', 'senderPhoto', 'senderUsername', 'senderVerified']))
+                    );
       allow delete: if isAuthenticated() && resource.data.recipientId == request.auth.uid;
     }
     

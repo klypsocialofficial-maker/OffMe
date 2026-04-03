@@ -398,11 +398,7 @@ export default function Profile() {
       <div className="relative">
         {/* Cover Photo */}
         <div className="h-32 sm:h-48 bg-black w-full relative overflow-hidden">
-          {profileUser.bannerURL ? (
-            <img src={profileUser.bannerURL} alt="Banner" className="w-full h-full object-cover opacity-80" />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-b from-gray-800 to-black opacity-90" />
-          )}
+          <img src={profileUser.bannerURL || '/ghost.svg'} alt="Banner" className="w-full h-full object-cover opacity-80" />
           
           {/* Top Action Bar (Floating on Cover) */}
           <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-20 pt-[calc(1rem+env(safe-area-inset-top))]">
@@ -434,13 +430,7 @@ export default function Profile() {
         {/* Profile Photo (Overlapping) */}
         <div className="absolute -bottom-10 left-4 sm:left-6 z-10">
           <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-white bg-white overflow-hidden shadow-sm">
-            {profileUser.photoURL ? (
-              <img src={profileUser.photoURL} alt={profileUser.displayName} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                <UserIcon className="w-10 h-10 text-gray-300" />
-              </div>
-            )}
+            <img src={profileUser.photoURL || '/ghost.svg'} alt={profileUser.displayName} className="w-full h-full object-cover" />
           </div>
         </div>
       </div>

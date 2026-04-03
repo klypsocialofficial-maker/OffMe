@@ -265,9 +265,7 @@ export default function EditProfileModal({ isOpen, onClose, userProfile, handleF
         <div className="overflow-y-auto">
           {/* Banner */}
           <div className="relative h-32 sm:h-48 bg-gray-200 w-full group">
-            {(bannerPreview || userProfile?.bannerURL) && (
-              <img src={bannerPreview || userProfile?.bannerURL} alt="Banner" className="w-full h-full object-cover" />
-            )}
+            <img src={bannerPreview || userProfile?.bannerURL || '/ghost.svg'} alt="Banner" className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
               <button 
                 onClick={() => bannerInputRef.current?.click()}
@@ -282,11 +280,7 @@ export default function EditProfileModal({ isOpen, onClose, userProfile, handleF
           {/* Avatar */}
           <div className="px-4 relative mb-4">
             <div className="absolute -top-16 w-32 h-32 rounded-full border-4 border-white bg-white overflow-hidden shadow-sm group">
-              {(avatarPreview || userProfile?.photoURL) ? (
-                <img src={avatarPreview || userProfile?.photoURL} alt="Avatar" className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full bg-gray-100" />
-              )}
+              <img src={avatarPreview || userProfile?.photoURL || '/ghost.svg'} alt="Avatar" className="w-full h-full object-cover" />
               <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                 <button 
                   onClick={() => avatarInputRef.current?.click()}

@@ -129,12 +129,8 @@ export default function Layout() {
           
           {userProfile && (
             <div className="mt-4 flex items-center px-4 py-3">
-              <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
-                {userProfile.photoURL ? (
-                  <img src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full object-cover" />
-                ) : (
-                  <UserIcon className="w-full h-full p-2 text-gray-400" />
-                )}
+              <div className="w-10 h-10 rounded-full bg-gray-100 overflow-hidden flex-shrink-0 border border-gray-200">
+                <img src={userProfile.photoURL || '/ghost.svg'} alt={userProfile.displayName} className="w-full h-full object-cover" />
               </div>
               <div className="ml-3 overflow-hidden">
                 <div className="flex items-center space-x-1">
@@ -258,44 +254,53 @@ export default function Layout() {
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               className="fixed top-0 left-0 bottom-0 w-[280px] bg-white z-50 sm:hidden shadow-2xl flex flex-col"
             >
-              <div className="p-4 border-b border-gray-100 pt-[calc(1rem+env(safe-area-inset-top))]">
-                <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden mb-3">
-                  {userProfile?.photoURL ? (
-                    <img src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full object-cover" />
-                  ) : (
-                    <UserIcon className="w-full h-full p-2 text-gray-400" />
-                  )}
+              <div className="relative border-b border-gray-100 pt-[calc(1rem+env(safe-area-inset-top))]">
+                {/* Banner Background */}
+                <div className="absolute top-0 left-0 right-0 h-24 bg-gray-100 -z-10">
+                  <img src={userProfile?.bannerURL || '/ghost.svg'} alt="Banner" className="w-full h-full object-cover opacity-80" />
+                  <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/90"></div>
                 </div>
-                <div className="flex items-center space-x-1">
-                  <h2 className="font-bold text-lg leading-tight">{userProfile?.displayName}</h2>
-                  {(userProfile?.isVerified || userProfile?.username === 'Rulio') && <VerifiedBadge className="w-4 h-4 text-black flex-shrink-0" />}
-                </div>
-                <p className="text-gray-500 text-sm">@{userProfile?.username}</p>
                 
-                <div className="flex space-x-4 mt-4 text-sm">
-                  <div className="hover:underline cursor-pointer">
-                    <span className="font-bold text-black">{userProfile?.following?.length || 0}</span> <span className="text-gray-500">Seguindo</span>
+                <div className="p-4 pt-12">
+                  <div className="w-16 h-16 rounded-full bg-white overflow-hidden mb-3 border-4 border-white shadow-sm">
+                    <img src={userProfile?.photoURL || '/ghost.svg'} alt={userProfile?.displayName} className="w-full h-full object-cover" />
                   </div>
-                  <div className="hover:underline cursor-pointer">
-                    <span className="font-bold text-black">{userProfile?.followers?.length || 0}</span> <span className="text-gray-500">Seguidores</span>
+                  <div className="flex items-center space-x-1">
+                    <h2 className="font-bold text-lg leading-tight">{userProfile?.displayName}</h2>
+                    {(userProfile?.isVerified || userProfile?.username === 'Rulio') && <VerifiedBadge className="w-4 h-4 text-black flex-shrink-0" />}
+                  </div>
+                  <p className="text-gray-500 text-sm">@{userProfile?.username}</p>
+                  
+                  <div className="flex space-x-4 mt-4 text-sm">
+                    <div className="hover:underline cursor-pointer">
+                      <span className="font-bold text-black">{userProfile?.following?.length || 0}</span> <span className="text-gray-500">Seguindo</span>
+                    </div>
+                    <div className="hover:underline cursor-pointer">
+                      <span className="font-bold text-black">{userProfile?.followers?.length || 0}</span> <span className="text-gray-500">Seguidores</span>
+                    </div>
                   </div>
                 </div>
               </div>
               
-              <nav className="flex-1 overflow-y-auto py-2">
-                <Link to="/profile" onClick={closeDrawer} className="flex items-center px-4 py-4 text-xl font-bold hover:bg-gray-100 transition-colors">
+              <nav className="flex-1 overflow-y-auto py-4 px-4 space-y-3">
+                <Link to="/profile" onClick={closeDrawer} className="liquid-glass-pill flex items-center px-4 py-3.5 text-lg font-bold rounded-2xl hover:bg-black/5 transition-all relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   <UserIcon className="mr-4 w-6 h-6" /> Perfil
                 </Link>
-                <Link to="/premium" onClick={closeDrawer} className="flex items-center px-4 py-4 text-xl font-bold hover:bg-gray-100 transition-colors">
+                <Link to="/premium" onClick={closeDrawer} className="liquid-glass-pill flex items-center px-4 py-3.5 text-lg font-bold rounded-2xl hover:bg-black/5 transition-all relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   <Zap className="mr-4 w-6 h-6" /> Premium
                 </Link>
-                <Link to="/bookmarks" onClick={closeDrawer} className="flex items-center px-4 py-4 text-xl font-bold hover:bg-gray-100 transition-colors">
+                <Link to="/bookmarks" onClick={closeDrawer} className="liquid-glass-pill flex items-center px-4 py-3.5 text-lg font-bold rounded-2xl hover:bg-black/5 transition-all relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   <Bookmark className="mr-4 w-6 h-6" /> Itens salvos
                 </Link>
-                <Link to="/lists" onClick={closeDrawer} className="flex items-center px-4 py-4 text-xl font-bold hover:bg-gray-100 transition-colors">
+                <Link to="/lists" onClick={closeDrawer} className="liquid-glass-pill flex items-center px-4 py-3.5 text-lg font-bold rounded-2xl hover:bg-black/5 transition-all relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   <List className="mr-4 w-6 h-6" /> Listas
                 </Link>
-                <Link to="/settings" onClick={closeDrawer} className="flex items-center px-4 py-4 text-xl font-bold hover:bg-gray-100 transition-colors">
+                <Link to="/settings" onClick={closeDrawer} className="liquid-glass-pill flex items-center px-4 py-3.5 text-lg font-bold rounded-2xl hover:bg-black/5 transition-all relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   <Settings className="mr-4 w-6 h-6" /> Configurações
                 </Link>
               </nav>
