@@ -112,6 +112,17 @@ export default function Home() {
   const [isFetching, setIsFetching] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [activeMenuPostId, setActiveMenuPostId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (activeMenuPostId) {
+        setActiveMenuPostId(null);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [activeMenuPostId]);
+
   const [editingPost, setEditingPost] = useState<any>(null);
   const [editContent, setEditContent] = useState('');
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
@@ -470,28 +481,36 @@ export default function Home() {
           tabIndex={0}
           className="focus-visible:outline-none pt-4"
         >
-          {isFetching ? (
-            <div className="space-y-4">
-              {[...Array(5)].map((_, i) => (
-                <PostSkeleton key={i} />
-              ))}
-            </div>
-          ) : displayedPosts.length === 0 ? (
-            <div className="p-12 text-center">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <MessageCircle className="w-8 h-8 text-gray-300" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-1">Nenhum post ainda</h3>
-              <p className="text-sm text-gray-500 max-w-[200px] mx-auto">
-                Seja o primeiro a compartilhar algo com o mundo!
-              </p>
-            </div>
-          ) : (
-            <div className="px-4 space-y-4 pb-20">
-              {displayedPosts.map((post) => {
-                return (
-                  <article 
-                    key={post.id} 
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+            >
+              {isFetching ? (
+                <div className="space-y-4">
+                  {[...Array(5)].map((_, i) => (
+                    <PostSkeleton key={i} />
+                  ))}
+                </div>
+              ) : displayedPosts.length === 0 ? (
+                <div className="p-12 text-center">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <MessageCircle className="w-8 h-8 text-gray-300" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">Nenhum post ainda</h3>
+                  <p className="text-sm text-gray-500 max-w-[200px] mx-auto">
+                    Seja o primeiro a compartilhar algo com o mundo!
+                  </p>
+                </div>
+              ) : (
+                <div className="px-4 space-y-4 pb-20">
+                  {displayedPosts.map((post) => {
+                    return (
+                      <article 
+                        key={post.id} 
                     onClick={() => navigate(`/post/${post.id}`)}
                     className="group relative p-4 bg-white/60 backdrop-blur-md rounded-2xl shadow-sm border border-white/40 hover:bg-white/80 transition-all cursor-pointer flex space-x-4"
                   >
@@ -764,9 +783,11 @@ export default function Home() {
                 </article>
                 );
               })}
+            </div>
+          )}
+            </motion.div>
+          </AnimatePresence>
         </div>
-      )}
-    </div>
 
         <button
           onClick={() => setIsCreateModalOpen(true)}
