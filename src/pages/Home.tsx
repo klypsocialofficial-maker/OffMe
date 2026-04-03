@@ -754,12 +754,8 @@ export default function Home() {
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (userProfile?.isPremium) {
-                            setSelectedStatsPost(post);
-                            setIsStatsModalOpen(true);
-                          } else {
-                            alert('Estatísticas avançadas são um recurso Premium. Assine para ver o desempenho dos seus posts!');
-                          }
+                          setSelectedStatsPost(post);
+                          setIsStatsModalOpen(true);
                         }}
                         className="flex items-center space-x-2 hover:text-black transition-colors group"
                       >

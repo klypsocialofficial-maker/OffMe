@@ -74,6 +74,8 @@ export default function Profile() {
   const [editContent, setEditContent] = useState('');
   const [replyToPost, setReplyToPost] = useState<any | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
+  const [selectedStatsPost, setSelectedStatsPost] = useState<any>(null);
 
   useEffect(() => {
     if (!db) return;
@@ -754,6 +756,18 @@ export default function Profile() {
                         </motion.div>
                         <span className="text-sm">{post.likesCount || 0}</span>
                       </button>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedStatsPost(post);
+                          setIsStatsModalOpen(true);
+                        }}
+                        className="flex items-center space-x-2 hover:text-black transition-colors group"
+                      >
+                        <div className="p-2 group-hover:bg-black/5 rounded-full">
+                          <BarChart2 className="w-5 h-5" />
+                        </div>
+                      </button>
                       <button className="flex items-center space-x-2 hover:text-black transition-colors group">
                         <div className="p-2 group-hover:bg-black/5 rounded-full">
                           <Send className="w-5 h-5" />
@@ -801,6 +815,80 @@ export default function Profile() {
         OperationType={OperationType}
         replyTo={replyToPost}
       />
+
+      {/* Stats Modal */}
+      <AnimatePresence>
+        {isStatsModalOpen && selectedStatsPost && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold">Estatísticas Avançadas</h3>
+                <div className="bg-blue-100 text-blue-600 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider">
+                  Premium
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-gray-50 p-4 rounded-xl">
+                    <p className="text-xs text-gray-500 mb-1">Visualizações</p>
+                    <p className="text-xl font-bold">{(selectedStatsPost.likesCount || 0) * 12 + (selectedStatsPost.repostsCount || 0) * 25 + 142}</p>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-xl">
+                    <p className="text-xs text-gray-500 mb-1">Engajamento</p>
+                    <p className="text-xl font-bold text-blue-600">
+                      {(((selectedStatsPost.likesCount || 0) + (selectedStatsPost.repostsCount || 0) + (selectedStatsPost.repliesCount || 0)) / 10 + 2.4).toFixed(1)}%
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                    <div className="flex items-center space-x-3">
+                      <div className="bg-white p-2 rounded-lg shadow-sm">
+                        <UserIcon className="w-4 h-4 text-gray-600" />
+                      </div>
+                      <span className="text-sm font-medium">Cliques no perfil</span>
+                    </div>
+                    <span className="font-bold">{(selectedStatsPost.likesCount || 0) * 2 + 3}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                    <div className="flex items-center space-x-3">
+                      <div className="bg-white p-2 rounded-lg shadow-sm">
+                        <BarChart2 className="w-4 h-4 text-gray-600" />
+                      </div>
+                      <span className="text-sm font-medium">Alcance orgânico</span>
+                    </div>
+                    <span className="font-bold">94%</span>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                  <p className="text-xs text-blue-700 leading-relaxed">
+                    Este post está performando <span className="font-bold">15% melhor</span> que a média dos seus posts recentes.
+                  </p>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => {
+                  setIsStatsModalOpen(false);
+                  setSelectedStatsPost(null);
+                }}
+                className="mt-8 w-full bg-black text-white py-3 rounded-xl font-bold hover:bg-gray-800 transition-colors shadow-lg shadow-black/10"
+              >
+                Fechar
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
