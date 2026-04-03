@@ -4,7 +4,7 @@ import VerifiedBadge from '../components/VerifiedBadge';
 import TrendingPosts from '../components/TrendingPosts';
 import { useAuth } from '../contexts/AuthContext';
 import { useOutletContext, Link, useNavigate } from 'react-router-dom';
-import { collection, query, where, onSnapshot, limit, addDoc, serverTimestamp, getDocs, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, limit, addDoc, serverTimestamp, getDocs, doc, updateDoc, arrayUnion, arrayRemove, orderBy } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 
 enum OperationType {
@@ -64,7 +64,9 @@ export default function Explore() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [suggestedUsers, setSuggestedUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(true);
 
   const handleMessageClick = async (otherUser: any) => {
     if (!userProfile?.uid || !db) return;
@@ -149,6 +151,57 @@ export default function Explore() {
       handleFirestoreError(error, OperationType.UPDATE, 'users');
     }
   };
+
+  useEffect(() => {
+    if (!db) return;
+
+    const fetchSuggestions = async () => {
+      setLoadingSuggestions(true);
+      try {
+        // Fetch Rulio first
+        const qRulio = query(collection(db, 'users'), where('username', '==', 'Rulio'), limit(1));
+        const rulioSnap = await getDocs(qRulio);
+        let rulioUser = null;
+        if (!rulioSnap.empty) {
+          rulioUser = { id: rulioSnap.docs[0].id, ...rulioSnap.docs[0].data() };
+        }
+
+        // Fetch latest users
+        const qLatest = query(collection(db, 'users'), orderBy('createdAt', 'desc'), limit(10));
+        const latestSnap = await getDocs(qLatest);
+        
+        let users: any[] = [];
+        if (rulioUser && rulioUser.id !== userProfile?.uid) {
+          users.push(rulioUser);
+        }
+
+        latestSnap.forEach(doc => {
+          if (doc.id !== userProfile?.uid && doc.id !== rulioUser?.id) {
+            users.push({ id: doc.id, ...doc.data() });
+          }
+        });
+
+        // If we didn't get enough users because createdAt is missing on old users, fetch some without ordering
+        if (users.length < 3) {
+          const qFallback = query(collection(db, 'users'), limit(10));
+          const fallbackSnap = await getDocs(qFallback);
+          fallbackSnap.forEach(doc => {
+            if (doc.id !== userProfile?.uid && !users.find(u => u.id === doc.id)) {
+              users.push({ id: doc.id, ...doc.data() });
+            }
+          });
+        }
+
+        setSuggestedUsers(users.slice(0, 10));
+      } catch (error) {
+        console.error("Error fetching suggestions:", error);
+      } finally {
+        setLoadingSuggestions(false);
+      }
+    };
+
+    fetchSuggestions();
+  }, [userProfile?.uid]);
 
   useEffect(() => {
     const cleanQuery = searchQuery.trim().replace(/^@/, '');
@@ -319,9 +372,62 @@ export default function Explore() {
         ) : (
           <div className="py-6">
             <TrendingPosts />
-            <div className="p-8 text-center text-gray-500">
-              <p className="text-xl font-bold mb-2">Descubra novos conteúdos</p>
-              <p>Busque por usuários para começar a seguir.</p>
+            
+            <div className="mt-8 border-t border-gray-100 pt-6">
+              <h2 className="px-4 text-xl font-bold mb-4">Sugestões para você</h2>
+              
+              {loadingSuggestions ? (
+                <div className="p-8 text-center text-gray-500">Carregando sugestões...</div>
+              ) : suggestedUsers.length > 0 ? (
+                <div className="divide-y divide-gray-100">
+                  {suggestedUsers.map(user => (
+                    <div 
+                      key={user.id} 
+                      className="p-4 hover:bg-black/5 transition-colors flex items-center justify-between cursor-pointer"
+                      onClick={() => navigate(`/profile/${user.id}`)}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+                          {user.photoURL ? (
+                            <img src={user.photoURL} alt={user.displayName} className="w-full h-full object-cover" />
+                          ) : (
+                            <UserIcon className="w-full h-full p-2 text-gray-400" />
+                          )}
+                        </div>
+                        <div>
+                          <div className="flex items-center space-x-1">
+                            <p className="font-bold text-black">{user.displayName}</p>
+                            {(user.isVerified || user.username === 'Rulio') && <VerifiedBadge />}
+                          </div>
+                          <p className="text-gray-500 text-sm">@{user.username}</p>
+                          {user.username === 'Rulio' && (
+                            <p className="text-xs text-blue-500 font-medium mt-0.5">Criador do App</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleFollowClick(user);
+                          }}
+                          className={`px-4 py-1.5 rounded-full font-bold text-sm transition-colors ${
+                            userProfile?.following?.includes(user.id)
+                              ? 'bg-white text-black border border-gray-300 hover:bg-red-50 hover:text-red-600 hover:border-red-200'
+                              : 'bg-black text-white hover:bg-gray-800'
+                          }`}
+                        >
+                          {userProfile?.following?.includes(user.id) ? 'Seguindo' : 'Seguir'}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-8 text-center text-gray-500">
+                  Nenhuma sugestão no momento.
+                </div>
+              )}
             </div>
           </div>
         )}

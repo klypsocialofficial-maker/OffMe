@@ -8,7 +8,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
 
 enum OperationType {
   CREATE = 'create',
@@ -75,6 +75,7 @@ interface UserProfile {
   following?: string[];
   followers?: string[];
   isVerified?: boolean;
+  createdAt?: any;
 }
 
 interface AuthContextType {
@@ -170,7 +171,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         displayName: user.displayName || 'User',
         photoURL: user.photoURL || '',
         following: [],
-        followers: []
+        followers: [],
+        createdAt: serverTimestamp()
       };
       try {
         await setDoc(docRef, newProfile);
@@ -193,7 +195,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       displayName: name,
       photoURL: '',
       following: [],
-      followers: []
+      followers: [],
+      createdAt: serverTimestamp()
     };
     try {
       await setDoc(doc(db, 'users', user.uid), newProfile);

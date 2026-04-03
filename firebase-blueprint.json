@@ -12,7 +12,8 @@
         "photoURL": { "type": "string", "description": "The URL of the user's profile photo." },
         "isVerified": { "type": "boolean", "description": "Whether the user is verified." },
         "following": { "type": "array", "items": { "type": "string" }, "description": "Array of UIDs this user follows." },
-        "followers": { "type": "array", "items": { "type": "string" }, "description": "Array of UIDs following this user." }
+        "followers": { "type": "array", "items": { "type": "string" }, "description": "Array of UIDs following this user." },
+        "createdAt": { "type": "timestamp", "description": "The time the user was created." }
       },
       "required": ["uid", "email", "username", "displayName"]
     },
