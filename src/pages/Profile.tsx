@@ -397,7 +397,7 @@ export default function Profile() {
       {/* Profile Header with Cover Photo and Action Buttons */}
       <div className="relative">
         {/* Cover Photo */}
-        <div className="h-48 sm:h-64 bg-black w-full relative overflow-hidden">
+        <div className="h-32 sm:h-48 bg-black w-full relative overflow-hidden">
           {profileUser.bannerURL ? (
             <img src={profileUser.bannerURL} alt="Banner" className="w-full h-full object-cover opacity-80" />
           ) : (
@@ -432,13 +432,13 @@ export default function Profile() {
         </div>
 
         {/* Profile Photo (Overlapping) */}
-        <div className="absolute -bottom-12 left-6 z-10">
-          <div className="w-28 h-28 sm:w-32 h-32 rounded-full border-[5px] border-white bg-white overflow-hidden shadow-xl">
+        <div className="absolute -bottom-10 left-4 sm:left-6 z-10">
+          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-white bg-white overflow-hidden shadow-sm">
             {profileUser.photoURL ? (
               <img src={profileUser.photoURL} alt={profileUser.displayName} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                <UserIcon className="w-12 h-12 text-gray-300" />
+                <UserIcon className="w-10 h-10 text-gray-300" />
               </div>
             )}
           </div>
@@ -446,34 +446,34 @@ export default function Profile() {
       </div>
 
       {/* Profile Details */}
-      <div className="px-6 pt-16 pb-6">
+      <div className="px-4 sm:px-6 pt-12 pb-4">
         <div className="flex justify-between items-start">
           <div className="flex-1 min-w-0">
             <div className="flex items-center space-x-1">
-              <h2 className="text-3xl font-black tracking-tight text-black truncate">
+              <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-black truncate">
                 {profileUser.displayName}
               </h2>
               {(profileUser.isVerified || profileUser.username === 'Rulio') && (
-                <VerifiedBadge className="w-6 h-6 text-black flex-shrink-0" />
+                <VerifiedBadge className="w-5 h-5 text-black flex-shrink-0" />
               )}
             </div>
-            <p className="text-gray-500 font-medium text-lg">@{profileUser.username}</p>
+            <p className="text-gray-500 text-sm sm:text-base">@{profileUser.username}</p>
           </div>
           
           {profileUser.uid !== userProfile?.uid && (
             <div className="flex space-x-2">
               <button 
                 onClick={handleMessageClick}
-                className="p-2.5 border border-gray-200 rounded-full hover:bg-gray-50 transition-all active:scale-95"
+                className="p-2 border border-gray-200 rounded-full hover:bg-gray-50 transition-all active:scale-95"
               >
-                <MessageCircle className="w-5 h-5 text-black" />
+                <MessageCircle className="w-4 h-4 text-black" />
               </button>
               <button 
                 onClick={handleFollowClick}
-                className={`px-8 py-2.5 rounded-full font-black text-sm transition-all active:scale-95 ${
+                className={`px-5 py-1.5 rounded-full font-bold text-sm transition-all active:scale-95 ${
                   userProfile?.following?.includes(profileUser.uid)
                     ? 'border border-gray-200 text-gray-600 hover:bg-gray-50'
-                    : 'bg-black text-white hover:bg-gray-900 shadow-lg shadow-black/10'
+                    : 'bg-black text-white hover:bg-gray-900 shadow-sm shadow-black/10'
                 }`}
               >
                 {userProfile?.following?.includes(profileUser.uid) ? 'Seguindo' : 'Seguir'}
@@ -484,13 +484,13 @@ export default function Profile() {
 
         {/* Bio with Stylized Look */}
         {profileUser.bio && (
-          <p className="mt-4 text-gray-800 text-lg font-medium leading-relaxed max-w-xl">
+          <p className="mt-3 text-gray-800 text-sm sm:text-base leading-relaxed max-w-xl">
             {profileUser.bio}
           </p>
         )}
 
         {/* Metadata Grid */}
-        <div className="flex flex-wrap gap-y-3 gap-x-6 mt-6 text-gray-500 font-medium">
+        <div className="flex flex-wrap gap-y-2 gap-x-4 mt-4 text-gray-500 text-sm">
           {profileUser.category && (
             <div className="flex items-center space-x-2">
               <Briefcase className="w-4 h-4" />
@@ -517,24 +517,24 @@ export default function Profile() {
         </div>
 
         {/* Stats */}
-        <div className="flex space-x-6 mt-6">
+        <div className="flex space-x-4 mt-4">
           <button className="flex items-center space-x-1.5 group">
-            <span className="font-black text-black text-lg">{profileUser.following?.length || 0}</span>
-            <span className="text-gray-500 font-medium group-hover:underline">Seguindo</span>
+            <span className="font-bold text-black">{profileUser.following?.length || 0}</span>
+            <span className="text-gray-500 group-hover:underline text-sm">Seguindo</span>
           </button>
           <button className="flex items-center space-x-1.5 group">
-            <span className="font-black text-black text-lg">{profileUser.followers?.length || 0}</span>
-            <span className="text-gray-500 font-medium group-hover:underline">Seguidores</span>
+            <span className="font-bold text-black">{profileUser.followers?.length || 0}</span>
+            <span className="text-gray-500 group-hover:underline text-sm">Seguidores</span>
           </button>
         </div>
       </div>
 
       {/* Tabs Switcher */}
-      <div className="sticky top-0 bg-white/80 backdrop-blur-xl z-20 flex justify-center py-4 border-b border-gray-100">
+      <div className="sticky top-0 bg-white/80 backdrop-blur-xl z-20 flex justify-center py-2 sm:py-3 border-b border-gray-100">
         <nav className="liquid-glass-pill p-1 rounded-full flex items-center relative overflow-hidden border border-white/40 shadow-sm">
           <button 
             onClick={() => setActiveTab('posts')}
-            className={`relative px-5 py-2 text-xs font-black uppercase tracking-widest transition-colors duration-300 z-10 ${activeTab === 'posts' ? 'text-black' : 'text-gray-500 hover:text-black'}`}
+            className={`relative px-4 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors duration-300 z-10 ${activeTab === 'posts' ? 'text-black' : 'text-gray-500 hover:text-black'}`}
           >
             {activeTab === 'posts' && (
               <motion.div
@@ -547,7 +547,7 @@ export default function Profile() {
           </button>
           <button 
             onClick={() => setActiveTab('replies')}
-            className={`relative px-5 py-2 text-xs font-black uppercase tracking-widest transition-colors duration-300 z-10 ${activeTab === 'replies' ? 'text-black' : 'text-gray-500 hover:text-black'}`}
+            className={`relative px-4 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors duration-300 z-10 ${activeTab === 'replies' ? 'text-black' : 'text-gray-500 hover:text-black'}`}
           >
             {activeTab === 'replies' && (
               <motion.div
@@ -560,7 +560,7 @@ export default function Profile() {
           </button>
           <button 
             onClick={() => setActiveTab('media')}
-            className={`relative px-5 py-2 text-xs font-black uppercase tracking-widest transition-colors duration-300 z-10 ${activeTab === 'media' ? 'text-black' : 'text-gray-500 hover:text-black'}`}
+            className={`relative px-4 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors duration-300 z-10 ${activeTab === 'media' ? 'text-black' : 'text-gray-500 hover:text-black'}`}
           >
             {activeTab === 'media' && (
               <motion.div
@@ -573,7 +573,7 @@ export default function Profile() {
           </button>
           <button 
             onClick={() => setActiveTab('likes')}
-            className={`relative px-5 py-2 text-xs font-black uppercase tracking-widest transition-colors duration-300 z-10 ${activeTab === 'likes' ? 'text-black' : 'text-gray-500 hover:text-black'}`}
+            className={`relative px-4 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors duration-300 z-10 ${activeTab === 'likes' ? 'text-black' : 'text-gray-500 hover:text-black'}`}
           >
             {activeTab === 'likes' && (
               <motion.div
