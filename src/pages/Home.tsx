@@ -102,64 +102,52 @@ export default function Home() {
   const [selectedStatsPost, setSelectedStatsPost] = useState<any>(null);
   const [replyToPost, setReplyToPost] = useState<any | null>(null);
 
-  // Infinite Scroll State
-  const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot | null>(null);
-  const [hasMore, setHasMore] = useState(true);
-  const observer = useRef<IntersectionObserver | null>(null);
-
-  const fetchPosts = useCallback(async (isInitial = false) => {
+  useEffect(() => {
     if (!db) return;
     
-    try {
-      let q = query(
-        collection(db, 'posts'),
-        orderBy('createdAt', 'desc'),
-        limit(20)
-      );
+    setIsFetching(true);
+    
+    let q = query(
+      collection(db, 'posts'),
+      orderBy('createdAt', 'desc'),
+      limit(50)
+    );
 
-      if (!isInitial && lastVisible) {
-        q = query(q, startAfter(lastVisible));
-      }
-
-      const snapshot = await getDocs(q);
-      
-      if (snapshot.empty) {
-        setHasMore(false);
+    // If Following tab and user is following people
+    if (activeTab === 'following') {
+      if (userProfile?.following && userProfile.following.length > 0) {
+        // Firestore 'in' query limit is 30.
+        const followingIds = userProfile.following.slice(0, 30);
+        q = query(
+          collection(db, 'posts'),
+          where('authorId', 'in', followingIds),
+          orderBy('createdAt', 'desc'),
+          limit(50)
+        );
+      } else {
+        // Not following anyone
+        setPosts([]);
+        setIsFetching(false);
         return;
       }
+    }
 
+    const unsubscribe = onSnapshot(q, (snapshot) => {
       const newPosts = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
-
-      setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
-      setPosts(prev => isInitial ? newPosts : [...prev, ...newPosts]);
+      
+      setPosts(newPosts);
       setIsFetching(false);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.LIST, 'posts');
+    }, (error) => {
+      console.error("Feed error:", error);
       setIsFetching(false);
-    }
-  }, [lastVisible]);
-
-  useEffect(() => {
-    setPosts([]);
-    setLastVisible(null);
-    setHasMore(true);
-    setIsFetching(true);
-    fetchPosts(true);
-  }, [activeTab]); // Re-fetch when tab changes
-
-  const lastPostElementRef = useCallback((node: HTMLDivElement | null) => {
-    if (isFetching) return;
-    if (observer.current) observer.current.disconnect();
-    observer.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMore) {
-        fetchPosts();
-      }
+      setPosts([]);
     });
-    if (node) observer.current.observe(node);
-  }, [isFetching, hasMore, fetchPosts]);
+
+    return () => unsubscribe();
+  }, [activeTab, db, userProfile?.following]);
 
   const handlePost = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -355,7 +343,7 @@ export default function Home() {
           >
             Para você
             {activeTab === 'foryou' && (
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-blue-500 rounded-full" />
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-black rounded-full" />
             )}
           </button>
           <button 
@@ -369,7 +357,7 @@ export default function Home() {
           >
             Seguindo
             {activeTab === 'following' && (
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-blue-500 rounded-full" />
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-black rounded-full" />
             )}
           </button>
         </div>
@@ -399,12 +387,10 @@ export default function Home() {
             </div>
           ) : (
             <div className="px-4 space-y-4 pb-20">
-              {posts.map((post, index) => {
-                const isLastPost = posts.length === index + 1;
+              {posts.map((post) => {
                 return (
                   <article 
                     key={post.id} 
-                    ref={isLastPost ? lastPostElementRef : null}
                     onClick={() => navigate(`/post/${post.id}`)}
                     className="group relative p-4 bg-white/60 backdrop-blur-md rounded-2xl shadow-sm border border-white/40 hover:bg-white/80 transition-all cursor-pointer flex space-x-4"
                   >
@@ -416,7 +402,7 @@ export default function Home() {
                           setReplyToPost(post);
                           setIsCreateModalOpen(true);
                         }}
-                        className="p-2 hover:bg-blue-50 text-gray-500 hover:text-blue-500 rounded-full transition-colors"
+                        className="p-2 hover:bg-black/5 text-gray-500 hover:text-black rounded-full transition-colors"
                         title="Responder"
                       >
                         <MessageCircle className="w-4 h-4" />
@@ -466,7 +452,7 @@ export default function Home() {
                         }}
                       >
                         <span className="font-bold truncate hover:underline">{post.authorName}</span>
-                        {(post.authorVerified || post.authorUsername === 'Rulio') && <VerifiedBadge className="w-4 h-4 text-blue-500 flex-shrink-0" />}
+                        {(post.authorVerified || post.authorUsername === 'Rulio') && <VerifiedBadge className="w-4 h-4 text-black flex-shrink-0" />}
                         <span className="text-gray-500 truncate">@{post.authorUsername}</span>
                         {post.authorId !== userProfile?.uid && (
                           <>
@@ -476,7 +462,7 @@ export default function Home() {
                                 e.stopPropagation();
                                 handleFollowClick(post.authorId, post.authorName, post.authorPhoto);
                               }}
-                              className={`text-sm font-bold hover:underline ${userProfile?.following?.includes(post.authorId) ? 'text-gray-500' : 'text-blue-500'}`}
+                              className={`text-sm font-bold hover:underline ${userProfile?.following?.includes(post.authorId) ? 'text-gray-500' : 'text-black'}`}
                             >
                               {userProfile?.following?.includes(post.authorId) ? 'Seguindo' : 'Seguir'}
                             </button>
@@ -495,7 +481,7 @@ export default function Home() {
                             e.stopPropagation();
                             setActiveMenuPostId(activeMenuPostId === post.id ? null : post.id);
                           }}
-                          className="p-2 hover:bg-blue-50 rounded-full transition-colors text-gray-500 hover:text-blue-500"
+                          className="p-2 hover:bg-black/5 rounded-full transition-colors text-gray-500 hover:text-black"
                         >
                           <MoreHorizontal className="w-5 h-5" />
                         </button>
@@ -588,7 +574,7 @@ export default function Home() {
                       <>
                         {post.replyToUsername && (
                           <div className="mt-1 text-sm text-gray-500">
-                            Respondendo a <span className="text-blue-500">@{post.replyToUsername}</span>
+                            Respondendo a <span className="text-black">@{post.replyToUsername}</span>
                           </div>
                         )}
                         <p className="mt-1 text-gray-900 whitespace-pre-wrap break-words">{post.content}</p>
@@ -607,9 +593,9 @@ export default function Home() {
                           setReplyToPost(post);
                           setIsCreateModalOpen(true);
                         }}
-                        className="flex items-center space-x-2 hover:text-blue-500 transition-colors group"
+                        className="flex items-center space-x-2 hover:text-black transition-colors group"
                       >
-                        <div className="p-2 group-hover:bg-blue-50 rounded-full">
+                        <div className="p-2 group-hover:bg-black/5 rounded-full">
                           <MessageCircle className="w-5 h-5" />
                         </div>
                         <span className="text-sm">{post.repliesCount || 0}</span>
@@ -654,9 +640,9 @@ export default function Home() {
                             alert('Estatísticas avançadas são um recurso Premium. Assine para ver o desempenho dos seus posts!');
                           }
                         }}
-                        className="flex items-center space-x-2 hover:text-blue-500 transition-colors group"
+                        className="flex items-center space-x-2 hover:text-black transition-colors group"
                       >
-                        <div className="p-2 group-hover:bg-blue-50 rounded-full">
+                        <div className="p-2 group-hover:bg-black/5 rounded-full">
                           <BarChart2 className="w-5 h-5" />
                         </div>
                       </button>
@@ -665,9 +651,9 @@ export default function Home() {
                           e.stopPropagation();
                           // Share functionality could be added here
                         }}
-                        className="flex items-center space-x-2 hover:text-blue-500 transition-colors group"
+                        className="flex items-center space-x-2 hover:text-black transition-colors group"
                       >
-                        <div className="p-2 group-hover:bg-blue-50 rounded-full">
+                        <div className="p-2 group-hover:bg-black/5 rounded-full">
                           <Send className="w-5 h-5" />
                         </div>
                       </button>
@@ -682,7 +668,7 @@ export default function Home() {
 
         <button
           onClick={() => setIsCreateModalOpen(true)}
-          className="sm:hidden fixed bottom-24 right-4 w-14 h-14 bg-blue-500 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-blue-600 transition-colors z-[100]"
+          className="sm:hidden fixed bottom-24 right-4 w-14 h-14 bg-black text-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-900 transition-colors z-[100]"
         >
           <Plus className="w-6 h-6" />
         </button>

@@ -406,7 +406,7 @@ export default function Profile() {
           <div>
             <div className="flex items-center space-x-1">
               <h2 className="text-2xl font-bold">{profileUser.displayName}</h2>
-              {(profileUser.isVerified || profileUser.username === 'Rulio') && <VerifiedBadge className="w-6 h-6 text-blue-500" />}
+              {(profileUser.isVerified || profileUser.username === 'Rulio') && <VerifiedBadge className="w-6 h-6 text-black" />}
             </div>
             <p className="text-gray-500">@{profileUser.username}</p>
           </div>
@@ -458,7 +458,7 @@ export default function Profile() {
           {(profileUser as any)?.website && (
             <div className="flex items-center space-x-1">
               <LinkIcon className="w-4 h-4" />
-              <a href={(profileUser as any).website.startsWith('http') ? (profileUser as any).website : `https://${(profileUser as any).website}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+              <a href={(profileUser as any).website.startsWith('http') ? (profileUser as any).website : `https://${(profileUser as any).website}`} target="_blank" rel="noopener noreferrer" className="text-black hover:underline">
                 {(profileUser as any).website.replace(/^https?:\/\//, '')}
               </a>
             </div>
@@ -487,7 +487,7 @@ export default function Profile() {
         >
           Posts
           {activeTab === 'posts' && (
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-blue-500 rounded-full" />
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-black rounded-full" />
           )}
         </button>
         <button 
@@ -496,7 +496,7 @@ export default function Profile() {
         >
           Respostas
           {activeTab === 'replies' && (
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-blue-500 rounded-full" />
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-black rounded-full" />
           )}
         </button>
         <button 
@@ -505,7 +505,7 @@ export default function Profile() {
         >
           Mídia
           {activeTab === 'media' && (
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-blue-500 rounded-full" />
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-black rounded-full" />
           )}
         </button>
         <button 
@@ -514,7 +514,7 @@ export default function Profile() {
         >
           Curtidas
           {activeTab === 'likes' && (
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-blue-500 rounded-full" />
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-black rounded-full" />
           )}
         </button>
       </div>
@@ -562,7 +562,7 @@ export default function Profile() {
                             e.stopPropagation();
                             setActiveMenuPostId(activeMenuPostId === post.id ? null : post.id);
                           }}
-                          className="p-2 hover:bg-blue-50 rounded-full transition-colors text-gray-500 hover:text-blue-500"
+                          className="p-2 hover:bg-black/5 rounded-full transition-colors text-gray-500 hover:text-black"
                         >
                           <MoreHorizontal className="w-5 h-5" />
                         </button>
@@ -646,7 +646,7 @@ export default function Profile() {
                       <>
                         {post.replyToUsername && (
                           <div className="mt-1 text-sm text-gray-500">
-                            Respondendo a <span className="text-blue-500">@{post.replyToUsername}</span>
+                            Respondendo a <span className="text-black">@{post.replyToUsername}</span>
                           </div>
                         )}
                         <p className="mt-1 text-gray-900 whitespace-pre-wrap break-words">{post.content}</p>
@@ -664,9 +664,9 @@ export default function Profile() {
                           setReplyToPost(post);
                           setIsCreateModalOpen(true);
                         }}
-                        className="flex items-center space-x-2 hover:text-blue-500 transition-colors group"
+                        className="flex items-center space-x-2 hover:text-black transition-colors group"
                       >
-                        <div className="p-2 group-hover:bg-blue-50 rounded-full">
+                        <div className="p-2 group-hover:bg-black/5 rounded-full">
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
                         </div>
                         <span className="text-sm">{post.repliesCount || 0}</span>
@@ -695,8 +695,8 @@ export default function Profile() {
                         </motion.div>
                         <span className="text-sm">{post.likesCount || 0}</span>
                       </button>
-                      <button className="flex items-center space-x-2 hover:text-blue-500 transition-colors group">
-                        <div className="p-2 group-hover:bg-blue-50 rounded-full">
+                      <button className="flex items-center space-x-2 hover:text-black transition-colors group">
+                        <div className="p-2 group-hover:bg-black/5 rounded-full">
                           <Send className="w-5 h-5" />
                         </div>
                       </button>

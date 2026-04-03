@@ -148,8 +148,8 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
                   {replyTo && (
                     <div className="mb-2 text-sm text-gray-500 font-medium flex items-center space-x-1">
                       <span>Respondendo a</span>
-                      <span className="text-blue-500">@{replyTo.authorUsername}</span>
-                      {(replyTo.authorVerified || replyTo.authorUsername === 'Rulio') && <VerifiedBadge className="w-3.5 h-3.5 text-blue-500" />}
+                      <span className="text-black">@{replyTo.authorUsername}</span>
+                      {(replyTo.authorVerified || replyTo.authorUsername === 'Rulio') && <VerifiedBadge className="w-3.5 h-3.5 text-black" />}
                     </div>
                   )}
                   <textarea
@@ -185,7 +185,7 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="p-3 hover:bg-blue-50 text-blue-500 rounded-full transition-all hover:scale-110 active:scale-95"
+                className="p-3 hover:bg-black/5 text-black rounded-full transition-all hover:scale-110 active:scale-95"
                 title="Adicionar imagem"
               >
                 <ImageIcon className="w-6 h-6" />

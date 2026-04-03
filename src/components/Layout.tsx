@@ -102,12 +102,12 @@ export default function Layout() {
                 <div className="relative">
                   <item.icon className="w-6 h-6" />
                   {item.path === '/notifications' && unreadNotificationsCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">
+                    <span className="absolute -top-1 -right-1 bg-black text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">
                       {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
                     </span>
                   )}
                   {item.path === '/messages' && unreadMessagesCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">
+                    <span className="absolute -top-1 -right-1 bg-black text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">
                       {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
                     </span>
                   )}
@@ -139,7 +139,7 @@ export default function Layout() {
               <div className="ml-3 overflow-hidden">
                 <div className="flex items-center space-x-1">
                   <p className="font-bold text-sm truncate">{userProfile.displayName}</p>
-                  {(userProfile.isVerified || userProfile.username === 'Rulio') && <VerifiedBadge className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />}
+                  {(userProfile.isVerified || userProfile.username === 'Rulio') && <VerifiedBadge className="w-3.5 h-3.5 text-black flex-shrink-0" />}
                 </div>
                 <p className="text-gray-500 text-sm truncate">@{userProfile.username}</p>
               </div>
@@ -186,12 +186,12 @@ export default function Layout() {
               <div className="relative">
                 <item.icon className="w-6 h-6" />
                 {item.path === '/notifications' && unreadNotificationsCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">
+                  <span className="absolute -top-1 -right-1 bg-black text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">
                     {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
                   </span>
                 )}
                 {item.path === '/messages' && unreadMessagesCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">
+                  <span className="absolute -top-1 -right-1 bg-black text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">
                     {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
                   </span>
                 )}
@@ -229,7 +229,7 @@ export default function Layout() {
                 </div>
                 <div className="flex items-center space-x-1">
                   <h2 className="font-bold text-lg leading-tight">{userProfile?.displayName}</h2>
-                  {(userProfile?.isVerified || userProfile?.username === 'Rulio') && <VerifiedBadge className="w-4 h-4 text-blue-500 flex-shrink-0" />}
+                  {(userProfile?.isVerified || userProfile?.username === 'Rulio') && <VerifiedBadge className="w-4 h-4 text-black flex-shrink-0" />}
                 </div>
                 <p className="text-gray-500 text-sm">@{userProfile?.username}</p>
                 
