@@ -371,7 +371,7 @@ export default function Home() {
         </div>
       </div>
 
-      <TrendingPosts />
+      <TrendingPosts autoHide={true} />
 
         {/* Posts List */}
         <div 

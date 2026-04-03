@@ -1,11 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { TrendingUp, Heart, Repeat } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'motion/react';
 
-const TrendingPosts: React.FC = () => {
+interface TrendingPostsProps {
+  autoHide?: boolean;
+}
+
+const TrendingPosts: React.FC<TrendingPostsProps> = ({ autoHide = false }) => {
   const [trendingPosts, setTrendingPosts] = useState<any[]>([]);
+  const [isVisible, setIsVisible] = useState(true);
+  const prevTrendingIds = useRef<string>('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -17,7 +24,8 @@ const TrendingPosts: React.FC = () => {
           limit(5)
         );
         const snapshot = await getDocs(q);
-        setTrendingPosts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        const posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setTrendingPosts(posts);
       } catch (error) {
         console.error('Error fetching trending posts:', error);
       }
@@ -28,39 +36,63 @@ const TrendingPosts: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    if (!autoHide) return;
+
+    const currentIds = trendingPosts.map(p => p.id).join(',');
+    if (currentIds !== prevTrendingIds.current) {
+      prevTrendingIds.current = currentIds;
+      setIsVisible(true);
+      
+      const timer = setTimeout(() => {
+        setIsVisible(false);
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [trendingPosts, autoHide]);
+
   if (trendingPosts.length === 0) return null;
+  if (autoHide && !isVisible) return null;
 
   return (
-    <div className="liquid-glass-pill p-5 rounded-3xl border border-white/40 shadow-sm mb-6 mx-4">
-      <div className="flex items-center space-x-2 mb-4">
-        <TrendingUp className="w-5 h-5 text-black" />
-        <h2 className="text-lg font-bold text-black uppercase tracking-tight">Em Alta</h2>
-      </div>
-      <div className="space-y-4">
-        {trendingPosts.map((post, index) => (
-          <div 
-            key={post.id} 
-            className="cursor-pointer group"
-            onClick={() => navigate(`/post/${post.id}`)}
-          >
-            <div className="flex items-start space-x-3">
-              <span className="text-xl font-black text-black/20 group-hover:text-black transition-colors">
-                #{index + 1}
-              </span>
-              <div>
-                <p className="text-sm font-medium text-gray-800 line-clamp-2 group-hover:text-black transition-colors">
-                  {post.content}
-                </p>
-                <div className="flex items-center space-x-3 mt-1 text-xs text-gray-500">
-                  <span className="flex items-center"><Heart className="w-3 h-3 mr-1" /> {post.likesCount || 0}</span>
-                  <span className="flex items-center"><Repeat className="w-3 h-3 mr-1" /> {post.repostsCount || 0}</span>
+    <AnimatePresence>
+      <motion.div 
+        initial={autoHide ? { opacity: 0, height: 0, marginBottom: 0 } : false}
+        animate={{ opacity: 1, height: 'auto', marginBottom: 24 }}
+        exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+        className="liquid-glass-pill p-5 rounded-3xl border border-white/40 shadow-sm mx-4 overflow-hidden"
+      >
+        <div className="flex items-center space-x-2 mb-4">
+          <TrendingUp className="w-5 h-5 text-black" />
+          <h2 className="text-lg font-bold text-black uppercase tracking-tight">Em Alta</h2>
+        </div>
+        <div className="space-y-4">
+          {trendingPosts.map((post, index) => (
+            <div 
+              key={post.id} 
+              className="cursor-pointer group"
+              onClick={() => navigate(`/post/${post.id}`)}
+            >
+              <div className="flex items-start space-x-3">
+                <span className="text-xl font-black text-black/20 group-hover:text-black transition-colors">
+                  #{index + 1}
+                </span>
+                <div>
+                  <p className="text-sm font-medium text-gray-800 line-clamp-2 group-hover:text-black transition-colors">
+                    {post.content}
+                  </p>
+                  <div className="flex items-center space-x-3 mt-1 text-xs text-gray-500">
+                    <span className="flex items-center"><Heart className="w-3 h-3 mr-1" /> {post.likesCount || 0}</span>
+                    <span className="flex items-center"><Repeat className="w-3 h-3 mr-1" /> {post.repostsCount || 0}</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
-    </div>
+          ))}
+        </div>
+      </motion.div>
+    </AnimatePresence>
   );
 };
 
