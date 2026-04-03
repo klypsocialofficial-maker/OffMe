@@ -67,6 +67,11 @@ interface UserProfile {
   username: string;
   displayName: string;
   photoURL: string;
+  bannerURL?: string;
+  bio?: string;
+  location?: string;
+  website?: string;
+  category?: string;
   following?: string[];
   followers?: string[];
   isVerified?: boolean;

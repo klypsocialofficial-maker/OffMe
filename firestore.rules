@@ -107,28 +107,31 @@ service cloud.firestore {
     // ===============================================================
 
     function isValidUser(data) {
-      return hasOnlyAllowedFields(['uid', 'email', 'username', 'displayName', 'photoURL', 'bannerURL', 'bio', 'location', 'website', 'following', 'followers', 'isVerified']) &&
+      return hasOnlyAllowedFields(['uid', 'email', 'username', 'displayName', 'photoURL', 'bannerURL', 'bio', 'location', 'website', 'following', 'followers', 'isVerified', 'category', 'createdAt', 'updatedAt']) &&
              data.uid is string && data.uid == request.auth.uid &&
              data.email is string && isValidEmail(data.email) &&
              data.username is string && data.username.size() > 0 && data.username.size() <= 30 &&
-             data.displayName is string && data.displayName.size() > 0 && data.displayName.size() <= 50 &&
+             data.displayName is string && data.displayName.size() >= 0 && data.displayName.size() <= 50 &&
              (!('photoURL' in data) || data.photoURL == '' || (data.photoURL is string && data.photoURL.size() <= 2000)) &&
              (!('bannerURL' in data) || data.bannerURL == '' || (data.bannerURL is string && data.bannerURL.size() <= 2000)) &&
              (!('bio' in data) || data.bio == '' || (data.bio is string && data.bio.size() <= 160)) &&
              (!('location' in data) || data.location == '' || (data.location is string && data.location.size() <= 30)) &&
              (!('website' in data) || data.website == '' || (data.website is string && data.website.size() <= 100)) &&
+             (!('category' in data) || data.category == '' || (data.category is string && data.category.size() <= 50)) &&
              (!('following' in data) || data.following is list) &&
              (!('followers' in data) || data.followers is list) &&
-             (!('isVerified' in data) || data.isVerified is bool);
+             (!('isVerified' in data) || data.isVerified is bool) &&
+             (!('createdAt' in data) || data.createdAt is timestamp) &&
+             (!('updatedAt' in data) || data.updatedAt is timestamp);
     }
 
     function isValidPost(data) {
-      return hasOnlyAllowedFields(['content', 'imageUrl', 'authorId', 'authorName', 'authorUsername', 'authorPhoto', 'authorVerified', 'createdAt', 'updatedAt', 'isEdited', 'likesCount', 'repliesCount', 'replyToId', 'replyToUsername', 'replyToVerified', 'likes', 'repostsCount', 'reposts']) &&
+      return hasOnlyAllowedFields(['content', 'imageUrl', 'authorId', 'authorName', 'authorUsername', 'authorPhoto', 'authorVerified', 'createdAt', 'updatedAt', 'isEdited', 'likesCount', 'repliesCount', 'replyToId', 'replyToUsername', 'replyToVerified', 'likes', 'repostsCount', 'reposts', 'threadId']) &&
              data.content is string && data.content.size() >= 0 && data.content.size() <= 1000 &&
              (!('imageUrl' in data) || data.imageUrl == null || (data.imageUrl is string && data.imageUrl.size() <= 2000)) &&
              data.authorId is string && data.authorId == request.auth.uid &&
-             data.authorName is string && data.authorName.size() > 0 && data.authorName.size() <= 50 &&
-             data.authorUsername is string && data.authorUsername.size() > 0 && data.authorUsername.size() <= 30 &&
+             data.authorName is string && data.authorName.size() >= 0 && data.authorName.size() <= 50 &&
+             data.authorUsername is string && data.authorUsername.size() >= 0 && data.authorUsername.size() <= 30 &&
              (!('authorPhoto' in data) || data.authorPhoto == null || data.authorPhoto == '' || (data.authorPhoto is string && data.authorPhoto.size() <= 2000)) &&
              (!('authorVerified' in data) || data.authorVerified is bool) &&
              data.createdAt is timestamp &&
@@ -141,7 +144,8 @@ service cloud.firestore {
              (!('replyToUsername' in data) || data.replyToUsername == null || (data.replyToUsername is string && data.replyToUsername.size() <= 30)) &&
              (!('replyToVerified' in data) || data.replyToVerified is bool) &&
              (!('likes' in data) || data.likes is list) &&
-             (!('reposts' in data) || data.reposts is list);
+             (!('reposts' in data) || data.reposts is list) &&
+             (!('threadId' in data) || data.threadId == null || (data.threadId is string && data.threadId.size() <= 100));
     }
 
     // ===============================================================

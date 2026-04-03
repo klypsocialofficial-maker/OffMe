@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { User as UserIcon, Image as ImageIcon, X } from 'lucide-react';
 import { addDoc, collection, serverTimestamp, doc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -45,6 +45,17 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('has-modal');
+    } else {
+      document.body.classList.remove('has-modal');
+    }
+    return () => {
+      document.body.classList.remove('has-modal');
+    };
+  }, [isOpen]);
+
   const handlePost = async (e: React.FormEvent) => {
     e.preventDefault();
     if ((!content.trim() && !imageFile) || !userProfile || !db) return;
@@ -60,10 +71,10 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
         content: content.trim(),
         imageUrl,
         authorId: userProfile.uid,
-        authorName: userProfile.displayName,
-        authorUsername: userProfile.username,
-        authorPhoto: userProfile.photoURL,
-        authorVerified: userProfile.isVerified || userProfile.username === 'Rulio',
+        authorName: userProfile.displayName || '',
+        authorUsername: userProfile.username || '',
+        authorPhoto: userProfile.photoURL || '',
+        authorVerified: userProfile.isVerified || userProfile.username === 'Rulio' || false,
         createdAt: serverTimestamp(),
         likesCount: 0,
         repliesCount: 0,

@@ -16,14 +16,17 @@
   }
 
   .modal-open .mobile-navbar-container,
-  .modal-open .mobile-fab {
+  .modal-open .mobile-fab,
+  .has-modal .mobile-navbar-container,
+  .has-modal .mobile-fab {
     opacity: 0;
     pointer-events: none;
     visibility: hidden;
     transform: translate(-50%, 100%) !important;
   }
 
-  .modal-open .mobile-fab {
+  .modal-open .mobile-fab,
+  .has-modal .mobile-fab {
     transform: translateY(100%) !important;
   }
   

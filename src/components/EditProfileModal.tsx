@@ -1,7 +1,7 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { X, Camera } from 'lucide-react';
 import Cropper from 'react-easy-crop';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { uploadToImgBB } from '../lib/imgbb';
 
@@ -120,6 +120,17 @@ export default function EditProfileModal({ isOpen, onClose, userProfile, handleF
     }
   };
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('has-modal');
+    } else {
+      document.body.classList.remove('has-modal');
+    }
+    return () => {
+      document.body.classList.remove('has-modal');
+    };
+  }, [isOpen]);
+
   const handleSave = async () => {
     if (!db || !userProfile) return;
     try {
@@ -143,6 +154,7 @@ export default function EditProfileModal({ isOpen, onClose, userProfile, handleF
         category: category.trim(),
         photoURL: newAvatarUrl,
         bannerURL: newBannerUrl,
+        updatedAt: serverTimestamp(),
       });
 
       onClose();

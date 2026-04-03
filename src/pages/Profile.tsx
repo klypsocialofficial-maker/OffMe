@@ -371,6 +371,20 @@ export default function Profile() {
     }
   };
 
+  if (loading && !profileUser) return (
+    <div className="min-h-[100dvh] flex items-center justify-center bg-white">
+      <div className="flex space-x-1">
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            className="w-2 h-2 bg-black rounded-full animate-bounce"
+            style={{ animationDelay: `${i * 0.1}s` }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+
   if (!profileUser) return (
     <div className="p-8 text-center text-gray-500">Usuário não encontrado</div>
   );

@@ -158,9 +158,10 @@ export default function Home() {
       await addDoc(collection(db, 'posts'), {
         content: newPost,
         authorId: userProfile.uid,
-        authorName: userProfile.displayName,
-        authorUsername: userProfile.username,
-        authorPhoto: userProfile.photoURL,
+        authorName: userProfile.displayName || '',
+        authorUsername: userProfile.username || '',
+        authorPhoto: userProfile.photoURL || '',
+        authorVerified: userProfile.isVerified || userProfile.username === 'Rulio' || false,
         createdAt: serverTimestamp(),
         likesCount: 0,
         repliesCount: 0,
