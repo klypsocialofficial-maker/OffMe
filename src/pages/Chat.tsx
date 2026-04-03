@@ -79,23 +79,6 @@ export default function Chat() {
   useEffect(() => {
     if (!conversationId || !db) return;
 
-    const fetchConversation = async () => {
-      try {
-        const docRef = doc(db, 'conversations', conversationId);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setConversation({ id: docSnap.id, ...docSnap.data() });
-        } else {
-          console.log("No such conversation!");
-          navigate('/messages');
-        }
-      } catch (error) {
-        handleFirestoreError(error, OperationType.GET, `conversations/${conversationId}`);
-      }
-    };
-
-    fetchConversation();
-
     // Reset unread count for current user
     if (userProfile?.uid) {
       updateDoc(doc(db, 'conversations', conversationId), {
@@ -140,19 +123,23 @@ export default function Chat() {
     });
 
     return unsubscribe;
-  }, [conversationId, navigate]);
+  }, [conversationId, navigate, userProfile?.uid]);
 
   useEffect(() => {
     if (!conversationId || !db || !userProfile?.uid) return;
 
-    // Listen for other user typing
+    // Listen for conversation updates (typing, metadata)
     const unsubscribe = onSnapshot(doc(db, 'conversations', conversationId), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
+        setConversation({ id: docSnap.id, ...data });
+        
         const otherId = data.participants.find((id: string) => id !== userProfile.uid);
         if (otherId && data.typing) {
           setOtherUserTyping(!!data.typing[otherId]);
         }
+      } else {
+        navigate('/messages');
       }
     });
 
@@ -163,7 +150,7 @@ export default function Chat() {
         [`typing.${userProfile.uid}`]: false
       }).catch(() => {});
     };
-  }, [conversationId, userProfile?.uid]);
+  }, [conversationId, userProfile?.uid, navigate]);
 
   const handleTyping = () => {
     if (!conversationId || !userProfile?.uid || !db) return;

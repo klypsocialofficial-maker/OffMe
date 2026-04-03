@@ -69,16 +69,24 @@ export default function Messages() {
 
     const q = query(
       collection(db, 'conversations'),
-      where('participants', 'array-contains', userProfile.uid),
-      where('archived', '!=', true),
-      orderBy('updatedAt', 'desc')
+      where('participants', 'array-contains', userProfile.uid)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const results = snapshot.docs.map(doc => ({
+      let results = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
+      
+      // Filter out archived and sort by updatedAt descending in memory
+      results = results
+        .filter((conv: any) => conv.archived !== true)
+        .sort((a: any, b: any) => {
+          const timeA = typeof a.updatedAt?.toMillis === 'function' ? a.updatedAt.toMillis() : 0;
+          const timeB = typeof b.updatedAt?.toMillis === 'function' ? b.updatedAt.toMillis() : 0;
+          return timeB - timeA;
+        });
+        
       setConversations(results);
       setLoading(false);
     }, (error) => {
