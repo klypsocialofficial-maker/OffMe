@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, onSnapshot, collection, query, where, orderBy, serverTimestamp, addDoc, deleteDoc } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where, orderBy, serverTimestamp, addDoc, deleteDoc, updateDoc, arrayRemove, arrayUnion } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { User as UserIcon, ArrowLeft, MoreHorizontal, Trash2, Edit2, BarChart2, Heart, Repeat, MessageCircle, Share2 } from 'lucide-react';
@@ -70,9 +70,15 @@ export default function PostDetail() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [replyToPost, setReplyToPost] = useState<any>(null);
   const [activeMenuPostId, setActiveMenuPostId] = useState<string | null>(null);
+  const [activeMenuReplyId, setActiveMenuReplyId] = useState<string | null>(null);
+  const [editingPost, setEditingPost] = useState<any | null>(null);
+  const [editContent, setEditContent] = useState('');
 
   useEffect(() => {
-    const handleClickOutside = () => setActiveMenuPostId(null);
+    const handleClickOutside = () => {
+      setActiveMenuPostId(null);
+      setActiveMenuReplyId(null);
+    };
     window.addEventListener('click', handleClickOutside);
     return () => window.removeEventListener('click', handleClickOutside);
   }, []);
@@ -133,6 +139,98 @@ export default function PostDetail() {
       } catch (error) {
         handleFirestoreError(error, OperationType.DELETE, `posts/${id}`);
       }
+    }
+  };
+
+  const canEditPost = (post: any) => {
+    if (post.authorId !== userProfile?.uid) return false;
+    if ((userProfile as any)?.isPremium) return true;
+    
+    if (!post.createdAt) return true;
+    
+    const postTime = post.createdAt.toDate ? post.createdAt.toDate().getTime() : new Date().getTime();
+    const now = new Date().getTime();
+    const diffMinutes = (now - postTime) / (1000 * 60);
+    return diffMinutes <= 3;
+  };
+
+  const handleEditPost = async (id: string) => {
+    if (!db || !userProfile?.uid || !editContent.trim()) return;
+    
+    try {
+      await updateDoc(doc(db, 'posts', id), {
+        content: editContent.trim(),
+        isEdited: true,
+        updatedAt: serverTimestamp()
+      });
+      setEditingPost(null);
+      setEditContent('');
+      setActiveMenuPostId(null);
+      setActiveMenuReplyId(null);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `posts/${id}`);
+    }
+  };
+
+  const handleLikePost = async (postToLike: any) => {
+    if (!userProfile?.uid || !db) return;
+    
+    const isLiked = postToLike.likes?.includes(userProfile.uid);
+    const postRef = doc(db, 'posts', postToLike.id);
+    
+    try {
+      await updateDoc(postRef, {
+        likes: isLiked ? arrayRemove(userProfile.uid) : arrayUnion(userProfile.uid),
+        likesCount: isLiked ? Math.max(0, (postToLike.likesCount || 0) - 1) : (postToLike.likesCount || 0) + 1
+      });
+      
+      if (!isLiked && postToLike.authorId !== userProfile.uid) {
+        await addDoc(collection(db, 'notifications'), {
+          recipientId: postToLike.authorId,
+          senderId: userProfile.uid,
+          senderName: userProfile.displayName,
+          senderUsername: userProfile.username,
+          senderPhoto: userProfile.photoURL || null,
+          senderVerified: userProfile.isVerified || userProfile.username === 'Rulio',
+          type: 'like',
+          postId: postToLike.id,
+          read: false,
+          createdAt: serverTimestamp()
+        });
+      }
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, 'posts');
+    }
+  };
+
+  const handleRepost = async (postToRepost: any) => {
+    if (!userProfile?.uid || !db) return;
+    
+    const isReposted = postToRepost.reposts?.includes(userProfile.uid);
+    const postRef = doc(db, 'posts', postToRepost.id);
+    
+    try {
+      await updateDoc(postRef, {
+        reposts: isReposted ? arrayRemove(userProfile.uid) : arrayUnion(userProfile.uid),
+        repostsCount: isReposted ? Math.max(0, (postToRepost.repostsCount || 0) - 1) : (postToRepost.repostsCount || 0) + 1
+      });
+      
+      if (!isReposted && postToRepost.authorId !== userProfile.uid) {
+        await addDoc(collection(db, 'notifications'), {
+          recipientId: postToRepost.authorId,
+          senderId: userProfile.uid,
+          senderName: userProfile.displayName,
+          senderUsername: userProfile.username,
+          senderPhoto: userProfile.photoURL || null,
+          senderVerified: userProfile.isVerified || userProfile.username === 'Rulio',
+          type: 'repost',
+          postId: postToRepost.id,
+          read: false,
+          createdAt: serverTimestamp()
+        });
+      }
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, 'posts');
     }
   };
 
@@ -202,13 +300,31 @@ export default function PostDetail() {
                   {activeMenuPostId === post.id && (
                     <div className="absolute right-0 mt-1 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-10" onClick={(e) => e.stopPropagation()}>
                       {post.authorId === userProfile?.uid ? (
-                        <button 
-                          onClick={() => handleDeletePost(post.id)}
-                          className="w-full text-left px-4 py-2 text-red-500 hover:bg-gray-50 flex items-center space-x-2"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          <span>Apagar post</span>
-                        </button>
+                        <>
+                          <button 
+                            onClick={() => handleDeletePost(post.id)}
+                            className="w-full text-left px-4 py-2 text-red-500 hover:bg-gray-50 flex items-center space-x-2"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            <span>Apagar post</span>
+                          </button>
+                          <button 
+                            onClick={() => {
+                              if (canEditPost(post)) {
+                                setEditingPost(post);
+                                setEditContent(post.content);
+                                setActiveMenuPostId(null);
+                              } else {
+                                alert('O tempo de edição (3 minutos) expirou. Assine o Premium para editar a qualquer momento.');
+                                setActiveMenuPostId(null);
+                              }
+                            }}
+                            className={`w-full text-left px-4 py-2 flex items-center space-x-2 ${canEditPost(post) ? 'text-gray-700 hover:bg-gray-50' : 'text-gray-400 cursor-not-allowed'}`}
+                          >
+                            <Edit2 className="w-4 h-4" />
+                            <span>Editar post</span>
+                          </button>
+                        </>
                       ) : (
                         <div className="px-4 py-2 text-gray-500 text-sm">Nenhuma ação disponível</div>
                       )}
@@ -227,9 +343,40 @@ export default function PostDetail() {
                 {(post.replyToVerified || post.replyToUsername === 'Rulio') && <VerifiedBadge className="w-3.5 h-3.5 text-blue-500" />}
               </div>
             )}
-            <p className="text-xl text-gray-900 whitespace-pre-wrap break-words leading-relaxed">
-              {post.content}
-            </p>
+            
+            {editingPost?.id === post.id ? (
+              <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+                <textarea
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  className="w-full bg-white border border-gray-200 rounded-xl p-3 outline-none resize-none min-h-[80px]"
+                  autoFocus
+                />
+                <div className="flex justify-end space-x-2 mt-2">
+                  <button 
+                    onClick={() => setEditingPost(null)}
+                    className="px-4 py-1.5 rounded-full font-bold hover:bg-gray-100 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    onClick={() => handleEditPost(post.id)}
+                    disabled={!editContent.trim() || editContent === post.content}
+                    className="bg-black text-white px-4 py-1.5 rounded-full font-bold hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                  >
+                    Salvar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <p className="text-xl text-gray-900 whitespace-pre-wrap break-words leading-relaxed">
+                  {post.content}
+                </p>
+                {post.isEdited && <span className="text-gray-400 text-xs">(editado)</span>}
+              </>
+            )}
+            
             {post.imageUrl && (
               <div className="mt-4 rounded-2xl overflow-hidden border border-gray-100">
                 <img src={post.imageUrl} alt="Post attachment" className="w-full h-auto max-h-[500px] object-cover" />
@@ -254,11 +401,17 @@ export default function PostDetail() {
               >
                 <MessageCircle className="w-6 h-6" />
               </button>
-              <button className="flex items-center space-x-2 hover:text-green-500 transition-colors p-2 rounded-full hover:bg-green-50">
-                <Repeat className="w-6 h-6" />
+              <button 
+                onClick={() => handleRepost(post)}
+                className={`flex items-center space-x-2 transition-colors p-2 rounded-full ${post.reposts?.includes(userProfile?.uid) ? 'text-green-500 bg-green-50' : 'hover:text-green-500 hover:bg-green-50'}`}
+              >
+                <Repeat className={`w-6 h-6 ${post.reposts?.includes(userProfile?.uid) ? 'stroke-[3px]' : ''}`} />
               </button>
-              <button className="flex items-center space-x-2 hover:text-red-500 transition-colors p-2 rounded-full hover:bg-red-50">
-                <Heart className="w-6 h-6" />
+              <button 
+                onClick={() => handleLikePost(post)}
+                className={`flex items-center space-x-2 transition-colors p-2 rounded-full ${post.likes?.includes(userProfile?.uid) ? 'text-red-500 bg-red-50' : 'hover:text-red-500 hover:bg-red-50'}`}
+              >
+                <Heart className={`w-6 h-6 ${post.likes?.includes(userProfile?.uid) ? 'fill-current' : ''}`} />
               </button>
               <button className="flex items-center space-x-2 hover:text-blue-500 transition-colors p-2 rounded-full hover:bg-blue-50">
                 <Share2 className="w-6 h-6" />
@@ -326,19 +479,84 @@ export default function PostDetail() {
                           {(reply.authorVerified || reply.authorUsername === 'Rulio') && <VerifiedBadge />}
                           <span className="text-gray-500 truncate text-sm">@{reply.authorUsername}</span>
                         </div>
-                        {userProfile?.uid === reply.authorId && (
-                          <button
+                        <div className="relative">
+                          <button 
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDeleteReply(reply.id);
+                              setActiveMenuReplyId(activeMenuReplyId === reply.id ? null : reply.id);
                             }}
-                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                            className="p-1.5 text-gray-400 hover:text-black hover:bg-gray-100 rounded-full transition-colors"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <MoreHorizontal className="w-4 h-4" />
                           </button>
-                        )}
+                          
+                          {activeMenuReplyId === reply.id && (
+                            <div className="absolute right-0 mt-1 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-10" onClick={(e) => e.stopPropagation()}>
+                              {reply.authorId === userProfile?.uid ? (
+                                <>
+                                  <button 
+                                    onClick={() => handleDeleteReply(reply.id)}
+                                    className="w-full text-left px-4 py-2 text-red-500 hover:bg-gray-50 flex items-center space-x-2"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                    <span>Apagar resposta</span>
+                                  </button>
+                                  <button 
+                                    onClick={() => {
+                                      if (canEditPost(reply)) {
+                                        setEditingPost(reply);
+                                        setEditContent(reply.content);
+                                        setActiveMenuReplyId(null);
+                                      } else {
+                                        alert('O tempo de edição (3 minutos) expirou. Assine o Premium para editar a qualquer momento.');
+                                        setActiveMenuReplyId(null);
+                                      }
+                                    }}
+                                    className={`w-full text-left px-4 py-2 flex items-center space-x-2 ${canEditPost(reply) ? 'text-gray-700 hover:bg-gray-50' : 'text-gray-400 cursor-not-allowed'}`}
+                                  >
+                                    <Edit2 className="w-4 h-4" />
+                                    <span>Editar resposta</span>
+                                  </button>
+                                </>
+                              ) : (
+                                <div className="px-4 py-2 text-gray-500 text-sm">Nenhuma ação disponível</div>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <p className="mt-1 text-gray-900 whitespace-pre-wrap break-words">{reply.content}</p>
+                      
+                      {editingPost?.id === reply.id ? (
+                        <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+                          <textarea
+                            value={editContent}
+                            onChange={(e) => setEditContent(e.target.value)}
+                            className="w-full bg-white border border-gray-200 rounded-xl p-3 outline-none resize-none min-h-[80px]"
+                            autoFocus
+                          />
+                          <div className="flex justify-end space-x-2 mt-2">
+                            <button 
+                              onClick={() => setEditingPost(null)}
+                              className="px-4 py-1.5 rounded-full font-bold hover:bg-gray-100 transition-colors"
+                            >
+                              Cancelar
+                            </button>
+                            <button 
+                              onClick={() => handleEditPost(reply.id)}
+                              disabled={!editContent.trim() || editContent === reply.content}
+                              className="bg-black text-white px-4 py-1.5 rounded-full font-bold hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                            >
+                              Salvar
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="mt-1 text-gray-900 whitespace-pre-wrap break-words">{reply.content}</p>
+                          {reply.isEdited && <span className="text-gray-400 text-xs">(editado)</span>}
+                        </>
+                      )}
+                      
                       {reply.imageUrl && (
                         <div className="mt-3 rounded-xl overflow-hidden border border-gray-100">
                           <img src={reply.imageUrl} alt="Reply attachment" className="w-full h-auto max-h-60 object-cover" />
@@ -356,14 +574,26 @@ export default function PostDetail() {
                           <MessageCircle className="w-4 h-4" />
                           <span className="text-xs">{reply.repliesCount || 0}</span>
                         </button>
-                        <div className="flex items-center space-x-1">
-                          <Repeat className="w-4 h-4" />
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRepost(reply);
+                          }}
+                          className={`flex items-center space-x-1 transition-colors ${reply.reposts?.includes(userProfile?.uid) ? 'text-green-500' : 'hover:text-green-500'}`}
+                        >
+                          <Repeat className={`w-4 h-4 ${reply.reposts?.includes(userProfile?.uid) ? 'stroke-[3px]' : ''}`} />
                           <span className="text-xs">{reply.repostsCount || 0}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Heart className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleLikePost(reply);
+                          }}
+                          className={`flex items-center space-x-1 transition-colors ${reply.likes?.includes(userProfile?.uid) ? 'text-red-500' : 'hover:text-red-500'}`}
+                        >
+                          <Heart className={`w-4 h-4 ${reply.likes?.includes(userProfile?.uid) ? 'fill-current' : ''}`} />
                           <span className="text-xs">{reply.likesCount || 0}</span>
-                        </div>
+                        </button>
                       </div>
                     </div>
                   </article>

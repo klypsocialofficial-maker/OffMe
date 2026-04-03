@@ -590,6 +590,7 @@ export default function Home() {
                           </div>
                         )}
                         <p className="mt-1 text-gray-900 whitespace-pre-wrap break-words">{post.content}</p>
+                        {post.isEdited && <span className="text-gray-400 text-xs">(editado)</span>}
                         {post.imageUrl && (
                           <div className="mt-3 rounded-2xl overflow-hidden border border-gray-200">
                             <img src={post.imageUrl} alt="Post attachment" className="w-full h-auto max-h-96 object-cover" />
