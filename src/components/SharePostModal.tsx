@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Instagram, Download, Share2 } from 'lucide-react';
 import { toPng } from 'html-to-image';
+import VerifiedBadge from './VerifiedBadge';
 
 interface SharePostModalProps {
   isOpen: boolean;
@@ -33,12 +34,12 @@ export default function SharePostModal({ isOpen, onClose, post }: SharePostModal
         await navigator.share({
           files: [file],
           title: 'Compartilhar Post',
-          text: 'Confira este post no Rulio!',
+          text: 'Confira este post no Offme!',
         });
       } else {
         // Fallback: Download the image
         const link = document.createElement('a');
-        link.download = `rulio-post-${post.id}.png`;
+        link.download = `offme-post-${post.id}.png`;
         link.href = dataUrl;
         link.click();
       }
@@ -88,13 +89,18 @@ export default function SharePostModal({ isOpen, onClose, post }: SharePostModal
                         </div>
                       )}
                     </div>
-                    <div>
-                      <div className="font-bold text-gray-900 leading-tight">{post.authorName}</div>
-                      <div className="text-gray-500 text-sm">@{post.authorUsername}</div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center space-x-1">
+                        <div className="font-bold text-gray-900 leading-tight truncate">{post.authorName}</div>
+                        {(post.authorVerified || post.authorUsername === 'Rulio') && (
+                          <VerifiedBadge className="w-4 h-4 text-black flex-shrink-0" />
+                        )}
+                      </div>
+                      <div className="text-gray-500 text-sm truncate">@{post.authorUsername}</div>
                     </div>
                     <div className="ml-auto">
-                      <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
-                        <span className="text-white font-black text-xs">R</span>
+                      <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center overflow-hidden p-1.5">
+                        <img src="/ghost.svg" alt="Offme" className="w-full h-full invert" />
                       </div>
                     </div>
                   </div>
@@ -110,7 +116,7 @@ export default function SharePostModal({ isOpen, onClose, post }: SharePostModal
                   )}
 
                   <div className="mt-auto pt-4 border-t border-gray-50 flex justify-between items-center text-gray-400 text-xs">
-                    <span>rulio.app</span>
+                    <span className="font-bold text-black">offme.fun</span>
                     <span>{new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                   </div>
                 </div>
