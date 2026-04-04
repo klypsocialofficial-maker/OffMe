@@ -17,12 +17,19 @@
 
   .modal-open .mobile-navbar-container,
   .modal-open .mobile-fab,
+  .modal-open header,
   .has-modal .mobile-navbar-container,
-  .has-modal .mobile-fab {
+  .has-modal .mobile-fab,
+  .has-modal header {
     opacity: 0;
     pointer-events: none;
     visibility: hidden;
     transform: translate(-50%, 100%) !important;
+  }
+
+  .modal-open header,
+  .has-modal header {
+    transform: translateX(-100%) !important;
   }
 
   .modal-open .mobile-fab,

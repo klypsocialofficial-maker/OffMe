@@ -642,7 +642,17 @@ export default function Profile() {
                   </div>
                 )}
                 <div className="flex space-x-3">
-                  <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gray-200 overflow-hidden">
+                  <div 
+                    className="flex-shrink-0 w-12 h-12 rounded-full bg-gray-200 overflow-hidden cursor-zoom-in"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (post.authorPhoto) {
+                        openImageViewer(post.authorPhoto, `Avatar de ${post.authorName}`);
+                      } else {
+                        navigate(`/profile/${post.authorId}`);
+                      }
+                    }}
+                  >
                     {post.authorPhoto ? (
                       <img src={post.authorPhoto} alt={post.authorName} className="w-full h-full object-cover" />
                     ) : (
@@ -763,7 +773,13 @@ export default function Profile() {
                         <PostContent content={post.content} className="mt-1 text-gray-900" />
                         {post.isEdited && <span className="text-gray-400 text-xs">(editado)</span>}
                         {post.imageUrl && (
-                          <div className="mt-3 rounded-2xl overflow-hidden border border-gray-200">
+                          <div 
+                            className="mt-3 rounded-2xl overflow-hidden border border-gray-200 cursor-zoom-in"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openImageViewer(post.imageUrl, `Imagem do post de ${post.authorName}`);
+                            }}
+                          >
                             <img src={post.imageUrl} alt="Post attachment" className="w-full h-auto max-h-96 object-cover" />
                           </div>
                         )}

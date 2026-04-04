@@ -1,6 +1,6 @@
-import React from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { X, Download, Maximize2 } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { motion, AnimatePresence, useMotionValue, useTransform } from 'motion/react';
+import { X, Download } from 'lucide-react';
 
 interface ImageViewerProps {
   src: string | null;
@@ -10,7 +10,31 @@ interface ImageViewerProps {
 }
 
 export default function ImageViewer({ src, isOpen, onClose, alt = "Visualização de imagem" }: ImageViewerProps) {
+  const y = useMotionValue(0);
+  const opacity = useTransform(y, [-200, 0, 200], [0, 1, 0]);
+  const scale = useTransform(y, [-200, 0, 200], [0.8, 1, 0.8]);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('modal-open');
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.classList.remove('modal-open');
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.classList.remove('modal-open');
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   if (!src) return null;
+
+  const handleDragEnd = (_: any, info: any) => {
+    if (Math.abs(info.offset.y) > 100 || Math.abs(info.velocity.y) > 500) {
+      onClose();
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -62,18 +86,23 @@ export default function ImageViewer({ src, isOpen, onClose, alt = "Visualizaçã
 
           {/* Image Container */}
           <motion.div
+            style={{ y, opacity, scale }}
+            drag="y"
+            dragConstraints={{ top: 0, bottom: 0 }}
+            dragElastic={0.7}
+            onDragEnd={handleDragEnd}
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="relative max-w-full max-h-full flex items-center justify-center z-0 pointer-events-none"
+            className="relative max-w-full max-h-full flex items-center justify-center z-0 pointer-events-auto cursor-grab active:cursor-grabbing"
           >
             <img
               src={src}
               alt={alt}
-              className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl pointer-events-auto select-none"
+              className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl pointer-events-none select-none"
               referrerPolicy="no-referrer"
-              onClick={(e) => e.stopPropagation()}
+              draggable={false}
             />
           </motion.div>
 
