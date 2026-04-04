@@ -25,6 +25,7 @@ export default function SharePostModal({ isOpen, onClose, post }: SharePostModal
         quality: 1,
         pixelRatio: 2,
         backgroundColor: '#ffffff',
+        cacheBust: true,
       });
 
       const blob = await (await fetch(dataUrl)).blob();
@@ -82,7 +83,12 @@ export default function SharePostModal({ isOpen, onClose, post }: SharePostModal
                   <div className="flex items-center space-x-3 mb-4">
                     <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden border-2 border-white shadow-sm">
                       {post.authorPhoto ? (
-                        <img src={post.authorPhoto} alt={post.authorName} className="w-full h-full object-cover" />
+                        <img 
+                          src={post.authorPhoto} 
+                          alt={post.authorName} 
+                          className="w-full h-full object-cover" 
+                          crossOrigin="anonymous"
+                        />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-gray-400">
                           <Share2 className="w-6 h-6" />
@@ -111,7 +117,12 @@ export default function SharePostModal({ isOpen, onClose, post }: SharePostModal
 
                   {post.imageUrl && (
                     <div className="rounded-xl overflow-hidden border border-gray-100 mb-4 flex-grow">
-                      <img src={post.imageUrl} alt="Post" className="w-full h-full object-cover" />
+                      <img 
+                        src={post.imageUrl} 
+                        alt="Post" 
+                        className="w-full h-full object-cover" 
+                        crossOrigin="anonymous"
+                      />
                     </div>
                   )}
 
