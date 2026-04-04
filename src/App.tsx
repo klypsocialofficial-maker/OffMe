@@ -17,6 +17,7 @@ import Messages from './pages/Messages';
 import Chat from './pages/Chat';
 import Profile from './pages/Profile';
 import PostDetail from './pages/PostDetail';
+import Trending from './pages/Trending';
 import Premium from './pages/Premium';
 import Bookmarks from './pages/Bookmarks';
 import Lists from './pages/Lists';
@@ -73,6 +74,7 @@ export default function App() {
             <Route path="profile" element={<Profile />} />
             <Route path="profile/:userId" element={<Profile />} />
             <Route path="post/:postId" element={<PostDetail />} />
+            <Route path="trending" element={<Trending />} />
             <Route path="premium" element={<Premium />} />
             <Route path="bookmarks" element={<Bookmarks />} />
             <Route path="lists" element={<Lists />} />

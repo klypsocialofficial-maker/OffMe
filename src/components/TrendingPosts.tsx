@@ -7,9 +7,10 @@ import { motion, AnimatePresence } from 'motion/react';
 
 interface TrendingPostsProps {
   autoHide?: boolean;
+  isFullList?: boolean;
 }
 
-const TrendingPosts: React.FC<TrendingPostsProps> = ({ autoHide = false }) => {
+const TrendingPosts: React.FC<TrendingPostsProps> = ({ autoHide = false, isFullList = false }) => {
   const [trendingPosts, setTrendingPosts] = useState<any[]>([]);
   const [isVisible, setIsVisible] = useState(true);
   const prevTrendingIds = useRef<string>('');
@@ -21,7 +22,7 @@ const TrendingPosts: React.FC<TrendingPostsProps> = ({ autoHide = false }) => {
     const q = query(
       collection(db, 'posts'),
       orderBy('likesCount', 'desc'),
-      limit(5)
+      limit(isFullList ? 20 : 5)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -32,7 +33,7 @@ const TrendingPosts: React.FC<TrendingPostsProps> = ({ autoHide = false }) => {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [isFullList]);
 
   useEffect(() => {
     if (!autoHide) return;
@@ -66,7 +67,7 @@ const TrendingPosts: React.FC<TrendingPostsProps> = ({ autoHide = false }) => {
           <h2 className="text-lg font-bold text-black uppercase tracking-tight">Em Alta</h2>
         </div>
         <div className="space-y-4">
-          {trendingPosts.map((post, index) => (
+          {(isFullList ? trendingPosts : trendingPosts.slice(0, 1)).map((post, index) => (
             <div 
               key={post.id} 
               className="cursor-pointer group"
@@ -89,6 +90,15 @@ const TrendingPosts: React.FC<TrendingPostsProps> = ({ autoHide = false }) => {
             </div>
           ))}
         </div>
+        
+        {!isFullList && trendingPosts.length > 1 && (
+          <button 
+            onClick={() => navigate('/trending')}
+            className="mt-4 w-full py-2 text-sm font-bold text-black bg-white/50 hover:bg-white/80 rounded-xl transition-colors border border-black/5"
+          >
+            Mostrar mais
+          </button>
+        )}
       </motion.div>
     </AnimatePresence>
   );
