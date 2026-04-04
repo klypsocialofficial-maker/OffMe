@@ -185,7 +185,7 @@ export default function Layout() {
               <div className="ml-3 overflow-hidden">
                 <div className="flex items-center space-x-1">
                   <p className="font-bold text-sm truncate">{userProfile.displayName}</p>
-                  {(userProfile.isVerified || userProfile.username === 'Rulio') && <VerifiedBadge className="w-3.5 h-3.5 text-black flex-shrink-0" />}
+                  {(userProfile.isVerified || userProfile.username === 'Rulio') && <VerifiedBadge className="w-3.5 h-3.5 flex-shrink-0" tier={userProfile.premiumTier} />}
                 </div>
                 <p className="text-gray-500 text-sm truncate">@{userProfile.username}</p>
               </div>
@@ -337,7 +337,7 @@ export default function Layout() {
                   </div>
                   <div className="flex items-center space-x-1">
                     <h2 className="font-bold text-lg leading-tight">{userProfile?.displayName}</h2>
-                    {(userProfile?.isVerified || userProfile?.username === 'Rulio') && <VerifiedBadge className="w-4 h-4 text-black flex-shrink-0" />}
+                    {(userProfile?.isVerified || userProfile?.username === 'Rulio') && <VerifiedBadge className="w-4 h-4 flex-shrink-0" tier={userProfile?.premiumTier} />}
                   </div>
                   <p className="text-gray-500 text-sm">@{userProfile?.username}</p>
                   

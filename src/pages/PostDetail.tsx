@@ -231,6 +231,7 @@ export default function PostDetail() {
           senderUsername: userProfile.username,
           senderPhoto: userProfile.photoURL || null,
           senderVerified: userProfile.isVerified || userProfile.username === 'Rulio',
+          senderPremiumTier: userProfile.premiumTier || null,
           type: 'like',
           postId: postToLike.id,
           read: false,
@@ -262,6 +263,7 @@ export default function PostDetail() {
           senderUsername: userProfile.username,
           senderPhoto: userProfile.photoURL || null,
           senderVerified: userProfile.isVerified || userProfile.username === 'Rulio',
+          senderPremiumTier: userProfile.premiumTier || null,
           type: 'repost',
           postId: postToRepost.id,
           read: false,
@@ -321,7 +323,7 @@ export default function PostDetail() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center space-x-1">
                     <div className="font-bold text-lg leading-tight truncate max-w-[150px] sm:max-w-[250px]">{post.authorName}</div>
-                    {(post.authorVerified || post.authorUsername === 'Rulio') && <VerifiedBadge />}
+                    {(post.authorVerified || post.authorUsername === 'Rulio') && <VerifiedBadge tier={post.authorPremiumTier} />}
                     <span className="text-gray-500 text-sm">·</span>
                     <span className="text-gray-500 text-sm">
                       {post.createdAt?.toDate ? formatRelativeTime(post.createdAt.toDate()) : 'Agora'}
@@ -537,7 +539,7 @@ export default function PostDetail() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-1 flex-1 min-w-0">
                           <span className="font-bold truncate max-w-[100px] sm:max-w-[150px]">{reply.authorName}</span>
-                          {(reply.authorVerified || reply.authorUsername === 'Rulio') && <VerifiedBadge />}
+                          {(reply.authorVerified || reply.authorUsername === 'Rulio') && <VerifiedBadge tier={reply.authorPremiumTier} />}
                           <span className="text-gray-500 truncate text-sm flex-shrink min-w-0">@{reply.authorUsername}</span>
                           <span className="text-gray-500 flex-shrink-0">·</span>
                           <span className="text-gray-500 flex-shrink-0 text-sm">

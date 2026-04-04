@@ -350,6 +350,7 @@ export default function Home() {
           senderUsername: userProfile.username,
           senderPhoto: userProfile.photoURL || null,
           senderVerified: userProfile.isVerified || userProfile.username === 'Rulio',
+          senderPremiumTier: userProfile.premiumTier || null,
           type: 'follow',
           read: false,
           createdAt: serverTimestamp()
@@ -382,6 +383,7 @@ export default function Home() {
           senderUsername: userProfile.username,
           senderPhoto: userProfile.photoURL || null,
           senderVerified: userProfile.isVerified || userProfile.username === 'Rulio',
+          senderPremiumTier: userProfile.premiumTier || null,
           type: 'like',
           postId: post.id,
           read: false,
@@ -413,6 +415,7 @@ export default function Home() {
           senderUsername: userProfile.username,
           senderPhoto: userProfile.photoURL || null,
           senderVerified: userProfile.isVerified || userProfile.username === 'Rulio',
+          senderPremiumTier: userProfile.premiumTier || null,
           type: 'repost',
           postId: post.id,
           read: false,
@@ -744,7 +747,7 @@ export default function Home() {
                         }}
                       >
                         <span className="font-bold truncate hover:underline flex-shrink-0 max-w-[120px] sm:max-w-[180px]">{post.authorName}</span>
-                        {(post.authorVerified || post.authorUsername === 'Rulio') && <VerifiedBadge className="w-4 h-4 text-black flex-shrink-0" />}
+                        {(post.authorVerified || post.authorUsername === 'Rulio') && <VerifiedBadge className="w-4 h-4 flex-shrink-0" tier={post.authorPremiumTier} />}
                         <span className="text-gray-500 truncate flex-shrink min-w-0">@{post.authorUsername}</span>
                         <span className="text-gray-500 flex-shrink-0">·</span>
                         <span className="text-gray-500 text-sm flex-shrink-0">

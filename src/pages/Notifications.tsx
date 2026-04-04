@@ -186,7 +186,7 @@ export default function Notifications() {
                   <p className="text-gray-900">
                     <span className="flex items-center space-x-1">
                       <span className="font-bold">{notification.senderName}</span>
-                      {(notification.senderVerified || notification.senderUsername === 'Rulio') && <VerifiedBadge />}
+                      {(notification.senderVerified || notification.senderUsername === 'Rulio') && <VerifiedBadge tier={notification.senderPremiumTier} />}
                     </span>{' '}
                     {notification.type === 'like' && 'curtiu seu post'}
                     {notification.type === 'follow' && 'começou a seguir você'}

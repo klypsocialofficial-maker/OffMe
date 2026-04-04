@@ -168,6 +168,7 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
               senderUsername: userProfile.username,
               senderPhoto: userProfile.photoURL || null,
               senderVerified: userProfile.isVerified || userProfile.username === 'Rulio',
+              senderPremiumTier: userProfile.premiumTier || null,
               type: 'mention',
               postId: newPostRef.id,
               content: postContent,
@@ -276,7 +277,7 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
                     <div className="mb-2 text-sm text-gray-500 font-medium flex items-center space-x-1">
                       <span>Replying to</span>
                       <span className="text-black">@{replyTo.authorUsername}</span>
-                      {(replyTo.authorVerified || replyTo.authorUsername === 'Rulio') && <VerifiedBadge className="w-3.5 h-3.5 text-black" />}
+                      {(replyTo.authorVerified || replyTo.authorUsername === 'Rulio') && <VerifiedBadge className="w-3.5 h-3.5" tier={replyTo.authorPremiumTier} />}
                     </div>
                   )}
 

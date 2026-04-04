@@ -107,7 +107,7 @@ service cloud.firestore {
     // ===============================================================
 
     function isValidUser(data) {
-      return hasOnlyAllowedFields(['uid', 'email', 'username', 'displayName', 'photoURL', 'bannerURL', 'bio', 'location', 'website', 'following', 'followers', 'isVerified', 'isPremium', 'category', 'createdAt', 'updatedAt']) &&
+      return hasOnlyAllowedFields(['uid', 'email', 'username', 'displayName', 'photoURL', 'bannerURL', 'bio', 'location', 'website', 'following', 'followers', 'isVerified', 'isPremium', 'premiumTier', 'category', 'createdAt', 'updatedAt']) &&
              data.uid is string && data.uid == request.auth.uid &&
              data.email is string && isValidEmail(data.email) &&
              data.username is string && data.username.size() > 0 && data.username.size() <= 30 &&
@@ -122,12 +122,13 @@ service cloud.firestore {
              (!('followers' in data) || data.followers is list) &&
              (!('isVerified' in data) || data.isVerified is bool) &&
              (!('isPremium' in data) || data.isPremium is bool) &&
+             (!('premiumTier' in data) || data.premiumTier in ['silver', 'gold', 'black']) &&
              (!('createdAt' in data) || data.createdAt is timestamp) &&
              (!('updatedAt' in data) || data.updatedAt is timestamp);
     }
 
     function isValidPost(data) {
-      return hasOnlyAllowedFields(['content', 'imageUrl', 'authorId', 'authorName', 'authorUsername', 'authorPhoto', 'authorVerified', 'createdAt', 'updatedAt', 'isEdited', 'likesCount', 'repliesCount', 'replyToId', 'replyToUsername', 'replyToVerified', 'likes', 'repostsCount', 'reposts', 'threadId']) &&
+      return hasOnlyAllowedFields(['content', 'imageUrl', 'authorId', 'authorName', 'authorUsername', 'authorPhoto', 'authorVerified', 'authorPremiumTier', 'createdAt', 'updatedAt', 'isEdited', 'likesCount', 'repliesCount', 'replyToId', 'replyToUsername', 'replyToVerified', 'likes', 'repostsCount', 'reposts', 'threadId']) &&
              data.content is string && data.content.size() >= 0 && data.content.size() <= 1000 &&
              (!('imageUrl' in data) || data.imageUrl == null || (data.imageUrl is string && data.imageUrl.size() <= 2000)) &&
              data.authorId is string && data.authorId == request.auth.uid &&
@@ -135,6 +136,7 @@ service cloud.firestore {
              data.authorUsername is string && data.authorUsername.size() >= 0 && data.authorUsername.size() <= 30 &&
              (!('authorPhoto' in data) || data.authorPhoto == null || data.authorPhoto == '' || (data.authorPhoto is string && data.authorPhoto.size() <= 2000)) &&
              (!('authorVerified' in data) || data.authorVerified is bool) &&
+             (!('authorPremiumTier' in data) || data.authorPremiumTier in ['silver', 'gold', 'black']) &&
              data.createdAt is timestamp &&
              (!('updatedAt' in data) || data.updatedAt is timestamp) &&
              (!('isEdited' in data) || data.isEdited is bool) &&
@@ -158,7 +160,7 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow create: if isOwner(userId) && isValidUser(request.resource.data) && (!('isPremium' in request.resource.data) || request.resource.data.isPremium == false) && (!('isVerified' in request.resource.data) || request.resource.data.isVerified == false);
       allow update: if (isOwner(userId) && isValidUser(request.resource.data) && uidNotModified() && 
-                        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['isPremium', 'isVerified']))) ||
+                        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['isPremium', 'isVerified', 'premiumTier']))) ||
                     (isAuthenticated() && 
                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followers']) &&
                      (
@@ -188,9 +190,9 @@ service cloud.firestore {
                     request.resource.data.authorId == resource.data.authorId &&
                     request.resource.data.createdAt == resource.data.createdAt &&
                     (
-                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['authorName', 'authorPhoto', 'authorUsername', 'authorVerified']) ||
-                      request.time.toMillis() <= resource.data.createdAt.toMillis() + (3 * 60 * 1000) ||
-                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isPremium', false) == true
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['authorName', 'authorPhoto', 'authorUsername', 'authorVerified', 'authorPremiumTier']) ||
+                      request.time.toMillis() <= resource.data.createdAt.toMillis() + (60 * 60 * 1000) || // 1 hour for all users
+                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('premiumTier', 'none') in ['gold', 'black']
                     )) ||
                     (isAuthenticated() && 
                      request.resource.data.diff(resource.data).affectedKeys().hasAny(['likes', 'likesCount', 'repliesCount', 'reposts', 'repostsCount']) &&

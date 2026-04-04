@@ -250,7 +250,7 @@ export default function Chat() {
           <div>
             <div className="flex items-center space-x-1">
               <h2 className="font-bold leading-tight">{otherParticipantInfo?.displayName || 'Usuário'}</h2>
-              {(otherParticipantInfo?.isVerified || otherParticipantInfo?.username === 'Rulio') && <VerifiedBadge />}
+              {(otherParticipantInfo?.isVerified || otherParticipantInfo?.username === 'Rulio') && <VerifiedBadge tier={otherParticipantInfo?.premiumTier} />}
             </div>
             <p className="text-xs text-gray-500">@{otherParticipantInfo?.username || 'usuario'}</p>
           </div>

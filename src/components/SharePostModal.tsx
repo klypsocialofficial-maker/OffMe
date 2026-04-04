@@ -108,7 +108,7 @@ export default function SharePostModal({ isOpen, onClose, post }: SharePostModal
                       <div className="flex items-center space-x-1">
                         <div className="font-bold text-gray-900 leading-tight truncate">{post.authorName}</div>
                         {(post.authorVerified || post.authorUsername === 'Rulio') && (
-                          <VerifiedBadge className="w-4 h-4 text-black flex-shrink-0" />
+                          <VerifiedBadge className="w-4 h-4 flex-shrink-0" tier={post.authorPremiumTier} />
                         )}
                       </div>
                       <div className="text-gray-500 text-sm truncate">@{post.authorUsername}</div>

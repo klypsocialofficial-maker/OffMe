@@ -191,7 +191,7 @@ export default function Messages() {
                             <p className={`font-bold text-black truncate ${conversation.unreadCount?.[userProfile?.uid] ? 'font-black' : ''}`}>
                               {otherParticipantInfo?.displayName || 'Usuário'}
                             </p>
-                            {(otherParticipantInfo?.isVerified || otherParticipantInfo?.username === 'Rulio') && <VerifiedBadge />}
+                            {(otherParticipantInfo?.isVerified || otherParticipantInfo?.username === 'Rulio') && <VerifiedBadge tier={otherParticipantInfo?.premiumTier} />}
                           </div>
                           <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
                             {conversation.updatedAt?.toDate ? new Date(conversation.updatedAt.toDate()).toLocaleDateString() : ''}

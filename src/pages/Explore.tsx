@@ -98,12 +98,16 @@ export default function Explore() {
             [userProfile.uid]: {
               displayName: userProfile.displayName,
               username: userProfile.username,
-              photoURL: userProfile.photoURL || null
+              photoURL: userProfile.photoURL || null,
+              isVerified: userProfile.isVerified || false,
+              premiumTier: userProfile.premiumTier || null
             },
             [otherUser.id]: {
               displayName: otherUser.displayName,
               username: otherUser.username,
-              photoURL: otherUser.photoURL || null
+              photoURL: otherUser.photoURL || null,
+              isVerified: otherUser.isVerified || false,
+              premiumTier: otherUser.premiumTier || null
             }
           },
           lastMessage: '',
@@ -142,6 +146,7 @@ export default function Explore() {
           senderUsername: userProfile.username,
           senderPhoto: userProfile.photoURL || null,
           senderVerified: userProfile.isVerified || userProfile.username === 'Rulio',
+          senderPremiumTier: userProfile.premiumTier || null,
           type: 'follow',
           read: false,
           createdAt: serverTimestamp()
@@ -329,7 +334,7 @@ export default function Explore() {
                     <div>
                       <div className="flex items-center space-x-1">
                         <p className="font-bold text-black">{user.displayName}</p>
-                        {(user.isVerified || user.username === 'Rulio') && <VerifiedBadge />}
+                        {(user.isVerified || user.username === 'Rulio') && <VerifiedBadge tier={user.premiumTier} />}
                       </div>
                       <p className="text-gray-500 text-sm">@{user.username}</p>
                       <p className="text-gray-700 text-sm mt-1 line-clamp-1">{user.bio}</p>
@@ -397,7 +402,7 @@ export default function Explore() {
                         <div>
                           <div className="flex items-center space-x-1">
                             <p className="font-bold text-black">{user.displayName}</p>
-                            {(user.isVerified || user.username === 'Rulio') && <VerifiedBadge />}
+                            {(user.isVerified || user.username === 'Rulio') && <VerifiedBadge tier={user.premiumTier} />}
                           </div>
                           <p className="text-gray-500 text-sm">@{user.username}</p>
                           {user.username === 'Rulio' && (

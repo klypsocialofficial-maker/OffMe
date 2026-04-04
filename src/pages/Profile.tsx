@@ -238,6 +238,7 @@ export default function Profile() {
           senderUsername: userProfile.username,
           senderPhoto: userProfile.photoURL || null,
           senderVerified: userProfile.isVerified || userProfile.username === 'Rulio',
+          senderPremiumTier: userProfile.premiumTier || null,
           type: 'like',
           postId: post.id,
           read: false,
@@ -269,6 +270,7 @@ export default function Profile() {
           senderUsername: userProfile.username,
           senderPhoto: userProfile.photoURL || null,
           senderVerified: userProfile.isVerified || userProfile.username === 'Rulio',
+          senderPremiumTier: userProfile.premiumTier || null,
           type: 'repost',
           postId: post.id,
           read: false,
@@ -354,6 +356,7 @@ export default function Profile() {
           senderUsername: userProfile.username,
           senderPhoto: userProfile.photoURL || null,
           senderVerified: userProfile.isVerified || userProfile.username === 'Rulio',
+          senderPremiumTier: userProfile.premiumTier || null,
           type: 'follow',
           read: false,
           createdAt: serverTimestamp()
@@ -492,7 +495,7 @@ export default function Profile() {
                 {profileUser.displayName}
               </h2>
               {(profileUser.isVerified || profileUser.username === 'Rulio') && (
-                <VerifiedBadge className="w-5 h-5 text-black flex-shrink-0" />
+                <VerifiedBadge className="w-5 h-5 text-black flex-shrink-0" tier={profileUser.premiumTier} />
               )}
             </div>
             <p className="text-gray-500 text-sm sm:text-base">@{profileUser.username}</p>
@@ -665,7 +668,7 @@ export default function Profile() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-1 truncate flex-1 min-w-0">
                         <span className="font-bold text-gray-900 truncate flex-shrink-0 max-w-[120px] sm:max-w-[180px]">{post.authorName}</span>
-                        {(post.authorVerified || post.authorUsername === 'Rulio') && <VerifiedBadge />}
+                        {(post.authorVerified || post.authorUsername === 'Rulio') && <VerifiedBadge tier={post.authorPremiumTier} />}
                         <span className="text-gray-500 truncate flex-shrink min-w-0">@{post.authorUsername}</span>
                         <span className="text-gray-500 flex-shrink-0">·</span>
                         <span className="text-gray-500 flex-shrink-0 text-sm">

@@ -77,6 +77,8 @@ interface UserProfile {
   following?: string[];
   followers?: string[];
   isVerified?: boolean;
+  isPremium?: boolean;
+  premiumTier?: 'silver' | 'gold' | 'black';
   createdAt?: any;
 }
 

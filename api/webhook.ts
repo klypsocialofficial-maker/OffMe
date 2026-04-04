@@ -70,14 +70,16 @@ export default async function handler(req: any, res: any) {
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
     const userId = session.client_reference_id;
+    const tier = session.metadata?.tier || 'gold';
 
     if (userId && getApps().length > 0) {
       try {
         await getFirestore().collection('users').doc(userId).update({
           isPremium: true,
           isVerified: true, // Also give them the verified badge
+          premiumTier: tier,
         });
-        console.log(`Successfully upgraded user ${userId} to Premium`);
+        console.log(`Successfully upgraded user ${userId} to Premium Tier: ${tier}`);
       } catch (error) {
         console.error(`Error upgrading user ${userId}:`, error);
       }

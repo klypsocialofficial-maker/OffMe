@@ -15,9 +15,23 @@ export default async function handler(req: any, res: any) {
     apiVersion: '2024-12-18.acacia',
   });
 
-  const { userId } = req.body;
+  const { userId, tier } = req.body;
   if (!userId) {
     return res.status(400).json({ error: 'User ID is required' });
+  }
+
+  let price = 1990;
+  let name = 'OffMe Fun (Gold)';
+  let description = 'A experiência completa do OffMe. Selo Gold, edição a qualquer momento e destaque.';
+
+  if (tier === 'silver') {
+    price = 990;
+    name = 'OffMe Básico (Prata)';
+    description = 'O essencial para se destacar. Selo Prata e edição de posts até 1 hora.';
+  } else if (tier === 'black') {
+    price = 4990;
+    name = 'OffMe Business (Black)';
+    description = 'Para criadores e marcas. Selo Black, Analytics e Suporte prioritário.';
   }
 
   try {
@@ -31,11 +45,11 @@ export default async function handler(req: any, res: any) {
           price_data: {
             currency: 'brl',
             product_data: {
-              name: 'OffMe Premium',
-              description: 'Desbloqueie recursos exclusivos, como edição de posts a qualquer momento e selo de verificação.',
+              name: name,
+              description: description,
               images: [`${appUrl}/ghost.svg`],
             },
-            unit_amount: 1990, // R$ 19,90
+            unit_amount: price,
           },
           quantity: 1,
         },
@@ -44,6 +58,9 @@ export default async function handler(req: any, res: any) {
       success_url: `${appUrl}/premium?success=true`,
       cancel_url: `${appUrl}/premium?canceled=true`,
       client_reference_id: userId,
+      metadata: {
+        tier: tier || 'gold'
+      }
     });
 
     res.status(200).json({ url: session.url });
