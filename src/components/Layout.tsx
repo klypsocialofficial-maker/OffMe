@@ -223,80 +223,82 @@ export default function Layout() {
       />
 
       {/* Mobile Bottom Navigation with Liquid Glass Floating Pill (iOS 26 Style) */}
-      <div className="sm:hidden fixed bottom-8 left-1/2 -translate-x-1/2 w-[92%] max-w-md z-40 mobile-navbar-container transition-all duration-300">
-        <nav className="liquid-glass-pill rounded-[2.5rem] flex justify-around p-2.5 relative overflow-hidden group">
-          {/* Iridescent Border Effect */}
-          <div className="absolute inset-0 rounded-[2.5rem] border border-white/40 pointer-events-none" />
-          <div className="absolute inset-[-1px] rounded-[2.5rem] border border-white/20 blur-[1px] pointer-events-none" />
-          
-          {/* Liquid highlight effect (Iridescent glow) */}
-          <motion.div 
-            animate={{ 
-              background: [
-                'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.1) 100%)',
-                'linear-gradient(225deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.1) 100%)',
-                'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.1) 100%)'
-              ]
-            }}
-            transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-            className="absolute inset-0 pointer-events-none opacity-50" 
-          />
-          
-          {navItems.slice(0, 4).map((item) => {
-            const isActive = location.pathname === item.path;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`relative p-3.5 rounded-full transition-all duration-500 z-10 flex flex-col items-center justify-center ${
-                  isActive ? 'text-black' : 'text-gray-500 hover:text-black'
-                }`}
-              >
-                {isActive && (
-                  <motion.div
-                    layoutId="mobile-active-tab-blob"
-                    className="absolute inset-0 bg-white/40 rounded-full -z-10 shadow-[0_4px_12px_rgba(0,0,0,0.05)]"
-                    transition={{ 
-                      type: "spring", 
-                      stiffness: 350, 
-                      damping: 25,
-                      mass: 0.8
-                    }}
-                  >
-                    {/* Inner glow for the blob */}
-                    <div className="absolute inset-0 rounded-full bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
-                  </motion.div>
-                )}
-                
-                <motion.div 
-                  className="relative"
-                  whileTap={{ scale: 0.85 }}
-                  animate={isActive ? { scale: 1.1 } : { scale: 1 }}
+      {location.pathname !== '/premium' && (
+        <div className="sm:hidden fixed bottom-8 left-1/2 -translate-x-1/2 w-[92%] max-w-md z-40 mobile-navbar-container transition-all duration-300">
+          <nav className="liquid-glass-pill rounded-[2.5rem] flex justify-around p-2.5 relative overflow-hidden group">
+            {/* Iridescent Border Effect */}
+            <div className="absolute inset-0 rounded-[2.5rem] border border-white/40 pointer-events-none" />
+            <div className="absolute inset-[-1px] rounded-[2.5rem] border border-white/20 blur-[1px] pointer-events-none" />
+            
+            {/* Liquid highlight effect (Iridescent glow) */}
+            <motion.div 
+              animate={{ 
+                background: [
+                  'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.1) 100%)',
+                  'linear-gradient(225deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.1) 100%)',
+                  'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.1) 100%)'
+                ]
+              }}
+              transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+              className="absolute inset-0 pointer-events-none opacity-50" 
+            />
+            
+            {navItems.slice(0, 4).map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`relative p-3.5 rounded-full transition-all duration-500 z-10 flex flex-col items-center justify-center ${
+                    isActive ? 'text-black' : 'text-gray-500 hover:text-black'
+                  }`}
                 >
-                  <item.icon className={`w-6 h-6 transition-all duration-500 ${isActive ? 'stroke-[2.5px] drop-shadow-sm' : 'stroke-[2px]'}`} />
+                  {isActive && (
+                    <motion.div
+                      layoutId="mobile-active-tab-blob"
+                      className="absolute inset-0 bg-white/40 rounded-full -z-10 shadow-[0_4px_12px_rgba(0,0,0,0.05)]"
+                      transition={{ 
+                        type: "spring", 
+                        stiffness: 350, 
+                        damping: 25,
+                        mass: 0.8
+                      }}
+                    >
+                      {/* Inner glow for the blob */}
+                      <div className="absolute inset-0 rounded-full bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
+                    </motion.div>
+                  )}
                   
-                  {/* Notification/Message Badges */}
-                  <AnimatePresence>
-                    {((item.path === '/notifications' && unreadNotificationsCount > 0) || 
-                      (item.path === '/messages' && unreadMessagesCount > 0)) && (
-                      <motion.span 
-                        initial={{ scale: 0, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0, opacity: 0 }}
-                        className="absolute -top-1.5 -right-1.5 bg-black text-white text-[9px] font-black min-w-[17px] h-[17px] flex items-center justify-center rounded-full border-2 border-white/80 px-0.5 shadow-sm"
-                      >
-                        {item.path === '/notifications' 
-                          ? (unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount)
-                          : (unreadMessagesCount > 9 ? '9+' : unreadMessagesCount)}
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
-                </motion.div>
-              </Link>
-            );
-          })}
-        </nav>
-      </div>
+                  <motion.div 
+                    className="relative"
+                    whileTap={{ scale: 0.85 }}
+                    animate={isActive ? { scale: 1.1 } : { scale: 1 }}
+                  >
+                    <item.icon className={`w-6 h-6 transition-all duration-500 ${isActive ? 'stroke-[2.5px] drop-shadow-sm' : 'stroke-[2px]'}`} />
+                    
+                    {/* Notification/Message Badges */}
+                    <AnimatePresence>
+                      {((item.path === '/notifications' && unreadNotificationsCount > 0) || 
+                        (item.path === '/messages' && unreadMessagesCount > 0)) && (
+                        <motion.span 
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          exit={{ scale: 0, opacity: 0 }}
+                          className="absolute -top-1.5 -right-1.5 bg-black text-white text-[9px] font-black min-w-[17px] h-[17px] flex items-center justify-center rounded-full border-2 border-white/80 px-0.5 shadow-sm"
+                        >
+                          {item.path === '/notifications' 
+                            ? (unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount)
+                            : (unreadMessagesCount > 9 ? '9+' : unreadMessagesCount)}
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+      )}
 
       {/* Mobile Drawer Overlay & Panel */}
       <AnimatePresence>

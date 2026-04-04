@@ -107,7 +107,7 @@ service cloud.firestore {
     // ===============================================================
 
     function isValidUser(data) {
-      return hasOnlyAllowedFields(['uid', 'email', 'username', 'displayName', 'photoURL', 'bannerURL', 'bio', 'location', 'website', 'following', 'followers', 'isVerified', 'category', 'createdAt', 'updatedAt']) &&
+      return hasOnlyAllowedFields(['uid', 'email', 'username', 'displayName', 'photoURL', 'bannerURL', 'bio', 'location', 'website', 'following', 'followers', 'isVerified', 'isPremium', 'category', 'createdAt', 'updatedAt']) &&
              data.uid is string && data.uid == request.auth.uid &&
              data.email is string && isValidEmail(data.email) &&
              data.username is string && data.username.size() > 0 && data.username.size() <= 30 &&
@@ -121,6 +121,7 @@ service cloud.firestore {
              (!('following' in data) || data.following is list) &&
              (!('followers' in data) || data.followers is list) &&
              (!('isVerified' in data) || data.isVerified is bool) &&
+             (!('isPremium' in data) || data.isPremium is bool) &&
              (!('createdAt' in data) || data.createdAt is timestamp) &&
              (!('updatedAt' in data) || data.updatedAt is timestamp);
     }
@@ -155,8 +156,9 @@ service cloud.firestore {
     match /users/{userId} {
       // Anyone authenticated can read basic user info for search/profiles
       allow read: if isAuthenticated();
-      allow create: if isOwner(userId) && isValidUser(request.resource.data);
-      allow update: if (isOwner(userId) && isValidUser(request.resource.data) && uidNotModified()) ||
+      allow create: if isOwner(userId) && isValidUser(request.resource.data) && (!('isPremium' in request.resource.data) || request.resource.data.isPremium == false) && (!('isVerified' in request.resource.data) || request.resource.data.isVerified == false);
+      allow update: if (isOwner(userId) && isValidUser(request.resource.data) && uidNotModified() && 
+                        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['isPremium', 'isVerified']))) ||
                     (isAuthenticated() && 
                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followers']) &&
                      (
