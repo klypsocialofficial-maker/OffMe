@@ -9,6 +9,7 @@ import Toast from '../components/Toast';
 import TrendingPosts from '../components/TrendingPosts';
 import VerifiedBadge from '../components/VerifiedBadge';
 import PostContent from '../components/PostContent';
+import ImageViewer from '../components/ImageViewer';
 import { uploadToImgBB } from '../lib/imgbb';
 import { motion, AnimatePresence } from 'motion/react';
 import { formatRelativeTime } from '../lib/dateUtils';
@@ -134,6 +135,8 @@ export default function Home() {
   const [editContent, setEditContent] = useState('');
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
   const [selectedStatsPostId, setSelectedStatsPostId] = useState<string | null>(null);
+  const [viewerImage, setViewerImage] = useState<{ src: string; alt: string } | null>(null);
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'info' | 'success' | 'error'; isOpen: boolean }>({
     message: '',
     type: 'info',
@@ -144,6 +147,11 @@ export default function Home() {
     setToast({ message, type, isOpen: true });
   };
   const [replyToPost, setReplyToPost] = useState<any | null>(null);
+
+  const openImageViewer = (src: string, alt: string) => {
+    setViewerImage({ src, alt });
+    setIsViewerOpen(true);
+  };
 
   useEffect(() => {
     if (!db) return;
@@ -435,7 +443,13 @@ export default function Home() {
 
         {/* Mobile Top Bar (Avatar Only) */}
         <div className="flex items-center px-4 pb-2 sm:hidden">
-          <button onClick={openDrawer} className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              openDrawer();
+            }} 
+            className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 cursor-pointer"
+          >
             {userProfile?.photoURL ? (
               <img src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full object-cover" />
             ) : (
@@ -549,7 +563,10 @@ export default function Home() {
       {/* Inline Post Input (Desktop/Tablet) */}
       <div className="hidden sm:block px-4 py-4 border-b border-gray-100/50 bg-white/40 backdrop-blur-md">
         <div className="flex space-x-4">
-          <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 border border-gray-100">
+          <div 
+            className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 border border-gray-100 cursor-zoom-in"
+            onClick={() => userProfile?.photoURL && openImageViewer(userProfile.photoURL, `Avatar de ${userProfile.displayName}`)}
+          >
             {userProfile?.photoURL ? (
               <img src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full object-cover" />
             ) : (
@@ -705,10 +722,14 @@ export default function Home() {
                     </div>
 
                     <div 
-                      className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 cursor-pointer"
+                      className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 cursor-zoom-in"
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`/profile/${post.authorId}`);
+                        if (post.authorPhoto) {
+                          openImageViewer(post.authorPhoto, `Avatar de ${post.authorName}`);
+                        } else {
+                          navigate(`/profile/${post.authorId}`);
+                        }
                       }}
                     >
                     {post.authorPhoto ? (
@@ -847,7 +868,13 @@ export default function Home() {
                         <PostContent content={post.content} className="mt-1 text-gray-900" />
                         {post.isEdited && <span className="text-gray-400 text-xs">(editado)</span>}
                         {post.imageUrl && (
-                          <div className="mt-3 rounded-2xl overflow-hidden border border-gray-200">
+                          <div 
+                            className="mt-3 rounded-2xl overflow-hidden border border-gray-200 cursor-zoom-in"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openImageViewer(post.imageUrl, `Imagem do post de ${post.authorName}`);
+                            }}
+                          >
                             <img src={post.imageUrl} alt="Post attachment" className="w-full h-auto max-h-96 object-cover" />
                           </div>
                         )}
@@ -1026,6 +1053,12 @@ export default function Home() {
           type={toast.type}
           isOpen={toast.isOpen}
           onClose={() => setToast(prev => ({ ...prev, isOpen: false }))}
+        />
+        <ImageViewer 
+          src={viewerImage?.src || null}
+          isOpen={isViewerOpen}
+          onClose={() => setIsViewerOpen(false)}
+          alt={viewerImage?.alt}
         />
     </div>
   );

@@ -8,6 +8,7 @@ import Toast from '../components/Toast';
 import ConfirmModal from '../components/ConfirmModal';
 import VerifiedBadge from '../components/VerifiedBadge';
 import PostContent from '../components/PostContent';
+import ImageViewer from '../components/ImageViewer';
 import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, arrayRemove, arrayUnion, addDoc, serverTimestamp, deleteDoc, getDocs } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { motion, AnimatePresence } from 'motion/react';
@@ -80,6 +81,8 @@ export default function Profile() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
   const [selectedStatsPostId, setSelectedStatsPostId] = useState<string | null>(null);
+  const [viewerImage, setViewerImage] = useState<{ src: string; alt: string } | null>(null);
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'info' | 'success' | 'error'; isOpen: boolean }>({
     message: '',
     type: 'info',
@@ -406,6 +409,11 @@ export default function Profile() {
     }
   };
 
+  const openImageViewer = (src: string, alt: string) => {
+    setViewerImage({ src, alt });
+    setIsViewerOpen(true);
+  };
+
   if (loading && !profileUser) return (
     <div className="min-h-[100dvh] flex items-center justify-center bg-white">
       <div className="flex space-x-1">
@@ -429,7 +437,10 @@ export default function Profile() {
       {/* Profile Header with Cover Photo and Action Buttons */}
       <div className="relative">
         {/* Cover Photo */}
-        <div className="h-32 sm:h-48 bg-black w-full relative overflow-hidden">
+        <div 
+          className="h-32 sm:h-48 bg-black w-full relative overflow-hidden cursor-zoom-in"
+          onClick={() => profileUser.bannerURL && openImageViewer(profileUser.bannerURL, `Banner de ${profileUser.displayName}`)}
+        >
           <img src={profileUser.bannerURL || '/ghost.svg'} alt="Banner" className="w-full h-full object-cover opacity-80" />
           
           {/* Top Action Bar (Floating on Cover) */}
@@ -461,7 +472,10 @@ export default function Profile() {
 
         {/* Profile Photo (Overlapping) */}
         <div className="absolute -bottom-10 left-4 sm:left-6 z-10">
-          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-white bg-white overflow-hidden shadow-sm">
+          <div 
+            className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-white bg-white overflow-hidden shadow-sm cursor-zoom-in"
+            onClick={() => profileUser.photoURL && openImageViewer(profileUser.photoURL, `Avatar de ${profileUser.displayName}`)}
+          >
             <img src={profileUser.photoURL || '/ghost.svg'} alt={profileUser.displayName} className="w-full h-full object-cover" />
           </div>
         </div>
@@ -950,6 +964,13 @@ export default function Profile() {
           </div>
         )}
       </AnimatePresence>
+
+      <ImageViewer 
+        src={viewerImage?.src || null}
+        isOpen={isViewerOpen}
+        onClose={() => setIsViewerOpen(false)}
+        alt={viewerImage?.alt}
+      />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { LogOut, Home as HomeIcon, Search, Bell, Mail, User as UserIcon, Bookmar
 import { motion, AnimatePresence } from 'motion/react';
 import VerifiedBadge from './VerifiedBadge';
 import CreatePostModal from './CreatePostModal';
+import ImageViewer from './ImageViewer';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 
@@ -51,6 +52,8 @@ export default function Layout() {
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [replyToPost, setReplyToPost] = useState<any | null>(null);
+  const [viewerImage, setViewerImage] = useState<{ src: string; alt: string } | null>(null);
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
 
   const openCreateModal = (replyTo: any = null) => {
     setReplyToPost(replyTo);
@@ -96,6 +99,11 @@ export default function Layout() {
 
   const openDrawer = () => setIsDrawerOpen(true);
   const closeDrawer = () => setIsDrawerOpen(false);
+
+  const openImageViewer = (src: string, alt: string) => {
+    setViewerImage({ src, alt });
+    setIsViewerOpen(true);
+  };
 
   return (
     <div className="min-h-screen text-gray-900 flex justify-center relative bg-white">
@@ -168,7 +176,10 @@ export default function Layout() {
           
           {userProfile && (
             <div className="mt-4 flex items-center px-4 py-3">
-              <div className="w-10 h-10 rounded-full bg-gray-100 overflow-hidden flex-shrink-0 border border-gray-200">
+              <div 
+                className="w-10 h-10 rounded-full bg-gray-100 overflow-hidden flex-shrink-0 border border-gray-200 cursor-zoom-in"
+                onClick={() => userProfile.photoURL && openImageViewer(userProfile.photoURL, `Avatar de ${userProfile.displayName}`)}
+              >
                 <img src={userProfile.photoURL || '/ghost.svg'} alt={userProfile.displayName} className="w-full h-full object-cover" />
               </div>
               <div className="ml-3 overflow-hidden">
@@ -307,13 +318,19 @@ export default function Layout() {
             >
               <div className="relative border-b border-gray-100 pt-[calc(1rem+env(safe-area-inset-top))]">
                 {/* Banner Background */}
-                <div className="absolute top-0 left-0 right-0 h-24 bg-gray-100 -z-10">
+                <div 
+                  className="absolute top-0 left-0 right-0 h-24 bg-gray-100 -z-10 cursor-zoom-in"
+                  onClick={() => userProfile?.bannerURL && openImageViewer(userProfile.bannerURL, `Banner de ${userProfile.displayName}`)}
+                >
                   <img src={userProfile?.bannerURL || '/ghost.svg'} alt="Banner" className="w-full h-full object-cover opacity-80" />
                   <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/90"></div>
                 </div>
                 
                 <div className="p-4 pt-12">
-                  <div className="w-16 h-16 rounded-full bg-white overflow-hidden mb-3 border-4 border-white shadow-sm">
+                  <div 
+                    className="w-16 h-16 rounded-full bg-white overflow-hidden mb-3 border-4 border-white shadow-sm cursor-zoom-in"
+                    onClick={() => userProfile?.photoURL && openImageViewer(userProfile.photoURL, `Avatar de ${userProfile.displayName}`)}
+                  >
                     <img src={userProfile?.photoURL || '/ghost.svg'} alt={userProfile?.displayName} className="w-full h-full object-cover" />
                   </div>
                   <div className="flex items-center space-x-1">
@@ -368,6 +385,13 @@ export default function Layout() {
           </>
         )}
       </AnimatePresence>
+
+      <ImageViewer 
+        src={viewerImage?.src || null}
+        isOpen={isViewerOpen}
+        onClose={() => setIsViewerOpen(false)}
+        alt={viewerImage?.alt}
+      />
     </div>
   );
 }
