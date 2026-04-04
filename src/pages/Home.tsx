@@ -6,7 +6,6 @@ import { db, auth } from '../firebase';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import CreatePostModal from '../components/CreatePostModal';
 import Toast from '../components/Toast';
-import TrendingPosts from '../components/TrendingPosts';
 import VerifiedBadge from '../components/VerifiedBadge';
 import PostContent from '../components/PostContent';
 import SharePostModal from '../components/SharePostModal';
@@ -558,8 +557,6 @@ export default function Home() {
           )}
         </AnimatePresence>
       </div>
-
-      <TrendingPosts autoHide={true} />
 
       {/* Inline Post Input (Desktop/Tablet) */}
       <div className="hidden sm:block px-4 py-4 border-b border-gray-100/50 bg-white/40 backdrop-blur-md">
