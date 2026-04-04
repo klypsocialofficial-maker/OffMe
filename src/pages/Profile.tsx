@@ -4,7 +4,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { User as UserIcon, Calendar, MapPin, Link as LinkIcon, Edit2, Trash2, BarChart2, MessageCircle, Heart, Send, MoreHorizontal, ArrowLeft, Search, Share, Briefcase, Plus } from 'lucide-react';
 import EditProfileModal from '../components/EditProfileModal';
 import CreatePostModal from '../components/CreatePostModal';
+import Toast from '../components/Toast';
+import ConfirmModal from '../components/ConfirmModal';
 import VerifiedBadge from '../components/VerifiedBadge';
+import PostContent from '../components/PostContent';
 import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, arrayRemove, arrayUnion, addDoc, serverTimestamp, deleteDoc, getDocs } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { motion, AnimatePresence } from 'motion/react';
@@ -76,6 +79,26 @@ export default function Profile() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
   const [selectedStatsPost, setSelectedStatsPost] = useState<any>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'info' | 'success' | 'error'; isOpen: boolean }>({
+    message: '',
+    type: 'info',
+    isOpen: false
+  });
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  });
+
+  const showToast = (message: string, type: 'info' | 'success' | 'error' = 'info') => {
+    setToast({ message, type, isOpen: true });
+  };
 
   useEffect(() => {
     if (!db) return;
@@ -337,14 +360,20 @@ export default function Profile() {
 
   const handleDeletePost = async (postId: string) => {
     if (!db || !userProfile?.uid) return;
-    if (window.confirm('Tem certeza que deseja apagar este post?')) {
-      try {
-        await deleteDoc(doc(db, 'posts', postId));
-        setActiveMenuPostId(null);
-      } catch (error) {
-        handleFirestoreError(error, OperationType.DELETE, `posts/${postId}`);
+    setConfirmModal({
+      isOpen: true,
+      title: 'Apagar post',
+      message: 'Tem certeza que deseja apagar este post? Esta ação não pode ser desfeita.',
+      onConfirm: async () => {
+        try {
+          await deleteDoc(doc(db, 'posts', postId));
+          setActiveMenuPostId(null);
+          showToast('Post apagado com sucesso', 'success');
+        } catch (error) {
+          handleFirestoreError(error, OperationType.DELETE, `posts/${postId}`);
+        }
       }
-    }
+    });
   };
 
   const canEditPost = (post: any) => {
@@ -360,7 +389,7 @@ export default function Profile() {
   };
 
   const handleEditPost = async (postId: string) => {
-    if (!db || !userProfile?.uid || !editContent.trim()) return;
+    if (!db || !userProfile?.uid || !editContent.trim() || editContent.length > 1000) return;
     
     try {
       await updateDoc(doc(db, 'posts', postId), {
@@ -646,7 +675,7 @@ export default function Profile() {
                                       setEditContent(post.content);
                                       setActiveMenuPostId(null);
                                     } else {
-                                      alert('O tempo de edição (3 minutos) expirou. Assine o Premium para editar a qualquer momento.');
+                                      showToast('O tempo de edição (3 minutos) expirou. Assine o Premium para editar a qualquer momento.', 'info');
                                       setActiveMenuPostId(null);
                                     }
                                   }}
@@ -664,7 +693,7 @@ export default function Profile() {
                                   // setIsStatsModalOpen(true);
                                   setActiveMenuPostId(null);
                                 } else {
-                                  alert('Estatísticas avançadas são um recurso Premium.');
+                                  showToast('Estatísticas avançadas são um recurso Premium.', 'info');
                                   setActiveMenuPostId(null);
                                 }
                               }}
@@ -683,23 +712,29 @@ export default function Profile() {
                         <textarea
                           value={editContent}
                           onChange={(e) => setEditContent(e.target.value)}
+                          maxLength={1000}
                           className="w-full bg-white border border-gray-200 rounded-xl p-3 outline-none resize-none min-h-[80px]"
                           autoFocus
                         />
-                        <div className="flex justify-end space-x-2 mt-2">
-                          <button 
-                            onClick={() => setEditingPost(null)}
-                            className="px-4 py-1.5 rounded-full font-bold hover:bg-gray-100 transition-colors"
-                          >
-                            Cancelar
-                          </button>
-                          <button 
-                            onClick={() => handleEditPost(post.id)}
-                            disabled={!editContent.trim() || editContent === post.content}
-                            className="bg-black text-white px-4 py-1.5 rounded-full font-bold hover:bg-gray-800 disabled:opacity-50 transition-colors"
-                          >
-                            Salvar
-                          </button>
+                        <div className="flex justify-between items-center mt-2">
+                          <div className={`text-xs font-medium ${editContent.length > 1000 ? 'text-red-500' : 'text-gray-400'}`}>
+                            {editContent.length} / 1000
+                          </div>
+                          <div className="flex space-x-2">
+                            <button 
+                              onClick={() => setEditingPost(null)}
+                              className="px-4 py-1.5 rounded-full font-bold hover:bg-gray-100 transition-colors"
+                            >
+                              Cancelar
+                            </button>
+                            <button 
+                              onClick={() => handleEditPost(post.id)}
+                              disabled={!editContent.trim() || editContent === post.content || editContent.length > 1000}
+                              className="bg-black text-white px-4 py-1.5 rounded-full font-bold hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                            >
+                              Salvar
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ) : (
@@ -709,7 +744,7 @@ export default function Profile() {
                             Respondendo a <span className="text-black">@{post.replyToUsername}</span>
                           </div>
                         )}
-                        <p className="mt-1 text-gray-900 whitespace-pre-wrap break-words">{post.content}</p>
+                        <PostContent content={post.content} className="mt-1 text-gray-900" />
                         {post.isEdited && <span className="text-gray-400 text-xs">(editado)</span>}
                         {post.imageUrl && (
                           <div className="mt-3 rounded-2xl overflow-hidden border border-gray-200">
@@ -814,6 +849,21 @@ export default function Profile() {
         handleFirestoreError={handleFirestoreError}
         OperationType={OperationType}
         replyTo={replyToPost}
+      />
+
+      <Toast 
+        message={toast.message}
+        type={toast.type}
+        isOpen={toast.isOpen}
+        onClose={() => setToast(prev => ({ ...prev, isOpen: false }))}
+      />
+
+      <ConfirmModal 
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
       />
 
       {/* Stats Modal */}

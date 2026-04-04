@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { User as UserIcon, Send, MoreHorizontal, Trash2, Edit2, BarChart2, Plus, Heart, Repeat, MessageCircle, ArrowUp } from 'lucide-react';
+import { User as UserIcon, Send, MoreHorizontal, Trash2, Edit2, BarChart2, Plus, Heart, Repeat, MessageCircle, ArrowUp, Search } from 'lucide-react';
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, where, deleteDoc, doc, updateDoc, limit, arrayUnion, arrayRemove, startAfter, getDocs, QueryDocumentSnapshot } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import CreatePostModal from '../components/CreatePostModal';
+import Toast from '../components/Toast';
 import TrendingPosts from '../components/TrendingPosts';
 import VerifiedBadge from '../components/VerifiedBadge';
+import PostContent from '../components/PostContent';
 import { uploadToImgBB } from '../lib/imgbb';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -93,6 +95,7 @@ export default function Home() {
   const [fetchedPosts, setFetchedPosts] = useState<any[]>([]);
   const [displayedPosts, setDisplayedPosts] = useState<any[]>([]);
   const [pendingPostsCount, setPendingPostsCount] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
   const isInitialLoadRef = useRef(true);
   const displayedPostsRef = useRef<any[]>([]);
 
@@ -127,6 +130,15 @@ export default function Home() {
   const [editContent, setEditContent] = useState('');
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
   const [selectedStatsPost, setSelectedStatsPost] = useState<any>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'info' | 'success' | 'error'; isOpen: boolean }>({
+    message: '',
+    type: 'info',
+    isOpen: false
+  });
+
+  const showToast = (message: string, type: 'info' | 'success' | 'error' = 'info') => {
+    setToast({ message, type, isOpen: true });
+  };
   const [replyToPost, setReplyToPost] = useState<any | null>(null);
 
   useEffect(() => {
@@ -262,7 +274,7 @@ export default function Home() {
   };
 
   const handleEditPost = async (postId: string) => {
-    if (!db || !userProfile || !editContent.trim()) return;
+    if (!db || !userProfile || !editContent.trim() || editContent.length > 1000) return;
     try {
       await updateDoc(doc(db, 'posts', postId), {
         content: editContent.trim(),
@@ -442,6 +454,22 @@ export default function Home() {
               </button>
             </nav>
           </div>
+
+          {/* Search Bar */}
+          <div className="px-4 pb-2">
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="w-4 h-4 text-gray-400 group-focus-within:text-black transition-colors" />
+              </div>
+              <input
+                type="text"
+                placeholder="Pesquisar posts..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-2xl bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-black/5 focus:border-black outline-none transition-all text-sm"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -507,13 +535,34 @@ export default function Home() {
                 </div>
               ) : (
                 <div className="px-4 space-y-4 pb-20">
-                  {displayedPosts.map((post) => {
-                    return (
-                      <article 
-                        key={post.id} 
-                    onClick={() => navigate(`/post/${post.id}`)}
-                    className="group relative p-4 bg-white/60 backdrop-blur-md rounded-2xl shadow-sm border border-white/40 hover:bg-white/80 transition-all cursor-pointer flex space-x-4"
-                  >
+                  {(() => {
+                    const filtered = displayedPosts.filter(post => 
+                      post.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      post.authorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      post.authorUsername.toLowerCase().includes(searchQuery.toLowerCase())
+                    );
+                    
+                    if (filtered.length === 0 && searchQuery) {
+                      return (
+                        <div className="p-12 text-center">
+                          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Search className="w-8 h-8 text-gray-300" />
+                          </div>
+                          <h3 className="text-lg font-bold text-gray-900 mb-1">Nenhum resultado</h3>
+                          <p className="text-sm text-gray-500 max-w-[200px] mx-auto">
+                            Não encontramos nenhum post com "{searchQuery}"
+                          </p>
+                        </div>
+                      );
+                    }
+                    
+                    return filtered.map((post) => {
+                      return (
+                        <article 
+                          key={post.id} 
+                          onClick={() => navigate(`/post/${post.id}`)}
+                          className="group relative p-4 bg-white/60 backdrop-blur-md rounded-2xl shadow-sm border border-white/40 hover:bg-white/80 transition-all cursor-pointer flex space-x-4"
+                        >
                     {/* Quick Actions Hover Overlay */}
                     <div className="absolute top-3 right-12 opacity-0 group-hover:opacity-100 transition-opacity flex items-center space-x-1 bg-white/90 backdrop-blur-sm rounded-full shadow-sm border border-gray-100 p-1 z-10">
                       <button 
@@ -625,7 +674,7 @@ export default function Home() {
                                       setEditContent(post.content);
                                       setActiveMenuPostId(null);
                                     } else {
-                                      alert('O tempo de edição (3 minutos) expirou. Assine o Premium para editar a qualquer momento.');
+                                      showToast('O tempo de edição (3 minutos) expirou. Assine o Premium para editar a qualquer momento.', 'info');
                                       setActiveMenuPostId(null);
                                     }
                                   }}
@@ -652,7 +701,7 @@ export default function Home() {
                                   setIsStatsModalOpen(true);
                                   setActiveMenuPostId(null);
                                 } else {
-                                  alert('Estatísticas avançadas são um recurso Premium. Assine para ver o desempenho dos seus posts!');
+                                  showToast('Estatísticas avançadas são um recurso Premium. Assine para ver o desempenho dos seus posts!', 'info');
                                   setActiveMenuPostId(null);
                                 }
                               }}
@@ -671,23 +720,29 @@ export default function Home() {
                         <textarea
                           value={editContent}
                           onChange={(e) => setEditContent(e.target.value)}
+                          maxLength={1000}
                           className="w-full bg-white border border-gray-200 rounded-xl p-3 outline-none resize-none min-h-[80px]"
                           autoFocus
                         />
-                        <div className="flex justify-end space-x-2 mt-2">
-                          <button 
-                            onClick={() => setEditingPost(null)}
-                            className="px-4 py-1.5 rounded-full font-bold hover:bg-gray-100 transition-colors"
-                          >
-                            Cancelar
-                          </button>
-                          <button 
-                            onClick={() => handleEditPost(post.id)}
-                            disabled={!editContent.trim() || editContent === post.content}
-                            className="bg-black text-white px-4 py-1.5 rounded-full font-bold hover:bg-gray-800 disabled:opacity-50 transition-colors"
-                          >
-                            Salvar
-                          </button>
+                        <div className="flex justify-between items-center mt-2">
+                          <div className={`text-xs font-medium ${editContent.length > 1000 ? 'text-red-500' : 'text-gray-400'}`}>
+                            {editContent.length} / 1000
+                          </div>
+                          <div className="flex space-x-2">
+                            <button 
+                              onClick={() => setEditingPost(null)}
+                              className="px-4 py-1.5 rounded-full font-bold hover:bg-gray-100 transition-colors"
+                            >
+                              Cancelar
+                            </button>
+                            <button 
+                              onClick={() => handleEditPost(post.id)}
+                              disabled={!editContent.trim() || editContent === post.content || editContent.length > 1000}
+                              className="bg-black text-white px-4 py-1.5 rounded-full font-bold hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                            >
+                              Salvar
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ) : (
@@ -697,7 +752,7 @@ export default function Home() {
                             Respondendo a <span className="text-black">@{post.replyToUsername}</span>
                           </div>
                         )}
-                        <p className="mt-1 text-gray-900 whitespace-pre-wrap break-words">{post.content}</p>
+                        <PostContent content={post.content} className="mt-1 text-gray-900" />
                         {post.isEdited && <span className="text-gray-400 text-xs">(editado)</span>}
                         {post.imageUrl && (
                           <div className="mt-3 rounded-2xl overflow-hidden border border-gray-200">
@@ -778,9 +833,10 @@ export default function Home() {
                   </div>
                 </article>
                 );
-              })}
-            </div>
-          )}
+              })
+            })()}
+          </div>
+        )}
             </motion.div>
           </AnimatePresence>
         </div>
@@ -877,6 +933,12 @@ export default function Home() {
             </div>
           )}
         </AnimatePresence>
+        <Toast 
+          message={toast.message}
+          type={toast.type}
+          isOpen={toast.isOpen}
+          onClose={() => setToast(prev => ({ ...prev, isOpen: false }))}
+        />
     </div>
   );
 }

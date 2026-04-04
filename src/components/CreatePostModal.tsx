@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User as UserIcon, Image as ImageIcon, X } from 'lucide-react';
+import { User as UserIcon, Image as ImageIcon, X, FileText, MoreHorizontal, AlignLeft, Quote } from 'lucide-react';
 import { addDoc, collection, serverTimestamp, doc, updateDoc, increment, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { uploadToImgBB } from '../lib/imgbb';
@@ -58,7 +58,7 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
 
   const handlePost = async (e: React.FormEvent) => {
     e.preventDefault();
-    if ((!content.trim() && !imageFile) || !userProfile || !db) return;
+    if ((!content.trim() && !imageFile) || !userProfile || !db || content.length > 1000) return;
 
     try {
       setLoading(true);
@@ -171,50 +171,71 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-[32px] shadow-2xl overflow-hidden flex flex-col h-[60vh] sm:h-[50vh] max-w-2xl mx-auto"
+            className="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-[32px] shadow-2xl overflow-hidden flex flex-col h-[85vh] sm:h-[70vh] max-w-2xl mx-auto"
           >
-            {/* Handle bar for visual cue */}
-            <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mt-3 mb-1" />
-
+            {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                <X className="w-5 h-5" />
+              <button onClick={onClose} className="text-gray-900 font-medium hover:bg-gray-100 px-3 py-1.5 rounded-full transition-colors">
+                Cancel
               </button>
-              <button
-                onClick={handlePost}
-                disabled={(!content.trim() && !imageFile) || loading}
-                className="bg-black text-white px-6 py-2 rounded-full font-bold hover:bg-gray-800 disabled:opacity-50 transition-colors shadow-lg shadow-black/10"
-              >
-                {loading ? 'Postando...' : (replyTo ? 'Responder' : 'Postar')}
-              </button>
+              <h2 className="font-bold text-lg">{replyTo ? 'Reply' : 'New thread'}</h2>
+              <div className="flex items-center space-x-2">
+                <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                  <FileText className="w-5 h-5" />
+                </button>
+                <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                  <MoreHorizontal className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
+            {/* Body */}
             <div className="flex-1 overflow-y-auto p-6">
-              <div className="flex space-x-4">
-                <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 border-2 border-white shadow-sm">
-                  {userProfile?.photoURL ? (
-                    <img src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full object-cover" />
-                  ) : (
-                    <UserIcon className="w-full h-full p-2 text-gray-400" />
-                  )}
+              <div className="flex space-x-3">
+                {/* Left Column: Avatar and Line */}
+                <div className="flex flex-col items-center">
+                  <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 border border-gray-100">
+                    {userProfile?.photoURL ? (
+                      <img src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full object-cover" />
+                    ) : (
+                      <UserIcon className="w-full h-full p-2 text-gray-400" />
+                    )}
+                  </div>
+                  <div className="w-0.5 h-full bg-gray-200 my-2 min-h-[60px]"></div>
+                  <div className="w-6 h-6 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 opacity-50">
+                    {userProfile?.photoURL ? (
+                      <img src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full object-cover" />
+                    ) : (
+                      <UserIcon className="w-full h-full p-1 text-gray-400" />
+                    )}
+                  </div>
                 </div>
-                <div className="flex-1">
+
+                {/* Right Column: Content */}
+                <div className="flex-1 pb-8">
+                  <div className="flex items-center space-x-1 mb-1">
+                    <span className="font-bold text-sm">{userProfile?.username || 'user'}</span>
+                    <span className="text-gray-400 text-sm">{'>'} Community or topic</span>
+                  </div>
+                  
                   {replyTo && (
                     <div className="mb-2 text-sm text-gray-500 font-medium flex items-center space-x-1">
-                      <span>Respondendo a</span>
+                      <span>Replying to</span>
                       <span className="text-black">@{replyTo.authorUsername}</span>
                       {(replyTo.authorVerified || replyTo.authorUsername === 'Rulio') && <VerifiedBadge className="w-3.5 h-3.5 text-black" />}
                     </div>
                   )}
+
                   <textarea
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
-                    placeholder={replyTo ? "Poste sua resposta" : "O que está acontecendo?"}
-                    className="w-full bg-transparent text-xl outline-none resize-none min-h-[150px] placeholder-gray-400"
+                    placeholder={replyTo ? "Post your reply" : "What's new?"}
+                    className="w-full bg-transparent text-base outline-none resize-none min-h-[60px] placeholder-gray-400"
                     autoFocus
                   />
+                  
                   {imagePreview && (
-                    <div className="relative mt-4 rounded-2xl overflow-hidden border border-gray-100 shadow-sm group">
+                    <div className="relative mt-2 mb-4 rounded-2xl overflow-hidden border border-gray-100 shadow-sm group">
                       <button
                         onClick={removeImage}
                         className="absolute top-3 right-3 p-2 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-md transition-all scale-90 group-hover:scale-100"
@@ -224,11 +245,34 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
                       <img src={imagePreview} alt="Preview" className="w-full h-auto max-h-64 object-cover" />
                     </div>
                   )}
+
+                  <div className="flex items-center space-x-4 text-gray-400 mb-6 mt-2">
+                    <button onClick={() => fileInputRef.current?.click()} className="hover:text-gray-600 transition-colors">
+                      <ImageIcon className="w-5 h-5" />
+                    </button>
+                    <button className="hover:text-gray-600 transition-colors">
+                      <FileText className="w-5 h-5" />
+                    </button>
+                    <button className="hover:text-gray-600 transition-colors">
+                      <AlignLeft className="w-5 h-5" />
+                    </button>
+                    <button className="hover:text-gray-600 transition-colors">
+                      <Quote className="w-5 h-5" />
+                    </button>
+                    <button className="hover:text-gray-600 transition-colors">
+                      <MoreHorizontal className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  <div className="text-gray-300 text-sm font-medium">
+                    Add to thread
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="px-6 py-4 border-t border-gray-100 flex items-center bg-gray-50/50">
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white">
               <input
                 type="file"
                 accept="image/*"
@@ -236,17 +280,28 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
                 ref={fileInputRef}
                 onChange={handleImageChange}
               />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="p-3 hover:bg-black/5 text-black rounded-full transition-all hover:scale-110 active:scale-95"
-                title="Adicionar imagem"
-              >
-                <ImageIcon className="w-6 h-6" />
+              <button className="text-gray-500 font-medium text-sm hover:bg-gray-50 px-3 py-1.5 rounded-full transition-colors">
+                Reply options
               </button>
               
-              <div className="ml-auto text-xs text-gray-400 font-medium">
-                {content.length} / 280
+              <div className="flex items-center space-x-4">
+                <div className={`text-xs font-medium ${content.length > 1000 ? 'text-red-500' : 'text-gray-400'}`}>
+                  {content.length} / 1000
+                </div>
+
+                <div className="w-12 h-7 bg-gray-500 rounded-full relative cursor-pointer">
+                  <div className="absolute left-1 top-1 w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-sm">
+                    <UserIcon className="w-3 h-3 text-gray-500" />
+                  </div>
+                </div>
+
+                <button
+                  onClick={handlePost}
+                  disabled={(!content.trim() && !imageFile) || loading || content.length > 1000}
+                  className="bg-black text-white px-6 py-2 rounded-full font-bold hover:bg-gray-800 disabled:bg-gray-300 disabled:text-white transition-colors"
+                >
+                  {loading ? 'Posting...' : 'Post'}
+                </button>
               </div>
             </div>
           </motion.div>

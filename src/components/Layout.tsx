@@ -75,8 +75,8 @@ export default function Layout() {
       {/* Sidebar Navigation (Desktop) */}
       <header className="hidden sm:flex flex-col w-64 border-r border-gray-100 px-4 py-6 sticky top-0 h-screen z-20">
         <div className="flex items-center mb-8 px-4">
-          <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center text-white font-bold text-xl">
-            O
+          <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center overflow-hidden">
+            <img src="/ghost.svg" alt="OffMe Logo" className="w-6 h-6 object-contain invert" />
           </div>
           <span className="ml-3 font-bold text-xl tracking-tight">OffMe</span>
         </div>

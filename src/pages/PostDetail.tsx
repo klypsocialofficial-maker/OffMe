@@ -5,8 +5,11 @@ import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { User as UserIcon, ArrowLeft, MoreHorizontal, Trash2, Edit2, BarChart2, Heart, Repeat, MessageCircle, Share2 } from 'lucide-react';
 import VerifiedBadge from '../components/VerifiedBadge';
+import PostContent from '../components/PostContent';
 import { motion, AnimatePresence } from 'motion/react';
 import CreatePostModal from '../components/CreatePostModal';
+import Toast from '../components/Toast';
+import ConfirmModal from '../components/ConfirmModal';
 import { auth } from '../firebase';
 
 enum OperationType {
@@ -73,6 +76,28 @@ export default function PostDetail() {
   const [activeMenuReplyId, setActiveMenuReplyId] = useState<string | null>(null);
   const [editingPost, setEditingPost] = useState<any | null>(null);
   const [editContent, setEditContent] = useState('');
+  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
+  const [selectedStatsPost, setSelectedStatsPost] = useState<any>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'info' | 'success' | 'error'; isOpen: boolean }>({
+    message: '',
+    type: 'info',
+    isOpen: false
+  });
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  });
+
+  const showToast = (message: string, type: 'info' | 'success' | 'error' = 'info') => {
+    setToast({ message, type, isOpen: true });
+  };
 
   useEffect(() => {
     const handleClickOutside = () => {
@@ -119,27 +144,39 @@ export default function PostDetail() {
 
   const handleDeleteReply = async (replyId: string) => {
     if (!db || !userProfile) return;
-    if (window.confirm('Tem certeza que deseja excluir esta resposta?')) {
-      try {
-        await deleteDoc(doc(db, 'posts', replyId));
-      } catch (error) {
-        handleFirestoreError(error, OperationType.DELETE, `posts/${replyId}`);
+    setConfirmModal({
+      isOpen: true,
+      title: 'Excluir resposta',
+      message: 'Tem certeza que deseja excluir esta resposta? Esta ação não pode ser desfeita.',
+      onConfirm: async () => {
+        try {
+          await deleteDoc(doc(db, 'posts', replyId));
+          showToast('Resposta excluída com sucesso', 'success');
+        } catch (error) {
+          handleFirestoreError(error, OperationType.DELETE, `posts/${replyId}`);
+        }
       }
-    }
+    });
   };
 
   const handleDeletePost = async (id: string) => {
     if (!db || !userProfile) return;
-    if (window.confirm('Tem certeza que deseja apagar este post?')) {
-      try {
-        await deleteDoc(doc(db, 'posts', id));
-        if (id === postId) {
-          navigate(-1);
+    setConfirmModal({
+      isOpen: true,
+      title: 'Apagar post',
+      message: 'Tem certeza que deseja apagar este post? Esta ação não pode ser desfeita.',
+      onConfirm: async () => {
+        try {
+          await deleteDoc(doc(db, 'posts', id));
+          if (id === postId) {
+            navigate(-1);
+          }
+          showToast('Post apagado com sucesso', 'success');
+        } catch (error) {
+          handleFirestoreError(error, OperationType.DELETE, `posts/${id}`);
         }
-      } catch (error) {
-        handleFirestoreError(error, OperationType.DELETE, `posts/${id}`);
       }
-    }
+    });
   };
 
   const canEditPost = (post: any) => {
@@ -155,7 +192,7 @@ export default function PostDetail() {
   };
 
   const handleEditPost = async (id: string) => {
-    if (!db || !userProfile?.uid || !editContent.trim()) return;
+    if (!db || !userProfile?.uid || !editContent.trim() || editContent.length > 1000) return;
     
     try {
       await updateDoc(doc(db, 'posts', id), {
@@ -315,7 +352,7 @@ export default function PostDetail() {
                                 setEditContent(post.content);
                                 setActiveMenuPostId(null);
                               } else {
-                                alert('O tempo de edição (3 minutos) expirou. Assine o Premium para editar a qualquer momento.');
+                                showToast('O tempo de edição (3 minutos) expirou. Assine o Premium para editar a qualquer momento.', 'info');
                                 setActiveMenuPostId(null);
                               }
                             }}
@@ -349,30 +386,34 @@ export default function PostDetail() {
                 <textarea
                   value={editContent}
                   onChange={(e) => setEditContent(e.target.value)}
+                  maxLength={1000}
                   className="w-full bg-white border border-gray-200 rounded-xl p-3 outline-none resize-none min-h-[80px]"
                   autoFocus
                 />
-                <div className="flex justify-end space-x-2 mt-2">
-                  <button 
-                    onClick={() => setEditingPost(null)}
-                    className="px-4 py-1.5 rounded-full font-bold hover:bg-gray-100 transition-colors"
-                  >
-                    Cancelar
-                  </button>
-                  <button 
-                    onClick={() => handleEditPost(post.id)}
-                    disabled={!editContent.trim() || editContent === post.content}
-                    className="bg-black text-white px-4 py-1.5 rounded-full font-bold hover:bg-gray-800 disabled:opacity-50 transition-colors"
-                  >
-                    Salvar
-                  </button>
+                <div className="flex justify-between items-center mt-2">
+                  <div className={`text-xs font-medium ${editContent.length > 1000 ? 'text-red-500' : 'text-gray-400'}`}>
+                    {editContent.length} / 1000
+                  </div>
+                  <div className="flex space-x-2">
+                    <button 
+                      onClick={() => setEditingPost(null)}
+                      className="px-4 py-1.5 rounded-full font-bold hover:bg-gray-100 transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button 
+                      onClick={() => handleEditPost(post.id)}
+                      disabled={!editContent.trim() || editContent === post.content || editContent.length > 1000}
+                      className="bg-black text-white px-4 py-1.5 rounded-full font-bold hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                    >
+                      Salvar
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : (
               <>
-                <p className="text-xl text-gray-900 whitespace-pre-wrap break-words leading-relaxed">
-                  {post.content}
-                </p>
+                <PostContent content={post.content} className="text-xl text-gray-900 leading-relaxed" />
                 {post.isEdited && <span className="text-gray-400 text-xs">(editado)</span>}
               </>
             )}
@@ -412,6 +453,16 @@ export default function PostDetail() {
                 className={`flex items-center space-x-2 transition-colors p-2 rounded-full ${post.likes?.includes(userProfile?.uid) ? 'text-red-500 bg-red-50' : 'hover:text-red-500 hover:bg-red-50'}`}
               >
                 <Heart className={`w-6 h-6 ${post.likes?.includes(userProfile?.uid) ? 'fill-current' : ''}`} />
+              </button>
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedStatsPost(post);
+                  setIsStatsModalOpen(true);
+                }}
+                className="flex items-center space-x-2 hover:text-blue-500 transition-colors p-2 rounded-full hover:bg-blue-50"
+              >
+                <BarChart2 className="w-6 h-6" />
               </button>
               <button className="flex items-center space-x-2 hover:text-blue-500 transition-colors p-2 rounded-full hover:bg-blue-50">
                 <Share2 className="w-6 h-6" />
@@ -508,7 +559,7 @@ export default function PostDetail() {
                                         setEditContent(reply.content);
                                         setActiveMenuReplyId(null);
                                       } else {
-                                        alert('O tempo de edição (3 minutos) expirou. Assine o Premium para editar a qualquer momento.');
+                                        showToast('O tempo de edição (3 minutos) expirou. Assine o Premium para editar a qualquer momento.', 'info');
                                         setActiveMenuReplyId(null);
                                       }
                                     }}
@@ -531,28 +582,34 @@ export default function PostDetail() {
                           <textarea
                             value={editContent}
                             onChange={(e) => setEditContent(e.target.value)}
+                            maxLength={1000}
                             className="w-full bg-white border border-gray-200 rounded-xl p-3 outline-none resize-none min-h-[80px]"
                             autoFocus
                           />
-                          <div className="flex justify-end space-x-2 mt-2">
-                            <button 
-                              onClick={() => setEditingPost(null)}
-                              className="px-4 py-1.5 rounded-full font-bold hover:bg-gray-100 transition-colors"
-                            >
-                              Cancelar
-                            </button>
-                            <button 
-                              onClick={() => handleEditPost(reply.id)}
-                              disabled={!editContent.trim() || editContent === reply.content}
-                              className="bg-black text-white px-4 py-1.5 rounded-full font-bold hover:bg-gray-800 disabled:opacity-50 transition-colors"
-                            >
-                              Salvar
-                            </button>
+                          <div className="flex justify-between items-center mt-2">
+                            <div className={`text-xs font-medium ${editContent.length > 1000 ? 'text-red-500' : 'text-gray-400'}`}>
+                              {editContent.length} / 1000
+                            </div>
+                            <div className="flex space-x-2">
+                              <button 
+                                onClick={() => setEditingPost(null)}
+                                className="px-4 py-1.5 rounded-full font-bold hover:bg-gray-100 transition-colors"
+                              >
+                                Cancelar
+                              </button>
+                              <button 
+                                onClick={() => handleEditPost(reply.id)}
+                                disabled={!editContent.trim() || editContent === reply.content || editContent.length > 1000}
+                                className="bg-black text-white px-4 py-1.5 rounded-full font-bold hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                              >
+                                Salvar
+                              </button>
+                            </div>
                           </div>
                         </div>
                       ) : (
                         <>
-                          <p className="mt-1 text-gray-900 whitespace-pre-wrap break-words">{reply.content}</p>
+                          <PostContent content={reply.content} className="mt-1 text-gray-900" />
                           {reply.isEdited && <span className="text-gray-400 text-xs">(editado)</span>}
                         </>
                       )}
@@ -594,6 +651,16 @@ export default function PostDetail() {
                           <Heart className={`w-4 h-4 ${reply.likes?.includes(userProfile?.uid) ? 'fill-current' : ''}`} />
                           <span className="text-xs">{reply.likesCount || 0}</span>
                         </button>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedStatsPost(reply);
+                            setIsStatsModalOpen(true);
+                          }}
+                          className="flex items-center space-x-1 hover:text-blue-500 transition-colors"
+                        >
+                          <BarChart2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
                   </article>
@@ -621,6 +688,95 @@ export default function PostDetail() {
         OperationType={OperationType}
         replyTo={replyToPost}
       />
+
+      <Toast 
+        message={toast.message}
+        type={toast.type}
+        isOpen={toast.isOpen}
+        onClose={() => setToast(prev => ({ ...prev, isOpen: false }))}
+      />
+
+      <ConfirmModal 
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+      />
+
+      {/* Stats Modal */}
+      <AnimatePresence>
+        {isStatsModalOpen && selectedStatsPost && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold">Estatísticas Avançadas</h3>
+                <div className="bg-blue-100 text-blue-600 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider">
+                  Premium
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-gray-50 p-4 rounded-xl">
+                    <p className="text-xs text-gray-500 mb-1">Visualizações</p>
+                    <p className="text-xl font-bold">{(selectedStatsPost.likesCount || 0) * 12 + (selectedStatsPost.repostsCount || 0) * 25 + 142}</p>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-xl">
+                    <p className="text-xs text-gray-500 mb-1">Engajamento</p>
+                    <p className="text-xl font-bold text-blue-600">
+                      {(((selectedStatsPost.likesCount || 0) + (selectedStatsPost.repostsCount || 0) + (selectedStatsPost.repliesCount || 0)) / 10 + 2.4).toFixed(1)}%
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                    <div className="flex items-center space-x-3">
+                      <div className="bg-white p-2 rounded-lg shadow-sm">
+                        <UserIcon className="w-4 h-4 text-gray-600" />
+                      </div>
+                      <span className="text-sm font-medium">Cliques no perfil</span>
+                    </div>
+                    <span className="font-bold">{(selectedStatsPost.likesCount || 0) * 2 + 3}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                    <div className="flex items-center space-x-3">
+                      <div className="bg-white p-2 rounded-lg shadow-sm">
+                        <BarChart2 className="w-4 h-4 text-gray-600" />
+                      </div>
+                      <span className="text-sm font-medium">Alcance orgânico</span>
+                    </div>
+                    <span className="font-bold">94%</span>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                  <p className="text-xs text-blue-700 leading-relaxed">
+                    Este post está performando <span className="font-bold">15% melhor</span> que a média dos seus posts recentes.
+                  </p>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => {
+                  setIsStatsModalOpen(false);
+                  setSelectedStatsPost(null);
+                }}
+                className="mt-8 w-full bg-black text-white py-3 rounded-xl font-bold hover:bg-gray-800 transition-colors shadow-lg shadow-black/10"
+              >
+                Fechar
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

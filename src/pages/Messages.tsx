@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, User as UserIcon, Send, MoreHorizontal, Trash2, Archive } from 'lucide-react';
 import VerifiedBadge from '../components/VerifiedBadge';
+import ConfirmModal from '../components/ConfirmModal';
+import Toast from '../components/Toast';
 import { useAuth } from '../contexts/AuthContext';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc, updateDoc } from 'firebase/firestore';
@@ -63,6 +65,26 @@ export default function Messages() {
   const navigate = useNavigate();
   const [conversations, setConversations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  });
+  const [toast, setToast] = useState<{ message: string; type: 'info' | 'success' | 'error'; isOpen: boolean }>({
+    message: '',
+    type: 'info',
+    isOpen: false
+  });
+
+  const showToast = (message: string, type: 'info' | 'success' | 'error' = 'info') => {
+    setToast({ message, type, isOpen: true });
+  };
 
   useEffect(() => {
     if (!userProfile?.uid || !db) return;
@@ -99,12 +121,19 @@ export default function Messages() {
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (!confirm('Tem certeza que deseja apagar esta conversa?')) return;
-    try {
-      await deleteDoc(doc(db, 'conversations', id));
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `conversations/${id}`);
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Apagar conversa',
+      message: 'Tem certeza que deseja apagar esta conversa? Esta ação não pode ser desfeita.',
+      onConfirm: async () => {
+        try {
+          await deleteDoc(doc(db, 'conversations', id));
+          showToast('Conversa apagada com sucesso', 'success');
+        } catch (error) {
+          handleFirestoreError(error, OperationType.DELETE, `conversations/${id}`);
+        }
+      }
+    });
   };
 
   const handleArchive = async (e: React.MouseEvent, id: string) => {
@@ -204,6 +233,19 @@ export default function Messages() {
           </div>
         )}
       </div>
+      <ConfirmModal 
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+      />
+      <Toast 
+        message={toast.message}
+        type={toast.type}
+        isOpen={toast.isOpen}
+        onClose={() => setToast(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }
