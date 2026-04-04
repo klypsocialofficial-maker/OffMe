@@ -7,7 +7,8 @@ export default async function handler(req: any, res: any) {
 
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
   if (!stripeSecretKey) {
-    return res.status(500).json({ error: 'Stripe is not configured. Please add STRIPE_SECRET_KEY to your environment variables.' });
+    console.error("Missing STRIPE_SECRET_KEY in Vercel environment. Available keys:", Object.keys(process.env).join(', '));
+    return res.status(500).json({ error: 'Stripe key not found in Vercel environment. Please ensure it is set and redeploy.' });
   }
 
   const stripe = new Stripe(stripeSecretKey, {
