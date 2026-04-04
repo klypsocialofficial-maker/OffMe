@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { User as UserIcon, Calendar, MapPin, Link as LinkIcon, Edit2, Trash2, BarChart2, MessageCircle, Heart, Send, MoreHorizontal, ArrowLeft, Search, Share, Briefcase, Plus } from 'lucide-react';
+import { User as UserIcon, Calendar, MapPin, Link as LinkIcon, Edit2, Trash2, BarChart2, MessageCircle, Heart, Repeat, Send, MoreHorizontal, ArrowLeft, Search, Share, Briefcase, Plus } from 'lucide-react';
 import EditProfileModal from '../components/EditProfileModal';
 import CreatePostModal from '../components/CreatePostModal';
 import Toast from '../components/Toast';
@@ -9,6 +9,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import VerifiedBadge from '../components/VerifiedBadge';
 import PostContent from '../components/PostContent';
 import ImageViewer from '../components/ImageViewer';
+import SharePostModal from '../components/SharePostModal';
 import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, arrayRemove, arrayUnion, addDoc, serverTimestamp, deleteDoc, getDocs } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { motion, AnimatePresence } from 'motion/react';
@@ -79,8 +80,8 @@ export default function Profile() {
   const [editContent, setEditContent] = useState('');
   const [replyToPost, setReplyToPost] = useState<any | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
-  const [selectedStatsPostId, setSelectedStatsPostId] = useState<string | null>(null);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [selectedSharePost, setSelectedSharePost] = useState<any | null>(null);
   const [viewerImage, setViewerImage] = useState<{ src: string; alt: string } | null>(null);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'info' | 'success' | 'error'; isOpen: boolean }>({
@@ -713,21 +714,17 @@ export default function Profile() {
                             )}
                             
                             <button 
-                              onClick={() => {
-                                if (userProfile?.isPremium) {
-                                  setSelectedStatsPostId(post.id);
-                                  setIsStatsModalOpen(true);
-                                  setActiveMenuPostId(null);
-                                } else {
-                                  showToast('Estatísticas avançadas são um recurso Premium.', 'info');
-                                  setActiveMenuPostId(null);
-                                }
-                              }}
-                              className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
-                            >
-                              <BarChart2 className="w-4 h-4" />
-                              <span>Ver estatísticas</span>
-                            </button>
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 setSelectedSharePost(post);
+                                 setIsShareModalOpen(true);
+                                 setActiveMenuPostId(null);
+                               }}
+                               className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                             >
+                               <Send className="w-4 h-4" />
+                               <span>Compartilhar post</span>
+                             </button>
                           </div>
                         )}
                       </div>
@@ -795,7 +792,7 @@ export default function Profile() {
                         className="flex items-center space-x-2 hover:text-black transition-colors group"
                       >
                         <div className="p-2 group-hover:bg-black/5 rounded-full">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                          <MessageCircle className="w-5 h-5" />
                         </div>
                         <span className="text-sm">{post.repliesCount || 0}</span>
                       </button>
@@ -807,7 +804,7 @@ export default function Profile() {
                           whileTap={{ scale: 0.8 }}
                           className="p-2 group-hover:bg-green-50 rounded-full"
                         >
-                          <svg className="w-5 h-5" fill={post.reposts?.includes(userProfile?.uid) ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                          <Repeat className={`w-5 h-5 ${post.reposts?.includes(userProfile?.uid) ? 'stroke-[3px]' : ''}`} />
                         </motion.div>
                         <span className="text-sm">{post.repostsCount || 0}</span>
                       </button>
@@ -819,23 +816,18 @@ export default function Profile() {
                           whileTap={{ scale: 0.8 }}
                           className="p-2 group-hover:bg-red-50 rounded-full"
                         >
-                          <svg className="w-5 h-5" fill={post.likes?.includes(userProfile?.uid) ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                          <Heart className={`w-5 h-5 ${post.likes?.includes(userProfile?.uid) ? 'fill-current' : ''}`} />
                         </motion.div>
                         <span className="text-sm">{post.likesCount || 0}</span>
                       </button>
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();
-                          setSelectedStatsPostId(post.id);
-                          setIsStatsModalOpen(true);
+                          setSelectedSharePost(post);
+                          setIsShareModalOpen(true);
                         }}
                         className="flex items-center space-x-2 hover:text-black transition-colors group"
                       >
-                        <div className="p-2 group-hover:bg-black/5 rounded-full">
-                          <BarChart2 className="w-5 h-5" />
-                        </div>
-                      </button>
-                      <button className="flex items-center space-x-2 hover:text-black transition-colors group">
                         <div className="p-2 group-hover:bg-black/5 rounded-full">
                           <Send className="w-5 h-5" />
                         </div>
@@ -898,88 +890,14 @@ export default function Profile() {
         message={confirmModal.message}
       />
 
-      {/* Stats Modal (Real-time) */}
-      <AnimatePresence>
-        {isStatsModalOpen && selectedStatsPostId && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl"
-            >
-              {(() => {
-                const livePost = posts.find(p => p.id === selectedStatsPostId);
-                if (!livePost) return <p className="text-center text-gray-500">Post não encontrado...</p>;
-
-                return (
-                  <>
-                    <div className="flex justify-between items-center mb-6">
-                      <h3 className="text-xl font-bold">Estatísticas Avançadas</h3>
-                      <div className="bg-blue-100 text-blue-600 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider">
-                        Premium
-                      </div>
-                    </div>
-
-                    <div className="space-y-6">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-gray-50 p-4 rounded-xl">
-                          <p className="text-xs text-gray-500 mb-1">Visualizações</p>
-                          <p className="text-xl font-bold">{(livePost.likesCount || 0) * 12 + (livePost.repostsCount || 0) * 25 + 142}</p>
-                        </div>
-                        <div className="bg-gray-50 p-4 rounded-xl">
-                          <p className="text-xs text-gray-500 mb-1">Engajamento</p>
-                          <p className="text-xl font-bold text-blue-600">
-                            {(((livePost.likesCount || 0) + (livePost.repostsCount || 0) + (livePost.repliesCount || 0)) / 10 + 2.4).toFixed(1)}%
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                          <div className="flex items-center space-x-3">
-                            <div className="bg-white p-2 rounded-lg shadow-sm">
-                              <UserIcon className="w-4 h-4 text-gray-600" />
-                            </div>
-                            <span className="text-sm font-medium">Cliques no perfil</span>
-                          </div>
-                          <span className="font-bold">{(livePost.likesCount || 0) * 2 + 3}</span>
-                        </div>
-
-                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                          <div className="flex items-center space-x-3">
-                            <div className="bg-white p-2 rounded-lg shadow-sm">
-                              <BarChart2 className="w-4 h-4 text-gray-600" />
-                            </div>
-                            <span className="text-sm font-medium">Alcance orgânico</span>
-                          </div>
-                          <span className="font-bold">94%</span>
-                        </div>
-                      </div>
-
-                      <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
-                        <p className="text-xs text-blue-700 leading-relaxed">
-                          Este post está performando <span className="font-bold">15% melhor</span> que a média dos seus posts recentes.
-                        </p>
-                      </div>
-                    </div>
-                  </>
-                );
-              })()}
-
-              <button 
-                onClick={() => {
-                  setIsStatsModalOpen(false);
-                  setSelectedStatsPostId(null);
-                }}
-                className="mt-8 w-full bg-black text-white py-3 rounded-xl font-bold hover:bg-gray-800 transition-colors shadow-lg shadow-black/10"
-              >
-                Fechar
-              </button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <SharePostModal 
+        isOpen={isShareModalOpen}
+        onClose={() => {
+          setIsShareModalOpen(false);
+          setSelectedSharePost(null);
+        }}
+        post={selectedSharePost}
+      />
 
       <ImageViewer 
         src={viewerImage?.src || null}
