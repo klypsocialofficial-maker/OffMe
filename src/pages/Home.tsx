@@ -11,6 +11,7 @@ import VerifiedBadge from '../components/VerifiedBadge';
 import PostContent from '../components/PostContent';
 import { uploadToImgBB } from '../lib/imgbb';
 import { motion, AnimatePresence } from 'motion/react';
+import { formatRelativeTime } from '../lib/dateUtils';
 
 enum OperationType {
   CREATE = 'create',
@@ -96,6 +97,7 @@ export default function Home() {
   const [displayedPosts, setDisplayedPosts] = useState<any[]>([]);
   const [pendingPostsCount, setPendingPostsCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const isInitialLoadRef = useRef(true);
   const displayedPostsRef = useRef<any[]>([]);
 
@@ -129,7 +131,7 @@ export default function Home() {
   const [editingPost, setEditingPost] = useState<any>(null);
   const [editContent, setEditContent] = useState('');
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
-  const [selectedStatsPost, setSelectedStatsPost] = useState<any>(null);
+  const [selectedStatsPostId, setSelectedStatsPostId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'info' | 'success' | 'error'; isOpen: boolean }>({
     message: '',
     type: 'info',
@@ -420,7 +422,7 @@ export default function Home() {
         {/* Feed Header & Tabs */}
         <div className="px-4 py-4 space-y-4">
           {/* Liquid Glass Tab Switcher */}
-          <div className="flex justify-center">
+          <div className="flex items-center justify-center relative">
             <nav className="liquid-glass-pill p-1 rounded-full flex items-center relative overflow-hidden border border-white/40 shadow-sm">
               <button
                 onClick={() => setActiveTab('foryou')}
@@ -453,23 +455,41 @@ export default function Home() {
                 Seguindo
               </button>
             </nav>
+
+            {/* Search Toggle Button */}
+            <button 
+              onClick={() => setIsSearchOpen(!isSearchOpen)}
+              className={`absolute right-0 p-2 rounded-full transition-all duration-300 ${isSearchOpen ? 'bg-black text-white' : 'hover:bg-black/5 text-gray-500'}`}
+            >
+              <Search className="w-5 h-5" />
+            </button>
           </div>
 
-          {/* Search Bar */}
-          <div className="px-4 pb-2">
-            <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="w-4 h-4 text-gray-400 group-focus-within:text-black transition-colors" />
-              </div>
-              <input
-                type="text"
-                placeholder="Pesquisar posts..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-2xl bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-black/5 focus:border-black outline-none transition-all text-sm"
-              />
-            </div>
-          </div>
+          {/* Search Bar (Animated) */}
+          <AnimatePresence>
+            {isSearchOpen && (
+              <motion.div 
+                initial={{ height: 0, opacity: 0, marginBottom: 0 }}
+                animate={{ height: 'auto', opacity: 1, marginBottom: 8 }}
+                exit={{ height: 0, opacity: 0, marginBottom: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search className="w-4 h-4 text-gray-400 group-focus-within:text-black transition-colors" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Pesquisar posts..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    autoFocus
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-2xl bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-black/5 focus:border-black outline-none transition-all text-sm"
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
@@ -614,34 +634,20 @@ export default function Home() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between w-full">
                       <div 
-                        className="flex items-center space-x-1 min-w-0 cursor-pointer"
+                        className="flex items-center space-x-1 min-w-0 cursor-pointer flex-1"
                         onClick={(e) => {
                           e.stopPropagation();
                           navigate(`/profile/${post.authorId}`);
                         }}
                       >
-                        <span className="font-bold truncate hover:underline">{post.authorName}</span>
+                        <span className="font-bold truncate hover:underline flex-shrink-0 max-w-[120px] sm:max-w-[180px]">{post.authorName}</span>
                         {(post.authorVerified || post.authorUsername === 'Rulio') && <VerifiedBadge className="w-4 h-4 text-black flex-shrink-0" />}
-                        <span className="text-gray-500 truncate">@{post.authorUsername}</span>
-                        {post.authorId !== userProfile?.uid && (
-                          <>
-                            <span className="text-gray-500">·</span>
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleFollowClick(post.authorId, post.authorName, post.authorPhoto);
-                              }}
-                              className={`text-sm font-bold hover:underline ${userProfile?.following?.includes(post.authorId) ? 'text-gray-500' : 'text-black'}`}
-                            >
-                              {userProfile?.following?.includes(post.authorId) ? 'Seguindo' : 'Seguir'}
-                            </button>
-                          </>
-                        )}
-                        <span className="text-gray-500">·</span>
-                        <span className="text-gray-500 text-sm">
-                          {post.createdAt?.toDate ? new Date(post.createdAt.toDate()).toLocaleDateString() : 'Agora mesmo'}
+                        <span className="text-gray-500 truncate flex-shrink min-w-0">@{post.authorUsername}</span>
+                        <span className="text-gray-500 flex-shrink-0">·</span>
+                        <span className="text-gray-500 text-sm flex-shrink-0">
+                          {post.createdAt?.toDate ? formatRelativeTime(post.createdAt.toDate()) : 'Agora'}
                         </span>
-                        {post.isEdited && <span className="text-gray-400 text-xs">(editado)</span>}
+                        {post.isEdited && <span className="text-gray-400 text-xs flex-shrink-0">(editado)</span>}
                       </div>
                       
                       <div className="relative">
@@ -697,7 +703,7 @@ export default function Home() {
                             <button 
                               onClick={() => {
                                 if (userProfile?.isPremium) {
-                                  setSelectedStatsPost(post);
+                                  setSelectedStatsPostId(post.id);
                                   setIsStatsModalOpen(true);
                                   setActiveMenuPostId(null);
                                 } else {
@@ -809,7 +815,7 @@ export default function Home() {
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();
-                          setSelectedStatsPost(post);
+                          setSelectedStatsPostId(post.id);
                           setIsStatsModalOpen(true);
                         }}
                         className="flex items-center space-x-2 hover:text-black transition-colors group"
@@ -860,9 +866,9 @@ export default function Home() {
           replyTo={replyToPost}
         />
 
-        {/* Stats Modal */}
+        {/* Stats Modal (Real-time) */}
         <AnimatePresence>
-          {isStatsModalOpen && selectedStatsPost && (
+          {isStatsModalOpen && selectedStatsPostId && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
               <motion.div 
                 initial={{ scale: 0.9, opacity: 0 }}
@@ -870,60 +876,69 @@ export default function Home() {
                 exit={{ scale: 0.9, opacity: 0 }}
                 className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl"
               >
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-xl font-bold">Estatísticas Avançadas</h3>
-                  <div className="bg-blue-100 text-blue-600 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider">
-                    Premium
-                  </div>
-                </div>
+                {(() => {
+                  const livePost = displayedPosts.find(p => p.id === selectedStatsPostId);
+                  if (!livePost) return <p className="text-center text-gray-500">Post não encontrado...</p>;
 
-                <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-gray-50 p-4 rounded-xl">
-                      <p className="text-xs text-gray-500 mb-1">Visualizações</p>
-                      <p className="text-xl font-bold">{(selectedStatsPost.likesCount || 0) * 12 + (selectedStatsPost.repostsCount || 0) * 25 + 142}</p>
-                    </div>
-                    <div className="bg-gray-50 p-4 rounded-xl">
-                      <p className="text-xs text-gray-500 mb-1">Engajamento</p>
-                      <p className="text-xl font-bold text-blue-600">
-                        {(((selectedStatsPost.likesCount || 0) + (selectedStatsPost.repostsCount || 0) + (selectedStatsPost.repliesCount || 0)) / 10 + 2.4).toFixed(1)}%
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                      <div className="flex items-center space-x-3">
-                        <div className="bg-white p-2 rounded-lg shadow-sm">
-                          <UserIcon className="w-4 h-4 text-gray-600" />
+                  return (
+                    <>
+                      <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-xl font-bold">Estatísticas Avançadas</h3>
+                        <div className="bg-blue-100 text-blue-600 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider">
+                          Premium
                         </div>
-                        <span className="text-sm font-medium">Cliques no perfil</span>
                       </div>
-                      <span className="font-bold">{(selectedStatsPost.likesCount || 0) * 2 + 3}</span>
-                    </div>
 
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                      <div className="flex items-center space-x-3">
-                        <div className="bg-white p-2 rounded-lg shadow-sm">
-                          <Repeat className="w-4 h-4 text-gray-600" />
+                      <div className="space-y-6">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="bg-gray-50 p-4 rounded-xl">
+                            <p className="text-xs text-gray-500 mb-1">Visualizações</p>
+                            <p className="text-xl font-bold">{(livePost.likesCount || 0) * 12 + (livePost.repostsCount || 0) * 25 + 142}</p>
+                          </div>
+                          <div className="bg-gray-50 p-4 rounded-xl">
+                            <p className="text-xs text-gray-500 mb-1">Engajamento</p>
+                            <p className="text-xl font-bold text-blue-600">
+                              {(((livePost.likesCount || 0) + (livePost.repostsCount || 0) + (livePost.repliesCount || 0)) / 10 + 2.4).toFixed(1)}%
+                            </p>
+                          </div>
                         </div>
-                        <span className="text-sm font-medium">Alcance orgânico</span>
-                      </div>
-                      <span className="font-bold">94%</span>
-                    </div>
-                  </div>
 
-                  <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
-                    <p className="text-xs text-blue-700 leading-relaxed">
-                      Este post está performando <span className="font-bold">15% melhor</span> que a média dos seus posts recentes.
-                    </p>
-                  </div>
-                </div>
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                            <div className="flex items-center space-x-3">
+                              <div className="bg-white p-2 rounded-lg shadow-sm">
+                                <UserIcon className="w-4 h-4 text-gray-600" />
+                              </div>
+                              <span className="text-sm font-medium">Cliques no perfil</span>
+                            </div>
+                            <span className="font-bold">{(livePost.likesCount || 0) * 2 + 3}</span>
+                          </div>
+
+                          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                            <div className="flex items-center space-x-3">
+                              <div className="bg-white p-2 rounded-lg shadow-sm">
+                                <Repeat className="w-4 h-4 text-gray-600" />
+                              </div>
+                              <span className="text-sm font-medium">Alcance orgânico</span>
+                            </div>
+                            <span className="font-bold">94%</span>
+                          </div>
+                        </div>
+
+                        <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                          <p className="text-xs text-blue-700 leading-relaxed">
+                            Este post está performando <span className="font-bold">15% melhor</span> que a média dos seus posts recentes.
+                          </p>
+                        </div>
+                      </div>
+                    </>
+                );
+              })()}
 
                 <button 
                   onClick={() => {
                     setIsStatsModalOpen(false);
-                    setSelectedStatsPost(null);
+                    setSelectedStatsPostId(null);
                   }}
                   className="mt-8 w-full bg-black text-white py-3 rounded-xl font-bold hover:bg-gray-800 transition-colors shadow-lg shadow-black/10"
                 >

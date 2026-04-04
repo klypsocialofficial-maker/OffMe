@@ -7,6 +7,7 @@ import { User as UserIcon, ArrowLeft, MoreHorizontal, Trash2, Edit2, BarChart2, 
 import VerifiedBadge from '../components/VerifiedBadge';
 import PostContent from '../components/PostContent';
 import { motion, AnimatePresence } from 'motion/react';
+import { formatRelativeTime } from '../lib/dateUtils';
 import CreatePostModal from '../components/CreatePostModal';
 import Toast from '../components/Toast';
 import ConfirmModal from '../components/ConfirmModal';
@@ -77,7 +78,7 @@ export default function PostDetail() {
   const [editingPost, setEditingPost] = useState<any | null>(null);
   const [editContent, setEditContent] = useState('');
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
-  const [selectedStatsPost, setSelectedStatsPost] = useState<any>(null);
+  const [selectedStatsPostId, setSelectedStatsPostId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'info' | 'success' | 'error'; isOpen: boolean }>({
     message: '',
     type: 'info',
@@ -316,12 +317,16 @@ export default function PostDetail() {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between">
-                <div>
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center space-x-1">
-                    <div className="font-bold text-lg leading-tight">{post.authorName}</div>
+                    <div className="font-bold text-lg leading-tight truncate max-w-[150px] sm:max-w-[250px]">{post.authorName}</div>
                     {(post.authorVerified || post.authorUsername === 'Rulio') && <VerifiedBadge />}
+                    <span className="text-gray-500 text-sm">·</span>
+                    <span className="text-gray-500 text-sm">
+                      {post.createdAt?.toDate ? formatRelativeTime(post.createdAt.toDate()) : 'Agora'}
+                    </span>
                   </div>
-                  <div className="text-gray-500">@{post.authorUsername}</div>
+                  <div className="text-gray-500 truncate">@{post.authorUsername}</div>
                 </div>
                 <div className="relative">
                   <button 
@@ -457,7 +462,7 @@ export default function PostDetail() {
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
-                  setSelectedStatsPost(post);
+                  setSelectedStatsPostId(post.id);
                   setIsStatsModalOpen(true);
                 }}
                 className="flex items-center space-x-2 hover:text-blue-500 transition-colors p-2 rounded-full hover:bg-blue-50"
@@ -525,10 +530,14 @@ export default function PostDetail() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-1">
-                          <span className="font-bold truncate">{reply.authorName}</span>
+                        <div className="flex items-center space-x-1 flex-1 min-w-0">
+                          <span className="font-bold truncate max-w-[100px] sm:max-w-[150px]">{reply.authorName}</span>
                           {(reply.authorVerified || reply.authorUsername === 'Rulio') && <VerifiedBadge />}
-                          <span className="text-gray-500 truncate text-sm">@{reply.authorUsername}</span>
+                          <span className="text-gray-500 truncate text-sm flex-shrink min-w-0">@{reply.authorUsername}</span>
+                          <span className="text-gray-500 flex-shrink-0">·</span>
+                          <span className="text-gray-500 flex-shrink-0 text-sm">
+                            {reply.createdAt?.toDate ? formatRelativeTime(reply.createdAt.toDate()) : 'Agora'}
+                          </span>
                         </div>
                         <div className="relative">
                           <button 
@@ -654,7 +663,7 @@ export default function PostDetail() {
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
-                            setSelectedStatsPost(reply);
+                            setSelectedStatsPostId(reply.id);
                             setIsStatsModalOpen(true);
                           }}
                           className="flex items-center space-x-1 hover:text-blue-500 transition-colors"
@@ -704,9 +713,9 @@ export default function PostDetail() {
         message={confirmModal.message}
       />
 
-      {/* Stats Modal */}
+      {/* Stats Modal (Real-time) */}
       <AnimatePresence>
-        {isStatsModalOpen && selectedStatsPost && (
+        {isStatsModalOpen && selectedStatsPostId && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
             <motion.div 
               initial={{ scale: 0.9, opacity: 0 }}
@@ -714,60 +723,70 @@ export default function PostDetail() {
               exit={{ scale: 0.9, opacity: 0 }}
               className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl"
             >
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold">Estatísticas Avançadas</h3>
-                <div className="bg-blue-100 text-blue-600 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider">
-                  Premium
-                </div>
-              </div>
+              {(() => {
+                // Check if it's the main post or a reply
+                const livePost = post?.id === selectedStatsPostId ? post : replies.find(r => r.id === selectedStatsPostId);
+                if (!livePost) return <p className="text-center text-gray-500">Post não encontrado...</p>;
 
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-gray-50 p-4 rounded-xl">
-                    <p className="text-xs text-gray-500 mb-1">Visualizações</p>
-                    <p className="text-xl font-bold">{(selectedStatsPost.likesCount || 0) * 12 + (selectedStatsPost.repostsCount || 0) * 25 + 142}</p>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-xl">
-                    <p className="text-xs text-gray-500 mb-1">Engajamento</p>
-                    <p className="text-xl font-bold text-blue-600">
-                      {(((selectedStatsPost.likesCount || 0) + (selectedStatsPost.repostsCount || 0) + (selectedStatsPost.repliesCount || 0)) / 10 + 2.4).toFixed(1)}%
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                    <div className="flex items-center space-x-3">
-                      <div className="bg-white p-2 rounded-lg shadow-sm">
-                        <UserIcon className="w-4 h-4 text-gray-600" />
+                return (
+                  <>
+                    <div className="flex justify-between items-center mb-6">
+                      <h3 className="text-xl font-bold">Estatísticas Avançadas</h3>
+                      <div className="bg-blue-100 text-blue-600 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider">
+                        Premium
                       </div>
-                      <span className="text-sm font-medium">Cliques no perfil</span>
                     </div>
-                    <span className="font-bold">{(selectedStatsPost.likesCount || 0) * 2 + 3}</span>
-                  </div>
 
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                    <div className="flex items-center space-x-3">
-                      <div className="bg-white p-2 rounded-lg shadow-sm">
-                        <BarChart2 className="w-4 h-4 text-gray-600" />
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-gray-50 p-4 rounded-xl">
+                          <p className="text-xs text-gray-500 mb-1">Visualizações</p>
+                          <p className="text-xl font-bold">{(livePost.likesCount || 0) * 12 + (livePost.repostsCount || 0) * 25 + 142}</p>
+                        </div>
+                        <div className="bg-gray-50 p-4 rounded-xl">
+                          <p className="text-xs text-gray-500 mb-1">Engajamento</p>
+                          <p className="text-xl font-bold text-blue-600">
+                            {(((livePost.likesCount || 0) + (livePost.repostsCount || 0) + (livePost.repliesCount || 0)) / 10 + 2.4).toFixed(1)}%
+                          </p>
+                        </div>
                       </div>
-                      <span className="text-sm font-medium">Alcance orgânico</span>
-                    </div>
-                    <span className="font-bold">94%</span>
-                  </div>
-                </div>
 
-                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
-                  <p className="text-xs text-blue-700 leading-relaxed">
-                    Este post está performando <span className="font-bold">15% melhor</span> que a média dos seus posts recentes.
-                  </p>
-                </div>
-              </div>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                          <div className="flex items-center space-x-3">
+                            <div className="bg-white p-2 rounded-lg shadow-sm">
+                              <UserIcon className="w-4 h-4 text-gray-600" />
+                            </div>
+                            <span className="text-sm font-medium">Cliques no perfil</span>
+                          </div>
+                          <span className="font-bold">{(livePost.likesCount || 0) * 2 + 3}</span>
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                          <div className="flex items-center space-x-3">
+                            <div className="bg-white p-2 rounded-lg shadow-sm">
+                              <BarChart2 className="w-4 h-4 text-gray-600" />
+                            </div>
+                            <span className="text-sm font-medium">Alcance orgânico</span>
+                          </div>
+                          <span className="font-bold">94%</span>
+                        </div>
+                      </div>
+
+                      <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                        <p className="text-xs text-blue-700 leading-relaxed">
+                          Este post está performando <span className="font-bold">15% melhor</span> que a média dos seus posts recentes.
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
 
               <button 
                 onClick={() => {
                   setIsStatsModalOpen(false);
-                  setSelectedStatsPost(null);
+                  setSelectedStatsPostId(null);
                 }}
                 className="mt-8 w-full bg-black text-white py-3 rounded-xl font-bold hover:bg-gray-800 transition-colors shadow-lg shadow-black/10"
               >

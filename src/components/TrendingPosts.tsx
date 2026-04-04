@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { TrendingUp, Heart, Repeat } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -16,24 +16,22 @@ const TrendingPosts: React.FC<TrendingPostsProps> = ({ autoHide = false }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchTrending = async () => {
-      try {
-        const q = query(
-          collection(db, 'posts'),
-          orderBy('likesCount', 'desc'),
-          limit(5)
-        );
-        const snapshot = await getDocs(q);
-        const posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setTrendingPosts(posts);
-      } catch (error) {
-        console.error('Error fetching trending posts:', error);
-      }
-    };
+    if (!db) return;
 
-    fetchTrending();
-    const interval = setInterval(fetchTrending, 60000); // Refresh every minute
-    return () => clearInterval(interval);
+    const q = query(
+      collection(db, 'posts'),
+      orderBy('likesCount', 'desc'),
+      limit(5)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setTrendingPosts(posts);
+    }, (error) => {
+      console.error('Error fetching trending posts:', error);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
