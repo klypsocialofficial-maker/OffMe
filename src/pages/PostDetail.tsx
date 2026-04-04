@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { User as UserIcon, ArrowLeft, MoreHorizontal, Trash2, Edit2, BarChart2, Heart, Repeat, MessageCircle, Share2 } from 'lucide-react';
 import VerifiedBadge from '../components/VerifiedBadge';
 import PostContent from '../components/PostContent';
+import Poll from '../components/Poll';
 import { motion, AnimatePresence } from 'motion/react';
 import { formatRelativeTime } from '../lib/dateUtils';
 import CreatePostModal from '../components/CreatePostModal';
@@ -423,6 +424,10 @@ export default function PostDetail() {
               </>
             )}
             
+            {post.poll && (
+              <Poll post={post} handleFirestoreError={handleFirestoreError} OperationType={OperationType} />
+            )}
+            
             {post.imageUrl && (
               <div className="mt-4 rounded-2xl overflow-hidden border border-gray-100">
                 <img src={post.imageUrl} alt="Post attachment" className="w-full h-auto max-h-[500px] object-cover" />
@@ -621,6 +626,10 @@ export default function PostDetail() {
                           <PostContent content={reply.content} className="mt-1 text-gray-900" />
                           {reply.isEdited && <span className="text-gray-400 text-xs">(editado)</span>}
                         </>
+                      )}
+                      
+                      {reply.poll && (
+                        <Poll post={reply} handleFirestoreError={handleFirestoreError} OperationType={OperationType} />
                       )}
                       
                       {reply.imageUrl && (

@@ -8,6 +8,7 @@ import Toast from '../components/Toast';
 import ConfirmModal from '../components/ConfirmModal';
 import VerifiedBadge from '../components/VerifiedBadge';
 import PostContent from '../components/PostContent';
+import Poll from '../components/Poll';
 import ImageViewer from '../components/ImageViewer';
 import SharePostModal from '../components/SharePostModal';
 import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, arrayRemove, arrayUnion, addDoc, serverTimestamp, deleteDoc, getDocs } from 'firebase/firestore';
@@ -769,6 +770,11 @@ export default function Profile() {
                         )}
                         <PostContent content={post.content} className="mt-1 text-gray-900" />
                         {post.isEdited && <span className="text-gray-400 text-xs">(editado)</span>}
+                        
+                        {post.poll && (
+                          <Poll post={post} handleFirestoreError={handleFirestoreError} OperationType={OperationType} />
+                        )}
+
                         {post.imageUrl && (
                           <div 
                             className="mt-3 rounded-2xl overflow-hidden border border-gray-200 cursor-zoom-in"

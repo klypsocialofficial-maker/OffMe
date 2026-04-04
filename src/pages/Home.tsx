@@ -8,6 +8,7 @@ import CreatePostModal from '../components/CreatePostModal';
 import Toast from '../components/Toast';
 import VerifiedBadge from '../components/VerifiedBadge';
 import PostContent from '../components/PostContent';
+import Poll from '../components/Poll';
 import SharePostModal from '../components/SharePostModal';
 import ImageViewer from '../components/ImageViewer';
 import { uploadToImgBB } from '../lib/imgbb';
@@ -858,6 +859,11 @@ export default function Home() {
                         )}
                         <PostContent content={post.content} className="mt-1 text-gray-900" />
                         {post.isEdited && <span className="text-gray-400 text-xs">(editado)</span>}
+                        
+                        {post.poll && (
+                          <Poll post={post} handleFirestoreError={handleFirestoreError} OperationType={OperationType} />
+                        )}
+
                         {post.imageUrl && (
                           <div 
                             className="mt-3 rounded-2xl overflow-hidden border border-gray-200 cursor-zoom-in"
