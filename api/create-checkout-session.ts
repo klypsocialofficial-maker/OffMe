@@ -1,18 +1,18 @@
 import Stripe from 'stripe';
 
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-const stripe = stripeSecretKey ? new Stripe(stripeSecretKey, {
-  apiVersion: '2024-12-18.acacia',
-}) : null;
-
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  if (!stripe) {
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+  if (!stripeSecretKey) {
     return res.status(500).json({ error: 'Stripe is not configured. Please add STRIPE_SECRET_KEY to your environment variables.' });
   }
+
+  const stripe = new Stripe(stripeSecretKey, {
+    apiVersion: '2024-12-18.acacia',
+  });
 
   const { userId } = req.body;
   if (!userId) {

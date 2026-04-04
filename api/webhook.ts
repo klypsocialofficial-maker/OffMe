@@ -22,11 +22,6 @@ if (!getApps().length) {
   }
 }
 
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-const stripe = stripeSecretKey ? new Stripe(stripeSecretKey, {
-  apiVersion: '2024-12-18.acacia',
-}) : null;
-
 // Disable Vercel's default body parser to get the raw body for Stripe signature verification
 export const config = {
   api: {
@@ -39,9 +34,14 @@ export default async function handler(req: any, res: any) {
     return res.status(405).send('Method Not Allowed');
   }
 
-  if (!stripe) {
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+  if (!stripeSecretKey) {
     return res.status(500).send('Stripe not configured');
   }
+
+  const stripe = new Stripe(stripeSecretKey, {
+    apiVersion: '2024-12-18.acacia',
+  });
 
   // Read raw body
   const chunks = [];
