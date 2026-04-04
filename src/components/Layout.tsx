@@ -1,11 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Home as HomeIcon, Search, Bell, Mail, User as UserIcon, Bookmark, List, Zap, Settings } from 'lucide-react';
+import { LogOut, Home as HomeIcon, Search, Bell, Mail, User as UserIcon, Bookmark, List, Zap, Settings, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import VerifiedBadge from './VerifiedBadge';
+import CreatePostModal from './CreatePostModal';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, auth } from '../firebase';
+
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth?.currentUser?.uid,
+      email: auth?.currentUser?.email,
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
 
 const navItems = [
   { path: '/', icon: HomeIcon, label: 'Início' },
@@ -25,6 +49,13 @@ export default function Layout() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [replyToPost, setReplyToPost] = useState<any | null>(null);
+
+  const openCreateModal = (replyTo: any = null) => {
+    setReplyToPost(replyTo);
+    setIsCreateModalOpen(true);
+  };
 
   useEffect(() => {
     if (!userProfile?.uid || !db) return;
@@ -116,6 +147,14 @@ export default function Layout() {
               </Link>
             );
           })}
+          
+          <button 
+            onClick={() => openCreateModal()}
+            className="mt-6 w-full bg-black text-white rounded-full py-4 font-bold text-lg shadow-lg hover:bg-gray-800 transition-all active:scale-95 flex items-center justify-center space-x-2"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Postar</span>
+          </button>
         </nav>
 
         <div className="mt-auto">
@@ -155,10 +194,22 @@ export default function Layout() {
             transition={{ duration: 0.3, ease: "easeOut" }}
             className="h-full"
           >
-            <Outlet context={{ openDrawer }} />
+            <Outlet context={{ openDrawer, openCreateModal }} />
           </motion.div>
         </AnimatePresence>
       </main>
+
+      <CreatePostModal 
+        isOpen={isCreateModalOpen} 
+        onClose={() => {
+          setIsCreateModalOpen(false);
+          setReplyToPost(null);
+        }} 
+        userProfile={userProfile}
+        handleFirestoreError={handleFirestoreError}
+        OperationType={OperationType}
+        replyTo={replyToPost}
+      />
 
       {/* Mobile Bottom Navigation with Liquid Glass Floating Pill (iOS 26 Style) */}
       <div className="sm:hidden fixed bottom-8 left-1/2 -translate-x-1/2 w-[92%] max-w-md z-40 mobile-navbar-container transition-all duration-300">

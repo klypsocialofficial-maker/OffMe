@@ -14,15 +14,24 @@ export default function Settings() {
         <h1 className="text-xl font-bold">Configurações</h1>
       </div>
       <div className="space-y-4">
-        <div className="p-4 bg-white rounded-xl shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors">
+        <div 
+          onClick={() => navigate('/settings/account')}
+          className="p-4 bg-white rounded-xl shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors"
+        >
           <h3 className="font-bold">Sua conta</h3>
-          <p className="text-sm text-gray-500">Veja informações sobre sua conta, baixe um arquivo de seus dados ou saiba mais sobre as opções de desativação da conta.</p>
+          <p className="text-sm text-gray-500">Veja informações sobre sua conta, altere seu e-mail, senha ou nome de usuário.</p>
         </div>
-        <div className="p-4 bg-white rounded-xl shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors">
+        <div 
+          onClick={() => navigate('/settings/privacy')}
+          className="p-4 bg-white rounded-xl shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors"
+        >
           <h3 className="font-bold">Privacidade e segurança</h3>
           <p className="text-sm text-gray-500">Gerencie as informações que você vê e compartilha no OffMe.</p>
         </div>
-        <div className="p-4 bg-white rounded-xl shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors">
+        <div 
+          onClick={() => navigate('/settings/display')}
+          className="p-4 bg-white rounded-xl shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors"
+        >
           <h3 className="font-bold">Acessibilidade, exibição e idiomas</h3>
           <p className="text-sm text-gray-500">Gerencie como o conteúdo do OffMe é exibido para você.</p>
         </div>

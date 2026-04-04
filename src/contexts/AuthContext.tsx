@@ -6,9 +6,11 @@ import {
   signOut, 
   User,
   createUserWithEmailAndPassword,
-  signInWithEmailAndPassword
+  signInWithEmailAndPassword,
+  updateEmail,
+  updatePassword
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot, serverTimestamp, collection, query, where, getDocs, updateDoc } from 'firebase/firestore';
 
 enum OperationType {
   CREATE = 'create',
@@ -86,6 +88,9 @@ interface AuthContextType {
   logout: () => Promise<void>;
   signUpWithEmail: (email: string, pass: string, username: string, name: string) => Promise<void>;
   loginWithEmail: (email: string, pass: string) => Promise<void>;
+  updateUserEmail: (email: string) => Promise<void>;
+  updateUserPassword: (password: string) => Promise<void>;
+  updateUserUsername: (username: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -211,6 +216,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await signInWithEmailAndPassword(auth, email, pass);
   };
 
+  const updateUserEmail = async (email: string) => {
+    if (!auth || !auth.currentUser) throw new Error("User not authenticated");
+    await updateEmail(auth.currentUser, email);
+    await updateDoc(doc(db, 'users', auth.currentUser.uid), { email });
+  };
+
+  const updateUserPassword = async (password: string) => {
+    if (!auth || !auth.currentUser) throw new Error("User not authenticated");
+    await updatePassword(auth.currentUser, password);
+  };
+
+  const updateUserUsername = async (username: string) => {
+    if (!auth || !auth.currentUser) throw new Error("User not authenticated");
+    
+    // Check if username is taken
+    const q = query(collection(db, 'users'), where('username', '==', username));
+    const snapshot = await getDocs(q);
+    if (!snapshot.empty && snapshot.docs[0].id !== auth.currentUser.uid) {
+      throw new Error("Username already taken");
+    }
+
+    await updateDoc(doc(db, 'users', auth.currentUser.uid), { username });
+  };
+
   const logout = () => {
     if (!auth) throw new Error("Firebase not initialized");
     return signOut(auth);
@@ -223,7 +252,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loginWithGoogle,
     logout,
     signUpWithEmail,
-    loginWithEmail
+    loginWithEmail,
+    updateUserEmail,
+    updateUserPassword,
+    updateUserUsername
   };
 
   return (

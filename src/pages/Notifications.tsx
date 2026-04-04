@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { collection, query, where, orderBy, onSnapshot, limit, doc, updateDoc, writeBatch, getDocs } from 'firebase/firestore';
 import { db, auth } from '../firebase';
+import { motion, AnimatePresence } from 'motion/react';
 
 enum OperationType {
   CREATE = 'create',
@@ -63,15 +64,16 @@ export default function Notifications() {
   const { openDrawer } = useOutletContext<{ openDrawer: () => void }>();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'all' | 'verified'>('all');
 
   useEffect(() => {
     if (!userProfile?.uid || !db) return;
 
-    const q = query(
+    let q = query(
       collection(db, 'notifications'),
       where('recipientId', '==', userProfile.uid),
       orderBy('createdAt', 'desc'),
-      limit(20)
+      limit(40)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -111,12 +113,48 @@ export default function Notifications() {
         </button>
         <h1 className="text-xl font-bold">Notificações</h1>
       </div>
+
+      <div className="flex justify-center border-b border-gray-100 bg-white/40 backdrop-blur-3xl py-3">
+        <nav className="liquid-glass-pill p-1 rounded-full flex items-center relative overflow-hidden border border-white/40 shadow-sm">
+          <button 
+            onClick={() => setActiveTab('all')}
+            className={`relative px-6 py-2 text-xs font-black uppercase tracking-widest transition-colors duration-300 z-10 ${
+              activeTab === 'all' ? 'text-black' : 'text-gray-500 hover:text-black'
+            }`}
+          >
+            {activeTab === 'all' && (
+              <motion.div
+                layoutId="notif-tab-blob"
+                className="absolute inset-0 bg-white/60 rounded-full -z-10 shadow-sm"
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              />
+            )}
+            Tudo
+          </button>
+          <button 
+            onClick={() => setActiveTab('verified')}
+            className={`relative px-6 py-2 text-xs font-black uppercase tracking-widest transition-colors duration-300 z-10 ${
+              activeTab === 'verified' ? 'text-black' : 'text-gray-500 hover:text-black'
+            }`}
+          >
+            {activeTab === 'verified' && (
+              <motion.div
+                layoutId="notif-tab-blob"
+                className="absolute inset-0 bg-white/60 rounded-full -z-10 shadow-sm"
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              />
+            )}
+            Verificados
+          </button>
+        </nav>
+      </div>
+
       <div className="flex-1 overflow-y-auto">
         {loading ? (
           <div className="p-8 text-center text-gray-500">Carregando...</div>
-        ) : notifications.length > 0 ? (
+        ) : (activeTab === 'verified' ? notifications.filter(n => n.senderVerified || n.senderUsername === 'Rulio') : notifications).length > 0 ? (
           <div className="divide-y divide-gray-100">
-            {notifications.map(notification => (
+            {(activeTab === 'verified' ? notifications.filter(n => n.senderVerified || n.senderUsername === 'Rulio') : notifications).map(notification => (
               <div 
                 key={notification.id} 
                 onClick={() => {

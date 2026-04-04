@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { User as UserIcon, Send, MoreHorizontal, Trash2, Edit2, BarChart2, Plus, Heart, Repeat, MessageCircle, ArrowUp, Search } from 'lucide-react';
+import { User as UserIcon, Send, MoreHorizontal, Trash2, Edit2, BarChart2, Plus, Heart, Repeat, MessageCircle, ArrowUp, Search, X, Image as ImageIcon } from 'lucide-react';
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, where, deleteDoc, doc, updateDoc, limit, arrayUnion, arrayRemove, startAfter, getDocs, QueryDocumentSnapshot } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { useOutletContext, useNavigate } from 'react-router-dom';
@@ -91,7 +91,7 @@ const PostSkeleton = () => (
 export default function Home() {
   const { userProfile, logout } = useAuth();
   const navigate = useNavigate();
-  const { openDrawer } = useOutletContext<{ openDrawer: () => void }>();
+  const { openDrawer, openCreateModal } = useOutletContext<{ openDrawer: () => void; openCreateModal: (replyTo?: any) => void }>();
   const [activeTab, setActiveTab] = useState<'foryou' | 'following'>('foryou');
   const [fetchedPosts, setFetchedPosts] = useState<any[]>([]);
   const [displayedPosts, setDisplayedPosts] = useState<any[]>([]);
@@ -113,10 +113,12 @@ export default function Home() {
   }, [activeTab]);
 
   const [newPost, setNewPost] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [activeMenuPostId, setActiveMenuPostId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const handleClickOutside = () => {
@@ -239,12 +241,18 @@ export default function Home() {
 
   const handlePost = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPost.trim() || !userProfile || !db) return;
+    if ((!newPost.trim() && !imageFile) || !userProfile || !db) return;
 
     try {
       setLoading(true);
+      let imageUrl = null;
+      if (imageFile) {
+        imageUrl = await uploadToImgBB(imageFile);
+      }
+
       await addDoc(collection(db, 'posts'), {
-        content: newPost,
+        content: newPost.trim(),
+        imageUrl,
         authorId: userProfile.uid,
         authorName: userProfile.displayName || '',
         authorUsername: userProfile.username || '',
@@ -258,11 +266,28 @@ export default function Home() {
         reposts: []
       });
       setNewPost('');
+      setImageFile(null);
+      setImagePreview(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, 'posts');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleDeletePost = async (postId: string) => {
@@ -521,6 +546,68 @@ export default function Home() {
 
       <TrendingPosts autoHide={true} />
 
+      {/* Inline Post Input (Desktop/Tablet) */}
+      <div className="hidden sm:block px-4 py-4 border-b border-gray-100/50 bg-white/40 backdrop-blur-md">
+        <div className="flex space-x-4">
+          <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 border border-gray-100">
+            {userProfile?.photoURL ? (
+              <img src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full object-cover" />
+            ) : (
+              <UserIcon className="w-full h-full p-2 text-gray-400" />
+            )}
+          </div>
+          <div className="flex-1">
+            <textarea
+              value={newPost}
+              onChange={(e) => setNewPost(e.target.value)}
+              placeholder="O que está acontecendo?"
+              className="w-full bg-transparent text-lg outline-none resize-none min-h-[60px] placeholder-gray-400 py-2"
+            />
+            
+            {imagePreview && (
+              <div className="relative mt-2 mb-4 rounded-2xl overflow-hidden border border-gray-100 shadow-sm group inline-block">
+                <button
+                  onClick={removeImage}
+                  className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-md transition-all z-10"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+                <img src={imagePreview} alt="Preview" className="max-h-80 w-auto rounded-2xl object-cover" />
+              </div>
+            )}
+
+            <div className="flex items-center justify-between pt-3 border-t border-gray-100/50">
+              <div className="flex items-center space-x-1">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  ref={fileInputRef}
+                  onChange={handleImageChange}
+                />
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="p-2 text-black hover:bg-black/5 rounded-full transition-colors"
+                  title="Adicionar imagem"
+                >
+                  <ImageIcon className="w-5 h-5" />
+                </button>
+                <button className="p-2 text-black hover:bg-black/5 rounded-full transition-colors">
+                  <BarChart2 className="w-5 h-5" />
+                </button>
+              </div>
+              <button
+                onClick={handlePost}
+                disabled={(!newPost.trim() && !imageFile) || loading || newPost.length > 1000}
+                className="bg-black text-white px-6 py-2 rounded-full font-bold hover:bg-gray-800 disabled:bg-gray-300 disabled:text-white transition-all active:scale-95"
+              >
+                {loading ? 'Postando...' : 'Postar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
         {/* Posts List */}
         <div 
           role="tabpanel" 
@@ -588,8 +675,7 @@ export default function Home() {
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();
-                          setReplyToPost(post);
-                          setIsCreateModalOpen(true);
+                          openCreateModal(post);
                         }}
                         className="p-2 hover:bg-black/5 text-gray-500 hover:text-black rounded-full transition-colors"
                         title="Responder"
@@ -772,8 +858,7 @@ export default function Home() {
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();
-                          setReplyToPost(post);
-                          setIsCreateModalOpen(true);
+                          openCreateModal(post);
                         }}
                         className="flex items-center space-x-2 hover:text-black transition-colors group"
                       >
@@ -848,23 +933,11 @@ export default function Home() {
         </div>
 
         <button
-          onClick={() => setIsCreateModalOpen(true)}
+          onClick={() => openCreateModal()}
           className="sm:hidden fixed bottom-32 right-6 w-14 h-14 bg-black text-white rounded-full shadow-2xl flex items-center justify-center hover:bg-gray-900 transition-colors z-[100] mobile-fab transition-all duration-300"
         >
           <Plus className="w-6 h-6" />
         </button>
-
-        <CreatePostModal 
-          isOpen={isCreateModalOpen} 
-          onClose={() => {
-            setIsCreateModalOpen(false);
-            setReplyToPost(null);
-          }} 
-          userProfile={userProfile}
-          handleFirestoreError={handleFirestoreError}
-          OperationType={OperationType}
-          replyTo={replyToPost}
-        />
 
         {/* Stats Modal (Real-time) */}
         <AnimatePresence>
