@@ -13,6 +13,7 @@ import Poll from '../components/Poll';
 import SharePostModal from '../components/SharePostModal';
 import ImageViewer from '../components/ImageViewer';
 import { uploadToImgBB } from '../lib/imgbb';
+import PullToRefresh from '../components/PullToRefresh';
 import { motion, AnimatePresence } from 'motion/react';
 import { formatRelativeTime } from '../lib/dateUtils';
 
@@ -633,9 +634,14 @@ export default function Home() {
           tabIndex={0}
           className="focus-visible:outline-none pt-4"
         >
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
+          <PullToRefresh onRefresh={async () => {
+            setDisplayedPosts(fetchedPosts);
+            setPendingPostsCount(0);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
@@ -719,7 +725,10 @@ export default function Home() {
                       >
                         <Repeat className="w-4 h-4" />
                       </button>
-                      <button 
+                      <motion.button
+                        whileTap={{ scale: 1.3 }}
+                        animate={{ scale: post.likes?.includes(userProfile?.uid) ? 1.1 : 1 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 17 }}
                         onClick={(e) => {
                           e.stopPropagation();
                           handleLikePost(post);
@@ -728,7 +737,7 @@ export default function Home() {
                         title="Curtir"
                       >
                         <Heart className={`w-4 h-4 ${post.likes?.includes(userProfile?.uid) ? 'fill-current' : ''}`} />
-                      </button>
+                      </motion.button>
                     </div>
 
                     <div 
@@ -958,6 +967,7 @@ export default function Home() {
         )}
             </motion.div>
           </AnimatePresence>
+          </PullToRefresh>
         </div>
 
         <button

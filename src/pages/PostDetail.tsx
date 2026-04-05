@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { User as UserIcon, ArrowLeft, MoreHorizontal, Trash2, Edit2, BarChart2, Heart, Repeat, MessageCircle, Share2 } from 'lucide-react';
 import VerifiedBadge from '../components/VerifiedBadge';
 import PostContent from '../components/PostContent';
+import QuotedPost from '../components/QuotedPost';
 import Poll from '../components/Poll';
 import { motion, AnimatePresence } from 'motion/react';
 import { formatRelativeTime } from '../lib/dateUtils';
@@ -422,6 +423,7 @@ export default function PostDetail() {
             ) : (
               <>
                 <PostContent content={post.content} className="text-xl text-gray-900 leading-relaxed" />
+                {post.quotedPostId && <QuotedPost post={post} />}
                 {post.isEdited && <span className="text-gray-400 text-xs">(editado)</span>}
               </>
             )}
@@ -460,12 +462,15 @@ export default function PostDetail() {
               >
                 <Repeat className={`w-6 h-6 ${post.reposts?.includes(userProfile?.uid) ? 'stroke-[3px]' : ''}`} />
               </button>
-              <button 
+              <motion.button 
+                whileTap={{ scale: 1.3 }}
+                animate={{ scale: post.likes?.includes(userProfile?.uid) ? 1.1 : 1 }}
+                transition={{ type: "spring", stiffness: 400, damping: 17 }}
                 onClick={() => handleLikePost(post)}
                 className={`flex items-center space-x-2 transition-colors p-2 rounded-full ${post.likes?.includes(userProfile?.uid) ? 'text-red-500 bg-red-50' : 'hover:text-red-500 hover:bg-red-50'}`}
               >
                 <Heart className={`w-6 h-6 ${post.likes?.includes(userProfile?.uid) ? 'fill-current' : ''}`} />
-              </button>
+              </motion.button>
               <button 
                 onClick={(e) => {
                   e.stopPropagation();

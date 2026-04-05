@@ -8,6 +8,7 @@ import Toast from '../components/Toast';
 import ConfirmModal from '../components/ConfirmModal';
 import VerifiedBadge from '../components/VerifiedBadge';
 import PostContent from '../components/PostContent';
+import QuotedPost from '../components/QuotedPost';
 import Poll from '../components/Poll';
 import ImageViewer from '../components/ImageViewer';
 import SharePostModal from '../components/SharePostModal';
@@ -772,6 +773,7 @@ export default function Profile() {
                           </div>
                         )}
                         <PostContent content={post.content} className="mt-1 text-gray-900" />
+                        {post.quotedPostId && <QuotedPost post={post} />}
                         {post.isEdited && <span className="text-gray-400 text-xs">(editado)</span>}
                         
                         {post.poll && (
