@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Zap, ArrowLeft, CheckCircle, Star, Briefcase, Shield } from 'lucide-react';
+import { Zap as ZapIcon, ArrowLeft, CheckCircle, Star, Briefcase, Shield } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -71,7 +71,7 @@ export default function Premium() {
         <button onClick={() => navigate(-1)} className="p-2 -ml-2 hover:bg-black/5 rounded-full transition-colors">
           <ArrowLeft className="w-6 h-6" />
         </button>
-        <Zap className="w-8 h-8 text-yellow-500" />
+        <ZapIcon className="w-8 h-8 text-yellow-500" />
         <h1 className="text-2xl font-bold">Planos Premium</h1>
       </div>
 

@@ -23,6 +23,7 @@ import Bookmarks from './pages/Bookmarks';
 import Lists from './pages/Lists';
 import Settings from './pages/Settings';
 import AccountSettings from './pages/AccountSettings';
+import DisplaySettings from './pages/DisplaySettings';
 import PWABadge from './components/PWABadge';
 import SplashScreen from './components/SplashScreen';
 
@@ -82,7 +83,7 @@ export default function App() {
             <Route path="settings" element={<Settings />} />
             <Route path="settings/account" element={<AccountSettings />} />
             <Route path="settings/privacy" element={<div className="p-8 text-center text-gray-500">Privacidade em breve...</div>} />
-            <Route path="settings/display" element={<div className="p-8 text-center text-gray-500">Exibição em breve...</div>} />
+            <Route path="settings/display" element={<DisplaySettings />} />
           </Route>
         </Routes>
         <PWABadge />

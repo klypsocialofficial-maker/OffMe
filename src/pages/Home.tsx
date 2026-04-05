@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { User as UserIcon, Send, MoreHorizontal, Trash2, Edit2, BarChart2, Plus, Heart, Repeat, MessageCircle, ArrowUp, Search, X, Image as ImageIcon } from 'lucide-react';
+import { User as UserIcon, Send, MoreHorizontal, Trash2, Edit2, BarChart2, Plus, Heart, Repeat, MessageCircle, ArrowUp, Search, X, Image as ImageIcon, Zap as ZapIcon } from 'lucide-react';
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, where, deleteDoc, doc, updateDoc, limit, arrayUnion, arrayRemove, startAfter, getDocs, QueryDocumentSnapshot } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { useOutletContext, useNavigate } from 'react-router-dom';
@@ -8,6 +8,7 @@ import CreatePostModal from '../components/CreatePostModal';
 import Toast from '../components/Toast';
 import VerifiedBadge from '../components/VerifiedBadge';
 import PostContent from '../components/PostContent';
+import QuotedPost from '../components/QuotedPost';
 import Poll from '../components/Poll';
 import SharePostModal from '../components/SharePostModal';
 import ImageViewer from '../components/ImageViewer';
@@ -93,7 +94,7 @@ const PostSkeleton = () => (
 export default function Home() {
   const { userProfile, logout } = useAuth();
   const navigate = useNavigate();
-  const { openDrawer, openCreateModal } = useOutletContext<{ openDrawer: () => void; openCreateModal: (replyTo?: any) => void }>();
+  const { openDrawer, openCreateModal } = useOutletContext<{ openDrawer: () => void; openCreateModal: (replyTo?: any, quotePost?: any) => void }>();
   const [activeTab, setActiveTab] = useState<'foryou' | 'following'>('foryou');
   const [fetchedPosts, setFetchedPosts] = useState<any[]>([]);
   const [displayedPosts, setDisplayedPosts] = useState<any[]>([]);
@@ -691,6 +692,16 @@ export default function Home() {
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();
+                          openCreateModal(null, post);
+                        }}
+                        className="p-2 hover:bg-black/5 text-gray-500 hover:text-black rounded-full transition-colors"
+                        title="Citar"
+                      >
+                        <ZapIcon className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
                           openCreateModal(post);
                         }}
                         className="p-2 hover:bg-black/5 text-gray-500 hover:text-black rounded-full transition-colors"
@@ -861,6 +872,7 @@ export default function Home() {
                           </div>
                         )}
                         <PostContent content={post.content} className="mt-1 text-gray-900" />
+                    {post.quotedPostId && <QuotedPost post={post} />}
                         {post.isEdited && <span className="text-gray-400 text-xs">(editado)</span>}
                         
                         {post.poll && (

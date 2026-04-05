@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Home as HomeIcon, Search, Bell, Mail, User as UserIcon, Bookmark, List, Zap, Settings, Plus } from 'lucide-react';
+import { LogOut, Home as HomeIcon, Search, Bell, Mail, User as UserIcon, Bookmark, List, Zap as ZapIcon, Settings, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import VerifiedBadge from './VerifiedBadge';
 import CreatePostModal from './CreatePostModal';
@@ -38,7 +38,7 @@ const navItems = [
   { path: '/notifications', icon: Bell, label: 'Notificações' },
   { path: '/messages', icon: Mail, label: 'Mensagens' },
   { path: '/profile', icon: UserIcon, label: 'Perfil' },
-  { path: '/premium', icon: Zap, label: 'Premium' },
+  { path: '/premium', icon: ZapIcon, label: 'Premium' },
   { path: '/bookmarks', icon: Bookmark, label: 'Itens salvos' },
   { path: '/lists', icon: List, label: 'Listas' },
   { path: '/settings', icon: Settings, label: 'Configurações' },
@@ -52,11 +52,13 @@ export default function Layout() {
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [replyToPost, setReplyToPost] = useState<any | null>(null);
+  const [quotePost, setQuotePost] = useState<any | null>(null);
   const [viewerImage, setViewerImage] = useState<{ src: string; alt: string } | null>(null);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
 
-  const openCreateModal = (replyTo: any = null) => {
+  const openCreateModal = (replyTo: any = null, quotePost: any = null) => {
     setReplyToPost(replyTo);
+    setQuotePost(quotePost);
     setIsCreateModalOpen(true);
   };
 
@@ -215,11 +217,13 @@ export default function Layout() {
         onClose={() => {
           setIsCreateModalOpen(false);
           setReplyToPost(null);
+          setQuotePost(null);
         }} 
         userProfile={userProfile}
         handleFirestoreError={handleFirestoreError}
         OperationType={OperationType}
         replyTo={replyToPost}
+        quotePost={quotePost}
       />
 
       {/* Mobile Bottom Navigation with Liquid Glass Floating Pill (iOS 26 Style) */}
@@ -359,7 +363,7 @@ export default function Layout() {
                 </Link>
                 <Link to="/premium" onClick={closeDrawer} className="liquid-glass-pill flex items-center px-4 py-3.5 text-lg font-bold rounded-2xl hover:bg-black/5 transition-all relative overflow-hidden group">
                   <div className="absolute inset-0 bg-gradient-to-r from-white/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  <Zap className="mr-4 w-6 h-6" /> Premium
+                  <ZapIcon className="mr-4 w-6 h-6" /> Premium
                 </Link>
                 <Link to="/bookmarks" onClick={closeDrawer} className="liquid-glass-pill flex items-center px-4 py-3.5 text-lg font-bold rounded-2xl hover:bg-black/5 transition-all relative overflow-hidden group">
                   <div className="absolute inset-0 bg-gradient-to-r from-white/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>

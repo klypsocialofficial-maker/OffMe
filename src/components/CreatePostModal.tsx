@@ -17,9 +17,10 @@ interface CreatePostModalProps {
   handleFirestoreError: (error: unknown, op: any, path: string) => void;
   OperationType: any;
   replyTo?: any;
+  quotePost?: any;
 }
 
-export default function CreatePostModal({ isOpen, onClose, userProfile, handleFirestoreError, OperationType, replyTo }: CreatePostModalProps) {
+export default function CreatePostModal({ isOpen, onClose, userProfile, handleFirestoreError, OperationType, replyTo, quotePost }: CreatePostModalProps) {
   const [content, setContent] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -134,7 +135,10 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
         replyToId: replyTo?.id || null,
         replyToUsername: replyTo?.authorUsername || null,
         replyToVerified: replyTo?.authorVerified || replyTo?.authorUsername === 'Rulio' || false,
-        threadId: replyTo?.threadId || replyTo?.id || null
+        threadId: replyTo?.threadId || replyTo?.id || null,
+        quotedPostId: quotePost?.id || null,
+        quotedPostContent: quotePost?.content || null,
+        quotedPostAuthor: quotePost?.authorName || null
       };
 
       if (hasValidPoll) {
@@ -278,6 +282,13 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
                       <span>Replying to</span>
                       <span className="text-black">@{replyTo.authorUsername}</span>
                       {(replyTo.authorVerified || replyTo.authorUsername === 'Rulio') && <VerifiedBadge className="w-3.5 h-3.5" tier={replyTo.authorPremiumTier} />}
+                    </div>
+                  )}
+
+                  {quotePost && (
+                    <div className="mb-4 p-3 border border-gray-200 rounded-xl bg-gray-50">
+                      <p className="font-bold text-sm">Citando post de {quotePost.authorName}</p>
+                      <p className="text-sm text-gray-600 truncate">{quotePost.content}</p>
                     </div>
                   )}
 
