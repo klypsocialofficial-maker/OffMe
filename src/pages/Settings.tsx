@@ -1,9 +1,28 @@
-import React from 'react';
-import { Settings as SettingsIcon, ArrowLeft } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Settings as SettingsIcon, ArrowLeft, Bell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { requestNotificationPermission } from '../hooks/usePushNotifications';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Settings() {
   const navigate = useNavigate();
+  const { userProfile } = useAuth();
+  const [notificationsEnabled, setNotificationsEnabled] = useState(Notification.permission === 'granted');
+
+  const toggleNotifications = async () => {
+    if (notificationsEnabled) {
+      // Cannot programmatically disable notifications, tell user to do it in browser settings
+      alert('Para desativar as notificações, altere as permissões nas configurações do seu navegador.');
+    } else {
+      if (userProfile?.uid) {
+        const success = await requestNotificationPermission(userProfile.uid);
+        if (success) {
+          setNotificationsEnabled(true);
+        }
+      }
+    }
+  };
+
   return (
     <div className="w-full h-full bg-white/50 p-4 pt-[calc(1rem+env(safe-area-inset-top))]">
       <div className="flex items-center space-x-3 mb-6 border-b border-gray-100 pb-4">
@@ -14,6 +33,23 @@ export default function Settings() {
         <h1 className="text-xl font-bold">Configurações</h1>
       </div>
       <div className="space-y-4">
+        <div className="p-4 bg-white rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <Bell className="w-5 h-5 text-gray-500" />
+            <div>
+              <h3 className="font-bold">Notificações Push</h3>
+              <p className="text-sm text-gray-500">Receba alertas de novas atividades.</p>
+            </div>
+          </div>
+          <button
+            onClick={toggleNotifications}
+            className={`px-4 py-2 rounded-full font-bold text-sm transition-colors ${
+              notificationsEnabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            {notificationsEnabled ? 'Ativado' : 'Ativar'}
+          </button>
+        </div>
         <div 
           onClick={() => navigate('/settings/account')}
           className="p-4 bg-white rounded-xl shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors"
