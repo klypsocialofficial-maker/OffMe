@@ -391,6 +391,17 @@ export default function Home() {
           read: false,
           createdAt: serverTimestamp()
         });
+        
+        // Trigger push notification
+        fetch('/api/send-push-notification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: post.authorId,
+            title: 'Novo Like',
+            body: `${userProfile.displayName} curtiu seu post.`
+          })
+        }).catch(console.error);
       }
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'posts');
@@ -688,8 +699,12 @@ export default function Home() {
                     
                     return filtered.map((post) => {
                       return (
-                        <article 
+                        <motion.article 
                           key={post.id} 
+                          initial={{ opacity: 0, y: 20 }}
+                          whileInView={{ opacity: 1, y: 0 }}
+                          viewport={{ once: true, margin: "-50px" }}
+                          transition={{ duration: 0.4, ease: "easeOut" }}
                           onClick={() => navigate(`/post/${post.id}`)}
                           className="group relative p-4 bg-white/60 backdrop-blur-md rounded-2xl shadow-sm border border-white/40 hover:bg-white/80 transition-all cursor-pointer flex space-x-4"
                         >
@@ -959,7 +974,7 @@ export default function Home() {
                       </button>
                     </div>
                   </div>
-                </article>
+                </motion.article>
                 );
               })
             })()}

@@ -5,6 +5,7 @@ import { LogOut, Home as HomeIcon, Search, Bell, Mail, User as UserIcon, Bookmar
 import { motion, AnimatePresence } from 'motion/react';
 import VerifiedBadge from './VerifiedBadge';
 import CreatePostModal from './CreatePostModal';
+import ConfirmModal from './ConfirmModal';
 import ImageViewer from './ImageViewer';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '../firebase';
@@ -51,6 +52,7 @@ export default function Layout() {
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [replyToPost, setReplyToPost] = useState<any | null>(null);
   const [quotePost, setQuotePost] = useState<any | null>(null);
   const [viewerImage, setViewerImage] = useState<{ src: string; alt: string } | null>(null);
@@ -169,7 +171,7 @@ export default function Layout() {
 
         <div className="mt-auto">
           <button 
-            onClick={logout}
+            onClick={() => setIsLogoutModalOpen(true)}
             className="flex items-center space-x-4 px-4 py-3 w-full hover:bg-red-500/10 rounded-2xl transition-all text-red-500"
           >
             <LogOut className="w-6 h-6" />
@@ -201,10 +203,10 @@ export default function Layout() {
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
+            exit={{ opacity: 0, y: -5 }}
+            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
             className="h-full"
           >
             <Outlet context={{ openDrawer, openCreateModal }} />
@@ -381,7 +383,7 @@ export default function Layout() {
               
               <div className="p-4 border-t border-gray-100 pb-[calc(1rem+env(safe-area-inset-bottom))]">
                 <button 
-                  onClick={() => { closeDrawer(); logout(); }} 
+                  onClick={() => { closeDrawer(); setIsLogoutModalOpen(true); }} 
                   className="flex items-center font-bold text-red-500 hover:bg-red-50 w-full p-3 rounded-xl transition-colors"
                 >
                   <LogOut className="mr-4 w-6 h-6" /> Sair
@@ -391,6 +393,17 @@ export default function Layout() {
           </>
         )}
       </AnimatePresence>
+
+      <ConfirmModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={logout}
+        title="Tem certeza que deseja sair?"
+        message="Você precisará fazer login novamente para acessar sua conta."
+        confirmText="Sair"
+        cancelText="Cancelar"
+        type="danger"
+      />
 
       <ImageViewer 
         src={viewerImage?.src || null}

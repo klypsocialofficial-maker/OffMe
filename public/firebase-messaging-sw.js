@@ -1,0 +1,19 @@
+import { initializeApp } from 'firebase/app';
+import { getMessaging, onBackgroundMessage } from 'firebase/messaging/sw';
+
+// Import the Firebase configuration
+import firebaseConfig from '../firebase-applet-config.json';
+
+const app = initializeApp(firebaseConfig);
+const messaging = getMessaging(app);
+
+onBackgroundMessage(messaging, (payload) => {
+  console.log('[firebase-messaging-sw.js] Received background message ', payload);
+  const notificationTitle = payload.notification?.title || 'New Notification';
+  const notificationOptions = {
+    body: payload.notification?.body,
+    icon: '/ghost.svg'
+  };
+
+  self.registration.showNotification(notificationTitle, notificationOptions);
+});

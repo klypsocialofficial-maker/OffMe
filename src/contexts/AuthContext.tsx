@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { auth, db, googleProvider } from '../firebase';
+import { auth, db, googleProvider, messaging } from '../firebase';
+import { getToken } from 'firebase/messaging';
 import { 
   onAuthStateChanged, 
   signInWithPopup, 
@@ -10,7 +11,7 @@ import {
   updateEmail,
   updatePassword
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, onSnapshot, serverTimestamp, collection, query, where, getDocs, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot, serverTimestamp, collection, query, where, getDocs, updateDoc, arrayUnion } from 'firebase/firestore';
 
 enum OperationType {
   CREATE = 'create',
@@ -120,6 +121,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user) {
+        // Request notification permission and save token
+        try {
+          const permission = await Notification.requestPermission();
+          if (permission === 'granted' && messaging) {
+            const token = await getToken(messaging, {
+              vapidKey: 'BFsixg_JwwMY4m3yMoZC9b-D4LIRsNcepSkQGkzCgBsnkdbGMmXdtjDCEbrgYYfSULAkTjo3WnPnHbXthoO69b0'
+            });
+            if (token) {
+              const userRef = doc(db, 'users', user.uid);
+              await updateDoc(userRef, {
+                fcmTokens: arrayUnion(token)
+              });
+            }
+          }
+        } catch (error) {
+          console.error('Error registering for push notifications:', error);
+        }
+
         const docRef = doc(db, 'users', user.uid);
         unsubscribeProfile = onSnapshot(docRef, (docSnap) => {
           if (docSnap.exists()) {
