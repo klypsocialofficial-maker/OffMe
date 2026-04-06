@@ -15,19 +15,16 @@ try {
   app = initializeApp(firebaseConfig);
   auth = getAuth(app);
   db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
-  
-  isSupported().then((supported) => {
-    if (supported) {
-      messaging = getMessaging(app);
-    } else {
-      console.warn("Firebase Messaging is not supported in this environment.");
-    }
-  }).catch((error) => {
-    console.error("Error checking Firebase Messaging support:", error);
-  });
 } catch (error) {
   console.error("Firebase initialization error. Please check your config.", error);
 }
 
+export const getMessagingInstance = async () => {
+  if (typeof window !== 'undefined' && await isSupported()) {
+    return getMessaging(app);
+  }
+  return null;
+};
+
 export const googleProvider = new GoogleAuthProvider();
-export { auth, db, messaging };
+export { auth, db };

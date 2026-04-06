@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { ArrowLeft, User, Mail, Lock, Save, AlertCircle, CheckCircle } from 'lucide-react';
+import { ArrowLeft, User, Mail, Lock, Save, AlertCircle, CheckCircle, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'motion/react';
+import ConfirmModal from '../components/ConfirmModal';
 
 export default function AccountSettings() {
   const navigate = useNavigate();
-  const { userProfile, updateUserEmail, updateUserPassword, updateUserUsername } = useAuth();
+  const { userProfile, updateUserEmail, updateUserPassword, updateUserUsername, deleteAccount } = useAuth();
   
   const [username, setUsername] = useState(userProfile?.username || '');
   const [email, setEmail] = useState(userProfile?.email || '');
@@ -15,6 +16,7 @@ export default function AccountSettings() {
   
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const handleUpdateUsername = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,6 +74,23 @@ export default function AccountSettings() {
         setStatus({ type: 'error', message: 'Esta operação requer um login recente. Por favor, saia e entre novamente.' });
       } else {
         setStatus({ type: 'error', message: error.message || 'Erro ao atualizar senha.' });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setLoading(true);
+    setStatus(null);
+    try {
+      await deleteAccount();
+      navigate('/login');
+    } catch (error: any) {
+      if (error.code === 'auth/requires-recent-login') {
+        setStatus({ type: 'error', message: 'Esta operação requer um login recente. Por favor, saia e entre novamente.' });
+      } else {
+        setStatus({ type: 'error', message: error.message || 'Erro ao deletar conta.' });
       }
     } finally {
       setLoading(false);
@@ -197,7 +216,37 @@ export default function AccountSettings() {
             </button>
           </form>
         </section>
+
+        {/* Danger Zone Section */}
+        <section className="bg-red-50/50 p-6 rounded-2xl shadow-sm border border-red-100">
+          <div className="flex items-center space-x-2 mb-4">
+            <Trash2 className="w-5 h-5 text-red-500" />
+            <h2 className="font-bold text-red-900">Zona de perigo</h2>
+          </div>
+          <p className="text-sm text-red-600 mb-6 leading-relaxed">
+            Ao deletar sua conta, todos os seus dados de perfil serão removidos permanentemente. Esta ação não pode ser desfeita.
+          </p>
+          <button 
+            onClick={() => setShowDeleteModal(true)}
+            disabled={loading}
+            className="w-full bg-red-500 text-white py-3 rounded-xl font-bold hover:bg-red-600 disabled:opacity-50 transition-all flex items-center justify-center space-x-2 shadow-lg shadow-red-500/20"
+          >
+            <Trash2 className="w-4 h-4" />
+            <span>Deletar minha conta</span>
+          </button>
+        </section>
       </div>
+
+      <ConfirmModal 
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteAccount}
+        title="Deletar conta?"
+        message="Tem certeza que deseja deletar sua conta? Todos os seus dados de perfil serão removidos permanentemente e você perderá acesso a esta conta. Esta ação não pode ser desfeita."
+        confirmText="Sim, deletar conta"
+        cancelText="Cancelar"
+        type="danger"
+      />
     </div>
   );
 }

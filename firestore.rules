@@ -128,7 +128,7 @@ service cloud.firestore {
     }
 
     function isValidPost(data) {
-      return hasOnlyAllowedFields(['content', 'imageUrl', 'authorId', 'authorName', 'authorUsername', 'authorPhoto', 'authorVerified', 'authorPremiumTier', 'createdAt', 'updatedAt', 'isEdited', 'likesCount', 'repliesCount', 'replyToId', 'replyToUsername', 'replyToVerified', 'likes', 'repostsCount', 'reposts', 'threadId']) &&
+      return hasOnlyAllowedFields(['content', 'imageUrl', 'authorId', 'authorName', 'authorUsername', 'authorPhoto', 'authorVerified', 'authorPremiumTier', 'createdAt', 'updatedAt', 'isEdited', 'likesCount', 'repliesCount', 'replyToId', 'replyToUsername', 'replyToVerified', 'likes', 'repostsCount', 'reposts', 'threadId', 'quotedPostId', 'quotedPostContent', 'quotedPostAuthor', 'poll']) &&
              data.content is string && data.content.size() >= 0 && data.content.size() <= 1000 &&
              (!('imageUrl' in data) || data.imageUrl == null || (data.imageUrl is string && data.imageUrl.size() <= 2000)) &&
              data.authorId is string && data.authorId == request.auth.uid &&
@@ -148,7 +148,18 @@ service cloud.firestore {
              (!('replyToVerified' in data) || data.replyToVerified is bool) &&
              (!('likes' in data) || data.likes is list) &&
              (!('reposts' in data) || data.reposts is list) &&
-             (!('threadId' in data) || data.threadId == null || (data.threadId is string && data.threadId.size() <= 100));
+             (!('threadId' in data) || data.threadId == null || (data.threadId is string && data.threadId.size() <= 100)) &&
+             (!('quotedPostId' in data) || data.quotedPostId == null || (data.quotedPostId is string && data.quotedPostId.size() <= 100)) &&
+             (!('quotedPostContent' in data) || data.quotedPostContent == null || (data.quotedPostContent is string && data.quotedPostContent.size() <= 1000)) &&
+             (!('quotedPostAuthor' in data) || data.quotedPostAuthor == null || (data.quotedPostAuthor is string && data.quotedPostAuthor.size() <= 50)) &&
+             (!('poll' in data) || (
+               data.poll is map &&
+               data.poll.options is list &&
+               data.poll.options.size() >= 2 &&
+               data.poll.options.size() <= 4 &&
+               data.poll.totalVotes is number &&
+               data.poll.voters is list
+             ));
     }
 
     // ===============================================================

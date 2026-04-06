@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { auth, db, googleProvider, messaging } from '../firebase';
+import { auth, db, googleProvider, getMessagingInstance } from '../firebase';
 import { getToken } from 'firebase/messaging';
 import { 
   onAuthStateChanged, 
@@ -9,9 +9,10 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   updateEmail,
-  updatePassword
+  updatePassword,
+  deleteUser
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, onSnapshot, serverTimestamp, collection, query, where, getDocs, updateDoc, arrayUnion } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot, serverTimestamp, collection, query, where, getDocs, updateDoc, arrayUnion, deleteDoc } from 'firebase/firestore';
 
 enum OperationType {
   CREATE = 'create',
@@ -94,6 +95,7 @@ interface AuthContextType {
   updateUserEmail: (email: string) => Promise<void>;
   updateUserPassword: (password: string) => Promise<void>;
   updateUserUsername: (username: string) => Promise<void>;
+  deleteAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -124,6 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Request notification permission and save token
         try {
           const permission = await Notification.requestPermission();
+          const messaging = await getMessagingInstance();
           if (permission === 'granted' && messaging) {
             const token = await getToken(messaging, {
               vapidKey: 'BFsixg_JwwMY4m3yMoZC9b-D4LIRsNcepSkQGkzCgBsnkdbGMmXdtjDCEbrgYYfSULAkTjo3WnPnHbXthoO69b0'
@@ -261,6 +264,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await updateDoc(doc(db, 'users', auth.currentUser.uid), { username });
   };
 
+  const deleteAccount = async () => {
+    if (!auth || !auth.currentUser) throw new Error("User not authenticated");
+    const user = auth.currentUser;
+    const uid = user.uid;
+
+    try {
+      // 1. Delete user document from Firestore
+      await deleteDoc(doc(db, 'users', uid));
+      
+      // 2. Delete user from Firebase Auth
+      await deleteUser(user);
+      
+      // 3. Clear local state
+      setCurrentUser(null);
+      setUserProfile(null);
+    } catch (error: any) {
+      if (error.code === 'auth/requires-recent-login') {
+        throw error;
+      }
+      handleFirestoreError(error, OperationType.DELETE, `users/${uid}`);
+    }
+  };
+
   const logout = () => {
     if (!auth) throw new Error("Firebase not initialized");
     return signOut(auth);
@@ -276,7 +302,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loginWithEmail,
     updateUserEmail,
     updateUserPassword,
-    updateUserUsername
+    updateUserUsername,
+    deleteAccount
   };
 
   return (
