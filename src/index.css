@@ -6,13 +6,21 @@
 
 @layer utilities {
   .liquid-glass {
-    @apply bg-white/20 backdrop-blur-[32px] border border-white/40 shadow-[0_20px_50px_rgba(0,0,0,0.1)];
+    @apply bg-white/40 dark:bg-black/40 backdrop-blur-[32px] border border-white/40 dark:border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.1)];
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1));
   }
   
+  .dark .liquid-glass {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
+  }
+  
   .liquid-glass-pill {
-    @apply bg-white/10 backdrop-blur-[40px] border border-white/30 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)];
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.05) 100%);
+    @apply bg-white/60 dark:bg-black/60 backdrop-blur-[40px] border border-white/40 dark:border-white/10 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)];
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.1) 100%);
+  }
+
+  .dark .liquid-glass-pill {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.02) 100%);
   }
 
   .modal-open .mobile-navbar-container,
@@ -42,11 +50,12 @@
   }
 
   .liquid-glass-card {
-    @apply bg-white/60 backdrop-blur-[20px] sm:border-x sm:border-b border-white/60 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.05)];
+    @apply bg-white/60 dark:bg-black/40 backdrop-blur-[20px] sm:border-x sm:border-b border-white/60 dark:border-white/10 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.05)];
   }
 
   .shimmer {
-    background: linear-gradient(90deg, #f3f4f6 0%, #e5e7eb 50%, #f3f4f6 100%);
+    @apply bg-gray-100 dark:bg-gray-800;
+    background: linear-gradient(90deg, currentColor 0%, color-mix(in srgb, currentColor, transparent 50%) 50%, currentColor 100%);
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite ease-in-out;
   }

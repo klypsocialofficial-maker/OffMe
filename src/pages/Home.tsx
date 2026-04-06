@@ -69,23 +69,23 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 }
 
 const PostSkeleton = () => (
-  <div className="p-4 bg-white/60 backdrop-blur-md rounded-2xl shadow-sm border border-white/40 overflow-hidden mb-4 mx-4">
+  <div className="p-4 liquid-glass-card rounded-2xl shadow-sm overflow-hidden mb-4 mx-4">
     <div className="flex space-x-3">
-      <div className="w-12 h-12 bg-gray-200 rounded-full flex-shrink-0 shimmer" />
+      <div className="w-12 h-12 bg-gray-200 dark:bg-gray-800 rounded-full flex-shrink-0 shimmer" />
       <div className="flex-1 space-y-3 py-1">
         <div className="flex items-center space-x-2">
-          <div className="h-4 bg-gray-200 rounded w-24 shimmer" />
-          <div className="h-4 bg-gray-200 rounded w-16 shimmer" />
+          <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-24 shimmer" />
+          <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-16 shimmer" />
         </div>
         <div className="space-y-2">
-          <div className="h-4 bg-gray-200 rounded w-full shimmer" />
-          <div className="h-4 bg-gray-200 rounded w-5/6 shimmer" />
+          <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-full shimmer" />
+          <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-5/6 shimmer" />
         </div>
         <div className="flex justify-between max-w-md pt-2">
-          <div className="h-8 w-8 bg-gray-100 rounded-full shimmer" />
-          <div className="h-8 w-8 bg-gray-100 rounded-full shimmer" />
-          <div className="h-8 w-8 bg-gray-100 rounded-full shimmer" />
-          <div className="h-8 w-8 bg-gray-100 rounded-full shimmer" />
+          <div className="h-8 w-8 bg-gray-100 dark:bg-gray-900 rounded-full shimmer" />
+          <div className="h-8 w-8 bg-gray-100 dark:bg-gray-900 rounded-full shimmer" />
+          <div className="h-8 w-8 bg-gray-100 dark:bg-gray-900 rounded-full shimmer" />
+          <div className="h-8 w-8 bg-gray-100 dark:bg-gray-900 rounded-full shimmer" />
         </div>
       </div>
     </div>
@@ -454,68 +454,67 @@ export default function Home() {
   };
 
   return (
-    <div className="w-full h-full bg-white/50 relative">
+    <div className="w-full h-full bg-transparent relative">
       {/* Sticky Header with Liquid Glass & Tabs */}
-      <div className="sticky top-0 bg-white/40 backdrop-blur-3xl backdrop-saturate-200 z-30 pt-[calc(0.5rem+env(safe-area-inset-top))] border-b border-gray-100/50">
+      <div className="sticky top-0 z-30 pt-[calc(0.5rem+env(safe-area-inset-top))] flex flex-col items-center">
+        {/* Feed Header & Tabs - Floating Pill Style */}
+        <div className="w-full max-w-md px-4 py-2">
+          <div className="flex items-center justify-between relative">
+            {/* Mobile Avatar (Left) */}
+            <div className="sm:hidden flex-shrink-0">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openDrawer();
+                }} 
+                className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-800 overflow-hidden flex-shrink-0 cursor-pointer border border-white/40 dark:border-white/10 shadow-sm"
+              >
+                {userProfile?.photoURL ? (
+                  <img src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full object-cover" />
+                ) : (
+                  <UserIcon className="w-full h-full p-2 text-gray-400" />
+                )}
+              </button>
+            </div>
 
-        {/* Mobile Top Bar (Avatar Only) */}
-        <div className="flex items-center px-4 pb-2 sm:hidden">
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              openDrawer();
-            }} 
-            className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 cursor-pointer"
-          >
-            {userProfile?.photoURL ? (
-              <img src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full object-cover" />
-            ) : (
-              <UserIcon className="w-full h-full p-1.5 text-gray-400" />
-            )}
-          </button>
-        </div>
-
-        {/* Feed Header & Tabs */}
-        <div className="px-4 py-4 space-y-4">
-          {/* Liquid Glass Tab Switcher */}
-          <div className="flex items-center justify-center relative">
-            <nav className="liquid-glass-pill p-1 rounded-full flex items-center relative overflow-hidden border border-white/40 shadow-sm">
+            {/* Liquid Glass Tab Switcher (Center) */}
+            <nav className="liquid-glass-pill p-1 rounded-full flex items-center relative overflow-hidden border border-white/40 dark:border-white/10 shadow-lg">
               <button
                 onClick={() => setActiveTab('foryou')}
-                className={`relative px-6 py-2 text-xs font-black uppercase tracking-widest transition-colors duration-300 z-10 ${
-                  activeTab === 'foryou' ? 'text-black' : 'text-gray-500 hover:text-black'
+                className={`relative px-6 py-2 text-sm font-bold transition-all duration-300 z-10 ${
+                  activeTab === 'foryou' ? 'text-blue-500 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white'
                 }`}
               >
                 {activeTab === 'foryou' && (
                   <motion.div
                     layoutId="feed-tab-blob"
-                    className="absolute inset-0 bg-white/60 rounded-full -z-10 shadow-sm"
+                    className="absolute inset-0 bg-white/80 dark:bg-white/10 rounded-full -z-10 shadow-sm"
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}
-                Para você
+                For you
               </button>
               <button
                 onClick={() => setActiveTab('following')}
-                className={`relative px-6 py-2 text-xs font-black uppercase tracking-widest transition-colors duration-300 z-10 ${
-                  activeTab === 'following' ? 'text-black' : 'text-gray-500 hover:text-black'
+                className={`relative px-6 py-2 text-sm font-bold transition-all duration-300 z-10 ${
+                  activeTab === 'following' ? 'text-blue-500 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white'
                 }`}
               >
                 {activeTab === 'following' && (
                   <motion.div
                     layoutId="feed-tab-blob"
-                    className="absolute inset-0 bg-white/60 rounded-full -z-10 shadow-sm"
+                    className="absolute inset-0 bg-white/80 dark:bg-white/10 rounded-full -z-10 shadow-sm"
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}
-                Seguindo
+                Following
               </button>
             </nav>
 
-            {/* Search Toggle Button */}
+            {/* Search Toggle Button (Right) */}
             <button 
               onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className={`absolute right-0 p-2 rounded-full transition-all duration-300 ${isSearchOpen ? 'bg-black text-white' : 'hover:bg-black/5 text-gray-500'}`}
+              className={`p-2.5 rounded-full transition-all duration-300 border border-white/40 dark:border-white/10 shadow-sm ${isSearchOpen ? 'bg-black text-white' : 'liquid-glass-pill text-gray-500 dark:text-gray-400'}`}
             >
               <Search className="w-5 h-5" />
             </button>
@@ -525,14 +524,14 @@ export default function Home() {
           <AnimatePresence>
             {isSearchOpen && (
               <motion.div 
-                initial={{ height: 0, opacity: 0, marginBottom: 0 }}
-                animate={{ height: 'auto', opacity: 1, marginBottom: 8 }}
-                exit={{ height: 0, opacity: 0, marginBottom: 0 }}
+                initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                animate={{ height: 'auto', opacity: 1, marginTop: 12 }}
+                exit={{ height: 0, opacity: 0, marginTop: 0 }}
                 className="overflow-hidden"
               >
                 <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Search className="w-4 h-4 text-gray-400 group-focus-within:text-black transition-colors" />
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <Search className="w-4 h-4 text-gray-400 group-focus-within:text-black dark:group-focus-within:text-white transition-colors" />
                   </div>
                   <input
                     type="text"
@@ -540,7 +539,7 @@ export default function Home() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     autoFocus
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-2xl bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-black/5 focus:border-black outline-none transition-all text-sm"
+                    className="block w-full pl-11 pr-4 py-3 border border-white/40 dark:border-white/10 rounded-2xl bg-white/60 dark:bg-black/60 backdrop-blur-xl focus:ring-2 focus:ring-blue-500/20 outline-none transition-all text-sm shadow-sm"
                   />
                 </div>
               </motion.div>
@@ -706,7 +705,7 @@ export default function Home() {
                           viewport={{ once: true, margin: "-50px" }}
                           transition={{ duration: 0.4, ease: "easeOut" }}
                           onClick={() => navigate(`/post/${post.id}`)}
-                          className="group relative p-4 bg-white/60 backdrop-blur-md rounded-2xl shadow-sm border border-white/40 hover:bg-white/80 transition-all cursor-pointer flex space-x-4"
+                          className="group relative p-4 liquid-glass-card rounded-2xl shadow-sm hover:bg-white/80 dark:hover:bg-black/80 transition-all cursor-pointer flex space-x-4"
                         >
                     {/* Quick Actions Hover Overlay */}
                     <div className="absolute top-3 right-12 opacity-0 group-hover:opacity-100 transition-opacity flex items-center space-x-1 bg-white/90 backdrop-blur-sm rounded-full shadow-sm border border-gray-100 p-1 z-10">

@@ -110,13 +110,15 @@ export default function Layout() {
   };
 
   return (
-    <div className="min-h-screen text-gray-900 flex justify-center relative bg-white">
+    <div className="min-h-screen text-gray-900 dark:text-white flex justify-center relative bg-white dark:bg-gray-950 transition-colors duration-500 overflow-x-hidden">
       {/* Decorative background blobs to make the glass effect visible */}
-      <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-400/10 blur-[120px] pointer-events-none" />
-      <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-purple-400/10 blur-[120px] pointer-events-none" />
+      <div className="fixed top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-blue-400/20 dark:bg-blue-600/10 blur-[120px] pointer-events-none animate-pulse" />
+      <div className="fixed bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-purple-400/20 dark:bg-purple-600/10 blur-[120px] pointer-events-none animate-pulse" style={{ animationDelay: '2s' }} />
+      <div className="fixed top-[20%] right-[-5%] w-[30%] h-[30%] rounded-full bg-pink-400/10 dark:bg-pink-600/5 blur-[100px] pointer-events-none" />
+      <div className="fixed bottom-[20%] left-[-5%] w-[30%] h-[30%] rounded-full bg-amber-400/10 dark:bg-amber-600/5 blur-[100px] pointer-events-none" />
       
       {/* Sidebar Navigation (Desktop) */}
-      <header className="hidden sm:flex flex-col w-64 border-r border-gray-100 px-4 py-6 sticky top-0 h-screen z-20">
+      <header className="hidden sm:flex flex-col w-64 border-r border-white/40 dark:border-white/10 px-4 py-6 sticky top-0 h-screen z-20 bg-white/20 dark:bg-black/20 backdrop-blur-xl">
         <div className="flex items-center mb-8 px-4">
           <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center overflow-hidden">
             <img src="/ghost.svg" alt="OffMe Logo" className="w-6 h-6 object-contain invert" />
@@ -132,13 +134,13 @@ export default function Layout() {
                 key={item.path}
                 to={item.path}
                 className={`flex items-center space-x-4 px-4 py-3 rounded-2xl transition-all relative z-10 ${
-                  isActive ? 'font-bold text-black' : 'text-gray-600 hover:bg-black/5'
+                  isActive ? 'font-bold text-blue-500 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400 hover:bg-white/40 dark:hover:bg-white/5 hover:text-black dark:hover:text-white'
                 }`}
               >
                 {isActive && (
                   <motion.div
                     layoutId="desktop-active-tab"
-                    className="absolute inset-0 bg-black/5 rounded-2xl -z-10"
+                    className="absolute inset-0 bg-white/60 dark:bg-white/10 rounded-2xl -z-10 shadow-sm border border-white/40 dark:border-white/10"
                     transition={{ type: "spring", stiffness: 300, damping: 30 }}
                   />
                 )}
@@ -230,11 +232,10 @@ export default function Layout() {
 
       {/* Mobile Bottom Navigation with Liquid Glass Floating Pill (iOS 26 Style) */}
       {location.pathname !== '/premium' && (
-        <div className="sm:hidden fixed bottom-8 left-1/2 -translate-x-1/2 w-[92%] max-w-md z-40 mobile-navbar-container transition-all duration-300">
-          <nav className="liquid-glass-pill rounded-[2.5rem] flex justify-around p-2.5 relative overflow-hidden group">
+        <div className="sm:hidden fixed bottom-8 left-1/2 -translate-x-1/2 w-[94%] max-w-md z-40 mobile-navbar-container transition-all duration-300 flex items-center gap-3">
+          <nav className="liquid-glass-pill flex-1 rounded-[2.5rem] flex justify-around p-2 relative overflow-hidden group">
             {/* Iridescent Border Effect */}
-            <div className="absolute inset-0 rounded-[2.5rem] border border-white/40 pointer-events-none" />
-            <div className="absolute inset-[-1px] rounded-[2.5rem] border border-white/20 blur-[1px] pointer-events-none" />
+            <div className="absolute inset-0 rounded-[2.5rem] border border-white/40 dark:border-white/10 pointer-events-none" />
             
             {/* Liquid highlight effect (Iridescent glow) */}
             <motion.div 
@@ -255,14 +256,14 @@ export default function Layout() {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`relative p-3.5 rounded-full transition-all duration-500 z-10 flex flex-col items-center justify-center ${
-                    isActive ? 'text-black' : 'text-gray-500 hover:text-black'
+                  className={`relative p-3 rounded-full transition-all duration-500 z-10 flex flex-col items-center justify-center ${
+                    isActive ? 'text-blue-500 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white'
                   }`}
                 >
                   {isActive && (
                     <motion.div
                       layoutId="mobile-active-tab-blob"
-                      className="absolute inset-0 bg-white/40 rounded-full -z-10 shadow-[0_4px_12px_rgba(0,0,0,0.05)]"
+                      className="absolute inset-0 bg-white/60 dark:bg-white/10 rounded-full -z-10 shadow-[0_4px_12px_rgba(0,0,0,0.05)]"
                       transition={{ 
                         type: "spring", 
                         stiffness: 350, 
@@ -276,11 +277,14 @@ export default function Layout() {
                   )}
                   
                   <motion.div 
-                    className="relative"
+                    className="relative flex flex-col items-center"
                     whileTap={{ scale: 0.85 }}
                     animate={isActive ? { scale: 1.1 } : { scale: 1 }}
                   >
                     <item.icon className={`w-6 h-6 transition-all duration-500 ${isActive ? 'stroke-[2.5px] drop-shadow-sm' : 'stroke-[2px]'}`} />
+                    <span className={`text-[10px] font-bold mt-0.5 transition-opacity duration-300 ${isActive ? 'opacity-100' : 'opacity-0 h-0'}`}>
+                      {item.label === 'Início' ? 'Home' : item.label === 'Explorar' ? 'Search' : item.label === 'Notificações' ? 'Notification' : 'Chat'}
+                    </span>
                     
                     {/* Notification/Message Badges */}
                     <AnimatePresence>
@@ -290,7 +294,7 @@ export default function Layout() {
                           initial={{ scale: 0, opacity: 0 }}
                           animate={{ scale: 1, opacity: 1 }}
                           exit={{ scale: 0, opacity: 0 }}
-                          className="absolute -top-1.5 -right-1.5 bg-black text-white text-[9px] font-black min-w-[17px] h-[17px] flex items-center justify-center rounded-full border-2 border-white/80 px-0.5 shadow-sm"
+                          className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-black min-w-[17px] h-[17px] flex items-center justify-center rounded-full border-2 border-white dark:border-gray-900 px-0.5 shadow-sm"
                         >
                           {item.path === '/notifications' 
                             ? (unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount)
@@ -303,6 +307,16 @@ export default function Layout() {
               );
             })}
           </nav>
+
+          {/* Floating Action Button (+) */}
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            whileHover={{ scale: 1.05 }}
+            onClick={() => openCreateModal()}
+            className="w-14 h-14 rounded-full liquid-glass-pill flex items-center justify-center shadow-xl border border-white/40 dark:border-white/10 text-black dark:text-white flex-shrink-0"
+          >
+            <Plus className="w-8 h-8" />
+          </motion.button>
         </div>
       )}
 

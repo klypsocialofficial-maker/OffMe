@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, User as UserIcon } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import VerifiedBadge from '../components/VerifiedBadge';
 import TrendingPosts from '../components/TrendingPosts';
 import { useAuth } from '../contexts/AuthContext';
@@ -288,43 +289,47 @@ export default function Explore() {
   }, [searchQuery]);
 
   return (
-    <div className="w-full h-full bg-white/50">
-      <div className="sticky top-0 bg-white/40 backdrop-blur-3xl backdrop-saturate-200 z-30 px-4 py-4 pt-[calc(1rem+env(safe-area-inset-top))] border-b border-gray-100/50">
-        <div className="flex items-center space-x-4">
-          <button onClick={openDrawer} className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 sm:hidden">
-            {userProfile?.photoURL ? (
-              <img src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full object-cover" />
-            ) : (
-              <UserIcon className="w-full h-full p-1.5 text-gray-400" />
-            )}
-          </button>
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input 
-              type="text" 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar usuários no OffMe" 
-              className="w-full bg-black/5 rounded-full py-2 pl-10 pr-4 outline-none focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
-            />
+    <div className="w-full h-full bg-transparent relative">
+      <div className="sticky top-0 z-30 pt-[calc(0.5rem+env(safe-area-inset-top))] flex flex-col items-center">
+        <div className="w-full max-w-md px-4 py-2">
+          <div className="flex items-center space-x-3">
+            <button onClick={openDrawer} className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-800 overflow-hidden flex-shrink-0 sm:hidden border border-white/40 dark:border-white/10 shadow-sm">
+              {userProfile?.photoURL ? (
+                <img src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full object-cover" />
+              ) : (
+                <UserIcon className="w-full h-full p-2 text-gray-400" />
+              )}
+            </button>
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input 
+                type="text" 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search users..." 
+                className="w-full liquid-glass-pill rounded-full py-3 pl-12 pr-4 outline-none border border-white/40 dark:border-white/10 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-lg dark:text-white"
+              />
+            </div>
           </div>
         </div>
       </div>
       
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto px-4 pt-4">
         {searchQuery.trim() ? (
           loading ? (
-            <div className="p-8 text-center text-gray-500">Buscando...</div>
+            <div className="p-8 text-center text-gray-500">Searching...</div>
           ) : searchResults.length > 0 ? (
-            <div className="divide-y divide-gray-100">
+            <div className="space-y-3">
               {searchResults.map(user => (
-                <div 
+                <motion.div 
                   key={user.id} 
-                  className="p-4 hover:bg-black/5 transition-colors flex items-center justify-between cursor-pointer"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-4 liquid-glass-card rounded-2xl shadow-sm flex items-center justify-between cursor-pointer hover:bg-white/80 dark:hover:bg-black/80 transition-all"
                   onClick={() => navigate(`/profile/${user.id}`)}
                 >
                   <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+                    <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-800 overflow-hidden flex-shrink-0 border border-white/40 dark:border-white/10">
                       {user.photoURL ? (
                         <img src={user.photoURL} alt={user.displayName} className="w-full h-full object-cover" />
                       ) : (
@@ -333,11 +338,11 @@ export default function Explore() {
                     </div>
                     <div>
                       <div className="flex items-center space-x-1">
-                        <p className="font-bold text-black">{user.displayName}</p>
+                        <p className="font-bold text-black dark:text-white">{user.displayName}</p>
                         {(user.isVerified || user.username === 'Rulio') && <VerifiedBadge tier={user.premiumTier} />}
                       </div>
                       <p className="text-gray-500 text-sm">@{user.username}</p>
-                      <p className="text-gray-700 text-sm mt-1 line-clamp-1">{user.bio}</p>
+                      <p className="text-gray-700 dark:text-gray-300 text-sm mt-1 line-clamp-1">{user.bio}</p>
                     </div>
                   </div>
                   {user.id !== userProfile?.uid && (
@@ -347,26 +352,26 @@ export default function Explore() {
                           e.stopPropagation();
                           handleMessageClick(user);
                         }}
-                        className="px-4 py-1.5 bg-gray-100 text-black rounded-full font-bold text-sm hover:bg-gray-200 transition-colors"
+                        className="px-4 py-1.5 liquid-glass-pill text-black dark:text-white rounded-full font-bold text-sm border border-white/40 dark:border-white/10 hover:bg-white/80 dark:hover:bg-black/80 transition-colors"
                       >
-                        Mensagem
+                        Message
                       </button>
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();
                           handleFollowClick(user);
                         }}
-                        className={`px-4 py-1.5 rounded-full font-bold text-sm transition-colors ${
+                        className={`px-4 py-1.5 rounded-full font-bold text-sm transition-all ${
                           userProfile.following?.includes(user.id)
-                            ? 'bg-white text-black border border-gray-300 hover:bg-red-50 hover:text-red-600 hover:border-red-200'
-                            : 'bg-black text-white hover:bg-gray-800'
+                            ? 'bg-white/40 dark:bg-white/10 text-black dark:text-white border border-white/40 dark:border-white/10 hover:bg-red-500/10 hover:text-red-500'
+                            : 'bg-blue-500 text-white shadow-md hover:bg-blue-600'
                         }`}
                       >
-                        {userProfile.following?.includes(user.id) ? 'Seguindo' : 'Seguir'}
+                        {userProfile.following?.includes(user.id) ? 'Following' : 'Follow'}
                       </button>
                     </div>
                   )}
-                </div>
+                </motion.div>
               ))}
             </div>
           ) : (
@@ -378,21 +383,23 @@ export default function Explore() {
           <div className="py-6">
             <TrendingPosts />
             
-            <div className="mt-8 border-t border-gray-100 pt-6">
-              <h2 className="px-4 text-xl font-bold mb-4">Sugestões para você</h2>
+            <div className="mt-8 pt-6">
+              <h2 className="px-4 text-xl font-bold mb-4 dark:text-white">Suggested for you</h2>
               
               {loadingSuggestions ? (
-                <div className="p-8 text-center text-gray-500">Carregando sugestões...</div>
+                <div className="p-8 text-center text-gray-500">Loading suggestions...</div>
               ) : suggestedUsers.length > 0 ? (
-                <div className="divide-y divide-gray-100">
+                <div className="space-y-3">
                   {suggestedUsers.map(user => (
-                    <div 
+                    <motion.div 
                       key={user.id} 
-                      className="p-4 hover:bg-black/5 transition-colors flex items-center justify-between cursor-pointer"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="p-4 liquid-glass-card rounded-2xl shadow-sm flex items-center justify-between cursor-pointer hover:bg-white/80 dark:hover:bg-black/80 transition-all"
                       onClick={() => navigate(`/profile/${user.id}`)}
                     >
                       <div className="flex items-center space-x-3">
-                        <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+                        <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-800 overflow-hidden flex-shrink-0 border border-white/40 dark:border-white/10">
                           {user.photoURL ? (
                             <img src={user.photoURL} alt={user.displayName} className="w-full h-full object-cover" />
                           ) : (
@@ -401,12 +408,12 @@ export default function Explore() {
                         </div>
                         <div>
                           <div className="flex items-center space-x-1">
-                            <p className="font-bold text-black">{user.displayName}</p>
+                            <p className="font-bold text-black dark:text-white">{user.displayName}</p>
                             {(user.isVerified || user.username === 'Rulio') && <VerifiedBadge tier={user.premiumTier} />}
                           </div>
                           <p className="text-gray-500 text-sm">@{user.username}</p>
                           {user.username === 'Rulio' && (
-                            <p className="text-xs text-blue-500 font-medium mt-0.5">Criador do App</p>
+                            <p className="text-xs text-blue-500 font-medium mt-0.5">App Creator</p>
                           )}
                         </div>
                       </div>
@@ -416,16 +423,16 @@ export default function Explore() {
                             e.stopPropagation();
                             handleFollowClick(user);
                           }}
-                          className={`px-4 py-1.5 rounded-full font-bold text-sm transition-colors ${
+                          className={`px-4 py-1.5 rounded-full font-bold text-sm transition-all ${
                             userProfile?.following?.includes(user.id)
-                              ? 'bg-white text-black border border-gray-300 hover:bg-red-50 hover:text-red-600 hover:border-red-200'
-                              : 'bg-black text-white hover:bg-gray-800'
+                              ? 'bg-white/40 dark:bg-white/10 text-black dark:text-white border border-white/40 dark:border-white/10 hover:bg-red-500/10 hover:text-red-500'
+                              : 'bg-blue-500 text-white shadow-md hover:bg-blue-600'
                           }`}
                         >
-                          {userProfile?.following?.includes(user.id) ? 'Seguindo' : 'Seguir'}
+                          {userProfile?.following?.includes(user.id) ? 'Following' : 'Follow'}
                         </button>
                       </div>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
               ) : (
