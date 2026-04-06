@@ -82,6 +82,9 @@ export default defineConfig(({mode}) => {
       tailwindcss(),
       vercelApiMockPlugin(),
       VitePWA({
+        strategies: 'injectManifest',
+        srcDir: 'src',
+        filename: 'sw.ts',
         registerType: 'prompt',
         manifest: {
           name: 'OffMe',
@@ -106,6 +109,10 @@ export default defineConfig(({mode}) => {
               purpose: 'any maskable'
             }
           ]
+        },
+        devOptions: {
+          enabled: true,
+          type: 'module',
         }
       })
     ],

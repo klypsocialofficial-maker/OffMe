@@ -3,7 +3,7 @@ import { useRegisterSW } from 'virtual:pwa-register/react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronRight, Sparkles, CheckCircle2, X } from 'lucide-react';
 
-const APP_VERSION = '0.0.0.01';
+const APP_VERSION = '0.0.0.02';
 
 export default function PWABadge() {
   const {

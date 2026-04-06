@@ -128,8 +128,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const permission = await Notification.requestPermission();
           const messaging = await getMessagingInstance();
           if (permission === 'granted' && messaging) {
+            // Get the PWA service worker registration
+            const registration = await navigator.serviceWorker.getRegistration();
+            
             const token = await getToken(messaging, {
-              vapidKey: 'BFsixg_JwwMY4m3yMoZC9b-D4LIRsNcepSkQGkzCgBsnkdbGMmXdtjDCEbrgYYfSULAkTjo3WnPnHbXthoO69b0'
+              vapidKey: 'BFsixg_JwwMY4m3yMoZC9b-D4LIRsNcepSkQGkzCgBsnkdbGMmXdtjDCEbrgYYfSULAkTjo3WnPnHbXthoO69b0',
+              serviceWorkerRegistration: registration || undefined
             });
             if (token) {
               const userRef = doc(db, 'users', user.uid);
