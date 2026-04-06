@@ -118,7 +118,7 @@ export default function Layout() {
       <div className="fixed bottom-[20%] left-[-5%] w-[30%] h-[30%] rounded-full bg-amber-400/10 dark:bg-amber-600/5 blur-[100px] pointer-events-none" />
       
       {/* Sidebar Navigation (Desktop) */}
-      <header className="hidden sm:flex flex-col w-64 border-r border-white/40 dark:border-white/10 px-4 py-6 sticky top-0 h-screen z-20 bg-white/20 dark:bg-black/20 backdrop-blur-xl">
+      <header className="hidden sm:flex flex-col w-64 border-r border-white/40 dark:border-white/10 px-4 py-6 sticky top-0 h-screen z-20 liquid-glass">
         <div className="flex items-center mb-8 px-4">
           <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center overflow-hidden">
             <img src="/ghost.svg" alt="OffMe Logo" className="w-6 h-6 object-contain invert" />
@@ -140,7 +140,7 @@ export default function Layout() {
                 {isActive && (
                   <motion.div
                     layoutId="desktop-active-tab"
-                    className="absolute inset-0 bg-white/60 dark:bg-white/10 rounded-2xl -z-10 shadow-sm border border-white/40 dark:border-white/10"
+                    className="absolute inset-0 bg-white/80 dark:bg-white/10 rounded-2xl -z-10 shadow-[0_0_15px_rgba(255,255,255,0.3)] dark:shadow-[0_0_15px_rgba(255,255,255,0.05)] border border-white/40 dark:border-white/10"
                     transition={{ type: "spring", stiffness: 300, damping: 30 }}
                   />
                 )}
@@ -227,21 +227,21 @@ export default function Layout() {
       {/* Mobile Bottom Navigation with Liquid Glass Floating Pill (iOS 26 Style) */}
       {location.pathname !== '/premium' && (
         <div className="sm:hidden fixed bottom-8 left-1/2 -translate-x-1/2 w-[94%] max-w-md z-40 mobile-navbar-container transition-all duration-300 flex items-center gap-3">
-          <nav className="liquid-glass-pill flex-1 rounded-[2.5rem] flex justify-around p-2 relative overflow-hidden group">
+          <nav className="liquid-glass-pill flex-1 rounded-[2.5rem] flex justify-around p-2 relative overflow-hidden group shadow-[0_10px_30px_rgba(0,0,0,0.15)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
             {/* Iridescent Border Effect */}
-            <div className="absolute inset-0 rounded-[2.5rem] border border-white/40 dark:border-white/10 pointer-events-none" />
+            <div className="absolute inset-0 rounded-[2.5rem] border border-white/50 dark:border-white/10 pointer-events-none" />
             
             {/* Liquid highlight effect (Iridescent glow) */}
             <motion.div 
               animate={{ 
                 background: [
-                  'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.1) 100%)',
-                  'linear-gradient(225deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.1) 100%)',
-                  'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.1) 100%)'
+                  'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.2) 100%)',
+                  'linear-gradient(225deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.2) 100%)',
+                  'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.2) 100%)'
                 ]
               }}
-              transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-              className="absolute inset-0 pointer-events-none opacity-50" 
+              transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+              className="absolute inset-0 pointer-events-none opacity-40" 
             />
             
             {navItems.slice(0, 4).map((item) => {
@@ -257,7 +257,7 @@ export default function Layout() {
                   {isActive && (
                     <motion.div
                       layoutId="mobile-active-tab-blob"
-                      className="absolute inset-0 bg-white/80 dark:bg-white/10 rounded-full -z-10 shadow-[0_4px_12px_rgba(0,0,0,0.05)]"
+                      className="absolute inset-0 bg-white/90 dark:bg-white/20 rounded-full -z-10 shadow-[0_0_15px_rgba(255,255,255,0.4)] dark:shadow-[0_0_15px_rgba(255,255,255,0.1)]"
                       transition={{ 
                         type: "spring", 
                         stiffness: 350, 
@@ -266,7 +266,7 @@ export default function Layout() {
                       }}
                     >
                       {/* Inner glow for the blob */}
-                      <div className="absolute inset-0 rounded-full bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
+                      <div className="absolute inset-0 rounded-full bg-gradient-to-b from-white/30 to-transparent pointer-events-none" />
                     </motion.div>
                   )}
                   
@@ -304,7 +304,7 @@ export default function Layout() {
             whileTap={{ scale: 0.9 }}
             whileHover={{ scale: 1.05 }}
             onClick={() => openCreateModal()}
-            className="w-14 h-14 rounded-full liquid-glass-pill flex items-center justify-center shadow-xl border border-white/40 dark:border-white/10 text-black dark:text-white flex-shrink-0"
+            className="w-14 h-14 rounded-full liquid-glass-pill flex items-center justify-center shadow-[0_10px_25px_rgba(0,0,0,0.2)] dark:shadow-[0_10px_25px_rgba(0,0,0,0.6)] border border-white/50 dark:border-white/10 text-black dark:text-white flex-shrink-0"
           >
             <Plus className="w-8 h-8" />
           </motion.button>
@@ -364,24 +364,24 @@ export default function Layout() {
               </div>
               
               <nav className="flex-1 overflow-y-auto py-4 px-4 space-y-3">
-                <Link to="/profile" onClick={closeDrawer} className="liquid-glass-pill flex items-center px-4 py-3.5 text-lg font-bold rounded-2xl hover:bg-black/5 transition-all relative overflow-hidden group">
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <Link to="/profile" onClick={closeDrawer} className="liquid-glass-pill flex items-center px-4 py-3.5 text-lg font-bold rounded-2xl transition-all relative overflow-hidden group border border-white/20 dark:border-white/5">
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   <UserIcon className="mr-4 w-6 h-6" /> Perfil
                 </Link>
-                <Link to="/premium" onClick={closeDrawer} className="liquid-glass-pill flex items-center px-4 py-3.5 text-lg font-bold rounded-2xl hover:bg-black/5 transition-all relative overflow-hidden group">
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <Link to="/premium" onClick={closeDrawer} className="liquid-glass-pill flex items-center px-4 py-3.5 text-lg font-bold rounded-2xl transition-all relative overflow-hidden group border border-white/20 dark:border-white/5">
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   <ZapIcon className="mr-4 w-6 h-6" /> Premium
                 </Link>
-                <Link to="/bookmarks" onClick={closeDrawer} className="liquid-glass-pill flex items-center px-4 py-3.5 text-lg font-bold rounded-2xl hover:bg-black/5 transition-all relative overflow-hidden group">
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <Link to="/bookmarks" onClick={closeDrawer} className="liquid-glass-pill flex items-center px-4 py-3.5 text-lg font-bold rounded-2xl transition-all relative overflow-hidden group border border-white/20 dark:border-white/5">
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   <Bookmark className="mr-4 w-6 h-6" /> Itens salvos
                 </Link>
-                <Link to="/lists" onClick={closeDrawer} className="liquid-glass-pill flex items-center px-4 py-3.5 text-lg font-bold rounded-2xl hover:bg-black/5 transition-all relative overflow-hidden group">
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <Link to="/lists" onClick={closeDrawer} className="liquid-glass-pill flex items-center px-4 py-3.5 text-lg font-bold rounded-2xl transition-all relative overflow-hidden group border border-white/20 dark:border-white/5">
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   <List className="mr-4 w-6 h-6" /> Listas
                 </Link>
-                <Link to="/settings" onClick={closeDrawer} className="liquid-glass-pill flex items-center px-4 py-3.5 text-lg font-bold rounded-2xl hover:bg-black/5 transition-all relative overflow-hidden group">
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <Link to="/settings" onClick={closeDrawer} className="liquid-glass-pill flex items-center px-4 py-3.5 text-lg font-bold rounded-2xl transition-all relative overflow-hidden group border border-white/20 dark:border-white/5">
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   <Settings className="mr-4 w-6 h-6" /> Configurações
                 </Link>
               </nav>
