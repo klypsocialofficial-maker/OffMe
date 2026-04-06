@@ -125,21 +125,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (user) {
         // Request notification permission and save token
         try {
-          const permission = await Notification.requestPermission();
-          const messaging = await getMessagingInstance();
-          if (permission === 'granted' && messaging) {
-            // Get the PWA service worker registration
-            const registration = await navigator.serviceWorker.getRegistration();
-            
-            const token = await getToken(messaging, {
-              vapidKey: 'BFsixg_JwwMY4m3yMoZC9b-D4LIRsNcepSkQGkzCgBsnkdbGMmXdtjDCEbrgYYfSULAkTjo3WnPnHbXthoO69b0',
-              serviceWorkerRegistration: registration || undefined
-            });
-            if (token) {
-              const userRef = doc(db, 'users', user.uid);
-              await updateDoc(userRef, {
-                fcmTokens: arrayUnion(token)
+          if (typeof window !== 'undefined' && 'Notification' in window) {
+            const permission = await Notification.requestPermission();
+            const messaging = await getMessagingInstance();
+            if (permission === 'granted' && messaging) {
+              // Get the PWA service worker registration
+              const registration = await navigator.serviceWorker.getRegistration();
+              
+              const token = await getToken(messaging, {
+                vapidKey: 'BFsixg_JwwMY4m3yMoZC9b-D4LIRsNcepSkQGkzCgBsnkdbGMmXdtjDCEbrgYYfSULAkTjo3WnPnHbXthoO69b0',
+                serviceWorkerRegistration: registration || undefined
               });
+              if (token) {
+                const userRef = doc(db, 'users', user.uid);
+                await updateDoc(userRef, {
+                  fcmTokens: arrayUnion(token)
+                }).catch(e => console.error('Error updating FCM token:', e));
+              }
             }
           }
         } catch (error) {
@@ -218,6 +220,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUpWithEmail = async (email: string, pass: string, username: string, name: string) => {
     if (!auth) throw new Error("Firebase not initialized");
+    
+    // Check if username is taken
+    const q = query(collection(db, 'users'), where('username', '==', username));
+    const snapshot = await getDocs(q);
+    if (!snapshot.empty) {
+      throw new Error("Este nome de usuário já está em uso.");
+    }
+
     const result = await createUserWithEmailAndPassword(auth, email, pass);
     const user = result.user;
     

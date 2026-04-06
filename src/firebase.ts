@@ -27,4 +27,5 @@ export const getMessagingInstance = async () => {
 };
 
 export const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({ prompt: 'select_account' });
 export { auth, db };

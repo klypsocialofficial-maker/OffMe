@@ -19,7 +19,14 @@ export default function Login() {
       await loginWithEmail(email, password);
       navigate('/');
     } catch (err: any) {
-      setError('Falha ao entrar: ' + err.message);
+      let message = err.message;
+      try {
+        const parsed = JSON.parse(err.message);
+        message = parsed.error || err.message;
+      } catch (e) {
+        // Not a JSON error
+      }
+      setError('Falha ao entrar: ' + message);
     } finally {
       setLoading(false);
     }
@@ -32,26 +39,33 @@ export default function Login() {
       await loginWithGoogle();
       navigate('/');
     } catch (err: any) {
-      setError('Falha ao entrar com o Google: ' + err.message);
+      let message = err.message;
+      try {
+        const parsed = JSON.parse(err.message);
+        message = parsed.error || err.message;
+      } catch (e) {
+        // Not a JSON error
+      }
+      setError('Falha ao entrar com o Google: ' + message);
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="min-h-[100dvh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+    <div className="min-h-[100dvh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden bg-white dark:bg-gray-950 transition-colors">
       {/* Decorative background blobs */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-400/20 blur-[100px]" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-purple-400/20 blur-[100px]" />
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-400/20 dark:bg-blue-600/10 blur-[100px]" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-purple-400/20 dark:bg-purple-600/10 blur-[100px]" />
       
       <div className="max-w-md w-full space-y-8 liquid-glass p-8 sm:p-10 rounded-[2rem] z-10 relative">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
             Entrar no OffMe
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+          <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
             Ou{' '}
-            <Link to="/signup" className="font-medium text-black hover:text-gray-700">
+            <Link to="/signup" className="font-medium text-black dark:text-white hover:underline">
               criar uma nova conta
             </Link>
           </p>

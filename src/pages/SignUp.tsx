@@ -15,13 +15,28 @@ export default function SignUp() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    
+    // Basic username validation
+    const usernameRegex = /^[a-zA-Z0-9_]{3,30}$/;
+    if (!usernameRegex.test(username)) {
+      setError('O nome de usuário deve ter entre 3 e 30 caracteres e conter apenas letras, números e sublinhados.');
+      return;
+    }
+
     try {
       setError('');
       setLoading(true);
       await signUpWithEmail(email, password, username, name);
       navigate('/');
     } catch (err: any) {
-      setError('Falha ao criar conta: ' + err.message);
+      let message = err.message;
+      try {
+        const parsed = JSON.parse(err.message);
+        message = parsed.error || err.message;
+      } catch (e) {
+        // Not a JSON error
+      }
+      setError('Falha ao criar conta: ' + message);
     } finally {
       setLoading(false);
     }
@@ -34,26 +49,33 @@ export default function SignUp() {
       await loginWithGoogle();
       navigate('/');
     } catch (err: any) {
-      setError('Falha ao criar conta com o Google: ' + err.message);
+      let message = err.message;
+      try {
+        const parsed = JSON.parse(err.message);
+        message = parsed.error || err.message;
+      } catch (e) {
+        // Not a JSON error
+      }
+      setError('Falha ao criar conta com o Google: ' + message);
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="min-h-[100dvh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+    <div className="min-h-[100dvh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden bg-white dark:bg-gray-950 transition-colors">
       {/* Decorative background blobs */}
-      <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-blue-400/20 blur-[100px]" />
-      <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-purple-400/20 blur-[100px]" />
+      <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-blue-400/20 dark:bg-blue-600/10 blur-[100px]" />
+      <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-purple-400/20 dark:bg-purple-600/10 blur-[100px]" />
       
       <div className="max-w-md w-full space-y-8 liquid-glass p-8 sm:p-10 rounded-[2rem] z-10 relative">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
             Junte-se ao OffMe
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+          <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
             Já tem uma conta?{' '}
-            <Link to="/login" className="font-medium text-black hover:text-gray-700">
+            <Link to="/login" className="font-medium text-black dark:text-white hover:underline">
               Entrar
             </Link>
           </p>

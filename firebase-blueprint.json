@@ -10,6 +10,7 @@
         "username": { "type": "string", "description": "The user's chosen username." },
         "displayName": { "type": "string", "description": "The user's display name." },
         "photoURL": { "type": "string", "description": "The URL of the user's profile photo." },
+        "fcmTokens": { "type": "array", "items": { "type": "string" }, "description": "Array of FCM tokens for push notifications." },
         "isVerified": { "type": "boolean", "description": "Whether the user is verified." },
         "following": { "type": "array", "items": { "type": "string" }, "description": "Array of UIDs this user follows." },
         "followers": { "type": "array", "items": { "type": "string" }, "description": "Array of UIDs following this user." },
