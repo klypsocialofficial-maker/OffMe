@@ -122,7 +122,7 @@ export default function Notifications() {
               <button 
                 onClick={() => setActiveTab('all')}
                 className={`relative px-6 py-2 text-sm font-bold transition-all duration-300 z-10 ${
-                  activeTab === 'all' ? 'text-blue-500 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white'
+                  activeTab === 'all' ? 'text-black dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white'
                 }`}
               >
                 {activeTab === 'all' && (
@@ -137,7 +137,7 @@ export default function Notifications() {
               <button 
                 onClick={() => setActiveTab('verified')}
                 className={`relative px-6 py-2 text-sm font-bold transition-all duration-300 z-10 ${
-                  activeTab === 'verified' ? 'text-blue-500 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white'
+                  activeTab === 'verified' ? 'text-black dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white'
                 }`}
               >
                 {activeTab === 'verified' && (

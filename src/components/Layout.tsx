@@ -134,7 +134,7 @@ export default function Layout() {
                 key={item.path}
                 to={item.path}
                 className={`flex items-center space-x-4 px-4 py-3 rounded-2xl transition-all relative z-10 ${
-                  isActive ? 'font-bold text-blue-500 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400 hover:bg-white/40 dark:hover:bg-white/5 hover:text-black dark:hover:text-white'
+                  isActive ? 'font-bold text-black dark:text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-white/40 dark:hover:bg-white/5 hover:text-black dark:hover:text-white'
                 }`}
               >
                 {isActive && (
@@ -162,13 +162,7 @@ export default function Layout() {
             );
           })}
           
-          <button 
-            onClick={() => openCreateModal()}
-            className="mt-6 w-full bg-black text-white rounded-full py-4 font-bold text-lg shadow-lg hover:bg-gray-800 transition-all active:scale-95 flex items-center justify-center space-x-2"
-          >
-            <Plus className="w-5 h-5" />
-            <span>Postar</span>
-          </button>
+          {/* Removed Postar button as requested */}
         </nav>
 
         <div className="mt-auto">
@@ -256,14 +250,14 @@ export default function Layout() {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`relative p-3 rounded-full transition-all duration-500 z-10 flex flex-col items-center justify-center ${
-                    isActive ? 'text-blue-500 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white'
+                  className={`relative p-3.5 rounded-full transition-all duration-500 z-10 flex flex-col items-center justify-center ${
+                    isActive ? 'text-black dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white'
                   }`}
                 >
                   {isActive && (
                     <motion.div
                       layoutId="mobile-active-tab-blob"
-                      className="absolute inset-0 bg-white/60 dark:bg-white/10 rounded-full -z-10 shadow-[0_4px_12px_rgba(0,0,0,0.05)]"
+                      className="absolute inset-0 bg-white/80 dark:bg-white/10 rounded-full -z-10 shadow-[0_4px_12px_rgba(0,0,0,0.05)]"
                       transition={{ 
                         type: "spring", 
                         stiffness: 350, 
@@ -279,12 +273,9 @@ export default function Layout() {
                   <motion.div 
                     className="relative flex flex-col items-center"
                     whileTap={{ scale: 0.85 }}
-                    animate={isActive ? { scale: 1.1 } : { scale: 1 }}
+                    animate={isActive ? { scale: 1.15 } : { scale: 1 }}
                   >
-                    <item.icon className={`w-6 h-6 transition-all duration-500 ${isActive ? 'stroke-[2.5px] drop-shadow-sm' : 'stroke-[2px]'}`} />
-                    <span className={`text-[10px] font-bold mt-0.5 transition-opacity duration-300 ${isActive ? 'opacity-100' : 'opacity-0 h-0'}`}>
-                      {item.label === 'Início' ? 'Home' : item.label === 'Explorar' ? 'Search' : item.label === 'Notificações' ? 'Notification' : 'Chat'}
-                    </span>
+                    <item.icon className={`w-7 h-7 transition-all duration-500 ${isActive ? 'stroke-[2.5px] drop-shadow-sm' : 'stroke-[2px]'}`} />
                     
                     {/* Notification/Message Badges */}
                     <AnimatePresence>

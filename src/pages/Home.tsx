@@ -482,7 +482,7 @@ export default function Home() {
               <button
                 onClick={() => setActiveTab('foryou')}
                 className={`relative px-6 py-2 text-sm font-bold transition-all duration-300 z-10 ${
-                  activeTab === 'foryou' ? 'text-blue-500 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white'
+                  activeTab === 'foryou' ? 'text-black dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white'
                 }`}
               >
                 {activeTab === 'foryou' && (
@@ -497,7 +497,7 @@ export default function Home() {
               <button
                 onClick={() => setActiveTab('following')}
                 className={`relative px-6 py-2 text-sm font-bold transition-all duration-300 z-10 ${
-                  activeTab === 'following' ? 'text-blue-500 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white'
+                  activeTab === 'following' ? 'text-black dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white'
                 }`}
               >
                 {activeTab === 'following' && (
