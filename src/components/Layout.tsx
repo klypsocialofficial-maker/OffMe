@@ -36,6 +36,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 const navItems = [
   { path: '/', icon: HomeIcon, label: 'Início' },
   { path: '/explore', icon: Search, label: 'Explorar' },
+  { path: '#create', icon: Plus, label: 'Postar', isAction: true },
   { path: '/notifications', icon: Bell, label: 'Notificações' },
   { path: '/messages', icon: Mail, label: 'Mensagens' },
   { path: '/profile', icon: UserIcon, label: 'Perfil' },
@@ -129,6 +130,20 @@ export default function Layout() {
         <nav className="flex-1 space-y-2 mt-8 relative">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
+            
+            if (item.isAction) {
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => openCreateModal()}
+                  className="w-full flex items-center space-x-4 px-4 py-3 rounded-2xl transition-all text-gray-600 hover:bg-white/40 hover:text-black"
+                >
+                  <item.icon className="w-6 h-6" />
+                  <span className="text-lg">{item.label}</span>
+                </button>
+              );
+            }
+
             return (
               <Link
                 key={item.path}
@@ -161,14 +176,6 @@ export default function Layout() {
               </Link>
             );
           })}
-          
-          <button
-            onClick={() => openCreateModal()}
-            className="w-full mt-4 bg-black text-white rounded-full py-4 font-bold text-lg shadow-lg hover:bg-gray-800 transition-all active:scale-95 flex items-center justify-center space-x-2"
-          >
-            <Plus className="w-6 h-6" />
-            <span>Postar</span>
-          </button>
         </nav>
 
         <div className="mt-auto">
@@ -250,8 +257,21 @@ export default function Layout() {
               className="absolute inset-0 pointer-events-none opacity-40" 
             />
             
-            {navItems.slice(0, 4).map((item) => {
+            {navItems.slice(0, 5).map((item) => {
               const isActive = location.pathname === item.path;
+              
+              if (item.isAction) {
+                return (
+                  <button
+                    key={item.path}
+                    onClick={() => openCreateModal()}
+                    className="relative p-3.5 rounded-full transition-all duration-500 z-10 flex flex-col items-center justify-center text-gray-500 hover:text-black"
+                  >
+                    <item.icon className="w-7 h-7 stroke-[2px]" />
+                  </button>
+                );
+              }
+
               return (
                 <Link
                   key={item.path}
@@ -378,13 +398,6 @@ export default function Layout() {
                   <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   <Settings className="mr-4 w-6 h-6" /> Configurações
                 </Link>
-                
-                <button 
-                  onClick={() => { closeDrawer(); openCreateModal(); }} 
-                  className="w-full bg-black text-white flex items-center justify-center px-4 py-3.5 text-lg font-bold rounded-2xl transition-all shadow-lg hover:bg-gray-900 active:scale-95 mt-4"
-                >
-                  <Plus className="mr-2 w-6 h-6" /> Postar
-                </button>
               </nav>
               
               <div className="p-4 border-t border-gray-100 pb-[calc(1rem+env(safe-area-inset-bottom))]">
