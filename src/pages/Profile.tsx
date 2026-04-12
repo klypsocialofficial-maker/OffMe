@@ -867,12 +867,6 @@ export default function Profile() {
         OperationType={OperationType}
       />
 
-      <button
-        onClick={() => setIsCreateModalOpen(true)}
-        className="sm:hidden fixed bottom-32 right-6 w-14 h-14 bg-black text-white rounded-full shadow-2xl flex items-center justify-center hover:bg-gray-900 transition-colors z-[100] mobile-fab transition-all duration-300"
-      >
-        <Plus className="w-6 h-6" />
-      </button>
 
       <CreatePostModal 
         isOpen={isCreateModalOpen} 

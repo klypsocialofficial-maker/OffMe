@@ -574,68 +574,6 @@ export default function Home() {
         </AnimatePresence>
       </div>
 
-      {/* Inline Post Input (Desktop/Tablet) */}
-      <div className="hidden sm:block px-4 py-4 border-b border-gray-100/50 bg-white/40 backdrop-blur-md">
-        <div className="flex space-x-4">
-          <div 
-            className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 border border-gray-100 cursor-zoom-in"
-            onClick={() => userProfile?.photoURL && openImageViewer(userProfile.photoURL, `Avatar de ${userProfile.displayName}`)}
-          >
-            {userProfile?.photoURL ? (
-              <img src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full object-cover" />
-            ) : (
-              <UserIcon className="w-full h-full p-2 text-gray-400" />
-            )}
-          </div>
-          <div className="flex-1">
-            <textarea
-              value={newPost}
-              onChange={(e) => setNewPost(e.target.value)}
-              placeholder="O que está acontecendo?"
-              className="w-full bg-transparent text-lg outline-none resize-none min-h-[60px] placeholder-gray-400 py-2"
-            />
-            
-            {imagePreview && (
-              <div className="relative mt-2 mb-4 rounded-2xl overflow-hidden border border-gray-100 shadow-sm group inline-block">
-                <button
-                  onClick={removeImage}
-                  className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-md transition-all z-10"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-                <img src={imagePreview} alt="Preview" className="max-h-80 w-auto rounded-2xl object-cover" />
-              </div>
-            )}
-
-            <div className="flex items-center justify-between pt-3 border-t border-gray-100/50">
-              <div className="flex items-center space-x-1">
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  ref={fileInputRef}
-                  onChange={handleImageChange}
-                />
-                <button 
-                  onClick={() => fileInputRef.current?.click()}
-                  className="p-2 text-black hover:bg-black/5 rounded-full transition-colors"
-                  title="Adicionar imagem"
-                >
-                  <ImageIcon className="w-5 h-5" />
-                </button>
-              </div>
-              <button
-                onClick={handlePost}
-                disabled={(!newPost.trim() && !imageFile) || loading || newPost.length > 1000}
-                className="bg-black text-white px-6 py-2 rounded-full font-bold hover:bg-gray-800 disabled:bg-gray-300 disabled:text-white transition-all active:scale-95"
-              >
-                {loading ? 'Postando...' : 'Postar'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
         {/* Posts List */}
         <div 
           role="tabpanel" 
@@ -984,12 +922,6 @@ export default function Home() {
           </PullToRefresh>
         </div>
 
-        <button
-          onClick={() => openCreateModal()}
-          className="sm:hidden fixed bottom-32 right-6 w-14 h-14 bg-black text-white rounded-full shadow-2xl flex items-center justify-center hover:bg-gray-900 transition-colors z-[100] mobile-fab transition-all duration-300"
-        >
-          <Plus className="w-6 h-6" />
-        </button>
 
         <SharePostModal 
           isOpen={isShareModalOpen}

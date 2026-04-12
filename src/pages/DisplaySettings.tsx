@@ -24,38 +24,9 @@ export default function DisplaySettings() {
 
       <div className="space-y-6">
         <section>
-          <h2 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 px-1">Theme</h2>
-          <div className="space-y-2">
-            {themeOptions.map((option) => (
-              <button
-                key={option.id}
-                onClick={() => setTheme(option.id)}
-                className={`w-full p-4 rounded-2xl transition-all flex items-center justify-between group ${
-                  theme === option.id 
-                    ? 'liquid-glass-card border-black/50 dark:border-white/50 bg-black/5 dark:bg-white/5' 
-                    : 'bg-white/40 dark:bg-white/5 border border-transparent hover:bg-white/60 dark:hover:bg-white/10'
-                }`}
-              >
-                <div className="flex items-center space-x-4">
-                  <div className={`p-2.5 rounded-xl transition-colors ${
-                    theme === option.id ? 'bg-black dark:bg-white text-white dark:text-black' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 group-hover:text-black dark:group-hover:text-white'
-                  }`}>
-                    <option.icon className="w-5 h-5" />
-                  </div>
-                  <div className="text-left">
-                    <p className={`font-bold transition-colors ${theme === option.id ? 'text-black dark:text-white' : 'text-gray-900 dark:text-white'}`}>
-                      {option.label}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{option.description}</p>
-                  </div>
-                </div>
-                {theme === option.id && (
-                  <div className="w-6 h-6 bg-black dark:bg-white rounded-full flex items-center justify-center">
-                    <Check className="w-4 h-4 text-white dark:text-black" />
-                  </div>
-                )}
-              </button>
-            ))}
+          <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3 px-1">Tema</h2>
+          <div className="p-4 bg-white/40 border border-gray-100 rounded-2xl">
+            <p className="text-gray-600">O modo noturno está desativado no momento. O tema padrão é Light.</p>
           </div>
         </section>
       </div>

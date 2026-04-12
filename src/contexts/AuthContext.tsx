@@ -183,38 +183,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const loginWithGoogle = async () => {
-    if (!auth) throw new Error("Firebase not initialized");
-    const result = await signInWithPopup(auth, googleProvider);
-    const user = result.user;
-    
-    // Check if user exists in db
-    const docRef = doc(db, 'users', user.uid);
-    let docSnap;
     try {
-      docSnap = await getDoc(docRef);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
-      return;
-    }
-    
-    if (!docSnap.exists()) {
-      // Create new user profile
-      const newProfile: UserProfile = {
-        uid: user.uid,
-        email: user.email || '',
-        username: user.email?.split('@')[0] || 'user',
-        displayName: user.displayName || 'User',
-        photoURL: user.photoURL || '',
-        following: [],
-        followers: [],
-        createdAt: serverTimestamp()
-      };
+      if (!auth) throw new Error("Firebase not initialized");
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+      
+      // Check if user exists in db
+      const docRef = doc(db, 'users', user.uid);
+      let docSnap;
       try {
-        await setDoc(docRef, newProfile);
+        docSnap = await getDoc(docRef);
       } catch (error) {
-        handleFirestoreError(error, OperationType.CREATE, `users/${user.uid}`);
+        console.error("Error fetching user profile after Google login:", error);
+        handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
+        return;
       }
-      setUserProfile(newProfile);
+      
+      if (!docSnap.exists()) {
+        // Create new user profile
+        const newProfile: UserProfile = {
+          uid: user.uid,
+          email: user.email || '',
+          username: user.email?.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_') + Math.floor(Math.random() * 1000) || 'user_' + Math.floor(Math.random() * 1000),
+          displayName: user.displayName || 'User',
+          photoURL: user.photoURL || '',
+          following: [],
+          followers: [],
+          createdAt: serverTimestamp()
+        };
+        try {
+          await setDoc(docRef, newProfile);
+        } catch (error) {
+          console.error("Error creating user profile after Google login:", error);
+          handleFirestoreError(error, OperationType.CREATE, `users/${user.uid}`);
+        }
+        setUserProfile(newProfile);
+      }
+    } catch (error: any) {
+      console.error("Full Google Login Error Object:", error);
+      if (error.code === 'auth/operation-not-allowed') {
+        throw new Error("O login com Google não está ativado no Firebase Console.");
+      }
+      if (error.code === 'auth/unauthorized-domain') {
+        throw new Error("Este domínio não está autorizado no Firebase Console. Por favor, adicione '" + window.location.hostname + "' aos domínios autorizados.");
+      }
+      if (error.code === 'auth/invalid-api-key') {
+        throw new Error("A chave de API do Firebase é inválida. Verifique sua configuração.");
+      }
+      throw error;
     }
   };
 

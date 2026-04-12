@@ -134,13 +134,13 @@ export default function Layout() {
                 key={item.path}
                 to={item.path}
                 className={`flex items-center space-x-4 px-4 py-3 rounded-2xl transition-all relative z-10 ${
-                  isActive ? 'font-bold text-black dark:text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-white/40 dark:hover:bg-white/5 hover:text-black dark:hover:text-white'
+                  isActive ? 'font-bold text-black' : 'text-gray-600 hover:bg-white/40 hover:text-black'
                 }`}
               >
                 {isActive && (
                   <motion.div
                     layoutId="desktop-active-tab"
-                    className="absolute inset-0 bg-white/80 dark:bg-white/10 rounded-2xl -z-10 shadow-[0_0_15px_rgba(255,255,255,0.3)] dark:shadow-[0_0_15px_rgba(255,255,255,0.05)] border border-white/40 dark:border-white/10"
+                    className="absolute inset-0 bg-white/80 rounded-2xl -z-10 shadow-[0_0_15px_rgba(255,255,255,0.3)] border border-white/40"
                     transition={{ type: "spring", stiffness: 300, damping: 30 }}
                   />
                 )}
@@ -162,7 +162,13 @@ export default function Layout() {
             );
           })}
           
-          {/* Removed Postar button as requested */}
+          <button
+            onClick={() => openCreateModal()}
+            className="w-full mt-4 bg-black text-white rounded-full py-4 font-bold text-lg shadow-lg hover:bg-gray-800 transition-all active:scale-95 flex items-center justify-center space-x-2"
+          >
+            <Plus className="w-6 h-6" />
+            <span>Postar</span>
+          </button>
         </nav>
 
         <div className="mt-auto">
@@ -226,10 +232,10 @@ export default function Layout() {
 
       {/* Mobile Bottom Navigation with Liquid Glass Floating Pill (iOS 26 Style) */}
       {location.pathname !== '/premium' && (
-        <div className="sm:hidden fixed bottom-8 left-1/2 -translate-x-1/2 w-[94%] max-w-md z-40 mobile-navbar-container transition-all duration-300 flex items-center gap-3">
-          <nav className="liquid-glass-pill flex-1 rounded-[2.5rem] flex justify-around p-2 relative overflow-hidden group shadow-[0_10px_30px_rgba(0,0,0,0.15)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
+        <div className="sm:hidden fixed bottom-8 left-1/2 -translate-x-1/2 w-[94%] max-w-md z-40 mobile-navbar-container transition-all duration-300">
+          <nav className="liquid-glass-pill rounded-[2.5rem] flex justify-around p-2 relative overflow-hidden group shadow-[0_10px_30px_rgba(0,0,0,0.15)]">
             {/* Iridescent Border Effect */}
-            <div className="absolute inset-0 rounded-[2.5rem] border border-white/50 dark:border-white/10 pointer-events-none" />
+            <div className="absolute inset-0 rounded-[2.5rem] border border-white/50 pointer-events-none" />
             
             {/* Liquid highlight effect (Iridescent glow) */}
             <motion.div 
@@ -251,13 +257,13 @@ export default function Layout() {
                   key={item.path}
                   to={item.path}
                   className={`relative p-3.5 rounded-full transition-all duration-500 z-10 flex flex-col items-center justify-center ${
-                    isActive ? 'text-black dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white'
+                    isActive ? 'text-black' : 'text-gray-500 hover:text-black'
                   }`}
                 >
                   {isActive && (
                     <motion.div
                       layoutId="mobile-active-tab-blob"
-                      className="absolute inset-0 bg-white/90 dark:bg-white/20 rounded-full -z-10 shadow-[0_0_15px_rgba(255,255,255,0.4)] dark:shadow-[0_0_15px_rgba(255,255,255,0.1)]"
+                      className="absolute inset-0 bg-white/90 rounded-full -z-10 shadow-[0_0_15px_rgba(255,255,255,0.4)]"
                       transition={{ 
                         type: "spring", 
                         stiffness: 350, 
@@ -265,7 +271,6 @@ export default function Layout() {
                         mass: 0.8
                       }}
                     >
-                      {/* Inner glow for the blob */}
                       <div className="absolute inset-0 rounded-full bg-gradient-to-b from-white/30 to-transparent pointer-events-none" />
                     </motion.div>
                   )}
@@ -277,7 +282,6 @@ export default function Layout() {
                   >
                     <item.icon className={`w-7 h-7 transition-all duration-500 ${isActive ? 'stroke-[2.5px] drop-shadow-sm' : 'stroke-[2px]'}`} />
                     
-                    {/* Notification/Message Badges */}
                     <AnimatePresence>
                       {((item.path === '/notifications' && unreadNotificationsCount > 0) || 
                         (item.path === '/messages' && unreadMessagesCount > 0)) && (
@@ -285,7 +289,7 @@ export default function Layout() {
                           initial={{ scale: 0, opacity: 0 }}
                           animate={{ scale: 1, opacity: 1 }}
                           exit={{ scale: 0, opacity: 0 }}
-                          className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-black min-w-[17px] h-[17px] flex items-center justify-center rounded-full border-2 border-white dark:border-gray-900 px-0.5 shadow-sm"
+                          className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-black min-w-[17px] h-[17px] flex items-center justify-center rounded-full border-2 border-white px-0.5 shadow-sm"
                         >
                           {item.path === '/notifications' 
                             ? (unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount)
@@ -298,16 +302,6 @@ export default function Layout() {
               );
             })}
           </nav>
-
-          {/* Floating Action Button (+) */}
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            whileHover={{ scale: 1.05 }}
-            onClick={() => openCreateModal()}
-            className="w-14 h-14 rounded-full liquid-glass-pill flex items-center justify-center shadow-[0_10px_25px_rgba(0,0,0,0.2)] dark:shadow-[0_10px_25px_rgba(0,0,0,0.6)] border border-white/50 dark:border-white/10 text-black dark:text-white flex-shrink-0"
-          >
-            <Plus className="w-8 h-8" />
-          </motion.button>
         </div>
       )}
 
@@ -384,6 +378,13 @@ export default function Layout() {
                   <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   <Settings className="mr-4 w-6 h-6" /> Configurações
                 </Link>
+                
+                <button 
+                  onClick={() => { closeDrawer(); openCreateModal(); }} 
+                  className="w-full bg-black text-white flex items-center justify-center px-4 py-3.5 text-lg font-bold rounded-2xl transition-all shadow-lg hover:bg-gray-900 active:scale-95 mt-4"
+                >
+                  <Plus className="mr-2 w-6 h-6" /> Postar
+                </button>
               </nav>
               
               <div className="p-4 border-t border-gray-100 pb-[calc(1rem+env(safe-area-inset-bottom))]">
