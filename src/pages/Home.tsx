@@ -12,6 +12,7 @@ import QuotedPost from '../components/QuotedPost';
 import Poll from '../components/Poll';
 import SharePostModal from '../components/SharePostModal';
 import ImageViewer from '../components/ImageViewer';
+import PostCard from '../components/PostCard';
 import { uploadToImgBB } from '../lib/imgbb';
 import PullToRefresh from '../components/PullToRefresh';
 import { motion, AnimatePresence } from 'motion/react';
@@ -71,21 +72,21 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 const PostSkeleton = () => (
   <div className="p-4 liquid-glass-card rounded-2xl shadow-sm overflow-hidden mb-4 mx-4">
     <div className="flex space-x-3">
-      <div className="w-12 h-12 bg-gray-200 dark:bg-gray-800 rounded-full flex-shrink-0 shimmer" />
+      <div className="w-12 h-12 bg-gray-200 rounded-full flex-shrink-0 shimmer" />
       <div className="flex-1 space-y-3 py-1">
         <div className="flex items-center space-x-2">
-          <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-24 shimmer" />
-          <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-16 shimmer" />
+          <div className="h-4 bg-gray-200 rounded w-24 shimmer" />
+          <div className="h-4 bg-gray-200 rounded w-16 shimmer" />
         </div>
         <div className="space-y-2">
-          <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-full shimmer" />
-          <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-5/6 shimmer" />
+          <div className="h-4 bg-gray-200 rounded w-full shimmer" />
+          <div className="h-4 bg-gray-200 rounded w-5/6 shimmer" />
         </div>
         <div className="flex justify-between max-w-md pt-2">
-          <div className="h-8 w-8 bg-gray-100 dark:bg-gray-900 rounded-full shimmer" />
-          <div className="h-8 w-8 bg-gray-100 dark:bg-gray-900 rounded-full shimmer" />
-          <div className="h-8 w-8 bg-gray-100 dark:bg-gray-900 rounded-full shimmer" />
-          <div className="h-8 w-8 bg-gray-100 dark:bg-gray-900 rounded-full shimmer" />
+          <div className="h-8 w-8 bg-gray-100 rounded-full shimmer" />
+          <div className="h-8 w-8 bg-gray-100 rounded-full shimmer" />
+          <div className="h-8 w-8 bg-gray-100 rounded-full shimmer" />
+          <div className="h-8 w-8 bg-gray-100 rounded-full shimmer" />
         </div>
       </div>
     </div>
@@ -467,7 +468,7 @@ export default function Home() {
                   e.stopPropagation();
                   openDrawer();
                 }} 
-                className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-800 overflow-hidden flex-shrink-0 cursor-pointer border border-white/40 dark:border-white/10 shadow-sm"
+                className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 cursor-pointer border border-white/40 shadow-sm"
               >
                 {userProfile?.photoURL ? (
                   <img src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full object-cover" />
@@ -478,17 +479,17 @@ export default function Home() {
             </div>
 
             {/* Liquid Glass Tab Switcher (Center) */}
-            <nav className="liquid-glass-pill p-1 rounded-full flex items-center relative overflow-hidden border border-white/40 dark:border-white/10 shadow-lg">
+            <nav className="liquid-glass-pill p-1 rounded-full flex items-center relative overflow-hidden border border-white/40 shadow-lg">
               <button
                 onClick={() => setActiveTab('foryou')}
                 className={`relative px-6 py-2 text-sm font-bold transition-all duration-300 z-10 ${
-                  activeTab === 'foryou' ? 'text-black dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white'
+                  activeTab === 'foryou' ? 'text-black' : 'text-gray-500 hover:text-black'
                 }`}
               >
                 {activeTab === 'foryou' && (
                   <motion.div
                     layoutId="feed-tab-blob"
-                    className="absolute inset-0 bg-white/80 dark:bg-white/10 rounded-full -z-10 shadow-sm"
+                    className="absolute inset-0 bg-white/80 rounded-full -z-10 shadow-sm"
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}
@@ -497,13 +498,13 @@ export default function Home() {
               <button
                 onClick={() => setActiveTab('following')}
                 className={`relative px-6 py-2 text-sm font-bold transition-all duration-300 z-10 ${
-                  activeTab === 'following' ? 'text-black dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white'
+                  activeTab === 'following' ? 'text-black' : 'text-gray-500 hover:text-black'
                 }`}
               >
                 {activeTab === 'following' && (
                   <motion.div
                     layoutId="feed-tab-blob"
-                    className="absolute inset-0 bg-white/80 dark:bg-white/10 rounded-full -z-10 shadow-sm"
+                    className="absolute inset-0 bg-white/80 rounded-full -z-10 shadow-sm"
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}
@@ -514,7 +515,7 @@ export default function Home() {
             {/* Search Toggle Button (Right) */}
             <button 
               onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className={`p-2.5 rounded-full transition-all duration-300 border border-white/40 dark:border-white/10 shadow-sm ${isSearchOpen ? 'bg-black text-white' : 'liquid-glass-pill text-gray-500 dark:text-gray-400'}`}
+              className={`p-2.5 rounded-full transition-all duration-300 border border-white/40 shadow-sm ${isSearchOpen ? 'bg-black text-white' : 'liquid-glass-pill text-gray-500'}`}
             >
               <Search className="w-5 h-5" />
             </button>
@@ -531,7 +532,7 @@ export default function Home() {
               >
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Search className="w-4 h-4 text-gray-400 group-focus-within:text-black dark:group-focus-within:text-white transition-colors" />
+                    <Search className="w-4 h-4 text-gray-400 group-focus-within:text-black transition-colors" />
                   </div>
                   <input
                     type="text"
@@ -539,7 +540,7 @@ export default function Home() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     autoFocus
-                    className="block w-full pl-11 pr-4 py-3 border border-white/40 dark:border-white/10 rounded-2xl bg-white/60 dark:bg-black/60 backdrop-blur-xl focus:ring-2 focus:ring-blue-500/20 outline-none transition-all text-sm shadow-sm"
+                    className="block w-full pl-11 pr-4 py-3 border border-white/40 rounded-2xl bg-white/60 backdrop-blur-xl focus:ring-2 focus:ring-blue-500/20 outline-none transition-all text-sm shadow-sm"
                   />
                 </div>
               </motion.div>
@@ -634,289 +635,30 @@ export default function Home() {
                       );
                     }
                     
-                    return filtered.map((post) => {
-                      return (
-                        <motion.article 
-                          key={post.id} 
-                          initial={{ opacity: 0, y: 20 }}
-                          whileInView={{ opacity: 1, y: 0 }}
-                          viewport={{ once: true, margin: "-50px" }}
-                          transition={{ duration: 0.4, ease: "easeOut" }}
-                          onClick={() => navigate(`/post/${post.id}`)}
-                          className="group relative p-4 liquid-glass-card rounded-2xl shadow-sm hover:bg-white/80 dark:hover:bg-black/80 transition-all cursor-pointer flex space-x-4"
-                        >
-                    {/* Quick Actions Hover Overlay */}
-                    <div className="absolute top-3 right-12 opacity-0 group-hover:opacity-100 transition-opacity flex items-center space-x-1 bg-white/90 backdrop-blur-sm rounded-full shadow-sm border border-gray-100 p-1 z-10">
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openCreateModal(null, post);
+                    return filtered.map((post) => (
+                      <PostCard
+                        key={post.id}
+                        post={post}
+                        onLike={handleLikePost}
+                        onRepost={handleRepost}
+                        onDelete={handleDeletePost}
+                        onEdit={(p) => {
+                          setEditingPost(p);
+                          setEditContent(p.content);
                         }}
-                        className="p-2 hover:bg-black/5 text-gray-500 hover:text-black rounded-full transition-colors"
-                        title="Citar"
-                      >
-                        <ZapIcon className="w-4 h-4" />
-                      </button>
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openCreateModal(post);
-                        }}
-                        className="p-2 hover:bg-black/5 text-gray-500 hover:text-black rounded-full transition-colors"
-                        title="Responder"
-                      >
-                        <MessageCircle className="w-4 h-4" />
-                      </button>
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRepost(post);
-                        }}
-                        className={`p-2 rounded-full transition-colors ${post.reposts?.includes(userProfile?.uid) ? 'bg-green-50 text-green-500' : 'hover:bg-green-50 text-gray-500 hover:text-green-500'}`}
-                        title="Repostar"
-                      >
-                        <Repeat className="w-4 h-4" />
-                      </button>
-                      <motion.button
-                        whileTap={{ scale: 1.3 }}
-                        animate={{ scale: post.likes?.includes(userProfile?.uid) ? 1.1 : 1 }}
-                        transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleLikePost(post);
-                        }}
-                        className={`p-2 rounded-full transition-colors ${post.likes?.includes(userProfile?.uid) ? 'bg-red-50 text-red-500' : 'hover:bg-red-50 text-gray-500 hover:text-red-500'}`}
-                        title="Curtir"
-                      >
-                        <Heart className={`w-4 h-4 ${post.likes?.includes(userProfile?.uid) ? 'fill-current' : ''}`} />
-                      </motion.button>
-                    </div>
-
-                    <div 
-                      className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 cursor-zoom-in"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (post.authorPhoto) {
-                          openImageViewer(post.authorPhoto, `Avatar de ${post.authorName}`);
-                        } else {
-                          navigate(`/profile/${post.authorId}`);
-                        }
-                      }}
-                    >
-                    {post.authorPhoto ? (
-                      <img src={post.authorPhoto} alt={post.authorName} className="w-full h-full object-cover" />
-                    ) : (
-                      <UserIcon className="w-full h-full p-2 text-gray-400" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between w-full">
-                      <div 
-                        className="flex items-center space-x-1 min-w-0 cursor-pointer flex-1"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/profile/${post.authorId}`);
-                        }}
-                      >
-                        <span className="font-bold truncate hover:underline flex-shrink-0 max-w-[120px] sm:max-w-[180px]">{post.authorName}</span>
-                        {(post.authorVerified || post.authorUsername === 'Rulio') && <VerifiedBadge className="w-4 h-4 flex-shrink-0" tier={post.authorPremiumTier} />}
-                        <span className="text-gray-500 truncate flex-shrink min-w-0">@{post.authorUsername}</span>
-                        <span className="text-gray-500 flex-shrink-0">·</span>
-                        <span className="text-gray-500 text-sm flex-shrink-0">
-                          {post.createdAt?.toDate ? formatRelativeTime(post.createdAt.toDate()) : 'Agora'}
-                        </span>
-                        {post.isEdited && <span className="text-gray-400 text-xs flex-shrink-0">(editado)</span>}
-                      </div>
-                      
-                      <div className="relative">
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveMenuPostId(activeMenuPostId === post.id ? null : post.id);
-                          }}
-                          className="p-2 hover:bg-black/5 rounded-full transition-colors text-gray-500 hover:text-black"
-                        >
-                          <MoreHorizontal className="w-5 h-5" />
-                        </button>
-                        
-                        {activeMenuPostId === post.id && (
-                          <div className="absolute right-0 mt-1 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-10" onClick={(e) => e.stopPropagation()}>
-                            {post.authorId === userProfile?.uid ? (
-                              <>
-                                <button 
-                                  onClick={() => handleDeletePost(post.id)}
-                                  className="w-full text-left px-4 py-2 text-red-500 hover:bg-gray-50 flex items-center space-x-2"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                  <span>Apagar post</span>
-                                </button>
-                                
-                                <button 
-                                  onClick={() => {
-                                    if (canEditPost(post)) {
-                                      setEditingPost(post);
-                                      setEditContent(post.content);
-                                      setActiveMenuPostId(null);
-                                    } else {
-                                      showToast('O tempo de edição (3 minutos) expirou. Assine o Premium para editar a qualquer momento.', 'info');
-                                      setActiveMenuPostId(null);
-                                    }
-                                  }}
-                                  className={`w-full text-left px-4 py-2 flex items-center space-x-2 ${canEditPost(post) ? 'text-gray-700 hover:bg-gray-50' : 'text-gray-400 cursor-not-allowed'}`}
-                                >
-                                  <Edit2 className="w-4 h-4" />
-                                  <span>Editar post</span>
-                                </button>
-                              </>
-                            ) : (
-                              <button 
-                                onClick={() => handleFollowClick(post.authorId, post.authorName, post.authorPhoto)}
-                                className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
-                              >
-                                <UserIcon className="w-4 h-4" />
-                                <span>{userProfile?.following?.includes(post.authorId) ? 'Deixar de seguir' : 'Seguir'} @{post.authorUsername}</span>
-                              </button>
-                            )}
-                            
-                            <button 
-                               onClick={(e) => {
-                                 e.stopPropagation();
-                                 setSelectedSharePost(post);
-                                 setIsShareModalOpen(true);
-                                 setActiveMenuPostId(null);
-                               }}
-                               className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
-                             >
-                               <Send className="w-4 h-4" />
-                               <span>Compartilhar post</span>
-                             </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {editingPost?.id === post.id ? (
-                      <div className="mt-2" onClick={(e) => e.stopPropagation()}>
-                        <textarea
-                          value={editContent}
-                          onChange={(e) => setEditContent(e.target.value)}
-                          maxLength={1000}
-                          className="w-full bg-white border border-gray-200 rounded-xl p-3 outline-none resize-none min-h-[80px]"
-                          autoFocus
-                        />
-                        <div className="flex justify-between items-center mt-2">
-                          <div className={`text-xs font-medium ${editContent.length > 1000 ? 'text-red-500' : 'text-gray-400'}`}>
-                            {editContent.length} / 1000
-                          </div>
-                          <div className="flex space-x-2">
-                            <button 
-                              onClick={() => setEditingPost(null)}
-                              className="px-4 py-1.5 rounded-full font-bold hover:bg-gray-100 transition-colors"
-                            >
-                              Cancelar
-                            </button>
-                            <button 
-                              onClick={() => handleEditPost(post.id)}
-                              disabled={!editContent.trim() || editContent === post.content || editContent.length > 1000}
-                              className="bg-black text-white px-4 py-1.5 rounded-full font-bold hover:bg-gray-800 disabled:opacity-50 transition-colors"
-                            >
-                              Salvar
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        {post.replyToUsername && (
-                          <div className="mt-1 text-sm text-gray-500">
-                            Respondendo a <span className="text-black">@{post.replyToUsername}</span>
-                          </div>
-                        )}
-                        <PostContent content={post.content} className="mt-1 text-gray-900" />
-                    {post.quotedPostId && <QuotedPost post={post} />}
-                        {post.isEdited && <span className="text-gray-400 text-xs">(editado)</span>}
-                        
-                        {post.poll && (
-                          <Poll post={post} handleFirestoreError={handleFirestoreError} OperationType={OperationType} />
-                        )}
-
-                        {post.imageUrl && (
-                          <div 
-                            className="mt-3 rounded-2xl overflow-hidden border border-gray-200 cursor-zoom-in"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openImageViewer(post.imageUrl, `Imagem do post de ${post.authorName}`);
-                            }}
-                          >
-                            <img src={post.imageUrl} alt="Post attachment" className="w-full h-auto max-h-96 object-cover" />
-                          </div>
-                        )}
-                      </>
-                    )}
-                    
-                    <div className="flex justify-between mt-4 text-gray-500 max-w-md">
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openCreateModal(post);
-                        }}
-                        className="flex items-center space-x-2 hover:text-black transition-colors group"
-                      >
-                        <div className="p-2 group-hover:bg-black/5 rounded-full">
-                          <MessageCircle className="w-5 h-5" />
-                        </div>
-                        <span className="text-sm">{post.repliesCount || 0}</span>
-                      </button>
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRepost(post);
-                        }}
-                        className={`flex items-center space-x-2 transition-colors group ${post.reposts?.includes(userProfile?.uid) ? 'text-green-500' : 'hover:text-green-500'}`}
-                      >
-                        <motion.div 
-                          whileTap={{ scale: 0.8 }}
-                          className="p-2 group-hover:bg-green-50 rounded-full"
-                        >
-                          <Repeat className={`w-5 h-5 ${post.reposts?.includes(userProfile?.uid) ? 'stroke-[3px]' : ''}`} />
-                        </motion.div>
-                        <span className="text-sm">{post.repostsCount || 0}</span>
-                      </button>
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleLikePost(post);
-                        }}
-                        className={`flex items-center space-x-2 transition-colors group ${post.likes?.includes(userProfile?.uid) ? 'text-red-500' : 'hover:text-red-500'}`}
-                      >
-                        <motion.div 
-                          whileTap={{ scale: 0.8 }}
-                          className="p-2 group-hover:bg-red-50 rounded-full"
-                        >
-                          <Heart className={`w-5 h-5 ${post.likes?.includes(userProfile?.uid) ? 'fill-current' : ''}`} />
-                        </motion.div>
-                        <span className="text-sm">{post.likesCount || 0}</span>
-                      </button>
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedSharePost(post);
+                        onShare={(p) => {
+                          setSelectedSharePost(p);
                           setIsShareModalOpen(true);
                         }}
-                        className="flex items-center space-x-2 hover:text-black transition-colors group"
-                      >
-                        <div className="p-2 group-hover:bg-black/5 rounded-full">
-                          <Send className="w-5 h-5" />
-                        </div>
-                      </button>
-                    </div>
-                  </div>
-                </motion.article>
-                );
-              })
-            })()}
-          </div>
-        )}
+                        onReply={(p) => openCreateModal(p)}
+                        onQuote={(p) => openCreateModal(null, p)}
+                        onImageClick={openImageViewer}
+                        canEdit={canEditPost}
+                      />
+                    ));
+                  })()}
+                </div>
+              )}
             </motion.div>
           </AnimatePresence>
           </PullToRefresh>

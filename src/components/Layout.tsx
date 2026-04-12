@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet, useLocation, Link } from 'react-router-dom';
+import { Outlet, useLocation, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { LogOut, Home as HomeIcon, Search, Bell, Mail, User as UserIcon, Bookmark, List, Zap as ZapIcon, Settings, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -7,6 +7,7 @@ import VerifiedBadge from './VerifiedBadge';
 import CreatePostModal from './CreatePostModal';
 import ConfirmModal from './ConfirmModal';
 import ImageViewer from './ImageViewer';
+import RightSidebar from './RightSidebar';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 
@@ -49,6 +50,7 @@ const navItems = [
 export default function Layout() {
   const { userProfile, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
@@ -111,117 +113,133 @@ export default function Layout() {
   };
 
   return (
-    <div className="min-h-screen text-gray-900 dark:text-white flex justify-center relative bg-white dark:bg-gray-950 transition-colors duration-500 overflow-x-hidden">
-      {/* Decorative background blobs to make the glass effect visible */}
-      <div className="fixed top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-blue-400/20 dark:bg-blue-600/10 blur-[120px] pointer-events-none animate-pulse" />
-      <div className="fixed bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-purple-400/20 dark:bg-purple-600/10 blur-[120px] pointer-events-none animate-pulse" style={{ animationDelay: '2s' }} />
-      <div className="fixed top-[20%] right-[-5%] w-[30%] h-[30%] rounded-full bg-pink-400/10 dark:bg-pink-600/5 blur-[100px] pointer-events-none" />
-      <div className="fixed bottom-[20%] left-[-5%] w-[30%] h-[30%] rounded-full bg-amber-400/10 dark:bg-amber-600/5 blur-[100px] pointer-events-none" />
+    <div className="min-h-screen text-gray-900 flex justify-center relative bg-white transition-colors duration-500 overflow-x-hidden">
+      {/* Decorative background blobs - reduced opacity for light mode */}
+      <div className="fixed top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-blue-400/5 blur-[120px] pointer-events-none animate-pulse" />
+      <div className="fixed bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-purple-400/5 blur-[120px] pointer-events-none animate-pulse" style={{ animationDelay: '2s' }} />
       
-      {/* Sidebar Navigation (Desktop) */}
-      <header className="hidden sm:flex flex-col w-64 border-r border-white/40 dark:border-white/10 px-4 py-6 sticky top-0 h-screen z-20 liquid-glass">
-        <div className="flex items-center mb-8 px-4">
-          <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center overflow-hidden">
-            <img src="/ghost.svg" alt="OffMe Logo" className="w-6 h-6 object-contain invert" />
-          </div>
-          <span className="ml-3 font-bold text-xl tracking-tight">OffMe</span>
-        </div>
-        
-        <nav className="flex-1 space-y-2 mt-8 relative">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            
-            if (item.isAction) {
-              return (
-                <button
-                  key={item.path}
-                  onClick={() => openCreateModal()}
-                  className="w-full flex items-center space-x-4 px-4 py-3 rounded-2xl transition-all text-gray-600 hover:bg-white/40 hover:text-black"
-                >
-                  <item.icon className="w-6 h-6" />
-                  <span className="text-lg">{item.label}</span>
-                </button>
-              );
-            }
-
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center space-x-4 px-4 py-3 rounded-2xl transition-all relative z-10 ${
-                  isActive ? 'font-bold text-black' : 'text-gray-600 hover:bg-white/40 hover:text-black'
-                }`}
-              >
-                {isActive && (
-                  <motion.div
-                    layoutId="desktop-active-tab"
-                    className="absolute inset-0 bg-white/80 rounded-2xl -z-10 shadow-[0_0_15px_rgba(255,255,255,0.3)] border border-white/40"
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  />
-                )}
-                <div className="relative">
-                  <item.icon className="w-6 h-6" />
-                  {item.path === '/notifications' && unreadNotificationsCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-black text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">
-                      {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
-                    </span>
-                  )}
-                  {item.path === '/messages' && unreadMessagesCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-black text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">
-                      {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
-                    </span>
-                  )}
-                </div>
-                <span className="text-lg">{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div className="mt-auto">
-          <button 
-            onClick={() => setIsLogoutModalOpen(true)}
-            className="flex items-center space-x-4 px-4 py-3 w-full hover:bg-red-500/10 rounded-2xl transition-all text-red-500"
-          >
-            <LogOut className="w-6 h-6" />
-            <span className="text-lg font-medium">Sair</span>
-          </button>
-          
-          {userProfile && (
-            <div className="mt-4 flex items-center px-4 py-3">
-              <div 
-                className="w-10 h-10 rounded-full bg-gray-100 overflow-hidden flex-shrink-0 border border-gray-200 cursor-zoom-in"
-                onClick={() => userProfile.photoURL && openImageViewer(userProfile.photoURL, `Avatar de ${userProfile.displayName}`)}
-              >
-                <img src={userProfile.photoURL || '/ghost.svg'} alt={userProfile.displayName} className="w-full h-full object-cover" />
-              </div>
-              <div className="ml-3 overflow-hidden">
-                <div className="flex items-center space-x-1">
-                  <p className="font-bold text-sm truncate">{userProfile.displayName}</p>
-                  {(userProfile.isVerified || userProfile.username === 'Rulio') && <VerifiedBadge className="w-3.5 h-3.5 flex-shrink-0" tier={userProfile.premiumTier} />}
-                </div>
-                <p className="text-gray-500 text-sm truncate">@{userProfile.username}</p>
-              </div>
+      <div className="flex w-full max-w-[1300px] mx-auto">
+        {/* Sidebar Navigation (Desktop) */}
+        <header className="hidden sm:flex flex-col w-20 xl:w-64 border-r border-gray-100 px-2 xl:px-4 py-6 sticky top-0 h-screen z-20 bg-white">
+          <div className="flex items-center mb-8 px-4">
+            <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center overflow-hidden">
+              <img src="/ghost.svg" alt="OffMe Logo" className="w-6 h-6 object-contain invert" />
             </div>
-          )}
-        </div>
-      </header>
+            <span className="ml-3 font-bold text-xl tracking-tight hidden xl:block">OffMe</span>
+          </div>
+          
+          <nav className="flex-1 space-y-1 mt-4 relative">
+            {navItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              
+              if (item.isAction) {
+                return (
+                  <button
+                    key={item.path}
+                    onClick={() => openCreateModal()}
+                    className="w-full flex items-center justify-center xl:justify-start space-x-4 px-4 py-3 rounded-full transition-all text-gray-900 hover:bg-gray-100 group"
+                  >
+                    <div className="relative">
+                      <item.icon className="w-7 h-7" />
+                    </div>
+                    <span className={`text-xl hidden xl:block ${isActive ? 'font-black' : 'font-medium'}`}>{item.label}</span>
+                  </button>
+                );
+              }
 
-      {/* Main Content Area */}
-      <main className="w-full max-w-2xl min-h-[100dvh] pb-24 sm:pb-0 z-10 relative border-r border-gray-100">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={location.pathname}
-            initial={{ opacity: 0, y: 5 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -5 }}
-            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-            className="h-full"
-          >
-            <Outlet context={{ openDrawer, openCreateModal }} />
-          </motion.div>
-        </AnimatePresence>
-      </main>
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`flex items-center justify-center xl:justify-start space-x-4 px-4 py-3 rounded-full transition-all relative z-10 group ${
+                    isActive ? 'text-black' : 'text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <div className="relative">
+                    <item.icon className={`w-7 h-7 ${isActive ? 'stroke-[2.5px]' : 'stroke-[2px]'}`} />
+                    {item.path === '/notifications' && unreadNotificationsCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-black text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">
+                        {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+                      </span>
+                    )}
+                    {item.path === '/messages' && unreadMessagesCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-black text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">
+                        {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
+                      </span>
+                    )}
+                  </div>
+                  <span className={`text-xl hidden xl:block ${isActive ? 'font-black' : 'font-medium'}`}>{item.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
+
+          <div className="mt-4 px-4 hidden xl:block">
+            <button 
+              onClick={() => openCreateModal()}
+              className="w-full bg-black text-white rounded-full py-4 text-xl font-bold hover:bg-gray-800 transition-all shadow-lg active:scale-95"
+            >
+              Postar
+            </button>
+          </div>
+          
+          <div className="mt-4 px-4 xl:hidden">
+            <button 
+              onClick={() => openCreateModal()}
+              className="w-12 h-12 bg-black text-white rounded-full flex items-center justify-center hover:bg-gray-800 transition-all shadow-lg active:scale-95 mx-auto"
+            >
+              <Plus className="w-6 h-6" />
+            </button>
+          </div>
+
+          <div className="mt-auto">
+            <button 
+              onClick={() => setIsLogoutModalOpen(true)}
+              className="flex items-center justify-center xl:justify-start space-x-4 px-4 py-3 w-full hover:bg-red-50 rounded-full transition-all text-red-500"
+            >
+              <LogOut className="w-7 h-7" />
+              <span className="text-xl font-bold hidden xl:block">Sair</span>
+            </button>
+            
+            {userProfile && (
+              <div 
+                className="mt-4 flex items-center px-4 py-3 hover:bg-gray-100 rounded-full cursor-pointer transition-colors"
+                onClick={() => navigate(`/profile/${userProfile.uid}`)}
+              >
+                <div className="w-10 h-10 rounded-full bg-gray-100 overflow-hidden flex-shrink-0 border border-gray-200">
+                  <img src={userProfile.photoURL || '/ghost.svg'} alt={userProfile.displayName} className="w-full h-full object-cover" />
+                </div>
+                <div className="ml-3 overflow-hidden hidden xl:block">
+                  <div className="flex items-center space-x-1">
+                    <p className="font-bold text-sm truncate">{userProfile.displayName}</p>
+                    {(userProfile.isVerified || userProfile.username === 'Rulio') && <VerifiedBadge className="w-3.5 h-3.5 flex-shrink-0" tier={userProfile.premiumTier} />}
+                  </div>
+                  <p className="text-gray-500 text-sm truncate">@{userProfile.username}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </header>
+
+        {/* Main Content Area */}
+        <main className="flex-1 max-w-[600px] min-h-[100dvh] pb-24 sm:pb-0 z-10 relative border-r border-gray-100 bg-white">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="h-full"
+            >
+              <Outlet context={{ openDrawer, openCreateModal }} />
+            </motion.div>
+          </AnimatePresence>
+        </main>
+
+        {/* Right Sidebar (Desktop) */}
+        <RightSidebar />
+      </div>
 
       <CreatePostModal 
         isOpen={isCreateModalOpen} 
@@ -378,23 +396,23 @@ export default function Layout() {
               </div>
               
               <nav className="flex-1 overflow-y-auto py-4 px-4 space-y-3">
-                <Link to="/profile" onClick={closeDrawer} className="liquid-glass-pill flex items-center px-4 py-3.5 text-lg font-bold rounded-2xl transition-all relative overflow-hidden group border border-white/20 dark:border-white/5">
+                <Link to="/profile" onClick={closeDrawer} className="liquid-glass-pill flex items-center px-4 py-3.5 text-lg font-bold rounded-2xl transition-all relative overflow-hidden group border border-white/20">
                   <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   <UserIcon className="mr-4 w-6 h-6" /> Perfil
                 </Link>
-                <Link to="/premium" onClick={closeDrawer} className="liquid-glass-pill flex items-center px-4 py-3.5 text-lg font-bold rounded-2xl transition-all relative overflow-hidden group border border-white/20 dark:border-white/5">
+                <Link to="/premium" onClick={closeDrawer} className="liquid-glass-pill flex items-center px-4 py-3.5 text-lg font-bold rounded-2xl transition-all relative overflow-hidden group border border-white/20">
                   <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   <ZapIcon className="mr-4 w-6 h-6" /> Premium
                 </Link>
-                <Link to="/bookmarks" onClick={closeDrawer} className="liquid-glass-pill flex items-center px-4 py-3.5 text-lg font-bold rounded-2xl transition-all relative overflow-hidden group border border-white/20 dark:border-white/5">
+                <Link to="/bookmarks" onClick={closeDrawer} className="liquid-glass-pill flex items-center px-4 py-3.5 text-lg font-bold rounded-2xl transition-all relative overflow-hidden group border border-white/20">
                   <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   <Bookmark className="mr-4 w-6 h-6" /> Itens salvos
                 </Link>
-                <Link to="/lists" onClick={closeDrawer} className="liquid-glass-pill flex items-center px-4 py-3.5 text-lg font-bold rounded-2xl transition-all relative overflow-hidden group border border-white/20 dark:border-white/5">
+                <Link to="/lists" onClick={closeDrawer} className="liquid-glass-pill flex items-center px-4 py-3.5 text-lg font-bold rounded-2xl transition-all relative overflow-hidden group border border-white/20">
                   <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   <List className="mr-4 w-6 h-6" /> Listas
                 </Link>
-                <Link to="/settings" onClick={closeDrawer} className="liquid-glass-pill flex items-center px-4 py-3.5 text-lg font-bold rounded-2xl transition-all relative overflow-hidden group border border-white/20 dark:border-white/5">
+                <Link to="/settings" onClick={closeDrawer} className="liquid-glass-pill flex items-center px-4 py-3.5 text-lg font-bold rounded-2xl transition-all relative overflow-hidden group border border-white/20">
                   <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   <Settings className="mr-4 w-6 h-6" /> Configurações
                 </Link>

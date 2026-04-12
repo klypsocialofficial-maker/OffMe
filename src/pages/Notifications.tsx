@@ -106,29 +106,29 @@ export default function Notifications() {
       <div className="sticky top-0 z-30 pt-[calc(0.5rem+env(safe-area-inset-top))] flex flex-col items-center">
         <div className="w-full max-w-md px-4 py-2">
           <div className="flex items-center justify-between relative mb-4">
-            <button onClick={openDrawer} className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-800 overflow-hidden flex-shrink-0 sm:hidden border border-white/40 dark:border-white/10 shadow-sm">
+            <button onClick={openDrawer} className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 sm:hidden border border-white/40 shadow-sm">
               {userProfile?.photoURL ? (
                 <img src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full object-cover" />
               ) : (
                 <UserIcon className="w-full h-full p-2 text-gray-400" />
               )}
             </button>
-            <h1 className="text-xl font-bold dark:text-white">Notifications</h1>
+            <h1 className="text-xl font-bold">Notifications</h1>
             <div className="w-10 h-10 sm:hidden" /> {/* Spacer */}
           </div>
 
           <div className="flex justify-center">
-            <nav className="liquid-glass-pill p-1 rounded-full flex items-center relative overflow-hidden border border-white/40 dark:border-white/10 shadow-lg">
+            <nav className="liquid-glass-pill p-1 rounded-full flex items-center relative overflow-hidden border border-white/40 shadow-lg">
               <button 
                 onClick={() => setActiveTab('all')}
                 className={`relative px-6 py-2 text-sm font-bold transition-all duration-300 z-10 ${
-                  activeTab === 'all' ? 'text-black dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white'
+                  activeTab === 'all' ? 'text-black' : 'text-gray-500 hover:text-black'
                 }`}
               >
                 {activeTab === 'all' && (
                   <motion.div
                     layoutId="notif-tab-blob"
-                    className="absolute inset-0 bg-white/80 dark:bg-white/10 rounded-full -z-10 shadow-sm"
+                    className="absolute inset-0 bg-white/80 rounded-full -z-10 shadow-sm"
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}
@@ -137,13 +137,13 @@ export default function Notifications() {
               <button 
                 onClick={() => setActiveTab('verified')}
                 className={`relative px-6 py-2 text-sm font-bold transition-all duration-300 z-10 ${
-                  activeTab === 'verified' ? 'text-black dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white'
+                  activeTab === 'verified' ? 'text-black' : 'text-gray-500 hover:text-black'
                 }`}
               >
                 {activeTab === 'verified' && (
                   <motion.div
                     layoutId="notif-tab-blob"
-                    className="absolute inset-0 bg-white/80 dark:bg-white/10 rounded-full -z-10 shadow-sm"
+                    className="absolute inset-0 bg-white/80 rounded-full -z-10 shadow-sm"
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}

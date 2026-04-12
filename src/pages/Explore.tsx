@@ -348,7 +348,7 @@ export default function Explore() {
       <div className="sticky top-0 z-30 pt-[calc(0.5rem+env(safe-area-inset-top))] flex flex-col items-center">
         <div className="w-full max-w-md px-4 py-2">
           <div className="flex items-center space-x-3">
-            <button onClick={openDrawer} className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-800 overflow-hidden flex-shrink-0 sm:hidden border border-white/40 dark:border-white/10 shadow-sm">
+            <button onClick={openDrawer} className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 sm:hidden border border-white/40 shadow-sm">
               {userProfile?.photoURL ? (
                 <img src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full object-cover" />
               ) : (
@@ -362,7 +362,7 @@ export default function Explore() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search users..." 
-                className="w-full liquid-glass-pill rounded-full py-3 pl-12 pr-4 outline-none border border-white/40 dark:border-white/10 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-lg dark:text-white"
+                className="w-full liquid-glass-pill rounded-full py-3 pl-12 pr-4 outline-none border border-white/40 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-lg"
               />
             </div>
           </div>
@@ -380,12 +380,12 @@ export default function Explore() {
                   key={user.id} 
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="p-4 liquid-glass-card rounded-2xl shadow-sm flex items-center justify-between cursor-pointer hover:bg-white/80 dark:hover:bg-black/80 transition-all"
+                  className="p-4 liquid-glass-card rounded-2xl shadow-sm flex items-center justify-between cursor-pointer hover:bg-white/80 transition-all"
                   onClick={() => navigate(`/profile/${user.id}`)}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center space-x-3 min-w-0">
-                      <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-800 overflow-hidden flex-shrink-0 border border-white/40 dark:border-white/10 shadow-sm">
+                      <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 border border-white/40 shadow-sm">
                         {user.photoURL ? (
                           <img src={user.photoURL} alt={user.displayName} className="w-full h-full object-cover" />
                         ) : (
@@ -394,11 +394,11 @@ export default function Explore() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center space-x-1">
-                          <p className="font-bold text-black dark:text-white truncate">{user.displayName}</p>
+                          <p className="font-bold text-black truncate">{user.displayName}</p>
                           {(user.isVerified || user.username === 'Rulio') && <VerifiedBadge tier={user.premiumTier} className="flex-shrink-0" />}
                         </div>
                         <p className="text-gray-500 text-sm truncate">@{user.username}</p>
-                        {user.bio && <p className="text-gray-600 dark:text-gray-400 text-xs mt-1 line-clamp-2 leading-relaxed">{user.bio}</p>}
+                        {user.bio && <p className="text-gray-600 text-xs mt-1 line-clamp-2 leading-relaxed">{user.bio}</p>}
                       </div>
                     </div>
                     
@@ -409,7 +409,7 @@ export default function Explore() {
                             e.stopPropagation();
                             handleMessageClick(user);
                           }}
-                          className="flex-1 sm:flex-none px-4 py-2 rounded-xl text-sm font-bold transition-all liquid-glass-pill border border-white/40 dark:border-white/10 text-black dark:text-white hover:bg-white/80 dark:hover:bg-white/20 active:scale-95"
+                          className="flex-1 sm:flex-none px-4 py-2 rounded-xl text-sm font-bold transition-all liquid-glass-pill border border-white/40 text-black hover:bg-white/80 active:scale-95"
                         >
                           Message
                         </button>
@@ -420,8 +420,8 @@ export default function Explore() {
                           }}
                           className={`flex-1 sm:flex-none px-5 py-2 rounded-xl text-sm font-bold transition-all active:scale-95 ${
                             userProfile.following?.includes(user.id)
-                              ? 'bg-white/40 dark:bg-white/10 text-black dark:text-white border border-white/40 dark:border-white/10 hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30'
-                              : 'bg-black dark:bg-white text-white dark:text-black shadow-lg hover:opacity-90'
+                              ? 'bg-white/40 text-black border border-white/40 hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30'
+                              : 'bg-black text-white shadow-lg hover:opacity-90'
                           }`}
                         >
                           {userProfile.following?.includes(user.id) ? 'Following' : 'Follow'}
@@ -442,7 +442,7 @@ export default function Explore() {
             <TrendingPosts />
             
             <div className="mt-8 pt-6">
-              <h2 className="px-4 text-xl font-bold mb-4 dark:text-white">Suggested for you</h2>
+              <h2 className="px-4 text-xl font-bold mb-4">Suggested for you</h2>
               
               {loadingSuggestions ? (
                 <div className="p-8 text-center text-gray-500">Loading suggestions...</div>
@@ -453,12 +453,12 @@ export default function Explore() {
                       key={user.id} 
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="p-4 liquid-glass-card rounded-2xl shadow-sm flex items-center justify-between cursor-pointer hover:bg-white/80 dark:hover:bg-black/80 transition-all"
+                      className="p-4 liquid-glass-card rounded-2xl shadow-sm flex items-center justify-between cursor-pointer hover:bg-white/80 transition-all"
                       onClick={() => navigate(`/profile/${user.id}`)}
                     >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center space-x-3 min-w-0">
-                      <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-800 overflow-hidden flex-shrink-0 border border-white/40 dark:border-white/10 shadow-sm">
+                      <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 border border-white/40 shadow-sm">
                         {user.photoURL ? (
                           <img src={user.photoURL} alt={user.displayName} className="w-full h-full object-cover" />
                         ) : (
@@ -467,11 +467,11 @@ export default function Explore() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center space-x-1">
-                          <p className="font-bold text-black dark:text-white truncate">{user.displayName}</p>
+                          <p className="font-bold text-black truncate">{user.displayName}</p>
                           {(user.isVerified || user.username === 'Rulio') && <VerifiedBadge tier={user.premiumTier} className="flex-shrink-0" />}
                         </div>
                         <p className="text-gray-500 text-sm truncate">@{user.username}</p>
-                        {user.bio && <p className="text-gray-600 dark:text-gray-400 text-xs mt-1 line-clamp-2 leading-relaxed">{user.bio}</p>}
+                        {user.bio && <p className="text-gray-600 text-xs mt-1 line-clamp-2 leading-relaxed">{user.bio}</p>}
                         {user.username === 'Rulio' && (
                           <p className="text-[10px] text-blue-500 font-black uppercase tracking-widest mt-1">App Creator</p>
                         )}
@@ -485,7 +485,7 @@ export default function Explore() {
                             e.stopPropagation();
                             handleMessageClick(user);
                           }}
-                          className="flex-1 sm:flex-none px-4 py-2 rounded-xl text-sm font-bold transition-all liquid-glass-pill border border-white/40 dark:border-white/10 text-black dark:text-white hover:bg-white/80 dark:hover:bg-white/20 active:scale-95"
+                          className="flex-1 sm:flex-none px-4 py-2 rounded-xl text-sm font-bold transition-all liquid-glass-pill border border-white/40 text-black hover:bg-white/80 active:scale-95"
                         >
                           Message
                         </button>
@@ -496,8 +496,8 @@ export default function Explore() {
                           }}
                           className={`flex-1 sm:flex-none px-5 py-2 rounded-xl text-sm font-bold transition-all active:scale-95 ${
                             userProfile?.following?.includes(user.id)
-                              ? 'bg-white/40 dark:bg-white/10 text-black dark:text-white border border-white/40 dark:border-white/10 hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30'
-                              : 'bg-black dark:bg-white text-white dark:text-black shadow-lg hover:opacity-90'
+                              ? 'bg-white/40 text-black border border-white/40 hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30'
+                              : 'bg-black text-white shadow-lg hover:opacity-90'
                           }`}
                         >
                           {userProfile?.following?.includes(user.id) ? 'Following' : 'Follow'}

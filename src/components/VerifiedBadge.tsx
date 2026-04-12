@@ -9,7 +9,7 @@ interface VerifiedBadgeProps {
 export default function VerifiedBadge({ className = "w-4 h-4", tier = 'gold' }: VerifiedBadgeProps) {
   let colorClass = 'text-yellow-500'; // Default to gold
   if (tier === 'silver') colorClass = 'text-slate-400';
-  if (tier === 'black') colorClass = 'text-gray-900 dark:text-white';
+  if (tier === 'black') colorClass = 'text-gray-900';
 
   return (
     <span className="relative inline-flex items-center group cursor-pointer">

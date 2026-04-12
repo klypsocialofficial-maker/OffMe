@@ -32,12 +32,12 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
   
   if (loading) {
     return (
-      <div className="min-h-[100dvh] flex items-center justify-center bg-white dark:bg-gray-950">
+      <div className="min-h-[100dvh] flex items-center justify-center bg-white">
         <div className="flex space-x-1">
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="w-2 h-2 bg-black dark:bg-white rounded-full animate-bounce"
+              className="w-2 h-2 bg-black rounded-full animate-bounce"
               style={{ animationDelay: `${i * 0.1}s` }}
             />
           ))}

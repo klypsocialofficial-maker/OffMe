@@ -15,11 +15,11 @@ export default function DisplaySettings() {
 
   return (
     <div className="w-full h-full bg-transparent p-4 pt-[calc(1rem+env(safe-area-inset-top))]">
-      <div className="flex items-center space-x-3 mb-6 border-b border-gray-100 dark:border-white/10 pb-4">
-        <button onClick={() => navigate(-1)} className="p-2 -ml-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors">
-          <ArrowLeft className="w-6 h-6 dark:text-white" />
+      <div className="flex items-center space-x-3 mb-6 border-b border-gray-100 pb-4">
+        <button onClick={() => navigate(-1)} className="p-2 -ml-2 hover:bg-black/5 rounded-full transition-colors">
+          <ArrowLeft className="w-6 h-6" />
         </button>
-        <h1 className="text-xl font-bold dark:text-white">Display</h1>
+        <h1 className="text-xl font-bold">Display</h1>
       </div>
 
       <div className="space-y-6">
