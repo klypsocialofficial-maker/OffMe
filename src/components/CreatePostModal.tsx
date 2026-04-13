@@ -237,10 +237,15 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-[32px] shadow-2xl overflow-hidden flex flex-col h-[85vh] sm:h-[70vh] max-w-2xl mx-auto"
+            className="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-[32px] shadow-2xl overflow-hidden flex flex-col h-[65vh] sm:h-[70vh] max-w-2xl mx-auto"
           >
+            {/* Mobile Drag Handle */}
+            <div className="w-full flex justify-center pt-3 pb-1 sm:hidden">
+              <div className="w-12 h-1.5 bg-gray-200 rounded-full" />
+            </div>
+
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+            <div className="flex items-center justify-between px-6 py-3 border-b border-gray-100">
               <button onClick={onClose} className="text-gray-900 font-medium hover:bg-gray-100 px-3 py-1.5 rounded-full transition-colors">
                 Cancel
               </button>
@@ -249,7 +254,7 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
             </div>
 
             {/* Body */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto p-6 pt-2 sm:pt-6">
               <div className="flex space-x-3">
                 {/* Left Column: Avatar and Line */}
                 <div className="flex flex-col items-center">
@@ -297,7 +302,6 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
                     onChange={(e) => setContent(e.target.value)}
                     placeholder={replyTo ? "Post your reply" : "What's new?"}
                     className="w-full bg-transparent text-base outline-none resize-none min-h-[60px] placeholder-gray-400"
-                    autoFocus
                   />
                   
                   {imagePreview && (
@@ -420,7 +424,7 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white">
+            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white pb-[calc(1rem+env(safe-area-inset-bottom))]">
               <input
                 type="file"
                 accept="image/*"
