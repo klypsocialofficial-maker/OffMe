@@ -120,11 +120,12 @@ export default function Layout() {
       
       <div className="flex w-full max-w-[1300px] mx-auto">
         {/* Sidebar Navigation (Desktop) */}
-        <header className="hidden sm:flex flex-col w-20 border-r border-gray-100 px-2 py-6 sticky top-0 h-screen z-20 bg-white">
-          <div className="flex items-center mb-8 px-4 justify-center">
+        <header className="hidden sm:flex flex-col w-20 xl:w-64 border-r border-gray-100 px-2 xl:px-4 py-6 sticky top-0 h-screen z-20 bg-white">
+          <div className="flex items-center mb-8 px-4">
             <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center overflow-hidden">
               <img src="/ghost.svg" alt="OffMe Logo" className="w-6 h-6 object-contain invert" />
             </div>
+            <span className="ml-3 font-bold text-xl tracking-tight hidden xl:block">OffMe</span>
           </div>
           
           <nav className="flex-1 space-y-1 mt-4 relative">
@@ -136,11 +137,12 @@ export default function Layout() {
                   <button
                     key={item.path}
                     onClick={() => openCreateModal()}
-                    className="w-full flex items-center justify-center space-x-4 px-4 py-3 rounded-full transition-all text-gray-900 hover:bg-gray-100 group"
+                    className="w-full flex items-center justify-center xl:justify-start space-x-4 px-4 py-3 rounded-full transition-all text-gray-900 hover:bg-gray-100 group"
                   >
                     <div className="relative">
                       <item.icon className="w-7 h-7" />
                     </div>
+                    <span className={`text-xl hidden xl:block ${isActive ? 'font-black' : 'font-medium'}`}>{item.label}</span>
                   </button>
                 );
               }
@@ -149,7 +151,7 @@ export default function Layout() {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`flex items-center justify-center space-x-4 px-4 py-3 rounded-full transition-all relative z-10 group ${
+                  className={`flex items-center justify-center xl:justify-start space-x-4 px-4 py-3 rounded-full transition-all relative z-10 group ${
                     isActive ? 'text-black' : 'text-gray-900 hover:bg-gray-100'
                   }`}
                 >
@@ -166,12 +168,22 @@ export default function Layout() {
                       </span>
                     )}
                   </div>
+                  <span className={`text-xl hidden xl:block ${isActive ? 'font-black' : 'font-medium'}`}>{item.label}</span>
                 </Link>
               );
             })}
           </nav>
 
-          <div className="mt-4 px-4">
+          <div className="mt-4 px-4 hidden xl:block">
+            <button 
+              onClick={() => openCreateModal()}
+              className="w-full bg-black text-white rounded-full py-4 text-xl font-bold hover:bg-gray-800 transition-all shadow-lg active:scale-95"
+            >
+              Postar
+            </button>
+          </div>
+          
+          <div className="mt-4 px-4 xl:hidden">
             <button 
               onClick={() => openCreateModal()}
               className="w-12 h-12 bg-black text-white rounded-full flex items-center justify-center hover:bg-gray-800 transition-all shadow-lg active:scale-95 mx-auto"
