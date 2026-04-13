@@ -442,6 +442,32 @@ export default function Profile() {
 
   return (
     <div className="w-full h-full bg-white">
+      {/* Top Action Bar (Floating on Cover) - Glass Effect */}
+      <div className="sticky top-0 left-0 right-0 p-4 flex justify-between items-center z-30 pt-[calc(1rem+env(safe-area-inset-top))] bg-white/10 backdrop-blur-md border-b border-white/10">
+        <button 
+          onClick={() => navigate(-1)} 
+          className="p-2.5 bg-black/40 backdrop-blur-xl text-white rounded-full hover:bg-black/60 transition-all active:scale-90 border border-white/20 shadow-lg"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+        <div className="flex space-x-2">
+          <button className="p-2.5 bg-black/40 backdrop-blur-xl text-white rounded-full hover:bg-black/60 transition-all active:scale-90 border border-white/20 shadow-lg">
+            <Search className="w-5 h-5" />
+          </button>
+          {profileUser.uid === userProfile?.uid && (
+            <button 
+              onClick={() => setIsEditModalOpen(true)}
+              className="p-2.5 bg-black/40 backdrop-blur-xl text-white rounded-full hover:bg-black/60 transition-all active:scale-90 border border-white/20 shadow-lg"
+            >
+              <Edit2 className="w-5 h-5" />
+            </button>
+          )}
+          <button className="p-2.5 bg-black/40 backdrop-blur-xl text-white rounded-full hover:bg-black/60 transition-all active:scale-90 border border-white/20 shadow-lg">
+            <Share className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
       {/* Profile Header with Cover Photo and Action Buttons */}
       <div className="relative">
         {/* Cover Photo */}
@@ -451,32 +477,6 @@ export default function Profile() {
         >
           <img src={profileUser.bannerURL || '/ghost.svg'} alt="Banner" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-white/10"></div>
-          
-          {/* Top Action Bar (Floating on Cover) - Glass Effect */}
-          <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-20 pt-[calc(1rem+env(safe-area-inset-top))] bg-white/10 backdrop-blur-md border-b border-white/10">
-            <button 
-              onClick={() => navigate(-1)} 
-              className="p-2.5 bg-black/40 backdrop-blur-xl text-white rounded-full hover:bg-black/60 transition-all active:scale-90 border border-white/20 shadow-lg"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div className="flex space-x-2">
-              <button className="p-2.5 bg-black/40 backdrop-blur-xl text-white rounded-full hover:bg-black/60 transition-all active:scale-90 border border-white/20 shadow-lg">
-                <Search className="w-5 h-5" />
-              </button>
-              {profileUser.uid === userProfile?.uid && (
-                <button 
-                  onClick={() => setIsEditModalOpen(true)}
-                  className="p-2.5 bg-black/40 backdrop-blur-xl text-white rounded-full hover:bg-black/60 transition-all active:scale-90 border border-white/20 shadow-lg"
-                >
-                  <Edit2 className="w-5 h-5" />
-                </button>
-              )}
-              <button className="p-2.5 bg-black/40 backdrop-blur-xl text-white rounded-full hover:bg-black/60 transition-all active:scale-90 border border-white/20 shadow-lg">
-                <Share className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* Profile Photo (Overlapping) */}

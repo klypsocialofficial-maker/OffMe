@@ -60,8 +60,36 @@ html, body {
   margin: 0;
   padding: 0;
   height: 100%;
+  /* Prevent bounce on iOS but allow scrolling */
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
 }
 
 body {
   @apply bg-white text-gray-900;
+  /* Use dynamic viewport height for better iOS support */
+  min-height: 100dvh;
+  /* Safe area padding for PWA - handled per component for headers */
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Prevent body scroll when modal is open */
+body.modal-open {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+}
+
+/* Fix for modals and fixed elements on iOS */
+.fixed {
+  /* Ensure fixed elements respect safe areas if needed, 
+     but usually we handle this per component */
+}
+
+/* Better scrolling for iOS */
+.overflow-y-auto {
+  -webkit-overflow-scrolling: touch;
 }

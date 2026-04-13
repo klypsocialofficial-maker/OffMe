@@ -235,7 +235,7 @@ export default function Chat() {
   return (
     <div className="w-full h-full bg-white flex flex-col">
       {/* Header */}
-      <div className="sticky top-0 bg-white/80 backdrop-blur-md z-30 px-4 py-3 border-b border-gray-100 flex items-center space-x-4">
+      <div className="sticky top-0 bg-white/80 backdrop-blur-md z-30 px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3 border-b border-gray-100 flex items-center space-x-4">
         <button onClick={() => navigate('/messages')} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </button>

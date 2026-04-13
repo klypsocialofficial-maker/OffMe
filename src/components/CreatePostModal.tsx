@@ -75,6 +75,15 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('modal-open');
+    } else {
+      document.body.classList.remove('modal-open');
+    }
+    return () => document.body.classList.remove('modal-open');
+  }, [isOpen]);
+
   const handleAddPollOption = () => {
     if (pollOptions.length < 4) {
       setPollOptions([...pollOptions, '']);
@@ -237,10 +246,10 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-[32px] shadow-2xl overflow-hidden flex flex-col h-[90vh] sm:h-[70vh] max-w-2xl mx-auto"
+            className="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-[32px] shadow-2xl overflow-hidden flex flex-col h-[85dvh] sm:h-[70vh] max-w-2xl mx-auto"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 pt-[calc(1rem+env(safe-area-inset-top))] sm:pt-4">
               <button onClick={onClose} className="text-gray-900 font-medium hover:bg-gray-100 px-3 py-1.5 rounded-full transition-colors">
                 Cancel
               </button>
