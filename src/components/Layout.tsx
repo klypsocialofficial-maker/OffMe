@@ -275,7 +275,7 @@ export default function Layout() {
               className="absolute inset-0 pointer-events-none opacity-40" 
             />
             
-            {navItems.slice(0, 5).map((item) => {
+            {[navItems[0], navItems[1], navItems[2], navItems[3], navItems[5]].map((item) => {
               const isActive = location.pathname === item.path;
               
               if (item.isAction) {
@@ -283,9 +283,12 @@ export default function Layout() {
                   <button
                     key={item.path}
                     onClick={() => openCreateModal()}
-                    className="relative p-3.5 rounded-full transition-all duration-500 z-10 flex flex-col items-center justify-center text-gray-500 hover:text-black"
+                    className="relative flex-1 py-2 rounded-full transition-all duration-500 z-10 flex flex-col items-center justify-center text-gray-500 hover:text-black"
                   >
-                    <item.icon className="w-7 h-7 stroke-[2px]" />
+                    <div className="bg-black text-white p-2.5 rounded-full shadow-lg transform transition-transform active:scale-90">
+                      <item.icon className="w-6 h-6 stroke-[2.5px]" />
+                    </div>
+                    <span className="text-[10px] font-black mt-1 uppercase tracking-tighter">Postar</span>
                   </button>
                 );
               }
@@ -294,14 +297,14 @@ export default function Layout() {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`relative p-3.5 rounded-full transition-all duration-500 z-10 flex flex-col items-center justify-center ${
+                  className={`relative flex-1 py-2 rounded-full transition-all duration-500 z-10 flex flex-col items-center justify-center ${
                     isActive ? 'text-black' : 'text-gray-500 hover:text-black'
                   }`}
                 >
                   {isActive && (
                     <motion.div
                       layoutId="mobile-active-tab-blob"
-                      className="absolute inset-0 bg-white/90 rounded-full -z-10 shadow-[0_0_15px_rgba(255,255,255,0.4)]"
+                      className="absolute inset-x-1 inset-y-1 bg-white/90 rounded-3xl -z-10 shadow-[0_0_15px_rgba(255,255,255,0.4)]"
                       transition={{ 
                         type: "spring", 
                         stiffness: 350, 
@@ -309,16 +312,19 @@ export default function Layout() {
                         mass: 0.8
                       }}
                     >
-                      <div className="absolute inset-0 rounded-full bg-gradient-to-b from-white/30 to-transparent pointer-events-none" />
+                      <div className="absolute inset-0 rounded-3xl bg-gradient-to-b from-white/30 to-transparent pointer-events-none" />
                     </motion.div>
                   )}
                   
                   <motion.div 
                     className="relative flex flex-col items-center"
                     whileTap={{ scale: 0.85 }}
-                    animate={isActive ? { scale: 1.15 } : { scale: 1 }}
+                    animate={isActive ? { scale: 1.05 } : { scale: 1 }}
                   >
-                    <item.icon className={`w-7 h-7 transition-all duration-500 ${isActive ? 'stroke-[2.5px] drop-shadow-sm' : 'stroke-[2px]'}`} />
+                    <item.icon className={`w-6 h-6 transition-all duration-500 ${isActive ? 'stroke-[2.5px] drop-shadow-sm' : 'stroke-[2px]'}`} />
+                    <span className={`text-[10px] mt-1 font-black uppercase tracking-tighter transition-all duration-500 ${isActive ? 'opacity-100' : 'opacity-70'}`}>
+                      {item.label}
+                    </span>
                     
                     <AnimatePresence>
                       {((item.path === '/notifications' && unreadNotificationsCount > 0) || 
@@ -327,7 +333,7 @@ export default function Layout() {
                           initial={{ scale: 0, opacity: 0 }}
                           animate={{ scale: 1, opacity: 1 }}
                           exit={{ scale: 0, opacity: 0 }}
-                          className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-black min-w-[17px] h-[17px] flex items-center justify-center rounded-full border-2 border-white px-0.5 shadow-sm"
+                          className="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-black min-w-[17px] h-[17px] flex items-center justify-center rounded-full border-2 border-white px-0.5 shadow-sm"
                         >
                           {item.path === '/notifications' 
                             ? (unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount)
