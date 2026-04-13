@@ -2,24 +2,32 @@ import Stripe from 'stripe';
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 
-// Initialize Firebase Admin if not already initialized
-if (!getApps().length) {
-  try {
-    const serviceAccount = {
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') : undefined,
-    };
-
-    if (serviceAccount.projectId && serviceAccount.clientEmail && serviceAccount.privateKey) {
+// Lazy initialization of Firebase Admin
+function getFirebaseAdmin() {
+  if (!getApps().length) {
+    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+    
+    if (serviceAccountKey) {
+      try {
+        const serviceAccount = JSON.parse(serviceAccountKey);
+        initializeApp({
+          credential: cert(serviceAccount)
+        });
+      } catch (e) {
+        console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY:', e);
+      }
+    } else if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
       initializeApp({
-        credential: cert(serviceAccount),
+        credential: cert({
+          projectId: process.env.FIREBASE_PROJECT_ID,
+          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+          privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+        })
       });
-      console.log("Firebase Admin initialized successfully.");
     }
-  } catch (error) {
-    console.error("Error initializing Firebase Admin:", error);
   }
+  
+  return getApps().length > 0 ? getFirestore() : null;
 }
 
 // Disable Vercel's default body parser to get the raw body for Stripe signature verification
@@ -72,9 +80,11 @@ export default async function handler(req: any, res: any) {
     const userId = session.client_reference_id;
     const tier = session.metadata?.tier || 'gold';
 
-    if (userId && getApps().length > 0) {
+    const db = getFirebaseAdmin();
+
+    if (userId && db) {
       try {
-        await getFirestore().collection('users').doc(userId).update({
+        await db.collection('users').doc(userId).update({
           isPremium: true,
           isVerified: true, // Also give them the verified badge
           premiumTier: tier,
