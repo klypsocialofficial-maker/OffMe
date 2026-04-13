@@ -154,7 +154,7 @@ export default function Notifications() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 pt-4">
+      <div className="px-4 pt-4 pb-20">
         {loading ? (
           <div className="p-8 text-center text-gray-500">Loading...</div>
         ) : (activeTab === 'verified' ? notifications.filter(n => n.senderVerified || n.senderUsername === 'Rulio') : notifications).length > 0 ? (

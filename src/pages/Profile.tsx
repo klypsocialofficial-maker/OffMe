@@ -632,7 +632,7 @@ export default function Profile() {
         </nav>
       </div>
 
-      <div className="pb-32">
+      <div className="pb-20">
         {loading ? (
           <div className="p-12 text-center text-gray-400 font-medium">Carregando conteúdo...</div>
         ) : posts.length > 0 ? (

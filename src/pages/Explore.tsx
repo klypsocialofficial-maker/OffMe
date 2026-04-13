@@ -369,7 +369,7 @@ export default function Explore() {
         </div>
       </div>
       
-      <div className="flex-1 overflow-y-auto px-4 pt-4">
+      <div className="px-4 pt-4 pb-20">
         {searchQuery.trim() ? (
           loading ? (
             <div className="p-8 text-center text-gray-500">Searching...</div>

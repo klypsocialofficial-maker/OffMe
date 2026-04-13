@@ -612,7 +612,7 @@ export default function Home() {
                   </p>
                 </div>
               ) : (
-                <div className="px-4 space-y-4 pb-32">
+                <div className="px-4 space-y-4 pb-20">
                   {(() => {
                     const filtered = displayedPosts.filter(post => 
                       post.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
