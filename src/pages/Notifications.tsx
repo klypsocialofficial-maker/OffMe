@@ -103,7 +103,7 @@ export default function Notifications() {
 
   return (
     <div className="w-full h-full bg-transparent relative">
-      <div className="sticky top-0 z-30 pt-[calc(0.5rem+env(safe-area-inset-top))] flex flex-col items-center">
+      <div className="sticky top-0 z-30 pt-[calc(1rem+env(safe-area-inset-top))] flex flex-col items-center bg-white/70 backdrop-blur-3xl border-b border-white/10 shadow-sm">
         <div className="w-full max-w-md px-4 py-2">
           <div className="flex items-center justify-between relative mb-4">
             <button onClick={openDrawer} className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 sm:hidden border border-white/40 shadow-sm">

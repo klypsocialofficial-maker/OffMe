@@ -446,32 +446,33 @@ export default function Profile() {
       <div className="relative">
         {/* Cover Photo */}
         <div 
-          className="h-32 sm:h-48 bg-black w-full relative overflow-hidden cursor-zoom-in"
+          className="h-40 sm:h-56 bg-gray-100 w-full relative overflow-hidden cursor-zoom-in"
           onClick={() => profileUser.bannerURL && openImageViewer(profileUser.bannerURL, `Banner de ${profileUser.displayName}`)}
         >
-          <img src={profileUser.bannerURL || '/ghost.svg'} alt="Banner" className="w-full h-full object-cover opacity-80" />
+          <img src={profileUser.bannerURL || '/ghost.svg'} alt="Banner" className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-white/10"></div>
           
-          {/* Top Action Bar (Floating on Cover) */}
-          <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-20 pt-[calc(1rem+env(safe-area-inset-top))]">
+          {/* Top Action Bar (Floating on Cover) - Glass Effect */}
+          <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-20 pt-[calc(1rem+env(safe-area-inset-top))] bg-white/10 backdrop-blur-md border-b border-white/10">
             <button 
               onClick={() => navigate(-1)} 
-              className="p-2 bg-black/40 backdrop-blur-md text-white rounded-full hover:bg-black/60 transition-all active:scale-90"
+              className="p-2.5 bg-black/40 backdrop-blur-xl text-white rounded-full hover:bg-black/60 transition-all active:scale-90 border border-white/20 shadow-lg"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div className="flex space-x-2">
-              <button className="p-2 bg-black/40 backdrop-blur-md text-white rounded-full hover:bg-black/60 transition-all active:scale-90">
+              <button className="p-2.5 bg-black/40 backdrop-blur-xl text-white rounded-full hover:bg-black/60 transition-all active:scale-90 border border-white/20 shadow-lg">
                 <Search className="w-5 h-5" />
               </button>
               {profileUser.uid === userProfile?.uid && (
                 <button 
                   onClick={() => setIsEditModalOpen(true)}
-                  className="p-2 bg-black/40 backdrop-blur-md text-white rounded-full hover:bg-black/60 transition-all active:scale-90"
+                  className="p-2.5 bg-black/40 backdrop-blur-xl text-white rounded-full hover:bg-black/60 transition-all active:scale-90 border border-white/20 shadow-lg"
                 >
                   <Edit2 className="w-5 h-5" />
                 </button>
               )}
-              <button className="p-2 bg-black/40 backdrop-blur-md text-white rounded-full hover:bg-black/60 transition-all active:scale-90">
+              <button className="p-2.5 bg-black/40 backdrop-blur-xl text-white rounded-full hover:bg-black/60 transition-all active:scale-90 border border-white/20 shadow-lg">
                 <Share className="w-5 h-5" />
               </button>
             </div>
@@ -479,9 +480,9 @@ export default function Profile() {
         </div>
 
         {/* Profile Photo (Overlapping) */}
-        <div className="absolute -bottom-10 left-4 sm:left-6 z-10">
+        <div className="absolute -bottom-12 left-4 sm:left-8 z-10">
           <div 
-            className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-white bg-white overflow-hidden shadow-sm cursor-zoom-in"
+            className="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-white bg-white overflow-hidden shadow-2xl cursor-zoom-in transform transition-transform active:scale-95"
             onClick={() => profileUser.photoURL && openImageViewer(profileUser.photoURL, `Avatar de ${profileUser.displayName}`)}
           >
             <img src={profileUser.photoURL || '/ghost.svg'} alt={profileUser.displayName} className="w-full h-full object-cover" />
@@ -490,7 +491,7 @@ export default function Profile() {
       </div>
 
       {/* Profile Details */}
-      <div className="px-4 sm:px-6 pt-12 pb-4">
+      <div className="px-5 sm:px-8 pt-14 pb-6">
         <div className="flex justify-between items-start">
           <div className="flex-1 min-w-0">
             <div className="flex items-center space-x-1">
@@ -631,11 +632,11 @@ export default function Profile() {
         </nav>
       </div>
 
-      <div className="pb-20">
+      <div className="pb-32">
         {loading ? (
-          <div className="p-8 text-center text-gray-500">Carregando...</div>
+          <div className="p-12 text-center text-gray-400 font-medium">Carregando conteúdo...</div>
         ) : posts.length > 0 ? (
-          <div className="divide-y divide-gray-100">
+          <div className="px-4 space-y-4">
             {posts.map((post) => (
               <PostCard
                 key={post.id}

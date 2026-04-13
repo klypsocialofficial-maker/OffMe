@@ -359,71 +359,67 @@ export default function Layout() {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed top-0 left-0 bottom-0 w-[280px] bg-white z-50 sm:hidden shadow-2xl flex flex-col"
+              className="fixed top-0 left-0 bottom-0 w-[300px] bg-white/90 backdrop-blur-2xl z-50 sm:hidden shadow-2xl flex flex-col border-r border-white/20"
             >
-              <div className="relative border-b border-gray-100 pt-[calc(1rem+env(safe-area-inset-top))]">
-                {/* Banner Background */}
+              <div className="relative border-b border-white/20 pt-[calc(1.5rem+env(safe-area-inset-top))]">
+                {/* Banner Background with Glass Overlay */}
                 <div 
-                  className="absolute top-0 left-0 right-0 h-24 bg-gray-100 -z-10 cursor-zoom-in"
+                  className="absolute top-0 left-0 right-0 h-32 bg-gray-100 -z-10 cursor-zoom-in"
                   onClick={() => userProfile?.bannerURL && openImageViewer(userProfile.bannerURL, `Banner de ${userProfile.displayName}`)}
                 >
-                  <img src={userProfile?.bannerURL || '/ghost.svg'} alt="Banner" className="w-full h-full object-cover opacity-80" />
-                  <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/90"></div>
+                  <img src={userProfile?.bannerURL || '/ghost.svg'} alt="Banner" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-white/40 backdrop-blur-[2px]"></div>
                 </div>
                 
-                <div className="p-4 pt-12">
+                <div className="p-6 pt-16">
                   <div 
-                    className="w-16 h-16 rounded-full bg-white overflow-hidden mb-3 border-4 border-white shadow-sm cursor-zoom-in"
+                    className="w-20 h-20 rounded-full bg-white overflow-hidden mb-4 border-4 border-white shadow-xl cursor-zoom-in transform transition-transform active:scale-95"
                     onClick={() => userProfile?.photoURL && openImageViewer(userProfile.photoURL, `Avatar de ${userProfile.displayName}`)}
                   >
                     <img src={userProfile?.photoURL || '/ghost.svg'} alt={userProfile?.displayName} className="w-full h-full object-cover" />
                   </div>
-                  <div className="flex items-center space-x-1">
-                    <h2 className="font-bold text-lg leading-tight">{userProfile?.displayName}</h2>
-                    {(userProfile?.isVerified || userProfile?.username === 'Rulio') && <VerifiedBadge className="w-4 h-4 flex-shrink-0" tier={userProfile?.premiumTier} />}
+                  <div className="flex items-center space-x-1.5">
+                    <h2 className="font-black text-xl leading-tight text-gray-900">{userProfile?.displayName}</h2>
+                    {(userProfile?.isVerified || userProfile?.username === 'Rulio') && <VerifiedBadge className="w-4.5 h-4.5 flex-shrink-0" tier={userProfile?.premiumTier} />}
                   </div>
-                  <p className="text-gray-500 text-sm">@{userProfile?.username}</p>
+                  <p className="text-gray-500 font-medium">@{userProfile?.username}</p>
                   
-                  <div className="flex space-x-4 mt-4 text-sm">
-                    <div className="hover:underline cursor-pointer">
-                      <span className="font-bold text-black">{userProfile?.following?.length || 0}</span> <span className="text-gray-500">Seguindo</span>
+                  <div className="flex space-x-5 mt-5 text-sm">
+                    <div className="hover:underline cursor-pointer group">
+                      <span className="font-black text-black">{userProfile?.following?.length || 0}</span> <span className="text-gray-500 group-hover:text-black transition-colors">Seguindo</span>
                     </div>
-                    <div className="hover:underline cursor-pointer">
-                      <span className="font-bold text-black">{userProfile?.followers?.length || 0}</span> <span className="text-gray-500">Seguidores</span>
+                    <div className="hover:underline cursor-pointer group">
+                      <span className="font-black text-black">{userProfile?.followers?.length || 0}</span> <span className="text-gray-500 group-hover:text-black transition-colors">Seguidores</span>
                     </div>
                   </div>
                 </div>
               </div>
               
-              <nav className="flex-1 overflow-y-auto py-4 px-4 space-y-3">
-                <Link to="/profile" onClick={closeDrawer} className="liquid-glass-pill flex items-center px-4 py-3.5 text-lg font-bold rounded-2xl transition-all relative overflow-hidden group border border-white/20">
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  <UserIcon className="mr-4 w-6 h-6" /> Perfil
-                </Link>
-                <Link to="/premium" onClick={closeDrawer} className="liquid-glass-pill flex items-center px-4 py-3.5 text-lg font-bold rounded-2xl transition-all relative overflow-hidden group border border-white/20">
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  <ZapIcon className="mr-4 w-6 h-6" /> Premium
-                </Link>
-                <Link to="/bookmarks" onClick={closeDrawer} className="liquid-glass-pill flex items-center px-4 py-3.5 text-lg font-bold rounded-2xl transition-all relative overflow-hidden group border border-white/20">
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  <Bookmark className="mr-4 w-6 h-6" /> Itens salvos
-                </Link>
-                <Link to="/lists" onClick={closeDrawer} className="liquid-glass-pill flex items-center px-4 py-3.5 text-lg font-bold rounded-2xl transition-all relative overflow-hidden group border border-white/20">
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  <List className="mr-4 w-6 h-6" /> Listas
-                </Link>
-                <Link to="/settings" onClick={closeDrawer} className="liquid-glass-pill flex items-center px-4 py-3.5 text-lg font-bold rounded-2xl transition-all relative overflow-hidden group border border-white/20">
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  <Settings className="mr-4 w-6 h-6" /> Configurações
-                </Link>
+              <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-2">
+                {navItems.filter(item => !item.isAction).map((item) => {
+                  const isActive = location.pathname === item.path;
+                  return (
+                    <Link 
+                      key={item.path}
+                      to={item.path} 
+                      onClick={closeDrawer} 
+                      className={`flex items-center px-5 py-4 text-lg font-bold rounded-2xl transition-all relative overflow-hidden group ${
+                        isActive ? 'bg-black text-white shadow-lg' : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      <item.icon className={`mr-4 w-6 h-6 ${isActive ? 'stroke-[2.5px]' : 'stroke-[2px]'}`} /> 
+                      {item.label}
+                    </Link>
+                  );
+                })}
               </nav>
               
-              <div className="p-4 border-t border-gray-100 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+              <div className="p-6 border-t border-gray-100 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
                 <button 
                   onClick={() => { closeDrawer(); setIsLogoutModalOpen(true); }} 
-                  className="flex items-center font-bold text-red-500 hover:bg-red-50 w-full p-3 rounded-xl transition-colors"
+                  className="flex items-center font-black text-red-500 hover:bg-red-50 w-full p-4 rounded-2xl transition-all active:scale-95"
                 >
-                  <LogOut className="mr-4 w-6 h-6" /> Sair
+                  <LogOut className="mr-4 w-6 h-6" /> Sair da conta
                 </button>
               </div>
             </motion.div>

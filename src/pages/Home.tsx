@@ -457,8 +457,7 @@ export default function Home() {
   return (
     <div className="w-full h-full bg-transparent relative">
       {/* Sticky Header with Liquid Glass & Tabs */}
-      <div className="sticky top-0 z-30 pt-[calc(0.5rem+env(safe-area-inset-top))] flex flex-col items-center">
-        {/* Feed Header & Tabs - Floating Pill Style */}
+      <div className="sticky top-0 z-30 pt-[calc(1rem+env(safe-area-inset-top))] flex flex-col items-center bg-white/70 backdrop-blur-3xl border-b border-white/10 shadow-sm">
         <div className="w-full max-w-md px-4 py-2">
           <div className="flex items-center justify-between relative">
             {/* Mobile Avatar (Left) */}
@@ -613,7 +612,7 @@ export default function Home() {
                   </p>
                 </div>
               ) : (
-                <div className="px-4 space-y-4 pb-20">
+                <div className="px-4 space-y-4 pb-32">
                   {(() => {
                     const filtered = displayedPosts.filter(post => 
                       post.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
