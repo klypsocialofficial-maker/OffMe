@@ -246,19 +246,26 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-[32px] shadow-2xl overflow-hidden flex flex-col h-[85dvh] sm:h-[70vh] max-w-2xl mx-auto"
+            className="fixed bottom-0 left-0 right-0 z-[70] bg-white sm:rounded-t-[32px] shadow-2xl overflow-hidden flex flex-col h-full sm:h-[70vh] max-w-2xl mx-auto"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 pt-[calc(1rem+env(safe-area-inset-top))] sm:pt-4">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 pt-[calc(0.5rem+env(safe-area-inset-top))] sm:pt-4">
               <button onClick={onClose} className="text-gray-900 font-medium hover:bg-gray-100 px-3 py-1.5 rounded-full transition-colors">
-                Cancel
+                Cancelar
               </button>
-              <h2 className="font-bold text-lg">{replyTo ? 'Reply' : 'Novo post'}</h2>
-              <div className="w-16"></div> {/* Spacer to center the title */}
+              <h2 className="font-bold text-lg">{replyTo ? 'Responder' : 'Novo post'}</h2>
+              <button
+                onClick={handlePost}
+                disabled={(!content.trim() && !imageFile && !gifUrl && !(showPoll && pollOptions.filter(o => o.trim()).length >= 2)) || loading || content.length > 1000}
+                className="bg-black text-white px-4 py-1.5 rounded-full font-bold hover:bg-gray-800 disabled:bg-gray-300 disabled:text-white transition-colors text-sm sm:hidden"
+              >
+                {loading ? '...' : 'Postar'}
+              </button>
+              <div className="hidden sm:block w-16"></div>
             </div>
 
             {/* Body */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto p-6 pt-8">
               <div className="flex space-x-3">
                 {/* Left Column: Avatar and Line */}
                 <div className="flex flex-col items-center">
@@ -288,7 +295,7 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
                   
                   {replyTo && (
                     <div className="mb-2 text-sm text-gray-500 font-medium flex items-center space-x-1">
-                      <span>Replying to</span>
+                      <span>Respondendo a</span>
                       <span className="text-black">@{replyTo.authorUsername}</span>
                       {(replyTo.authorVerified || replyTo.authorUsername === 'Rulio') && <VerifiedBadge className="w-3.5 h-3.5" tier={replyTo.authorPremiumTier} />}
                     </div>
@@ -304,8 +311,8 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
                   <textarea
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
-                    placeholder={replyTo ? "Post your reply" : "What's new?"}
-                    className="w-full bg-transparent text-base outline-none resize-none min-h-[60px] placeholder-gray-400"
+                    placeholder={replyTo ? "Postar sua resposta" : "O que está acontecendo?"}
+                    className="w-full bg-transparent text-lg outline-none resize-none min-h-[120px] placeholder-gray-400"
                     autoFocus
                   />
                   
@@ -403,33 +410,15 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
                     </div>
                   )}
 
-                  <div className="flex items-center space-x-4 text-gray-400 mb-6 mt-2">
-                    <button onClick={() => fileInputRef.current?.click()} className="hover:text-gray-600 transition-colors">
-                      <ImageIcon className="w-5 h-5" />
-                    </button>
-                    <button 
-                      onClick={() => { setShowPoll(!showPoll); setShowGifPicker(false); }} 
-                      className={`hover:text-gray-600 transition-colors ${showPoll ? 'text-blue-500' : ''}`}
-                    >
-                      <BarChart2 className="w-5 h-5" />
-                    </button>
-                    <button 
-                      onClick={() => { setShowGifPicker(!showGifPicker); setShowPoll(false); }} 
-                      className={`hover:text-gray-600 transition-colors ${showGifPicker ? 'text-blue-500' : ''}`}
-                    >
-                      <Film className="w-5 h-5" />
-                    </button>
-                  </div>
-
-                  <div className="text-gray-300 text-sm font-medium">
-                    Add to thread
+                  <div className="text-gray-300 text-sm font-medium mt-4">
+                    Adicionar ao fio
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white pb-[calc(1rem+env(safe-area-inset-bottom))]">
+            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white pb-[calc(env(safe-area-inset-bottom)+1rem)]">
               <input
                 type="file"
                 accept="image/*"
@@ -437,27 +426,35 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
                 ref={fileInputRef}
                 onChange={handleImageChange}
               />
-              <button className="text-gray-500 font-medium text-sm hover:bg-gray-50 px-3 py-1.5 rounded-full transition-colors">
-                Reply options
-              </button>
+              <div className="flex items-center space-x-4">
+                <button onClick={() => fileInputRef.current?.click()} className="text-blue-500 hover:bg-blue-50 p-2 rounded-full transition-colors">
+                  <ImageIcon className="w-5 h-5" />
+                </button>
+                <button 
+                  onClick={() => { setShowPoll(!showPoll); setShowGifPicker(false); }} 
+                  className={`p-2 rounded-full transition-colors ${showPoll ? 'bg-blue-50 text-blue-500' : 'text-blue-500 hover:bg-blue-50'}`}
+                >
+                  <BarChart2 className="w-5 h-5" />
+                </button>
+                <button 
+                  onClick={() => { setShowGifPicker(!showGifPicker); setShowPoll(false); }} 
+                  className={`p-2 rounded-full transition-colors ${showGifPicker ? 'bg-blue-50 text-blue-500' : 'text-blue-500 hover:bg-blue-50'}`}
+                >
+                  <Film className="w-5 h-5" />
+                </button>
+              </div>
               
               <div className="flex items-center space-x-4">
                 <div className={`text-xs font-medium ${content.length > 1000 ? 'text-red-500' : 'text-gray-400'}`}>
                   {content.length} / 1000
                 </div>
 
-                <div className="w-12 h-7 bg-gray-500 rounded-full relative cursor-pointer">
-                  <div className="absolute left-1 top-1 w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-sm">
-                    <UserIcon className="w-3 h-3 text-gray-500" />
-                  </div>
-                </div>
-
                 <button
                   onClick={handlePost}
                   disabled={(!content.trim() && !imageFile && !gifUrl && !(showPoll && pollOptions.filter(o => o.trim()).length >= 2)) || loading || content.length > 1000}
-                  className="bg-black text-white px-6 py-2 rounded-full font-bold hover:bg-gray-800 disabled:bg-gray-300 disabled:text-white transition-colors"
+                  className="hidden sm:block bg-black text-white px-6 py-2 rounded-full font-bold hover:bg-gray-800 disabled:bg-gray-300 disabled:text-white transition-colors"
                 >
-                  {loading ? 'Posting...' : 'Post'}
+                  {loading ? 'Postando...' : 'Postar'}
                 </button>
               </div>
             </div>
