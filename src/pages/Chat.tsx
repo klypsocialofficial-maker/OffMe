@@ -235,24 +235,26 @@ export default function Chat() {
   return (
     <div className="w-full h-full bg-white flex flex-col">
       {/* Header */}
-      <div className="sticky top-0 bg-white/80 backdrop-blur-md z-30 px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3 border-b border-gray-100 flex items-center space-x-4">
-        <button onClick={() => navigate('/messages')} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
-            {otherParticipantInfo?.photoURL ? (
-              <img src={otherParticipantInfo.photoURL} alt={otherParticipantInfo.displayName} className="w-full h-full object-cover" />
-            ) : (
-              <UserIcon className="w-full h-full p-2 text-gray-400" />
-            )}
-          </div>
-          <div>
-            <div className="flex items-center space-x-1">
-              <h2 className="font-bold leading-tight">{otherParticipantInfo?.displayName || 'Usuário'}</h2>
-              {(otherParticipantInfo?.isVerified || otherParticipantInfo?.username === 'Rulio') && <VerifiedBadge tier={otherParticipantInfo?.premiumTier} />}
+      <div className="sticky top-0 bg-white/80 backdrop-blur-md z-30 border-b border-gray-100 pt-[env(safe-area-inset-top)]">
+        <div className="px-4 py-3 flex items-center space-x-4">
+          <button onClick={() => navigate('/messages')} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+              {otherParticipantInfo?.photoURL ? (
+                <img src={otherParticipantInfo.photoURL} alt={otherParticipantInfo.displayName} className="w-full h-full object-cover" />
+              ) : (
+                <UserIcon className="w-full h-full p-2 text-gray-400" />
+              )}
             </div>
-            <p className="text-xs text-gray-500">@{otherParticipantInfo?.username || 'usuario'}</p>
+            <div>
+              <div className="flex items-center space-x-1">
+                <h2 className="font-bold leading-tight">{otherParticipantInfo?.displayName || 'Usuário'}</h2>
+                {(otherParticipantInfo?.isVerified || otherParticipantInfo?.username === 'Rulio') && <VerifiedBadge tier={otherParticipantInfo?.premiumTier} />}
+              </div>
+              <p className="text-xs text-gray-500">@{otherParticipantInfo?.username || 'usuario'}</p>
+            </div>
           </div>
         </div>
       </div>

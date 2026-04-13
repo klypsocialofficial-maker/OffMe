@@ -443,28 +443,30 @@ export default function Profile() {
   return (
     <div className="w-full h-full bg-white">
       {/* Top Action Bar (Floating on Cover) - Glass Effect */}
-      <div className="sticky top-0 left-0 right-0 p-4 flex justify-between items-center z-30 pt-[calc(1rem+env(safe-area-inset-top))] bg-white/10 backdrop-blur-md border-b border-white/10">
-        <button 
-          onClick={() => navigate(-1)} 
-          className="p-2.5 bg-black/40 backdrop-blur-xl text-white rounded-full hover:bg-black/60 transition-all active:scale-90 border border-white/20 shadow-lg"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <div className="flex space-x-2">
-          <button className="p-2.5 bg-black/40 backdrop-blur-xl text-white rounded-full hover:bg-black/60 transition-all active:scale-90 border border-white/20 shadow-lg">
-            <Search className="w-5 h-5" />
+      <div className="sticky top-0 left-0 right-0 z-30 bg-white/10 backdrop-blur-md border-b border-white/10 pt-[env(safe-area-inset-top)]">
+        <div className="p-4 flex justify-between items-center">
+          <button 
+            onClick={() => navigate(-1)} 
+            className="p-2.5 bg-black/40 backdrop-blur-xl text-white rounded-full hover:bg-black/60 transition-all active:scale-90 border border-white/20 shadow-lg"
+          >
+            <ArrowLeft className="w-5 h-5" />
           </button>
-          {profileUser.uid === userProfile?.uid && (
-            <button 
-              onClick={() => setIsEditModalOpen(true)}
-              className="p-2.5 bg-black/40 backdrop-blur-xl text-white rounded-full hover:bg-black/60 transition-all active:scale-90 border border-white/20 shadow-lg"
-            >
-              <Edit2 className="w-5 h-5" />
+          <div className="flex space-x-2">
+            <button className="p-2.5 bg-black/40 backdrop-blur-xl text-white rounded-full hover:bg-black/60 transition-all active:scale-90 border border-white/20 shadow-lg">
+              <Search className="w-5 h-5" />
             </button>
-          )}
-          <button className="p-2.5 bg-black/40 backdrop-blur-xl text-white rounded-full hover:bg-black/60 transition-all active:scale-90 border border-white/20 shadow-lg">
-            <Share className="w-5 h-5" />
-          </button>
+            {profileUser.uid === userProfile?.uid && (
+              <button 
+                onClick={() => setIsEditModalOpen(true)}
+                className="p-2.5 bg-black/40 backdrop-blur-xl text-white rounded-full hover:bg-black/60 transition-all active:scale-90 border border-white/20 shadow-lg"
+              >
+                <Edit2 className="w-5 h-5" />
+              </button>
+            )}
+            <button className="p-2.5 bg-black/40 backdrop-blur-xl text-white rounded-full hover:bg-black/60 transition-all active:scale-90 border border-white/20 shadow-lg">
+              <Share className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
 

@@ -457,8 +457,8 @@ export default function Home() {
   return (
     <div className="w-full h-full bg-transparent relative">
       {/* Sticky Header with Liquid Glass & Tabs */}
-      <div className="sticky top-0 z-30 pt-[calc(1rem+env(safe-area-inset-top))] flex flex-col items-center bg-white/70 backdrop-blur-3xl border-b border-white/10 shadow-sm">
-        <div className="w-full max-w-md px-4 py-2">
+      <div className="sticky top-0 z-30 bg-white/70 backdrop-blur-3xl border-b border-white/10 shadow-sm pt-[env(safe-area-inset-top)]">
+        <div className="w-full max-w-md px-4 py-2 mx-auto">
           <div className="flex items-center justify-between relative">
             {/* Mobile Avatar (Left) */}
             <div className="sm:hidden flex-shrink-0">
