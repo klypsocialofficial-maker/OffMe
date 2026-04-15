@@ -479,7 +479,7 @@ export default function Home() {
             </div>
 
             {/* Liquid Glass Tab Switcher (Center) */}
-            <div className="flex-1 flex justify-center">
+            <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 z-10">
               <nav className="liquid-glass-pill p-1 rounded-full flex items-center relative overflow-hidden border border-white/40 shadow-lg">
                 <button
                   onClick={() => setActiveTab('foryou')}

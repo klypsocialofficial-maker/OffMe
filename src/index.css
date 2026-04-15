@@ -59,8 +59,6 @@
 html, body {
   margin: 0;
   padding: 0;
-  height: 100%;
-  overflow: hidden;
   /* Prevent bounce on iOS but allow scrolling */
   overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
@@ -70,7 +68,7 @@ html, body {
 body {
   @apply bg-white text-gray-900;
   /* Use dynamic viewport height for better iOS support */
-  height: 100%;
+  min-height: 100dvh;
   /* Safe area padding for PWA - handled per component for headers */
   padding-bottom: env(safe-area-inset-bottom);
   padding-left: env(safe-area-inset-left);

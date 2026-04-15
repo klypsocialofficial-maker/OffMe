@@ -113,7 +113,7 @@ export default function Notifications() {
                 <UserIcon className="w-full h-full p-2 text-gray-400" />
               )}
             </button>
-            <div className="flex-1 flex justify-center">
+            <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 z-10">
               <h1 className="text-xl font-bold">Notifications</h1>
             </div>
             <div className="w-10 h-10 sm:hidden z-10" /> {/* Spacer */}

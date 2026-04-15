@@ -196,15 +196,6 @@ export default function Layout() {
               <Plus className="w-6 h-6" />
             </button>
           </div>
-          
-          <div className="mt-4 px-4 xl:hidden">
-            <button 
-              onClick={() => openCreateModal()}
-              className="w-12 h-12 bg-black text-white rounded-full flex items-center justify-center hover:bg-gray-800 transition-all shadow-lg active:scale-95 mx-auto"
-            >
-              <Plus className="w-6 h-6" />
-            </button>
-          </div>
 
           <div className="mt-auto">
             <button 
@@ -236,7 +227,7 @@ export default function Layout() {
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 max-w-[600px] h-full z-10 relative border-r border-gray-100 bg-white pb-24 sm:pb-0 overflow-y-auto overflow-x-hidden custom-scrollbar">
+        <main className="flex-1 max-w-[600px] min-h-screen z-10 relative border-r border-gray-100 bg-white pb-24 sm:pb-0">
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
@@ -244,7 +235,7 @@ export default function Layout() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="w-full h-full"
+              className="w-full"
             >
               <Outlet context={{ openDrawer, openCreateModal }} />
             </motion.div>
