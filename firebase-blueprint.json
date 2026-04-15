@@ -88,6 +88,23 @@
         "createdAt": { "type": "timestamp", "description": "The time the notification was created." }
       },
       "required": ["type", "recipientId", "senderId", "senderName", "senderUsername", "read", "createdAt"]
+    },
+    "Ad": {
+      "title": "Ad",
+      "description": "An advertisement to be displayed in the feed.",
+      "type": "object",
+      "properties": {
+        "authorName": { "type": "string", "description": "The display name of the advertiser." },
+        "authorUsername": { "type": "string", "description": "The username of the advertiser." },
+        "authorPhotoURL": { "type": "string", "description": "The photo URL of the advertiser." },
+        "content": { "type": "string", "description": "The text content of the ad." },
+        "imageUrl": { "type": "string", "description": "The URL of the attached image." },
+        "link": { "type": "string", "description": "The destination URL when the ad is clicked." },
+        "ctaText": { "type": "string", "description": "The call to action text." },
+        "active": { "type": "boolean", "description": "Whether the ad is currently active." },
+        "createdAt": { "type": "timestamp", "description": "The time the ad was created." }
+      },
+      "required": ["authorName", "authorUsername", "content", "link", "active", "createdAt"]
     }
   },
   "firestore": {
@@ -110,6 +127,10 @@
     "/notifications/{notificationId}": {
       "schema": { "$ref": "#/entities/Notification" },
       "description": "Stores user notifications."
+    },
+    "/ads/{adId}": {
+      "schema": { "$ref": "#/entities/Ad" },
+      "description": "Stores advertisements."
     }
   }
 }

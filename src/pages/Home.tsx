@@ -13,6 +13,7 @@ import Poll from '../components/Poll';
 import SharePostModal from '../components/SharePostModal';
 import ImageViewer from '../components/ImageViewer';
 import PostCard from '../components/PostCard';
+import GoogleAd from '../components/GoogleAd';
 import { uploadToImgBB } from '../lib/imgbb';
 import PullToRefresh from '../components/PullToRefresh';
 import { motion, AnimatePresence } from 'motion/react';
@@ -620,6 +621,8 @@ export default function Home() {
                       post.authorUsername.toLowerCase().includes(searchQuery.toLowerCase())
                     );
                     
+                    const showAds = !userProfile?.premiumTier;
+                    
                     if (filtered.length === 0 && searchQuery) {
                       return (
                         <div className="p-12 text-center">
@@ -634,27 +637,39 @@ export default function Home() {
                       );
                     }
                     
-                    return filtered.map((post) => (
-                      <PostCard
-                        key={post.id}
-                        post={post}
-                        onLike={handleLikePost}
-                        onRepost={handleRepost}
-                        onDelete={handleDeletePost}
-                        onEdit={(p) => {
-                          setEditingPost(p);
-                          setEditContent(p.content);
-                        }}
-                        onShare={(p) => {
-                          setSelectedSharePost(p);
-                          setIsShareModalOpen(true);
-                        }}
-                        onReply={(p) => openCreateModal(p)}
-                        onQuote={(p) => openCreateModal(null, p)}
-                        onImageClick={openImageViewer}
-                        canEdit={canEditPost}
-                      />
-                    ));
+                    const elements = [];
+                    let adIndex = 0;
+
+                    filtered.forEach((post, index) => {
+                      elements.push(
+                        <PostCard
+                          key={post.id}
+                          post={post}
+                          onLike={handleLikePost}
+                          onRepost={handleRepost}
+                          onDelete={handleDeletePost}
+                          onEdit={(p) => {
+                            setEditingPost(p);
+                            setEditContent(p.content);
+                          }}
+                          onShare={(p) => {
+                            setSelectedSharePost(p);
+                            setIsShareModalOpen(true);
+                          }}
+                          onReply={(p) => openCreateModal(p)}
+                          onQuote={(p) => openCreateModal(null, p)}
+                          onImageClick={openImageViewer}
+                          canEdit={canEditPost}
+                        />
+                      );
+
+                      // Insert a Google Ad every 5 posts if not premium
+                      if (showAds && (index + 1) % 5 === 0) {
+                        elements.push(<GoogleAd key={`google-ad-${index}`} slotId="1234567890" />);
+                      }
+                    });
+
+                    return elements;
                   })()}
                 </div>
               )}

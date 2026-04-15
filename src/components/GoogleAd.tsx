@@ -1,0 +1,43 @@
+import React, { useEffect, useRef } from 'react';
+
+interface GoogleAdProps {
+  key?: string | number;
+  className?: string;
+  slotId?: string;
+}
+
+export default function GoogleAd({ className = '', slotId = '1234567890' }: GoogleAdProps) {
+  const adRef = useRef<HTMLModElement>(null);
+
+  useEffect(() => {
+    try {
+      // O AdSense precisa ser inicializado para cada bloco de anúncio inserido na página
+      if (adRef.current && !adRef.current.getAttribute('data-ad-status')) {
+        // @ts-ignore
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      }
+    } catch (err) {
+      console.error('Erro ao carregar o anúncio do Google AdSense:', err);
+    }
+  }, []);
+
+  return (
+    <div className={`w-full overflow-hidden flex flex-col items-center bg-gray-50/50 border-b border-gray-100 py-4 ${className}`}>
+      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Publicidade</span>
+      
+      {/* 
+        ATENÇÃO: Substitua o data-ad-client pelo seu ID de editor (ca-pub-XXX)
+        e o data-ad-slot pelo ID do bloco de anúncios criado no painel do AdSense.
+      */}
+      <ins
+        ref={adRef}
+        className="adsbygoogle w-full"
+        style={{ display: 'block', textAlign: 'center', minHeight: '100px' }}
+        data-ad-layout="in-article"
+        data-ad-format="fluid"
+        data-ad-client="ca-pub-4327519756355647"
+        data-ad-slot={slotId}
+      />
+    </div>
+  );
+}

@@ -162,6 +162,19 @@ service cloud.firestore {
              ));
     }
 
+    function isValidAd(data) {
+      return hasOnlyAllowedFields(['authorName', 'authorUsername', 'authorPhotoURL', 'content', 'imageUrl', 'link', 'ctaText', 'active', 'createdAt']) &&
+             data.authorName is string && data.authorName.size() > 0 && data.authorName.size() <= 50 &&
+             data.authorUsername is string && data.authorUsername.size() > 0 && data.authorUsername.size() <= 30 &&
+             (!('authorPhotoURL' in data) || data.authorPhotoURL == null || data.authorPhotoURL == '' || (data.authorPhotoURL is string && data.authorPhotoURL.size() <= 2000)) &&
+             data.content is string && data.content.size() > 0 && data.content.size() <= 1000 &&
+             (!('imageUrl' in data) || data.imageUrl == null || data.imageUrl == '' || (data.imageUrl is string && data.imageUrl.size() <= 2000)) &&
+             data.link is string && data.link.size() > 0 && data.link.size() <= 2000 &&
+             (!('ctaText' in data) || data.ctaText == null || data.ctaText == '' || (data.ctaText is string && data.ctaText.size() <= 50)) &&
+             data.active is bool &&
+             data.createdAt is timestamp;
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -272,6 +285,11 @@ service cloud.firestore {
       
       // Allow participants to delete conversations
       allow delete: if isAuthenticated() && request.auth.uid in resource.data.participants;
+    }
+    match /ads/{adId} {
+      allow read: if isAuthenticated();
+      // Only admins can create/update/delete ads. For now, we restrict write access to a specific admin email or manual console entry.
+      allow create, update, delete: if isAuthenticated() && request.auth.token.email == "klypsocialofficial@gmail.com";
     }
   }
 }

@@ -264,26 +264,10 @@ export default function Layout() {
         quotePost={quotePost}
       />
 
-      {/* Mobile Bottom Navigation with Liquid Glass Floating Pill (iOS 26 Style) */}
-      {location.pathname !== '/premium' && (
-        <div className="sm:hidden fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[94%] max-w-md z-40 mobile-navbar-container transition-all duration-300">
-          <nav className="liquid-glass-pill rounded-[2.5rem] flex justify-around p-2 relative overflow-hidden group shadow-[0_10px_30px_rgba(0,0,0,0.15)]">
-            {/* Iridescent Border Effect */}
-            <div className="absolute inset-0 rounded-[2.5rem] border border-white/50 pointer-events-none" />
-            
-            {/* Liquid highlight effect (Iridescent glow) */}
-            <motion.div 
-              animate={{ 
-                background: [
-                  'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.2) 100%)',
-                  'linear-gradient(225deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.2) 100%)',
-                  'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.2) 100%)'
-                ]
-              }}
-              transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-              className="absolute inset-0 pointer-events-none opacity-40" 
-            />
-            
+      {/* Mobile Bottom Navigation */}
+      {location.pathname !== '/premium' && !location.pathname.startsWith('/chat/') && (
+        <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-xl border-t border-gray-200 pb-[env(safe-area-inset-bottom)]">
+          <nav className="flex justify-around p-2 relative">
             {[navItems[0], navItems[1], navItems[2], navItems[3], navItems[5]].map((item) => {
               const isActive = location.pathname === item.path;
               
@@ -292,9 +276,9 @@ export default function Layout() {
                   <button
                     key={item.path}
                     onClick={() => openCreateModal()}
-                    className="relative p-3.5 rounded-full transition-all duration-500 z-10 flex flex-col items-center justify-center text-gray-500 hover:text-black"
+                    className="relative p-2 rounded-full transition-all duration-300 z-10 flex flex-col items-center justify-center text-gray-500 hover:text-black"
                   >
-                    <item.icon className="w-7 h-7 stroke-[2px]" />
+                    <item.icon className="w-6 h-6 stroke-[2px]" />
                   </button>
                 );
               }
@@ -303,31 +287,16 @@ export default function Layout() {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`relative p-3.5 rounded-full transition-all duration-500 z-10 flex flex-col items-center justify-center ${
+                  className={`relative p-2 rounded-full transition-all duration-300 z-10 flex flex-col items-center justify-center ${
                     isActive ? 'text-black' : 'text-gray-500 hover:text-black'
                   }`}
                 >
-                  {isActive && (
-                    <motion.div
-                      layoutId="mobile-active-tab-blob"
-                      className="absolute inset-0 bg-white/90 rounded-full -z-10 shadow-[0_0_15px_rgba(255,255,255,0.4)]"
-                      transition={{ 
-                        type: "spring", 
-                        stiffness: 350, 
-                        damping: 25,
-                        mass: 0.8
-                      }}
-                    >
-                      <div className="absolute inset-0 rounded-full bg-gradient-to-b from-white/30 to-transparent pointer-events-none" />
-                    </motion.div>
-                  )}
-                  
                   <motion.div 
                     className="relative flex flex-col items-center"
-                    whileTap={{ scale: 0.85 }}
-                    animate={isActive ? { scale: 1.15 } : { scale: 1 }}
+                    whileTap={{ scale: 0.9 }}
+                    animate={isActive ? { scale: 1.1 } : { scale: 1 }}
                   >
-                    <item.icon className={`w-7 h-7 transition-all duration-500 ${isActive ? 'stroke-[2.5px] drop-shadow-sm' : 'stroke-[2px]'}`} />
+                    <item.icon className={`w-6 h-6 transition-all duration-300 ${isActive ? 'stroke-[2.5px]' : 'stroke-[2px]'}`} />
                     
                     <AnimatePresence>
                       {((item.path === '/notifications' && unreadNotificationsCount > 0) || 

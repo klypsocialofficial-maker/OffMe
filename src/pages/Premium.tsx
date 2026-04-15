@@ -104,6 +104,10 @@ export default function Premium() {
               <CheckCircle className="w-4 h-4 text-slate-400 flex-shrink-0" />
               <span className="text-gray-700">Edição de posts até 1 hora</span>
             </div>
+            <div className="flex items-center space-x-3">
+              <CheckCircle className="w-4 h-4 text-slate-400 flex-shrink-0" />
+              <span className="text-gray-700">Navegação sem anúncios</span>
+            </div>
           </div>
 
           <div className="text-2xl font-black mb-4">
@@ -148,6 +152,10 @@ export default function Premium() {
               <CheckCircle className="w-4 h-4 text-yellow-500 flex-shrink-0" />
               <span className="text-gray-700">Destaque nas respostas</span>
             </div>
+            <div className="flex items-center space-x-3">
+              <CheckCircle className="w-4 h-4 text-yellow-500 flex-shrink-0" />
+              <span className="text-gray-700">Navegação sem anúncios</span>
+            </div>
           </div>
 
           <div className="text-2xl font-black mb-4">
@@ -188,6 +196,10 @@ export default function Premium() {
             <div className="flex items-center space-x-3">
               <CheckCircle className="w-4 h-4 text-gray-400 flex-shrink-0" />
               <span className="text-gray-300">Analytics e Insights (Em breve)</span>
+            </div>
+            <div className="flex items-center space-x-3">
+              <CheckCircle className="w-4 h-4 text-gray-400 flex-shrink-0" />
+              <span className="text-gray-300">Navegação sem anúncios</span>
             </div>
             <div className="flex items-center space-x-3">
               <CheckCircle className="w-4 h-4 text-gray-400 flex-shrink-0" />
