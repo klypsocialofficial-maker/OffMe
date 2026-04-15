@@ -104,17 +104,19 @@ export default function Notifications() {
   return (
     <div className="w-full min-h-full bg-transparent relative">
       <div className="sticky top-0 z-30 bg-white/70 backdrop-blur-3xl border-b border-white/10 shadow-sm pt-[env(safe-area-inset-top)]">
-        <div className="w-full max-w-md px-4 py-2 mx-auto">
+        <div className="w-full px-4 py-2">
           <div className="flex items-center justify-between relative mb-4">
-            <button onClick={openDrawer} className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 sm:hidden border border-white/40 shadow-sm">
+            <button onClick={openDrawer} className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 sm:hidden border border-white/40 shadow-sm z-10">
               {userProfile?.photoURL ? (
                 <img src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full object-cover" />
               ) : (
                 <UserIcon className="w-full h-full p-2 text-gray-400" />
               )}
             </button>
-            <h1 className="text-xl font-bold">Notifications</h1>
-            <div className="w-10 h-10 sm:hidden" /> {/* Spacer */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <h1 className="text-xl font-bold pointer-events-auto">Notifications</h1>
+            </div>
+            <div className="w-10 h-10 sm:hidden z-10" /> {/* Spacer */}
           </div>
 
           <div className="flex justify-center">

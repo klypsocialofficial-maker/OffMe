@@ -118,7 +118,7 @@ export default function Layout() {
       <div className="fixed top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-blue-400/5 blur-[120px] pointer-events-none animate-pulse" />
       <div className="fixed bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-purple-400/5 blur-[120px] pointer-events-none animate-pulse" style={{ animationDelay: '2s' }} />
       
-      <div className="flex w-full max-w-[1300px] mx-auto">
+      <div className="flex w-full max-w-[1300px] mx-auto justify-center lg:justify-start">
         {/* Sidebar Navigation (Desktop) */}
         <header className="hidden sm:flex flex-col w-20 xl:w-64 border-r border-gray-100 px-2 xl:px-4 py-6 sticky top-0 h-screen z-20 bg-white">
           <div className="flex items-center mb-8 px-4">

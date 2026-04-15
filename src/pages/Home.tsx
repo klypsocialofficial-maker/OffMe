@@ -459,10 +459,10 @@ export default function Home() {
     <div className="w-full min-h-full bg-transparent relative">
       {/* Sticky Header with Liquid Glass & Tabs */}
       <div className="sticky top-0 z-30 bg-white/70 backdrop-blur-3xl border-b border-white/10 shadow-sm pt-[env(safe-area-inset-top)]">
-        <div className="w-full max-w-md px-4 py-2 mx-auto">
+        <div className="w-full px-4 py-2">
           <div className="flex items-center justify-between relative">
             {/* Mobile Avatar (Left) */}
-            <div className="sm:hidden flex-shrink-0">
+            <div className="sm:hidden flex-shrink-0 z-10">
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
@@ -479,43 +479,45 @@ export default function Home() {
             </div>
 
             {/* Liquid Glass Tab Switcher (Center) */}
-            <nav className="liquid-glass-pill p-1 rounded-full flex items-center relative overflow-hidden border border-white/40 shadow-lg">
-              <button
-                onClick={() => setActiveTab('foryou')}
-                className={`relative px-6 py-2 text-sm font-bold transition-all duration-300 z-10 ${
-                  activeTab === 'foryou' ? 'text-black' : 'text-gray-500 hover:text-black'
-                }`}
-              >
-                {activeTab === 'foryou' && (
-                  <motion.div
-                    layoutId="feed-tab-blob"
-                    className="absolute inset-0 bg-white/80 rounded-full -z-10 shadow-sm"
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                  />
-                )}
-                For you
-              </button>
-              <button
-                onClick={() => setActiveTab('following')}
-                className={`relative px-6 py-2 text-sm font-bold transition-all duration-300 z-10 ${
-                  activeTab === 'following' ? 'text-black' : 'text-gray-500 hover:text-black'
-                }`}
-              >
-                {activeTab === 'following' && (
-                  <motion.div
-                    layoutId="feed-tab-blob"
-                    className="absolute inset-0 bg-white/80 rounded-full -z-10 shadow-sm"
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                  />
-                )}
-                Following
-              </button>
-            </nav>
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <nav className="liquid-glass-pill p-1 rounded-full flex items-center relative overflow-hidden border border-white/40 shadow-lg pointer-events-auto">
+                <button
+                  onClick={() => setActiveTab('foryou')}
+                  className={`relative px-6 py-2 text-sm font-bold transition-all duration-300 z-10 ${
+                    activeTab === 'foryou' ? 'text-black' : 'text-gray-500 hover:text-black'
+                  }`}
+                >
+                  {activeTab === 'foryou' && (
+                    <motion.div
+                      layoutId="feed-tab-blob"
+                      className="absolute inset-0 bg-white/80 rounded-full -z-10 shadow-sm"
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    />
+                  )}
+                  For you
+                </button>
+                <button
+                  onClick={() => setActiveTab('following')}
+                  className={`relative px-6 py-2 text-sm font-bold transition-all duration-300 z-10 ${
+                    activeTab === 'following' ? 'text-black' : 'text-gray-500 hover:text-black'
+                  }`}
+                >
+                  {activeTab === 'following' && (
+                    <motion.div
+                      layoutId="feed-tab-blob"
+                      className="absolute inset-0 bg-white/80 rounded-full -z-10 shadow-sm"
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    />
+                  )}
+                  Following
+                </button>
+              </nav>
+            </div>
 
             {/* Search Toggle Button (Right) */}
             <button 
               onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className={`p-2.5 rounded-full transition-all duration-300 border border-white/40 shadow-sm ${isSearchOpen ? 'bg-black text-white' : 'liquid-glass-pill text-gray-500'}`}
+              className={`p-2.5 rounded-full transition-all duration-300 border border-white/40 shadow-sm z-10 ${isSearchOpen ? 'bg-black text-white' : 'liquid-glass-pill text-gray-500'}`}
             >
               <Search className="w-5 h-5" />
             </button>
