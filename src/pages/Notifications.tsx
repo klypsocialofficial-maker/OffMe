@@ -113,8 +113,8 @@ export default function Notifications() {
                 <UserIcon className="w-full h-full p-2 text-gray-400" />
               )}
             </button>
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <h1 className="text-xl font-bold pointer-events-auto">Notifications</h1>
+            <div className="flex-1 flex justify-center">
+              <h1 className="text-xl font-bold">Notifications</h1>
             </div>
             <div className="w-10 h-10 sm:hidden z-10" /> {/* Spacer */}
           </div>
@@ -156,7 +156,7 @@ export default function Notifications() {
         </div>
       </div>
 
-      <div className="px-4 pt-4 pb-20">
+      <div className="px-4 pb-20">
         {loading ? (
           <div className="p-8 text-center text-gray-500">Loading...</div>
         ) : (activeTab === 'verified' ? notifications.filter(n => n.senderVerified || n.senderUsername === 'Rulio') : notifications).length > 0 ? (

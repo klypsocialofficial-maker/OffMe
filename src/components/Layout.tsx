@@ -122,10 +122,15 @@ export default function Layout() {
         {/* Sidebar Navigation (Desktop) */}
         <header className="hidden sm:flex flex-col w-20 xl:w-64 border-r border-gray-100 px-2 xl:px-4 py-6 sticky top-0 h-screen z-20 bg-white">
           <div className="flex items-center mb-8 px-4">
-            <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center overflow-hidden">
-              <img src="/ghost.svg" alt="OffMe Logo" className="w-6 h-6 object-contain invert" />
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center shadow-lg shadow-black/10 rotate-3">
+                <img src="/ghost.svg" alt="OffMe" className="w-7 h-7 invert" />
+              </div>
+              <div className="flex flex-col hidden xl:block">
+                <span className="text-2xl font-black tracking-tighter">OffMe</span>
+                <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest bg-amber-50 px-1.5 py-0.5 rounded-md border border-amber-100 w-fit">Beta</span>
+              </div>
             </div>
-            <span className="ml-3 font-bold text-xl tracking-tight hidden xl:block">OffMe</span>
           </div>
           
           <nav className="flex-1 space-y-1 mt-4 relative">
@@ -231,7 +236,7 @@ export default function Layout() {
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 max-w-[600px] min-h-[100dvh] z-10 relative border-r border-gray-100 bg-white pb-24 sm:pb-0 overflow-clip">
+        <main className="flex-1 max-w-[600px] h-full z-10 relative border-r border-gray-100 bg-white pb-24 sm:pb-0 overflow-y-auto overflow-x-hidden custom-scrollbar">
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
@@ -340,6 +345,10 @@ export default function Layout() {
               className="fixed top-0 left-0 bottom-0 w-[300px] bg-white/90 backdrop-blur-2xl z-50 sm:hidden shadow-2xl flex flex-col border-r border-white/20"
             >
               <div className="relative border-b border-white/20 pt-[calc(1.5rem+env(safe-area-inset-top))]">
+                {/* Beta Badge for Mobile Drawer */}
+                <div className="absolute top-[env(safe-area-inset-top)] right-4 mt-4 z-20">
+                  <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest bg-amber-50/80 backdrop-blur-md px-2 py-1 rounded-lg border border-amber-200/50 shadow-sm">Beta</span>
+                </div>
                 {/* Banner Background with Glass Overlay */}
                 <div 
                   className="absolute top-0 left-0 right-0 h-32 bg-gray-100 -z-10 cursor-zoom-in"

@@ -71,7 +71,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 }
 
 const PostSkeleton = () => (
-  <div className="p-4 liquid-glass-card rounded-2xl shadow-sm overflow-hidden mb-4 mx-4">
+  <div className="p-4 liquid-glass-card rounded-2xl shadow-sm overflow-hidden mb-4">
     <div className="flex space-x-3">
       <div className="w-12 h-12 bg-gray-200 rounded-full flex-shrink-0 shimmer" />
       <div className="flex-1 space-y-3 py-1">
@@ -479,11 +479,11 @@ export default function Home() {
             </div>
 
             {/* Liquid Glass Tab Switcher (Center) */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <nav className="liquid-glass-pill p-1 rounded-full flex items-center relative overflow-hidden border border-white/40 shadow-lg pointer-events-auto">
+            <div className="flex-1 flex justify-center">
+              <nav className="liquid-glass-pill p-1 rounded-full flex items-center relative overflow-hidden border border-white/40 shadow-lg">
                 <button
                   onClick={() => setActiveTab('foryou')}
-                  className={`relative px-6 py-2 text-sm font-bold transition-all duration-300 z-10 ${
+                  className={`relative px-4 py-1.5 text-sm font-bold transition-all duration-300 z-10 ${
                     activeTab === 'foryou' ? 'text-black' : 'text-gray-500 hover:text-black'
                   }`}
                 >
@@ -498,7 +498,7 @@ export default function Home() {
                 </button>
                 <button
                   onClick={() => setActiveTab('following')}
-                  className={`relative px-6 py-2 text-sm font-bold transition-all duration-300 z-10 ${
+                  className={`relative px-4 py-1.5 text-sm font-bold transition-all duration-300 z-10 ${
                     activeTab === 'following' ? 'text-black' : 'text-gray-500 hover:text-black'
                   }`}
                 >
@@ -583,7 +583,7 @@ export default function Home() {
           id="feed-panel" 
           aria-labelledby={`tab-${activeTab}`}
           tabIndex={0}
-          className="focus-visible:outline-none pt-4"
+          className="focus-visible:outline-none"
         >
           <PullToRefresh onRefresh={async () => {
             setDisplayedPosts(fetchedPosts);

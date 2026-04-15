@@ -3,7 +3,7 @@ import { useRegisterSW } from 'virtual:pwa-register/react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronRight, Sparkles, CheckCircle2, X } from 'lucide-react';
 
-const APP_VERSION = '0.0.0.02';
+const APP_VERSION = '0.0.0.03';
 
 export default function PWABadge() {
   const {
@@ -167,19 +167,19 @@ export default function PWABadge() {
                         <ul className="text-left mt-4 space-y-3 text-sm text-gray-600 bg-gray-50 p-4 rounded-xl border border-gray-100">
                           <li className="flex items-start">
                             <div className="w-1.5 h-1.5 rounded-full bg-black mt-1.5 mr-2 flex-shrink-0" />
-                            <span>Compartilhamento de posts direto para o Instagram Stories.</span>
+                            <span>Correção definitiva dos cabeçalhos fixos (Sticky Headers).</span>
                           </li>
                           <li className="flex items-start">
                             <div className="w-1.5 h-1.5 rounded-full bg-black mt-1.5 mr-2 flex-shrink-0" />
-                            <span>Visualizador de imagens em tela cheia (Avatar, Banner e Posts).</span>
+                            <span>Centralização absoluta de títulos e abas no mobile.</span>
                           </li>
                           <li className="flex items-start">
                             <div className="w-1.5 h-1.5 rounded-full bg-black mt-1.5 mr-2 flex-shrink-0" />
-                            <span>Nova interface de atualização com animações.</span>
+                            <span>Lançamento da versão Beta oficial com selo de identificação.</span>
                           </li>
                           <li className="flex items-start">
                             <div className="w-1.5 h-1.5 rounded-full bg-black mt-1.5 mr-2 flex-shrink-0" />
-                            <span>Melhorias gerais de performance e estabilidade.</span>
+                            <span>Melhorias no espaçamento do feed e remoção de margens excessivas.</span>
                           </li>
                         </ul>
                       </motion.div>
