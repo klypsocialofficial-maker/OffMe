@@ -3,7 +3,7 @@ import { useRegisterSW } from 'virtual:pwa-register/react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronRight, Sparkles, CheckCircle2, X } from 'lucide-react';
 
-const APP_VERSION = '0.0.0.04';
+const APP_VERSION = '0.0.0.05';
 
 export default function PWABadge() {
   const {
@@ -167,19 +167,27 @@ export default function PWABadge() {
                         <ul className="text-left mt-4 space-y-3 text-sm text-gray-600 bg-gray-50 p-4 rounded-xl border border-gray-100">
                           <li className="flex items-start">
                             <div className="w-1.5 h-1.5 rounded-full bg-black mt-1.5 mr-2 flex-shrink-0" />
-                            <span>Correção definitiva dos cabeçalhos fixos (Sticky Headers).</span>
+                            <span className="font-bold">v0.0.0.05:</span>
+                          </li>
+                          <li className="flex items-start pl-4">
+                            <div className="w-1 h-1 rounded-full bg-gray-400 mt-1.5 mr-2 flex-shrink-0" />
+                            <span>Separação de layouts para iOS, Android e Desktop.</span>
+                          </li>
+                          <li className="flex items-start pl-4">
+                            <div className="w-1 h-1 rounded-full bg-gray-400 mt-1.5 mr-2 flex-shrink-0" />
+                            <span>Otimização impecável para iOS PWA (Safe Areas).</span>
+                          </li>
+                          <li className="flex items-start pl-4">
+                            <div className="w-1 h-1 rounded-full bg-gray-400 mt-1.5 mr-2 flex-shrink-0" />
+                            <span>Novo design de navegação inferior e drawer lateral.</span>
                           </li>
                           <li className="flex items-start">
                             <div className="w-1.5 h-1.5 rounded-full bg-black mt-1.5 mr-2 flex-shrink-0" />
-                            <span>Centralização absoluta de títulos e abas no mobile.</span>
+                            <span className="font-bold">v0.0.0.04:</span>
                           </li>
-                          <li className="flex items-start">
-                            <div className="w-1.5 h-1.5 rounded-full bg-black mt-1.5 mr-2 flex-shrink-0" />
-                            <span>Lançamento da versão Beta oficial com selo de identificação.</span>
-                          </li>
-                          <li className="flex items-start">
-                            <div className="w-1.5 h-1.5 rounded-full bg-black mt-1.5 mr-2 flex-shrink-0" />
-                            <span>Melhorias no espaçamento do feed e remoção de margens excessivas.</span>
+                          <li className="flex items-start pl-4">
+                            <div className="w-1 h-1 rounded-full bg-gray-400 mt-1.5 mr-2 flex-shrink-0" />
+                            <span>Correção definitiva dos cabeçalhos fixos.</span>
                           </li>
                         </ul>
                       </motion.div>
