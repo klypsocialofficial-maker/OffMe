@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import Login from './pages/Login';
@@ -87,6 +88,7 @@ export default function App() {
           </Route>
         </Routes>
         <PWABadge />
+        <Analytics />
       </Router>
     </AuthProvider>
   </ThemeProvider>
