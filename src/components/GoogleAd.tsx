@@ -10,15 +10,27 @@ export default function GoogleAd({ className = '', slotId = '9395334432' }: Goog
   const adRef = useRef<HTMLModElement>(null);
 
   useEffect(() => {
+    let isMounted = true;
+    
     try {
       // O AdSense precisa ser inicializado para cada bloco de anúncio inserido na página
-      if (adRef.current && !adRef.current.getAttribute('data-ad-status')) {
-        // @ts-ignore
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-      }
+      // Usamos setTimeout para garantir que o DOM foi atualizado antes de chamar o push
+      setTimeout(() => {
+        if (isMounted && adRef.current && !adRef.current.getAttribute('data-ad-status')) {
+          // @ts-ignore
+          if (window.adsbygoogle) {
+            // @ts-ignore
+            window.adsbygoogle.push({});
+          }
+        }
+      }, 100);
     } catch (err) {
       console.error('Erro ao carregar o anúncio do Google AdSense:', err);
     }
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return (
