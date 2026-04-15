@@ -113,7 +113,7 @@ export default function Layout() {
   };
 
   return (
-    <div className="min-h-screen text-gray-900 flex justify-center relative bg-white transition-colors duration-500 overflow-x-hidden">
+    <div className="min-h-screen text-gray-900 flex justify-center relative bg-white transition-colors duration-500">
       {/* Decorative background blobs - reduced opacity for light mode */}
       <div className="fixed top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-blue-400/5 blur-[120px] pointer-events-none animate-pulse" />
       <div className="fixed bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-purple-400/5 blur-[120px] pointer-events-none animate-pulse" style={{ animationDelay: '2s' }} />
@@ -231,7 +231,7 @@ export default function Layout() {
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 max-w-[600px] min-h-[100dvh] pb-24 sm:pb-0 z-10 relative border-r border-gray-100 bg-white">
+        <main className="flex-1 max-w-[600px] h-[100dvh] z-10 relative border-r border-gray-100 bg-white">
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
@@ -239,7 +239,7 @@ export default function Layout() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="h-full"
+              className="h-full overflow-y-auto pb-24 sm:pb-0"
             >
               <Outlet context={{ openDrawer, openCreateModal }} />
             </motion.div>

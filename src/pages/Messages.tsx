@@ -146,7 +146,7 @@ export default function Messages() {
   };
 
   return (
-    <div className="w-full h-full bg-white/50">
+    <div className="w-full min-h-full bg-white/50">
       <div className="sticky top-0 bg-white/40 backdrop-blur-3xl backdrop-saturate-200 z-30 border-b border-gray-100/50 pt-[env(safe-area-inset-top)]">
         <div className="px-4 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-4">

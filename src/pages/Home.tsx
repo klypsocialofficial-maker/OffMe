@@ -456,7 +456,7 @@ export default function Home() {
   };
 
   return (
-    <div className="w-full h-full bg-transparent relative">
+    <div className="w-full min-h-full bg-transparent relative">
       {/* Sticky Header with Liquid Glass & Tabs */}
       <div className="sticky top-0 z-30 bg-white/70 backdrop-blur-3xl border-b border-white/10 shadow-sm pt-[env(safe-area-inset-top)]">
         <div className="w-full max-w-md px-4 py-2 mx-auto">

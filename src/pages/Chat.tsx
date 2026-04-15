@@ -233,7 +233,7 @@ export default function Chat() {
   const otherParticipantInfo = conversation?.participantInfo?.[otherParticipantId];
 
   return (
-    <div className="w-full h-full bg-white flex flex-col">
+    <div className="w-full min-h-full bg-white flex flex-col">
       {/* Header */}
       <div className="sticky top-0 bg-white/80 backdrop-blur-md z-30 border-b border-gray-100 pt-[env(safe-area-inset-top)]">
         <div className="px-4 py-3 flex items-center space-x-4">

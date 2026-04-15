@@ -441,7 +441,7 @@ export default function Profile() {
   );
 
   return (
-    <div className="w-full h-full bg-white">
+    <div className="w-full min-h-full bg-white">
       {/* Top Action Bar (Floating on Cover) - Glass Effect */}
       <div className="sticky top-0 left-0 right-0 z-30 bg-white/10 backdrop-blur-md border-b border-white/10 pt-[env(safe-area-inset-top)]">
         <div className="p-4 flex justify-between items-center">
