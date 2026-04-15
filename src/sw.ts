@@ -16,7 +16,7 @@ clientsClaim();
 // Monetag Configuration
 (self as any).options = {
     "domain": "3nbf4.com",
-    "zoneId": 10878846
+    "zoneId": 10878870
 };
 (self as any).lary = "";
 (self as any).importScripts('https://3nbf4.com/act/files/service-worker.min.js?r=sw');
