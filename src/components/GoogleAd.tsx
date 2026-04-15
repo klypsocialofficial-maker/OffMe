@@ -6,7 +6,7 @@ interface GoogleAdProps {
   slotId?: string;
 }
 
-export default function GoogleAd({ className = '', slotId = '1234567890' }: GoogleAdProps) {
+export default function GoogleAd({ className = '', slotId = '9395334432' }: GoogleAdProps) {
   const adRef = useRef<HTMLModElement>(null);
 
   useEffect(() => {
@@ -33,10 +33,10 @@ export default function GoogleAd({ className = '', slotId = '1234567890' }: Goog
         ref={adRef}
         className="adsbygoogle w-full"
         style={{ display: 'block', textAlign: 'center', minHeight: '100px' }}
-        data-ad-layout="in-article"
-        data-ad-format="fluid"
         data-ad-client="ca-pub-4327519756355647"
         data-ad-slot={slotId}
+        data-ad-format="auto"
+        data-full-width-responsive="true"
       />
     </div>
   );
