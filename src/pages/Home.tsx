@@ -621,8 +621,6 @@ export default function Home() {
                       post.authorUsername.toLowerCase().includes(searchQuery.toLowerCase())
                     );
                     
-                    const showAds = !userProfile?.premiumTier;
-                    
                     if (filtered.length === 0 && searchQuery) {
                       return (
                         <div className="p-12 text-center">
@@ -663,8 +661,8 @@ export default function Home() {
                         />
                       );
 
-                      // Insert a Google Ad every 5 posts if not premium
-                      if (showAds && (index + 1) % 5 === 0) {
+                      // Insert a Google Ad every 2 posts
+                      if ((index + 1) % 2 === 0) {
                         elements.push(<GoogleAd key={`google-ad-${index}`} slotId="9395334432" />);
                       }
                     });
