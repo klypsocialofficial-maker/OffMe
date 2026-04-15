@@ -231,7 +231,7 @@ export default function Layout() {
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 max-w-[600px] min-h-[100dvh] z-10 relative border-r border-gray-100 bg-white pb-24 sm:pb-0">
+        <main className="flex-1 max-w-[600px] min-h-[100dvh] z-10 relative border-r border-gray-100 bg-white pb-24 sm:pb-0 overflow-clip">
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
@@ -239,7 +239,7 @@ export default function Layout() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="w-full"
+              className="w-full h-full"
             >
               <Outlet context={{ openDrawer, openCreateModal }} />
             </motion.div>
