@@ -125,41 +125,43 @@ export default function IOSLayout({
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              className="fixed top-0 left-0 bottom-0 w-[85%] max-w-[320px] bg-white/95 backdrop-blur-3xl z-50 sm:hidden shadow-[20px_0_50px_rgba(0,0,0,0.1)] flex flex-col"
+              className="fixed top-0 left-0 bottom-0 w-[85%] max-w-[320px] bg-white/95 backdrop-blur-3xl z-50 sm:hidden shadow-[20px_0_50px_rgba(0,0,0,0.1)] flex flex-col overflow-hidden"
             >
-              <div className="relative pt-[env(safe-area-inset-top)]">
+              {/* Header with Profile Info */}
+              <div className="relative pt-[max(env(safe-area-inset-top),20px)] border-b border-gray-50">
                 {/* Beta Badge */}
-                <div className="absolute top-[env(safe-area-inset-top)] right-6 mt-6 z-20">
+                <div className="absolute top-[max(env(safe-area-inset-top),20px)] right-6 z-20">
                   <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest bg-amber-100/80 px-2 py-1 rounded-lg border border-amber-200 shadow-sm">Beta</span>
                 </div>
                 
-                <div className="p-8">
+                <div className="p-6">
                   <div 
-                    className="w-20 h-20 rounded-3xl bg-gray-100 overflow-hidden mb-6 shadow-2xl cursor-zoom-in transform transition-transform active:scale-95 border-4 border-white"
+                    className="w-16 h-16 rounded-2xl bg-gray-100 overflow-hidden mb-4 shadow-xl cursor-zoom-in transform transition-transform active:scale-95 border-2 border-white"
                     onClick={() => userProfile?.photoURL && openImageViewer(userProfile.photoURL, `Avatar de ${userProfile.displayName}`)}
                   >
                     <img src={userProfile?.photoURL || '/ghost.svg'} alt={userProfile?.displayName} className="w-full h-full object-cover" />
                   </div>
                   <div className="flex items-center space-x-1.5">
-                    <h2 className="font-black text-2xl leading-tight text-gray-900 tracking-tight">{userProfile?.displayName}</h2>
-                    {(userProfile?.isVerified || userProfile?.username === 'Rulio') && <VerifiedBadge className="w-5 h-5 flex-shrink-0" tier={userProfile?.premiumTier} />}
+                    <h2 className="font-black text-xl leading-tight text-gray-900 tracking-tight truncate">{userProfile?.displayName}</h2>
+                    {(userProfile?.isVerified || userProfile?.username === 'Rulio') && <VerifiedBadge className="w-4 h-4 flex-shrink-0" tier={userProfile?.premiumTier} />}
                   </div>
-                  <p className="text-gray-500 font-semibold text-lg">@{userProfile?.username}</p>
+                  <p className="text-gray-500 font-semibold text-base truncate">@{userProfile?.username}</p>
                   
-                  <div className="flex space-x-6 mt-6">
-                    <div className="flex flex-col">
-                      <span className="font-black text-black text-lg leading-none">{userProfile?.following?.length || 0}</span>
-                      <span className="text-gray-400 text-sm font-bold uppercase tracking-wider mt-1">Seguindo</span>
+                  <div className="flex space-x-4 mt-4">
+                    <div className="flex items-baseline space-x-1">
+                      <span className="font-black text-black text-base">{userProfile?.following?.length || 0}</span>
+                      <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">Seguindo</span>
                     </div>
-                    <div className="flex flex-col">
-                      <span className="font-black text-black text-lg leading-none">{userProfile?.followers?.length || 0}</span>
-                      <span className="text-gray-400 text-sm font-bold uppercase tracking-wider mt-1">Seguidores</span>
+                    <div className="flex items-baseline space-x-1">
+                      <span className="font-black text-black text-base">{userProfile?.followers?.length || 0}</span>
+                      <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">Seguidores</span>
                     </div>
                   </div>
                 </div>
               </div>
               
-              <nav className="flex-1 overflow-y-auto py-4 px-4 space-y-1.5">
+              {/* Scrollable Navigation */}
+              <nav className="flex-1 overflow-y-auto py-2 px-3 space-y-1 custom-scrollbar">
                 {navItems.filter(item => !item.isAction).map((item) => {
                   const isActive = location.pathname === item.path;
                   return (
@@ -167,23 +169,24 @@ export default function IOSLayout({
                       key={item.path}
                       to={item.path} 
                       onClick={closeDrawer} 
-                      className={`flex items-center px-5 py-4 text-lg font-bold rounded-2xl transition-all active:scale-[0.98] ${
-                        isActive ? 'bg-black text-white shadow-xl' : 'text-gray-800 hover:bg-gray-100'
+                      className={`flex items-center px-4 py-3.5 text-base font-bold rounded-xl transition-all active:scale-[0.98] ${
+                        isActive ? 'bg-black text-white shadow-lg' : 'text-gray-800 hover:bg-gray-100'
                       }`}
                     >
-                      <item.icon className={`mr-4 w-6 h-6 ${isActive ? 'stroke-[2.5px]' : 'stroke-[2px]'}`} /> 
+                      <item.icon className={`mr-4 w-5 h-5 ${isActive ? 'stroke-[2.5px]' : 'stroke-[2px]'}`} /> 
                       {item.label}
                     </Link>
                   );
                 })}
               </nav>
               
-              <div className="p-6 border-t border-gray-100 pb-[calc(2rem+env(safe-area-inset-bottom))]">
+              {/* Footer with Logout */}
+              <div className="p-4 border-t border-gray-100 pb-[max(env(safe-area-inset-bottom),20px)]">
                 <button 
                   onClick={() => { closeDrawer(); setIsLogoutModalOpen(true); }} 
-                  className="flex items-center font-black text-[#FF3B30] hover:bg-red-50 w-full p-4 rounded-2xl transition-all active:scale-95"
+                  className="flex items-center font-black text-[#FF3B30] hover:bg-red-50 w-full p-3.5 rounded-xl transition-all active:scale-95"
                 >
-                  <LogOut className="mr-4 w-6 h-6" /> Sair da conta
+                  <LogOut className="mr-4 w-5 h-5" /> Sair da conta
                 </button>
               </div>
             </motion.div>
