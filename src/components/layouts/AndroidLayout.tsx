@@ -36,7 +36,7 @@ export default function AndroidLayout({
   const navigate = useNavigate();
 
   return (
-    <div className="flex flex-col w-full min-h-[100dvh] bg-white overflow-x-hidden">
+    <div className="flex flex-col w-full min-h-[100dvh] bg-white overflow-x-clip">
       {/* Main Content Area */}
       <main className="flex-1 w-full relative pb-20">
         <AnimatePresence mode="wait">

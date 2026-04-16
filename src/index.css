@@ -60,7 +60,7 @@ html, body {
   margin: 0;
   padding: 0;
   /* Native scrolling for better PWA feel */
-  overflow-x: hidden;
+  overflow-x: clip;
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
   /* Prevent horizontal scroll on mobile */

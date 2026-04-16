@@ -164,6 +164,7 @@ export default function Layout() {
         unreadMessagesCount={unreadMessagesCount}
         openCreateModal={openCreateModal}
         setIsLogoutModalOpen={setIsLogoutModalOpen}
+        openDrawer={openDrawer}
         Outlet={Outlet}
         location={location}
       />
@@ -171,7 +172,7 @@ export default function Layout() {
   };
 
   return (
-    <div className="min-h-screen text-gray-900 flex justify-center relative bg-white transition-colors duration-500 overflow-x-hidden">
+    <div className="min-h-screen text-gray-900 flex justify-center relative bg-white transition-colors duration-500 overflow-x-clip">
       {/* Decorative background blobs - reduced opacity for light mode */}
       <div className="fixed top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-blue-400/5 blur-[120px] pointer-events-none animate-pulse" />
       <div className="fixed bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-purple-400/5 blur-[120px] pointer-events-none animate-pulse" style={{ animationDelay: '2s' }} />

@@ -12,6 +12,7 @@ interface DesktopLayoutProps {
   unreadMessagesCount: number;
   openCreateModal: (replyTo?: any, quotePost?: any) => void;
   setIsLogoutModalOpen: (open: boolean) => void;
+  openDrawer?: () => void;
   Outlet: any;
   location: any;
 }
@@ -23,6 +24,7 @@ export default function DesktopLayout({
   unreadMessagesCount,
   openCreateModal,
   setIsLogoutModalOpen,
+  openDrawer,
   Outlet,
   location
 }: DesktopLayoutProps) {
@@ -148,7 +150,7 @@ export default function DesktopLayout({
             transition={{ duration: 0.2 }}
             className="w-full"
           >
-            <Outlet context={{ openCreateModal }} />
+            <Outlet context={{ openDrawer, openCreateModal }} />
           </motion.div>
         </AnimatePresence>
       </main>
