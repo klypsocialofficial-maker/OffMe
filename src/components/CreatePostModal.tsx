@@ -235,10 +235,10 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed bottom-0 left-0 right-0 z-[70] bg-white sm:rounded-t-[32px] shadow-2xl overflow-hidden flex flex-col h-full sm:h-[70vh] max-w-2xl mx-auto"
+            className="fixed inset-0 z-[70] bg-white sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col sm:h-[80vh] sm:max-h-[600px] sm:max-w-2xl sm:mx-auto sm:my-auto"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 sticky top-0 bg-white/80 backdrop-blur-md z-10">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white/80 backdrop-blur-md z-10 pt-[env(safe-area-inset-top)]">
               <button 
                 onClick={onClose} 
                 className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -256,7 +256,7 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
             </div>
 
             {/* Body */}
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 overflow-y-auto p-4 pb-20 sm:pb-4">
               <div className="flex space-x-3">
                 {/* Avatar */}
                 <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
@@ -383,7 +383,7 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
             </div>
 
             {/* Footer */}
-            <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between bg-white">
+            <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between bg-white pb-[env(safe-area-inset-bottom)]">
               <div className="flex items-center space-x-2">
                 <button onClick={() => fileInputRef.current?.click()} className="text-blue-500 hover:bg-blue-50 p-2 rounded-full transition-colors">
                   <ImageIcon className="w-5 h-5" />
