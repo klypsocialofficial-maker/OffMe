@@ -8,6 +8,7 @@ interface GoogleAdProps {
 
 export default function GoogleAd({ className = '', slotId = '9395334432' }: GoogleAdProps) {
   const adRef = useRef<HTMLModElement>(null);
+  const pushedRef = useRef(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -16,14 +17,28 @@ export default function GoogleAd({ className = '', slotId = '9395334432' }: Goog
       // O AdSense precisa ser inicializado para cada bloco de anúncio inserido na página
       // Usamos setTimeout para garantir que o DOM foi atualizado antes de chamar o push
       setTimeout(() => {
-        if (isMounted && adRef.current && !adRef.current.getAttribute('data-ad-status')) {
-          // @ts-ignore
-          if (window.adsbygoogle) {
-            // @ts-ignore
-            window.adsbygoogle.push({});
+        if (isMounted && adRef.current && !pushedRef.current) {
+          // Verifica se o anúncio já foi processado pelo AdSense
+          const hasStatus = adRef.current.getAttribute('data-adsbygoogle-status');
+          const hasAdStatus = adRef.current.getAttribute('data-ad-status');
+          
+          if (!hasStatus && !hasAdStatus) {
+            try {
+              // @ts-ignore
+              if (window.adsbygoogle) {
+                pushedRef.current = true;
+                // @ts-ignore
+                window.adsbygoogle.push({});
+              }
+            } catch (err) {
+              // Ignora erros de "All 'ins' elements already have ads", que são comuns no React
+              if (err instanceof Error && !err.message.includes('already have ads')) {
+                console.error('Erro ao carregar o anúncio do Google AdSense:', err);
+              }
+            }
           }
         }
-      }, 100);
+      }, 300);
     } catch (err) {
       console.error('Erro ao carregar o anúncio do Google AdSense:', err);
     }
