@@ -406,16 +406,22 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
             {/* Footer */}
             <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between bg-white pb-[env(safe-area-inset-bottom)] shrink-0">
               <div className="flex items-center space-x-2">
-                <button onClick={() => fileInputRef.current?.click()} className="text-blue-500 hover:bg-blue-50 p-2 rounded-full transition-colors">
+                <button 
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()} 
+                  className="text-blue-500 hover:bg-blue-50 p-2 rounded-full transition-colors"
+                >
                   <ImageIcon className="w-5 h-5" />
                 </button>
                 <button 
+                  type="button"
                   onClick={() => { setShowPoll(!showPoll); setShowGifPicker(false); }} 
                   className={`p-2 rounded-full transition-colors ${showPoll ? 'bg-blue-50 text-blue-500' : 'text-blue-500 hover:bg-blue-50'}`}
                 >
                   <BarChart2 className="w-5 h-5" />
                 </button>
                 <button 
+                  type="button"
                   onClick={() => { setShowGifPicker(!showGifPicker); setShowPoll(false); }} 
                   className={`p-2 rounded-full transition-colors ${showGifPicker ? 'bg-blue-50 text-blue-500' : 'text-blue-500 hover:bg-blue-50'}`}
                 >
