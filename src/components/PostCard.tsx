@@ -155,14 +155,20 @@ export default function PostCard({
         {/* Image */}
         {post.imageUrls && post.imageUrls.length > 0 && (
           <div 
-            className={`mt-3 rounded-2xl overflow-hidden border border-gray-100 cursor-zoom-in grid gap-1 ${post.imageUrls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}
+            className={`mt-3 rounded-2xl overflow-hidden border border-gray-100 cursor-pointer grid gap-1 ${post.imageUrls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}
             onClick={(e) => {
               stopPropagation(e);
               onImageClick(post.imageUrls[0], 'Imagem do post');
             }}
           >
             {post.imageUrls.map((url: string, index: number) => (
-              <img key={index} src={url} alt={`Post ${index}`} className="w-full h-auto max-h-[512px] object-cover" />
+              <img 
+                key={index} 
+                src={url} 
+                alt={`Post ${index}`} 
+                className="w-full h-auto max-h-[512px] object-cover"
+                referrerPolicy="no-referrer"
+              />
             ))}
           </div>
         )}
