@@ -20,11 +20,32 @@ export default function SignUp() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!window.recaptchaVerifier && auth) {
+    if (auth) {
+      // Clear existing verifier if it exists to prevent "element has been removed" errors
+      if (window.recaptchaVerifier) {
+        try {
+          window.recaptchaVerifier.clear();
+        } catch (e) {
+          console.error("Error clearing recaptcha", e);
+        }
+        window.recaptchaVerifier = null;
+      }
+      
       window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
         'size': 'invisible',
       });
     }
+
+    return () => {
+      if (window.recaptchaVerifier) {
+        try {
+          window.recaptchaVerifier.clear();
+        } catch (e) {
+          console.error("Error clearing recaptcha on unmount", e);
+        }
+        window.recaptchaVerifier = null;
+      }
+    };
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
