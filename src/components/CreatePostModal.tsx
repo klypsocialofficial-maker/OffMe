@@ -216,6 +216,18 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
     }
   };
 
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      // Simple heuristic for keyboard detection
+      const isKeyboard = window.innerHeight < window.screen.height * 0.75;
+      setIsKeyboardVisible(isKeyboard);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -235,7 +247,7 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed inset-0 z-[70] bg-white sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col sm:h-[80vh] sm:max-h-[600px] sm:max-w-2xl sm:mx-auto sm:my-auto"
+            className={`fixed inset-0 z-[70] bg-white sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col sm:h-[80vh] sm:max-h-[600px] sm:max-w-2xl sm:mx-auto sm:my-auto ${isKeyboardVisible ? 'sm:top-0' : ''}`}
           >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white/80 backdrop-blur-md z-10 pt-[env(safe-area-inset-top)]">
@@ -305,6 +317,7 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
                     </div>
                   )}
 
+                  {/* Poll & GIF Picker */}
                   {showPoll && (
                     <div className="mt-4 mb-4 border border-gray-200 rounded-2xl p-4">
                       <div className="flex justify-between items-center mb-3">
@@ -374,10 +387,6 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
                       </div>
                     </div>
                   )}
-
-                  <div className="text-gray-300 text-sm font-medium mt-4">
-                    Adicionar ao fio
-                  </div>
                 </div>
               </div>
             </div>
