@@ -250,7 +250,7 @@ export default function Chat() {
   const otherParticipantInfo = conversation?.participantInfo?.[otherParticipantId];
 
   return (
-    <div className="w-full min-h-full bg-white flex flex-col">
+    <div className="w-full h-[100dvh] bg-white flex flex-col">
       {/* Header */}
       <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-2xl border-b border-black/5 shadow-sm pt-[env(safe-area-inset-top)]">
         <div className="px-4 py-3 flex items-center space-x-4">
@@ -374,8 +374,8 @@ export default function Chat() {
         </div>
 
       {/* Input Area */}
-      <div className="p-3 border-t border-gray-100 bg-white">
-        <form onSubmit={handleSendMessage} className="flex items-center space-x-2 bg-gray-100 rounded-full px-4 py-2">
+      <div className="sticky bottom-0 p-3 border-t border-gray-100 bg-white pb-[calc(env(safe-area-inset-bottom)+12px)] z-40">
+        <form onSubmit={handleSendMessage} className="flex items-center space-x-2 bg-gray-100 rounded-full px-4 py-2 w-full">
           <button type="button" className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition-colors flex-shrink-0">
             <ImageIcon className="w-5 h-5" />
           </button>

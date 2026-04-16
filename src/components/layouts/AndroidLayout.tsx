@@ -38,7 +38,7 @@ export default function AndroidLayout({
   return (
     <div className="flex flex-col w-full min-h-[100dvh] bg-white overflow-x-clip">
       {/* Main Content Area */}
-      <main className="flex-1 w-full relative pb-20">
+      <main className={`flex-1 w-full relative ${location.pathname.startsWith('/messages/') && location.pathname !== '/messages' ? '' : 'pb-20'}`}>
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
@@ -54,7 +54,7 @@ export default function AndroidLayout({
       </main>
 
       {/* Android Bottom Navigation - Material Design feel */}
-      {location.pathname !== '/premium' && !location.pathname.startsWith('/chat/') && (
+      {location.pathname !== '/premium' && !(location.pathname.startsWith('/messages/') && location.pathname !== '/messages') && (
         <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-100 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
           <nav className="flex justify-around items-center h-16 relative px-2">
             {[navItems[0], navItems[1], navItems[2], navItems[3], navItems[5]].map((item) => {
