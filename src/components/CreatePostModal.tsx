@@ -271,6 +271,27 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
 
             {/* Body */}
             <div className="flex-1 overflow-y-auto p-4">
+              {replyTo && (
+                <div className="mb-4 flex space-x-3">
+                  <div className="flex flex-col items-center">
+                    <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+                      {replyTo.authorPhoto ? (
+                        <img src={replyTo.authorPhoto} alt={replyTo.authorName} className="w-full h-full object-cover" />
+                      ) : (
+                        <UserIcon className="w-full h-full p-2 text-gray-400" />
+                      )}
+                    </div>
+                    <div className="w-0.5 flex-1 bg-gray-200 my-1" />
+                  </div>
+                  <div className="flex-1 pb-4">
+                    <div className="flex items-center space-x-1">
+                      <span className="font-bold text-sm">{replyTo.authorName}</span>
+                      <span className="text-gray-500 text-sm">@{replyTo.authorUsername}</span>
+                    </div>
+                    <p className="text-gray-700 text-sm mt-0.5">{replyTo.content}</p>
+                  </div>
+                </div>
+              )}
               <div className="flex space-x-3">
                 {/* Avatar */}
                 <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">

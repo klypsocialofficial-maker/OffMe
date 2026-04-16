@@ -24,8 +24,7 @@ export default function PostContent({ content, className = '' }: PostContentProp
               key={index}
               onClick={(e) => {
                 e.stopPropagation();
-                // We don't have the userId here, but we can navigate to a search or profile by username if we had a route for it.
-                // For now, let's just highlight it.
+                navigate(`/${username}`);
               }}
               className="text-blue-500 hover:underline cursor-pointer font-medium"
             >

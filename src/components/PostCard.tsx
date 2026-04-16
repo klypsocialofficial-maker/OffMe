@@ -156,10 +156,6 @@ export default function PostCard({
         {post.imageUrls && post.imageUrls.length > 0 && (
           <div 
             className={`mt-3 rounded-2xl overflow-hidden border border-gray-100 cursor-pointer grid gap-1 ${post.imageUrls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}
-            onClick={(e) => {
-              stopPropagation(e);
-              onImageClick(post.imageUrls[0], 'Imagem do post');
-            }}
           >
             {post.imageUrls.map((url: string, index: number) => (
               <img 
@@ -168,6 +164,10 @@ export default function PostCard({
                 alt={`Post ${index}`} 
                 className="w-full h-auto max-h-[512px] object-cover"
                 referrerPolicy="no-referrer"
+                onClick={(e) => {
+                  stopPropagation(e);
+                  onImageClick(url, 'Imagem do post');
+                }}
               />
             ))}
           </div>
