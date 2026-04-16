@@ -39,23 +39,23 @@ import DesktopLayout from './layouts/DesktopLayout';
 import AndroidLayout from './layouts/AndroidLayout';
 import IOSLayout from './layouts/IOSLayout';
 
-const navItems = [
-  { path: '/', icon: HomeIcon, label: 'Início' },
-  { path: '/explore', icon: Search, label: 'Explorar' },
-  { path: '#create', icon: Plus, label: 'Postar', isAction: true },
-  { path: '/notifications', icon: Bell, label: 'Notificações' },
-  { path: '/messages', icon: Mail, label: 'Mensagens' },
-  { path: '/profile', icon: UserIcon, label: 'Perfil' },
-  { path: '/premium', icon: ZapIcon, label: 'Premium' },
-  { path: '/bookmarks', icon: Bookmark, label: 'Itens salvos' },
-  { path: '/settings', icon: Settings, label: 'Configurações' },
-];
-
 export default function Layout() {
   const { userProfile, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const { platform, isIOS, isAndroid, isDesktop } = usePlatform();
+  
+  const navItems = [
+    { path: '/', icon: HomeIcon, label: 'Início' },
+    { path: '/explore', icon: Search, label: 'Explorar' },
+    { path: '#create', icon: Plus, label: 'Postar', isAction: true },
+    { path: '/notifications', icon: Bell, label: 'Notificações' },
+    { path: '/messages', icon: Mail, label: 'Mensagens' },
+    { path: `/${userProfile?.username || 'profile'}`, icon: UserIcon, label: 'Perfil' },
+    { path: '/premium', icon: ZapIcon, label: 'Premium' },
+    { path: '/bookmarks', icon: Bookmark, label: 'Itens salvos' },
+    { path: '/settings', icon: Settings, label: 'Configurações' },
+  ];
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);

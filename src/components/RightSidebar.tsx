@@ -103,7 +103,7 @@ export default function RightSidebar() {
               <div 
                 key={user.uid} 
                 className="px-4 py-3 hover:bg-gray-100 cursor-pointer transition-colors flex items-center justify-between group"
-                onClick={() => navigate(`/profile/${user.uid}`)}
+                onClick={() => navigate(`/${user.username}`)}
               >
                 <div className="flex items-center space-x-3 min-w-0">
                   <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">

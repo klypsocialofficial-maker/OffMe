@@ -16,10 +16,10 @@ export default function Premium() {
   useEffect(() => {
     if (isSuccess) {
       setTimeout(() => {
-        navigate('/profile', { replace: true });
+        navigate(`/${userProfile?.username || 'profile'}`, { replace: true });
       }, 5000);
     }
-  }, [isSuccess, navigate]);
+  }, [isSuccess, navigate, userProfile?.username]);
 
   const handleSubscribe = async (tier: string) => {
     if (!userProfile?.uid) {

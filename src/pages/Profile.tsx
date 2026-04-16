@@ -73,7 +73,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 export default function Profile() {
   const [verificationSent, setVerificationSent] = useState(false);
   const { userProfile, currentUser, sendVerificationEmail } = useAuth();
-  const { userId } = useParams();
+  const { username } = useParams();
   const navigate = useNavigate();
   const [profileUser, setProfileUser] = useState<any>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -124,17 +124,18 @@ export default function Profile() {
   useEffect(() => {
     if (!db) return;
 
-    if (userId) {
-      // Fetch other user's profile
-      const unsubscribe = onSnapshot(doc(db, 'users', userId), (docSnap) => {
-        if (docSnap.exists()) {
-          setProfileUser({ uid: docSnap.id, ...docSnap.data() });
+    if (username) {
+      // Fetch user by username
+      const q = query(collection(db, 'users'), where('username', '==', username));
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        if (!snapshot.empty) {
+          setProfileUser({ uid: snapshot.docs[0].id, ...snapshot.docs[0].data() });
         } else {
           setProfileUser(null);
         }
       }, (error) => {
         if (error.code !== 'permission-denied') {
-          handleFirestoreError(error, OperationType.GET, `users/${userId}`);
+          handleFirestoreError(error, OperationType.GET, `users?username=${username}`);
         }
       });
       return () => unsubscribe();
@@ -142,7 +143,7 @@ export default function Profile() {
       // Use current user's profile
       setProfileUser(userProfile);
     }
-  }, [userId, userProfile, db]);
+  }, [username, userProfile, db]);
 
   useEffect(() => {
     if (!profileUser?.uid || !db) return;

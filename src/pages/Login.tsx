@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Mail, Lock, LogIn, AlertCircle, Ghost } from 'lucide-react';
+import { Mail, Lock, LogIn, AlertCircle, Ghost, User as UserIcon } from 'lucide-react';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../firebase';
 
 export default function Login() {
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -16,7 +18,22 @@ export default function Login() {
     try {
       setError('');
       setLoading(true);
-      await loginWithEmail(email, password);
+      
+      let loginEmail = identifier;
+      
+      // If it doesn't look like an email, assume it's a username
+      if (!identifier.includes('@')) {
+        const q = query(collection(db, 'users'), where('username', '==', identifier.replace(/^@/, '')));
+        const snapshot = await getDocs(q);
+        
+        if (snapshot.empty) {
+          throw new Error("Usuário não encontrado.");
+        }
+        
+        loginEmail = snapshot.docs[0].data().email;
+      }
+      
+      await loginWithEmail(loginEmail, password);
       navigate('/');
     } catch (err: any) {
       let message = err.message;
@@ -70,21 +87,21 @@ export default function Login() {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm space-y-4">
             <div>
-              <label htmlFor="email-address" className="sr-only">Email address</label>
+              <label htmlFor="identifier" className="sr-only">Email ou Nome de Usuário</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-400" />
+                  <UserIcon className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
-                  id="email-address"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
+                  id="identifier"
+                  name="identifier"
+                  type="text"
+                  autoComplete="username"
                   required
                   className="appearance-none rounded-lg relative block w-full px-3 py-3 pl-10 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-black focus:border-black focus:z-10 sm:text-sm"
-                  placeholder="Email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email ou Nome de Usuário"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
                 />
               </div>
             </div>

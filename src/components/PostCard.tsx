@@ -54,7 +54,7 @@ export default function PostCard({
         className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0"
         onClick={(e) => {
           stopPropagation(e);
-          navigate(`/profile/${post.authorId}`);
+          navigate(`/${post.authorUsername}`);
         }}
       >
         {post.authorPhoto ? (
@@ -71,7 +71,7 @@ export default function PostCard({
             className="flex items-center space-x-1 min-w-0 cursor-pointer"
             onClick={(e) => {
               stopPropagation(e);
-              navigate(`/profile/${post.authorId}`);
+              navigate(`/${post.authorUsername}`);
             }}
           >
             <span className="font-bold truncate hover:underline">{post.authorName}</span>

@@ -169,8 +169,8 @@ export default function Notifications() {
                 onClick={() => {
                   if (notification.postId) {
                     navigate(`/post/${notification.postId}`);
-                  } else if (notification.type === 'follow' && notification.senderId) {
-                    navigate(`/profile/${notification.senderId}`); 
+                  } else if (notification.type === 'follow' && notification.senderUsername) {
+                    navigate(`/${notification.senderUsername}`); 
                   }
                 }}
                 className={`p-4 rounded-2xl transition-all flex space-x-4 cursor-pointer liquid-glass-card ${

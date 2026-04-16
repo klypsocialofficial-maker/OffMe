@@ -383,7 +383,7 @@ export default function Explore() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="p-4 liquid-glass-card rounded-2xl shadow-sm flex items-center justify-between cursor-pointer hover:bg-white/80 transition-all"
-                  onClick={() => navigate(`/profile/${user.id}`)}
+                  onClick={() => navigate(`/${user.username}`)}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center space-x-3 min-w-0">
@@ -459,7 +459,7 @@ export default function Explore() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       className="p-4 liquid-glass-card rounded-2xl shadow-sm flex items-center justify-between cursor-pointer hover:bg-white/80 transition-all"
-                      onClick={() => navigate(`/profile/${user.id}`)}
+                      onClick={() => navigate(`/${user.username}`)}
                     >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center space-x-3 min-w-0">

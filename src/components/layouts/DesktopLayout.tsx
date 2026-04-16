@@ -122,7 +122,7 @@ export default function DesktopLayout({
           {userProfile && (
             <div 
               className="mt-4 flex items-center px-4 py-3 hover:bg-gray-100 rounded-full cursor-pointer transition-colors"
-              onClick={() => navigate(`/profile/${userProfile.uid}`)}
+              onClick={() => navigate(`/${userProfile.username}`)}
             >
               <div className="w-10 h-10 rounded-full bg-gray-100 overflow-hidden flex-shrink-0 border border-gray-200">
                 <img src={userProfile.photoURL || '/ghost.svg'} alt={userProfile.displayName} className="w-full h-full object-cover" />
