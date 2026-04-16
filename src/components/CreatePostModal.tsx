@@ -253,22 +253,24 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white/80 backdrop-blur-md z-10 pt-[env(safe-area-inset-top)]">
               <button 
                 onClick={onClose} 
-                className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors"
+                className="text-blue-500 font-medium text-base"
               >
-                <X className="w-5 h-5 text-gray-900" />
+                Cancel
               </button>
-              <h2 className="font-bold text-lg">{replyTo ? 'Responder' : 'Novo post'}</h2>
+              <h2 className="font-bold text-base text-gray-900 absolute left-1/2 -translate-x-1/2">
+                {replyTo ? 'Responder' : 'Novo post'}
+              </h2>
               <button
                 onClick={handlePost}
                 disabled={(!content.trim() && imageFiles.length === 0 && !gifUrl && !(showPoll && pollOptions.filter(o => o.trim()).length >= 2)) || loading || content.length > 1000}
                 className="bg-blue-500 text-white px-4 py-1.5 rounded-full font-bold hover:bg-blue-600 disabled:bg-blue-300 disabled:opacity-50 transition-colors text-sm"
               >
-                {loading ? 'Postando...' : 'Postar'}
+                {loading ? 'Postando...' : 'Post'}
               </button>
             </div>
 
             {/* Body */}
-            <div className="flex-1 overflow-y-auto p-4 pb-20 sm:pb-4">
+            <div className="flex-1 overflow-y-auto p-4">
               <div className="flex space-x-3">
                 {/* Avatar */}
                 <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
@@ -284,7 +286,7 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
                   <textarea
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
-                    placeholder={replyTo ? "Postar sua resposta" : "O que está acontecendo?"}
+                    placeholder={replyTo ? "Postar sua resposta" : "What's up?"}
                     className="w-full bg-transparent text-xl outline-none resize-none min-h-[120px] placeholder-gray-500"
                     autoFocus
                   />
@@ -415,14 +417,6 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
                 <div className={`text-xs font-medium ${content.length > 1000 ? 'text-red-500' : 'text-gray-400'}`}>
                   {content.length} / 1000
                 </div>
-
-                <button
-                  onClick={handlePost}
-                  disabled={(!content.trim() && imageFiles.length === 0 && !gifUrl && !(showPoll && pollOptions.filter(o => o.trim()).length >= 2)) || loading || content.length > 1000}
-                  className="bg-blue-500 text-white px-6 py-2 rounded-full font-bold hover:bg-blue-600 disabled:bg-blue-300 disabled:opacity-50 transition-colors"
-                >
-                  {loading ? 'Postando...' : 'Postar'}
-                </button>
               </div>
             </div>
           </motion.div>

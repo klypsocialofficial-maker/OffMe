@@ -9,17 +9,31 @@ export default function SignUp() {
   const [username, setUsername] = useState('');
   const [name, setName] = useState('');
   const [error, setError] = useState('');
+  const [usernameError, setUsernameError] = useState('');
   const [loading, setLoading] = useState(false);
   const { signUpWithEmail } = useAuth();
   const navigate = useNavigate();
 
+  const validateUsername = (value: string) => {
+    const usernameRegex = /^[a-zA-Z0-9_]{3,30}$/;
+    if (value && !usernameRegex.test(value)) {
+      setUsernameError('O nome de usuário deve ter entre 3 e 30 caracteres e conter apenas letras, números e sublinhados.');
+      return false;
+    }
+    setUsernameError('');
+    return true;
+  };
+
+  const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setUsername(value);
+    validateUsername(value);
+  };
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     
-    // Basic username validation
-    const usernameRegex = /^[a-zA-Z0-9_]{3,30}$/;
-    if (!usernameRegex.test(username)) {
-      setError('O nome de usuário deve ter entre 3 e 30 caracteres e conter apenas letras, números e sublinhados.');
+    if (!validateUsername(username)) {
       return;
     }
 
@@ -109,12 +123,13 @@ export default function SignUp() {
                   name="username"
                   type="text"
                   required
-                  className="appearance-none rounded-lg relative block w-full px-3 py-3 pl-10 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-black focus:border-black focus:z-10 sm:text-sm"
+                  className={`appearance-none rounded-lg relative block w-full px-3 py-3 pl-10 border ${usernameError ? 'border-red-500' : 'border-gray-300'} placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-black focus:border-black focus:z-10 sm:text-sm`}
                   placeholder="Nome de Usuário"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  onChange={handleUsernameChange}
                 />
               </div>
+              {usernameError && <p className="mt-1 text-xs text-red-600">{usernameError}</p>}
             </div>
 
             <div>
