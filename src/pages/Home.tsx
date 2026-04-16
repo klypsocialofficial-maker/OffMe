@@ -13,6 +13,7 @@ import Poll from '../components/Poll';
 import SharePostModal from '../components/SharePostModal';
 import ImageViewer from '../components/ImageViewer';
 import PostCard from '../components/PostCard';
+import PostSkeleton from '../components/PostSkeleton';
 import { handleMentions, sendPushNotification, notifyFollowers } from '../lib/notifications';
 import { uploadToImgBB } from '../lib/imgbb';
 import PullToRefresh from '../components/PullToRefresh';
@@ -70,29 +71,6 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
   throw new Error(JSON.stringify(errInfo));
 }
 
-const PostSkeleton = () => (
-  <div className="p-4 liquid-glass-card rounded-2xl shadow-sm overflow-hidden mb-4">
-    <div className="flex space-x-3">
-      <div className="w-12 h-12 bg-gray-200 rounded-full flex-shrink-0 shimmer" />
-      <div className="flex-1 space-y-3 py-1">
-        <div className="flex items-center space-x-2">
-          <div className="h-4 bg-gray-200 rounded w-24 shimmer" />
-          <div className="h-4 bg-gray-200 rounded w-16 shimmer" />
-        </div>
-        <div className="space-y-2">
-          <div className="h-4 bg-gray-200 rounded w-full shimmer" />
-          <div className="h-4 bg-gray-200 rounded w-5/6 shimmer" />
-        </div>
-        <div className="flex justify-between max-w-md pt-2">
-          <div className="h-8 w-8 bg-gray-100 rounded-full shimmer" />
-          <div className="h-8 w-8 bg-gray-100 rounded-full shimmer" />
-          <div className="h-8 w-8 bg-gray-100 rounded-full shimmer" />
-          <div className="h-8 w-8 bg-gray-100 rounded-full shimmer" />
-        </div>
-      </div>
-    </div>
-  </div>
-);
 
 export default function Home() {
   const { userProfile, logout } = useAuth();
@@ -446,9 +424,14 @@ export default function Home() {
     }
   };
 
+  const BASE_EDIT_TIME_MINUTES = 15;
+  const PREMIUM_EDIT_TIME_MINUTES = 60;
+
   const canEditPost = (post: any) => {
     if (post.authorId !== userProfile?.uid) return false;
-    if ((userProfile as any)?.isPremium) return true;
+
+    const isPremium = (userProfile as any)?.isPremium;
+    const editLimitMinutes = isPremium ? PREMIUM_EDIT_TIME_MINUTES : BASE_EDIT_TIME_MINUTES;
     
     // If createdAt is null, it's a pending local write, so it was just created
     if (!post.createdAt) return true;
@@ -456,7 +439,7 @@ export default function Home() {
     const postTime = post.createdAt.toDate ? post.createdAt.toDate().getTime() : new Date().getTime();
     const now = new Date().getTime();
     const diffMinutes = (now - postTime) / (1000 * 60);
-    return diffMinutes <= 3;
+    return diffMinutes <= editLimitMinutes;
   };
 
   return (
