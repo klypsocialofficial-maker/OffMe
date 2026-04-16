@@ -291,6 +291,16 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
                     autoFocus
                   />
                   
+                  {/* Hidden file input */}
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleImageChange}
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                  />
+
                   {imagePreviews.length > 0 && (
                     <div className={`grid gap-2 mt-2 mb-4 ${imagePreviews.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
                       {imagePreviews.map((preview, index) => (
@@ -394,7 +404,7 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
             </div>
 
             {/* Footer */}
-            <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between bg-white pb-[env(safe-area-inset-bottom)]">
+            <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between bg-white pb-[env(safe-area-inset-bottom)] shrink-0">
               <div className="flex items-center space-x-2">
                 <button onClick={() => fileInputRef.current?.click()} className="text-blue-500 hover:bg-blue-50 p-2 rounded-full transition-colors">
                   <ImageIcon className="w-5 h-5" />
