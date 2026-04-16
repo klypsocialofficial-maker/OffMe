@@ -13,7 +13,6 @@ import Poll from '../components/Poll';
 import SharePostModal from '../components/SharePostModal';
 import ImageViewer from '../components/ImageViewer';
 import PostCard from '../components/PostCard';
-import GoogleAd from '../components/GoogleAd';
 import { handleMentions, sendPushNotification, notifyFollowers } from '../lib/notifications';
 import { uploadToImgBB } from '../lib/imgbb';
 import PullToRefresh from '../components/PullToRefresh';
@@ -671,9 +670,9 @@ export default function Home() {
                       );
 
                       // Insert a Google Ad every 2 posts
-                      if ((index + 1) % 2 === 0) {
-                        elements.push(<GoogleAd key={`google-ad-${index}`} slotId="9395334432" />);
-                      }
+                      // if ((index + 1) % 2 === 0) {
+                      //   elements.push(<GoogleAd key={`google-ad-${index}`} slotId="9395334432" />);
+                      // }
                     });
 
                     return elements;

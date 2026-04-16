@@ -23,8 +23,8 @@ interface CreatePostModalProps {
 
 export default function CreatePostModal({ isOpen, onClose, userProfile, handleFirestoreError, OperationType, replyTo, quotePost }: CreatePostModalProps) {
   const [content, setContent] = useState('');
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -47,18 +47,21 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
   }, [isOpen]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files);
+      if (imageFiles.length + newFiles.length > 4) {
+        alert('Você pode adicionar no máximo 4 imagens.');
+        return;
+      }
+      setImageFiles(prev => [...prev, ...newFiles]);
+      setImagePreviews(prev => [...prev, ...newFiles.map(file => URL.createObjectURL(file as Blob))]);
       setGifUrl(null); // Clear GIF if image is uploaded
     }
   };
 
-  const removeImage = () => {
-    setImageFile(null);
-    setImagePreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+  const removeImage = (index: number) => {
+    setImageFiles(prev => prev.filter((_, i) => i !== index));
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
   };
 
   const removeGif = () => {
@@ -117,20 +120,21 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
     const validPollOptions = pollOptions.filter(opt => opt.trim() !== '');
     const hasValidPoll = showPoll && validPollOptions.length >= 2;
     
-    if ((!content.trim() && !imageFile && !gifUrl && !hasValidPoll) || !userProfile || !db || content.length > 1000) return;
+    if ((!content.trim() && imageFiles.length === 0 && !gifUrl && !hasValidPoll) || !userProfile || !db || content.length > 1000) return;
 
     try {
       setLoading(true);
-      let imageUrl = gifUrl; // Use GIF URL if available
-      if (imageFile) {
-        imageUrl = await uploadToImgBB(imageFile);
+      let imageUrls = gifUrl ? [gifUrl] : []; // Use GIF URL if available
+      if (imageFiles.length > 0) {
+        const uploadedUrls = await Promise.all(imageFiles.map(file => uploadToImgBB(file)));
+        imageUrls = uploadedUrls;
       }
 
       const postContent = content.trim();
       
       const postData: any = {
         content: postContent,
-        imageUrl,
+        imageUrls,
         authorId: userProfile.uid,
         authorName: userProfile.displayName || '',
         authorUsername: userProfile.username || '',
@@ -162,11 +166,11 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
       const newPostRef = await addDoc(collection(db, 'posts'), postData);
 
       // Handle mentions
-      await handleMentions(postContent, newPostRef.id, userProfile, imageUrl);
+      await handleMentions(postContent, newPostRef.id, userProfile, imageUrls[0] || null);
 
       // Notify followers about new post (if not a reply)
       if (!replyTo) {
-        await notifyFollowers(userProfile, postContent, imageUrl);
+        await notifyFollowers(userProfile, postContent, imageUrls[0] || null);
       }
 
       if (replyTo) {
@@ -199,7 +203,8 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
       }
 
       setContent('');
-      removeImage();
+      setImageFiles([]);
+      setImagePreviews([]);
       removeGif();
       setShowPoll(false);
       setPollOptions(['', '']);
@@ -233,86 +238,62 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
             className="fixed bottom-0 left-0 right-0 z-[70] bg-white sm:rounded-t-[32px] shadow-2xl overflow-hidden flex flex-col h-full sm:h-[70vh] max-w-2xl mx-auto"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 pt-[calc(0.5rem+env(safe-area-inset-top))] sm:pt-4">
-              <button onClick={onClose} className="text-gray-900 font-medium hover:bg-gray-100 px-3 py-1.5 rounded-full transition-colors">
-                Cancelar
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 sticky top-0 bg-white/80 backdrop-blur-md z-10">
+              <button 
+                onClick={onClose} 
+                className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-900" />
               </button>
               <h2 className="font-bold text-lg">{replyTo ? 'Responder' : 'Novo post'}</h2>
               <button
                 onClick={handlePost}
-                disabled={(!content.trim() && !imageFile && !gifUrl && !(showPoll && pollOptions.filter(o => o.trim()).length >= 2)) || loading || content.length > 1000}
-                className="bg-black text-white px-4 py-1.5 rounded-full font-bold hover:bg-gray-800 disabled:bg-gray-300 disabled:text-white transition-colors text-sm sm:hidden"
+                disabled={(!content.trim() && imageFiles.length === 0 && !gifUrl && !(showPoll && pollOptions.filter(o => o.trim()).length >= 2)) || loading || content.length > 1000}
+                className="bg-blue-500 text-white px-4 py-1.5 rounded-full font-bold hover:bg-blue-600 disabled:bg-blue-300 disabled:opacity-50 transition-colors text-sm"
               >
-                {loading ? '...' : 'Postar'}
+                {loading ? 'Postando...' : 'Postar'}
               </button>
-              <div className="hidden sm:block w-16"></div>
             </div>
 
             {/* Body */}
-            <div className="flex-1 overflow-y-auto p-6 pt-8">
+            <div className="flex-1 overflow-y-auto p-4">
               <div className="flex space-x-3">
-                {/* Left Column: Avatar and Line */}
-                <div className="flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 border border-gray-100">
-                    {userProfile?.photoURL ? (
-                      <img src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full object-cover" />
-                    ) : (
-                      <UserIcon className="w-full h-full p-2 text-gray-400" />
-                    )}
-                  </div>
-                  <div className="w-0.5 h-full bg-gray-200 my-2 min-h-[60px]"></div>
-                  <div className="w-6 h-6 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 opacity-50">
-                    {userProfile?.photoURL ? (
-                      <img src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full object-cover" />
-                    ) : (
-                      <UserIcon className="w-full h-full p-1 text-gray-400" />
-                    )}
-                  </div>
+                {/* Avatar */}
+                <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+                  {userProfile?.photoURL ? (
+                    <img src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full object-cover" />
+                  ) : (
+                    <UserIcon className="w-full h-full p-2 text-gray-400" />
+                  )}
                 </div>
 
-                {/* Right Column: Content */}
-                <div className="flex-1 pb-8">
-                  <div className="flex items-center space-x-1 mb-1">
-                    <span className="font-bold text-sm">{userProfile?.username || 'user'}</span>
-                    <span className="text-gray-400 text-sm">{'>'} Feed</span>
-                  </div>
-                  
-                  {replyTo && (
-                    <div className="mb-2 text-sm text-gray-500 font-medium flex items-center space-x-1">
-                      <span>Respondendo a</span>
-                      <span className="text-black">@{replyTo.authorUsername}</span>
-                      {(replyTo.authorVerified || replyTo.authorUsername === 'Rulio') && <VerifiedBadge className="w-3.5 h-3.5" tier={replyTo.authorPremiumTier} />}
-                    </div>
-                  )}
-
-                  {quotePost && (
-                    <div className="mb-4 p-3 border border-gray-200 rounded-xl bg-gray-50">
-                      <p className="font-bold text-sm">Citando post de {quotePost.authorName}</p>
-                      <p className="text-sm text-gray-600 truncate">{quotePost.content}</p>
-                    </div>
-                  )}
-
+                {/* Content */}
+                <div className="flex-1">
                   <textarea
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     placeholder={replyTo ? "Postar sua resposta" : "O que está acontecendo?"}
-                    className="w-full bg-transparent text-lg outline-none resize-none min-h-[120px] placeholder-gray-400"
+                    className="w-full bg-transparent text-xl outline-none resize-none min-h-[120px] placeholder-gray-500"
                     autoFocus
                   />
                   
-                  {imagePreview && (
-                    <div className="relative mt-2 mb-4 rounded-2xl overflow-hidden border border-gray-100 shadow-sm group">
-                      <button
-                        onClick={removeImage}
-                        className="absolute top-3 right-3 p-2 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-md transition-all scale-90 group-hover:scale-100 z-10"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                      <img src={imagePreview} alt="Preview" className="w-full h-auto max-h-64 object-cover" />
+                  {imagePreviews.length > 0 && (
+                    <div className={`grid gap-2 mt-2 mb-4 ${imagePreviews.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                      {imagePreviews.map((preview, index) => (
+                        <div key={index} className="relative rounded-2xl overflow-hidden border border-gray-100 shadow-sm group aspect-square">
+                          <button
+                            onClick={() => removeImage(index)}
+                            className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-md transition-all scale-90 group-hover:scale-100 z-10"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                          <img src={preview} alt={`Preview ${index}`} className="w-full h-full object-cover" />
+                        </div>
+                      ))}
                     </div>
                   )}
 
-                  {gifUrl && !imagePreview && (
+                  {gifUrl && imagePreviews.length === 0 && (
                     <div className="relative mt-2 mb-4 rounded-2xl overflow-hidden border border-gray-100 shadow-sm group">
                       <button
                         onClick={removeGif}
@@ -385,8 +366,8 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
                           onGifClick={(gif, e) => {
                             e.preventDefault();
                             setGifUrl(gif.images.original.url);
-                            setImageFile(null);
-                            setImagePreview(null);
+                            setImageFiles([]);
+                            setImagePreviews([]);
                             setShowGifPicker(false);
                           }} 
                         />
@@ -402,15 +383,8 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white pb-[calc(env(safe-area-inset-bottom)+1rem)]">
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                ref={fileInputRef}
-                onChange={handleImageChange}
-              />
-              <div className="flex items-center space-x-4">
+            <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between bg-white">
+              <div className="flex items-center space-x-2">
                 <button onClick={() => fileInputRef.current?.click()} className="text-blue-500 hover:bg-blue-50 p-2 rounded-full transition-colors">
                   <ImageIcon className="w-5 h-5" />
                 </button>
@@ -435,8 +409,8 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
 
                 <button
                   onClick={handlePost}
-                  disabled={(!content.trim() && !imageFile && !gifUrl && !(showPoll && pollOptions.filter(o => o.trim()).length >= 2)) || loading || content.length > 1000}
-                  className="hidden sm:block bg-black text-white px-6 py-2 rounded-full font-bold hover:bg-gray-800 disabled:bg-gray-300 disabled:text-white transition-colors"
+                  disabled={(!content.trim() && imageFiles.length === 0 && !gifUrl && !(showPoll && pollOptions.filter(o => o.trim()).length >= 2)) || loading || content.length > 1000}
+                  className="bg-blue-500 text-white px-6 py-2 rounded-full font-bold hover:bg-blue-600 disabled:bg-blue-300 disabled:opacity-50 transition-colors"
                 >
                   {loading ? 'Postando...' : 'Postar'}
                 </button>

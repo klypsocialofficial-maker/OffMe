@@ -3,7 +3,6 @@ import { Search, User as UserIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import VerifiedBadge from '../components/VerifiedBadge';
 import TrendingPosts from '../components/TrendingPosts';
-import GoogleAd from '../components/GoogleAd';
 import { useAuth } from '../contexts/AuthContext';
 import { useOutletContext, Link, useNavigate } from 'react-router-dom';
 import { collection, query, where, onSnapshot, limit, addDoc, serverTimestamp, getDocs, doc, updateDoc, arrayUnion, arrayRemove, orderBy, getDoc } from 'firebase/firestore';
@@ -432,7 +431,7 @@ export default function Explore() {
                     )}
                   </div>
                 </motion.div>
-                {(index + 1) % 2 === 0 && <GoogleAd key={`search-ad-${index}`} slotId="9395334432" />}
+                {/* {(index + 1) % 2 === 0 && <GoogleAd key={`search-ad-${index}`} slotId="9395334432" />} */}
                 </React.Fragment>
               ))}
             </div>
@@ -511,7 +510,7 @@ export default function Explore() {
                     )}
                   </div>
                     </motion.div>
-                    {(index + 1) % 2 === 0 && <GoogleAd key={`suggested-ad-${index}`} slotId="9395334432" />}
+                    {/* {(index + 1) % 2 === 0 && <GoogleAd key={`suggested-ad-${index}`} slotId="9395334432" />} */}
                     </React.Fragment>
                   ))}
                 </div>
