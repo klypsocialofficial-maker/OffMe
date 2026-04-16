@@ -278,6 +278,24 @@ service cloud.firestore {
                       );
         allow delete: if isAuthenticated() && resource.data.senderId == request.auth.uid;
       }
+
+      match /calls/{callId} {
+        allow read: if isAuthenticated() && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+        allow create: if isAuthenticated() && 
+                      request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants &&
+                      request.resource.data.callerId == request.auth.uid;
+        allow update: if isAuthenticated() && 
+                      request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+        allow delete: if isAuthenticated() && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+
+        match /offerCandidates/{candidateId} {
+          allow read, create, update, delete: if isAuthenticated() && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+        }
+
+        match /answerCandidates/{candidateId} {
+          allow read, create, update, delete: if isAuthenticated() && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+        }
+      }
       
       // Allow participants to update conversation metadata (like unreadCount, archived)
       allow update: if isAuthenticated() && request.auth.uid in resource.data.participants &&
