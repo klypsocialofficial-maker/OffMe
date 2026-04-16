@@ -330,7 +330,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
     try {
       await setDoc(doc(db, 'users', user.uid), newProfile);
-      await sendEmailVerification(user);
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, `users/${user.uid}`);
     }
