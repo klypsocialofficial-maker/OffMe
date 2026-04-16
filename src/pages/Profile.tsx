@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { User as UserIcon, Calendar, MapPin, Link as LinkIcon, Edit2, Trash2, BarChart2, MessageCircle, Heart, Repeat, Send, MoreHorizontal, ArrowLeft, Search, Share, Briefcase, Plus } from 'lucide-react';
+import { User as UserIcon, Calendar, MapPin, Link as LinkIcon, Edit2, Trash2, BarChart2, MessageCircle, Heart, Repeat, Send, MoreHorizontal, ArrowLeft, Search, Share, Briefcase, Plus, AlertCircle } from 'lucide-react';
 import EditProfileModal from '../components/EditProfileModal';
 import CreatePostModal from '../components/CreatePostModal';
 import Toast from '../components/Toast';
@@ -71,7 +71,8 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 }
 
 export default function Profile() {
-  const { userProfile } = useAuth();
+  const [verificationSent, setVerificationSent] = useState(false);
+  const { userProfile, currentUser, sendVerificationEmail } = useAuth();
   const { userId } = useParams();
   const navigate = useNavigate();
   const [profileUser, setProfileUser] = useState<any>(null);
@@ -132,7 +133,9 @@ export default function Profile() {
           setProfileUser(null);
         }
       }, (error) => {
-        handleFirestoreError(error, OperationType.GET, `users/${userId}`);
+        if (error.code !== 'permission-denied') {
+          handleFirestoreError(error, OperationType.GET, `users/${userId}`);
+        }
       });
       return () => unsubscribe();
     } else {
@@ -160,37 +163,52 @@ export default function Profile() {
         orderBy('createdAt', 'desc')
       );
 
-      const unsub1 = onSnapshot(q1, (snapshot1) => {
-        const unsub2 = onSnapshot(q2, (snapshot2) => {
-          const results1 = snapshot1.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          const results2 = snapshot2.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          
-          // Merge and remove duplicates (if user reposts their own post)
-          const merged = [...results1, ...results2];
-          const unique = Array.from(new Map(merged.map(item => [item.id, item])).values());
-          
-          // Filter out replies for the main "Posts" tab
-          const filtered = unique.filter((post: any) => !post.replyToId);
-          
-          // Sort by createdAt
-          filtered.sort((a: any, b: any) => {
-            const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date();
-            const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date();
-            return dateB - dateA;
-          });
+      let results1: any[] = [];
+      let results2: any[] = [];
 
-          setPosts(filtered);
-          setLoading(false);
-        }, (error) => {
-          handleFirestoreError(error, OperationType.LIST, 'posts_reposts');
-          setLoading(false);
+      const updateMergedPosts = () => {
+        const merged = [...results1, ...results2];
+        const unique = Array.from(new Map(merged.map(item => [item.id, item])).values());
+        
+        // Filter out replies for the main "Posts" tab
+        const filtered = unique.filter((post: any) => !post.replyToId);
+        
+        // Sort by createdAt
+        filtered.sort((a: any, b: any) => {
+          const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date();
+          const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date();
+          return dateB.getTime() - dateA.getTime();
         });
-        unsubscribe = unsub2;
+
+        setPosts(filtered);
+        setLoading(false);
+      };
+
+      const unsub1 = onSnapshot(q1, (snapshot1) => {
+        results1 = snapshot1.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        updateMergedPosts();
       }, (error) => {
-        handleFirestoreError(error, OperationType.LIST, 'posts_author');
+        // Only log if not a permission error from logging out
+        if (error.code !== 'permission-denied') {
+          handleFirestoreError(error, OperationType.LIST, 'posts_author');
+        }
         setLoading(false);
       });
-      unsubscribe = unsub1;
+
+      const unsub2 = onSnapshot(q2, (snapshot2) => {
+        results2 = snapshot2.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        updateMergedPosts();
+      }, (error) => {
+        if (error.code !== 'permission-denied') {
+          handleFirestoreError(error, OperationType.LIST, 'posts_reposts');
+        }
+        setLoading(false);
+      });
+
+      unsubscribe = () => {
+        unsub1();
+        unsub2();
+      };
     } else {
       let q;
       if (activeTab === 'likes') {
@@ -222,7 +240,9 @@ export default function Profile() {
         setPosts(results);
         setLoading(false);
       }, (error) => {
-        handleFirestoreError(error, OperationType.LIST, 'posts');
+        if (error.code !== 'permission-denied') {
+          handleFirestoreError(error, OperationType.LIST, 'posts');
+        }
         setLoading(false);
       });
     }
@@ -454,6 +474,16 @@ export default function Profile() {
     setIsViewerOpen(true);
   };
 
+  const handleSendVerification = async () => {
+    try {
+      await sendVerificationEmail();
+      setVerificationSent(true);
+      showToast('Email de verificação enviado!', 'success');
+    } catch (error: any) {
+      showToast('Erro ao enviar email: ' + error.message, 'error');
+    }
+  };
+
   if (loading && !profileUser) return (
     <div className="min-h-[100dvh] flex items-center justify-center bg-white">
       <div className="flex space-x-1">
@@ -526,6 +556,25 @@ export default function Profile() {
 
       {/* Profile Details */}
       <div className="px-5 sm:px-8 pt-14 pb-6">
+        {currentUser && !currentUser.emailVerified && currentUser.email && !userId && (
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4 rounded-r-lg">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <AlertCircle className="h-5 w-5 text-yellow-400" />
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-yellow-700">
+                  Seu email não foi verificado. Por favor, verifique seu email para acessar todos os recursos.
+                  {!verificationSent && (
+                    <button onClick={handleSendVerification} className="ml-2 font-medium underline hover:text-yellow-600">
+                      Reenviar email
+                    </button>
+                  )}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="flex justify-between items-start">
           <div className="flex-1 min-w-0">
             <div className="flex items-center space-x-1">

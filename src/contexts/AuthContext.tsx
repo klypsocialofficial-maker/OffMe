@@ -10,7 +10,11 @@ import {
   signInWithEmailAndPassword,
   updateEmail,
   updatePassword,
-  deleteUser
+  deleteUser,
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  ConfirmationResult,
+  sendEmailVerification
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot, serverTimestamp, collection, query, where, getDocs, updateDoc, arrayUnion, deleteDoc } from 'firebase/firestore';
 
@@ -89,6 +93,9 @@ interface AuthContextType {
   userProfile: UserProfile | null;
   loading: boolean;
   loginWithGoogle: () => Promise<void>;
+  loginWithPhone: (phoneNumber: string, appVerifier: any) => Promise<ConfirmationResult>;
+  verifyPhoneCode: (confirmationResult: ConfirmationResult, code: string) => Promise<void>;
+  sendVerificationEmail: () => Promise<void>;
   logout: () => Promise<void>;
   signUpWithEmail: (email: string, pass: string, username: string, name: string) => Promise<void>;
   loginWithEmail: (email: string, pass: string) => Promise<void>;
@@ -198,6 +205,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  const loginWithPhone = async (phoneNumber: string, appVerifier: any) => {
+    if (!auth) throw new Error("Firebase not initialized");
+    return await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
+  };
+
+  const verifyPhoneCode = async (confirmationResult: ConfirmationResult, code: string) => {
+    if (!auth) throw new Error("Firebase not initialized");
+    const result = await confirmationResult.confirm(code);
+    const user = result.user;
+    
+    // Check if user exists in db
+    const docRef = doc(db, 'users', user.uid);
+    let docSnap;
+    try {
+      docSnap = await getDoc(docRef);
+    } catch (error) {
+      console.error("Error fetching user profile after Phone login:", error);
+      handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
+      return;
+    }
+    
+    if (!docSnap.exists()) {
+      // Create new user profile for phone user
+      const newProfile: UserProfile = {
+        uid: user.uid,
+        email: user.email || '',
+        username: 'user_' + Math.floor(Math.random() * 1000000),
+        displayName: 'User',
+        photoURL: '',
+        following: [],
+        followers: [],
+        createdAt: serverTimestamp()
+      };
+      try {
+        await setDoc(docRef, newProfile);
+      } catch (error) {
+        console.error("Error creating user profile after Phone login:", error);
+        handleFirestoreError(error, OperationType.CREATE, `users/${user.uid}`);
+      }
+      setUserProfile(newProfile);
+    }
+  };
+
+  const sendVerificationEmail = async () => {
+    if (!auth?.currentUser) throw new Error("No user logged in");
+    await sendEmailVerification(auth.currentUser);
+  };
+
   const loginWithGoogle = async () => {
     try {
       if (!auth) throw new Error("Firebase not initialized");
@@ -275,6 +330,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
     try {
       await setDoc(doc(db, 'users', user.uid), newProfile);
+      await sendEmailVerification(user);
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, `users/${user.uid}`);
     }
@@ -343,6 +399,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     userProfile,
     loading,
     loginWithGoogle,
+    loginWithPhone,
+    verifyPhoneCode,
+    sendVerificationEmail,
     logout,
     signUpWithEmail,
     loginWithEmail,

@@ -112,7 +112,9 @@ export default function Messages() {
       setConversations(results);
       setLoading(false);
     }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'conversations');
+      if (error.code !== 'permission-denied') {
+        handleFirestoreError(error, OperationType.LIST, 'conversations');
+      }
       setLoading(false);
     });
 

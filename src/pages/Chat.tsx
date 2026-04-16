@@ -126,7 +126,9 @@ export default function Chat() {
         }
       }
     }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, `conversations/${conversationId}/messages`);
+      if (error.code !== 'permission-denied') {
+        handleFirestoreError(error, OperationType.LIST, `conversations/${conversationId}/messages`);
+      }
       setLoading(false);
     });
 
