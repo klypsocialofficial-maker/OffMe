@@ -96,16 +96,12 @@ export default function Home() {
     setPendingPostsCount(0);
   }, [activeTab]);
 
-  const [newPost, setNewPost] = useState('');
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot | null>(null);
   const [activeMenuPostId, setActiveMenuPostId] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const loaderRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -311,72 +307,6 @@ export default function Home() {
       setPendingPostsCount(newPostsAtTop.length);
     }
   }, [fetchedPosts, userProfile?.uid, isFetching]);
-
-  const handlePost = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if ((!newPost.trim() && !imageFile) || !userProfile || !db) return;
-
-    try {
-      setLoading(true);
-      let imageUrl = null;
-      if (imageFile) {
-        imageUrl = await uploadToImgBB(imageFile);
-      }
-
-      const postContent = newPost.trim();
-      const newPostRef = await addDoc(collection(db, 'posts'), {
-        content: postContent,
-        imageUrl,
-        authorId: userProfile.uid,
-        authorName: userProfile.displayName || '',
-        authorUsername: userProfile.username || '',
-        authorPhoto: userProfile.photoURL || '',
-        authorVerified: userProfile.isVerified || userProfile.username === 'Rulio' || false,
-        createdAt: serverTimestamp(),
-        likesCount: 0,
-        repliesCount: 0,
-        repostsCount: 0,
-        likes: [],
-        reposts: []
-      });
-
-      // Handle mentions
-      await handleMentions(postContent, newPostRef.id, userProfile, imageUrl);
-
-      // Notify followers about new post (if not a reply)
-      await notifyFollowers(userProfile, postContent, imageUrl);
-
-      // Check if this is the user's first post
-      const userPostsQuery = query(collection(db, 'posts'), where('authorId', '==', userProfile.uid), limit(2));
-      const userPostsSnapshot = await getDocs(userPostsQuery);
-      if (userPostsSnapshot.size === 1) {
-        showToast('Parabéns pelo seu primeiro post!', 'success');
-      }
-
-      setNewPost('');
-      setImageFile(null);
-      setImagePreview(null);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, 'posts');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
-    }
-  };
-
-  const removeImage = () => {
-    setImageFile(null);
-    setImagePreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
 
   const handleDeletePost = async (postId: string) => {
     if (!db || !userProfile) return;

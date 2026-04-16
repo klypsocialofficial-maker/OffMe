@@ -17,6 +17,9 @@ import Toast from '../components/Toast';
 import ConfirmModal from '../components/ConfirmModal';
 import { auth } from '../firebase';
 
+import PostImageGrid from '../components/PostImageGrid';
+import ImageViewer from '../components/ImageViewer';
+
 enum OperationType {
   CREATE = 'create',
   UPDATE = 'update',
@@ -102,6 +105,14 @@ export default function PostDetail() {
     message: '',
     onConfirm: () => {}
   });
+
+  const [viewerImage, setViewerImage] = useState<{ src: string; alt: string } | null>(null);
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
+
+  const openImageViewer = (src: string, alt: string) => {
+    setViewerImage({ src, alt });
+    setIsViewerOpen(true);
+  };
 
   const showToast = (message: string, type: 'info' | 'success' | 'error' = 'info') => {
     setToast({ message, type, isOpen: true });
@@ -453,19 +464,8 @@ export default function PostDetail() {
               <Poll post={post} handleFirestoreError={handleFirestoreError} OperationType={OperationType} />
             )}
             
-            {post.imageUrls && post.imageUrls.length > 0 && (
-              <div className={`mt-4 rounded-2xl overflow-hidden border border-gray-100 grid gap-1 ${post.imageUrls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-                {post.imageUrls.map((url: string, index: number) => (
-                  <img 
-                    key={index} 
-                    src={url} 
-                    alt={`Post attachment ${index}`} 
-                    className="w-full h-auto max-h-[500px] object-cover" 
-                    referrerPolicy="no-referrer"
-                  />
-                ))}
-              </div>
-            )}
+            <PostImageGrid imageUrls={post.imageUrls} onImageClick={openImageViewer} />
+
             <div className="flex justify-around mt-4 py-3 border-t border-gray-50 text-gray-500">
               <button 
                 onClick={() => {
@@ -681,19 +681,8 @@ export default function PostDetail() {
                         <Poll post={reply} handleFirestoreError={handleFirestoreError} OperationType={OperationType} />
                       )}
                       
-                      {reply.imageUrls && reply.imageUrls.length > 0 && (
-                        <div className={`mt-3 rounded-xl overflow-hidden border border-gray-100 grid gap-1 ${reply.imageUrls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-                          {reply.imageUrls.map((url: string, index: number) => (
-                            <img 
-                              key={index} 
-                              src={url} 
-                              alt={`Reply attachment ${index}`} 
-                              className="w-full h-auto max-h-60 object-cover" 
-                              referrerPolicy="no-referrer"
-                            />
-                          ))}
-                        </div>
-                      )}
+                      <PostImageGrid imageUrls={reply.imageUrls} onImageClick={openImageViewer} />
+
                       <div className="flex justify-between mt-3 text-gray-500 max-w-[200px]">
                         <button 
                           onClick={(e) => {
@@ -875,6 +864,12 @@ export default function PostDetail() {
           </div>
         )}
       </AnimatePresence>
+      <ImageViewer 
+        src={viewerImage?.src || null}
+        isOpen={isViewerOpen}
+        onClose={() => setIsViewerOpen(false)}
+        alt={viewerImage?.alt}
+      />
     </div>
   );
 }

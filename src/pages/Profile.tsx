@@ -235,7 +235,7 @@ export default function Profile() {
         if (activeTab === 'replies') {
           results = results.filter(post => post.replyToId);
         } else if (activeTab === 'media') {
-          results = results.filter(post => post.imageUrl);
+          results = results.filter(post => post.imageUrls && post.imageUrls.length > 0);
         }
 
         setPosts(results);

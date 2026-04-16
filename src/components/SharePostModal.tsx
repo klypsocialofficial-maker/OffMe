@@ -124,10 +124,10 @@ export default function SharePostModal({ isOpen, onClose, post }: SharePostModal
                     {post.content}
                   </div>
 
-                  {post.imageUrl && (
+                  {post.imageUrls && post.imageUrls.length > 0 && (
                     <div className="rounded-xl overflow-hidden border border-gray-100 mb-4 flex-grow">
                       <img 
-                        src={post.imageUrl} 
+                        src={post.imageUrls[0]} 
                         alt="Post" 
                         className="w-full h-full object-cover" 
                         crossOrigin="anonymous"
