@@ -27,8 +27,27 @@ export default function DisplaySettings() {
       <div className="p-4 space-y-6">
         <section>
           <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3 px-1">Tema</h2>
-          <div className="p-4 bg-white/40 border border-gray-100 rounded-2xl">
-            <p className="text-gray-600">O modo noturno está desativado no momento. O tema padrão é Light.</p>
+          <div className="space-y-2">
+            {themeOptions.map((option) => (
+              <button
+                key={option.id}
+                onClick={() => setTheme(option.id)}
+                className={`w-full p-4 bg-white rounded-2xl border flex items-center justify-between transition-all ${
+                  theme === option.id ? 'border-black shadow-sm' : 'border-gray-100 hover:border-gray-200'
+                }`}
+              >
+                <div className="flex items-center space-x-4">
+                  <div className={`p-2 rounded-full ${theme === option.id ? 'bg-black text-white' : 'bg-gray-100 text-gray-500'}`}>
+                    <option.icon className="w-5 h-5" />
+                  </div>
+                  <div className="text-left">
+                    <h3 className="font-bold text-gray-900">{option.label}</h3>
+                    <p className="text-xs text-gray-500">{option.description}</p>
+                  </div>
+                </div>
+                {theme === option.id && <Check className="w-5 h-5 text-black" />}
+              </button>
+            ))}
           </div>
         </section>
       </div>
