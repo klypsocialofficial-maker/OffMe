@@ -264,6 +264,13 @@ export default function Home() {
       // Notify followers about new post (if not a reply)
       await notifyFollowers(userProfile, postContent, imageUrl);
 
+      // Check if this is the user's first post
+      const userPostsQuery = query(collection(db, 'posts'), where('authorId', '==', userProfile.uid), limit(2));
+      const userPostsSnapshot = await getDocs(userPostsQuery);
+      if (userPostsSnapshot.size === 1) {
+        showToast('Parabéns pelo seu primeiro post!', 'success');
+      }
+
       setNewPost('');
       setImageFile(null);
       setImagePreview(null);
