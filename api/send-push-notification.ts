@@ -11,7 +11,8 @@ function getFirebaseAdmin() {
       try {
         const serviceAccount = JSON.parse(serviceAccountKey);
         initializeApp({
-          credential: cert(serviceAccount)
+          credential: cert(serviceAccount),
+          databaseId: 'ai-studio-187fa848-4c3a-4231-9ff8-5231ac973055'
         });
       } catch (e) {
         console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY:', e);
@@ -23,7 +24,8 @@ function getFirebaseAdmin() {
           projectId: process.env.FIREBASE_PROJECT_ID,
           clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
           privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-        })
+        }),
+        databaseId: 'ai-studio-187fa848-4c3a-4231-9ff8-5231ac973055'
       });
     } else {
       throw new Error('Firebase Admin credentials not configured. Please set FIREBASE_SERVICE_ACCOUNT_KEY or individual FIREBASE_* variables.');
@@ -32,7 +34,7 @@ function getFirebaseAdmin() {
   
   return {
     messaging: getMessaging(),
-    db: getFirestore()
+    db: getFirestore('ai-studio-187fa848-4c3a-4231-9ff8-5231ac973055')
   };
 }
 
