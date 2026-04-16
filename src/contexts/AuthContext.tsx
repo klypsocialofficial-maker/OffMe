@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { auth, db, googleProvider, getMessagingInstance } from '../firebase';
-import { getToken } from 'firebase/messaging';
+import { getToken, onMessage } from 'firebase/messaging';
 import { 
   onAuthStateChanged, 
   signInWithPopup, 
@@ -124,29 +124,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setCurrentUser(user);
       if (user) {
         // Request notification permission and save token
-        try {
-          if (typeof window !== 'undefined' && 'Notification' in window) {
-            const permission = await Notification.requestPermission();
-            const messaging = await getMessagingInstance();
-            if (permission === 'granted' && messaging) {
-              // Get the PWA service worker registration
-              const registration = await navigator.serviceWorker.getRegistration();
-              
-              const token = await getToken(messaging, {
-                vapidKey: 'BFsixg_JwwMY4m3yMoZC9b-D4LIRsNcepSkQGkzCgBsnkdbGMmXdtjDCEbrgYYfSULAkTjo3WnPnHbXthoO69b0',
-                serviceWorkerRegistration: registration || undefined
+        const setupNotifications = async () => {
+          try {
+            if (typeof window !== 'undefined' && 'Notification' in window) {
+              const messaging = await getMessagingInstance();
+              if (!messaging) return;
+
+              // Handle foreground messages
+              onMessage(messaging, (payload) => {
+                console.log('Foreground message received:', payload);
+                // You could show a toast here if you want
               });
-              if (token) {
-                const userRef = doc(db, 'users', user.uid);
-                await updateDoc(userRef, {
-                  fcmTokens: arrayUnion(token)
-                }).catch(e => console.error('Error updating FCM token:', e));
+
+              const permission = await Notification.requestPermission();
+              if (permission === 'granted') {
+                // Wait for service worker to be ready
+                if ('serviceWorker' in navigator) {
+                  const registration = await navigator.serviceWorker.ready;
+                  
+                  const token = await getToken(messaging, {
+                    vapidKey: 'BFsixg_JwwMY4m3yMoZC9b-D4LIRsNcepSkQGkzCgBsnkdbGMmXdtjDCEbrgYYfSULAkTjo3WnPnHbXthoO69b0',
+                    serviceWorkerRegistration: registration
+                  });
+
+                  if (token) {
+                    console.log('FCM Token retrieved:', token);
+                    const userRef = doc(db, 'users', user.uid);
+                    await updateDoc(userRef, {
+                      fcmTokens: arrayUnion(token)
+                    }).catch(e => console.error('Error updating FCM token:', e));
+                  }
+                }
               }
             }
+          } catch (error) {
+            console.error('Error registering for push notifications:', error);
           }
-        } catch (error) {
-          console.error('Error registering for push notifications:', error);
-        }
+        };
+
+        setupNotifications();
 
         const docRef = doc(db, 'users', user.uid);
         unsubscribeProfile = onSnapshot(docRef, (docSnap) => {

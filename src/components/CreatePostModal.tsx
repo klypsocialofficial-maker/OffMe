@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import VerifiedBadge from './VerifiedBadge';
 import { GiphyFetch } from '@giphy/js-fetch-api';
 import { Grid } from '@giphy/react-components';
-import { handleMentions, sendPushNotification } from '../lib/notifications';
+import { handleMentions, sendPushNotification, notifyFollowers } from '../lib/notifications';
 
 const gf = new GiphyFetch('rJC35Qp0ILjTI6mBlDGRcKCNnCucBBYn');
 
@@ -163,6 +163,11 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
 
       // Handle mentions
       await handleMentions(postContent, newPostRef.id, userProfile);
+
+      // Notify followers about new post (if not a reply)
+      if (!replyTo) {
+        await notifyFollowers(userProfile, postContent);
+      }
 
       if (replyTo) {
         await updateDoc(doc(db, 'posts', replyTo.id), {

@@ -60,3 +60,22 @@ export async function sendPushNotification(userId: string, title: string, body: 
     body: JSON.stringify({ userId, title, body })
   }).catch(err => console.error('Error triggering push notification:', err));
 }
+
+export async function notifyFollowers(userProfile: any, postContent: string) {
+  if (!userProfile?.uid || !userProfile?.followers || userProfile.followers.length === 0) return;
+
+  const title = `Novo post de ${userProfile.displayName}`;
+  const body = postContent.length > 100 ? postContent.substring(0, 97) + '...' : postContent;
+
+  // Send notifications to all followers
+  // We do this in chunks to avoid hitting browser/network limits if there are many followers
+  const followers = userProfile.followers;
+  const chunkSize = 10;
+  
+  for (let i = 0; i < followers.length; i += chunkSize) {
+    const chunk = followers.slice(i, i + chunkSize);
+    await Promise.all(chunk.map(followerId => 
+      sendPushNotification(followerId, title, body)
+    ));
+  }
+}

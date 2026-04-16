@@ -14,7 +14,7 @@ import SharePostModal from '../components/SharePostModal';
 import ImageViewer from '../components/ImageViewer';
 import PostCard from '../components/PostCard';
 import GoogleAd from '../components/GoogleAd';
-import { handleMentions, sendPushNotification } from '../lib/notifications';
+import { handleMentions, sendPushNotification, notifyFollowers } from '../lib/notifications';
 import { uploadToImgBB } from '../lib/imgbb';
 import PullToRefresh from '../components/PullToRefresh';
 import { motion, AnimatePresence } from 'motion/react';
@@ -283,6 +283,9 @@ export default function Home() {
 
       // Handle mentions
       await handleMentions(postContent, newPostRef.id, userProfile);
+
+      // Notify followers about new post (if not a reply)
+      await notifyFollowers(userProfile, postContent);
 
       setNewPost('');
       setImageFile(null);
