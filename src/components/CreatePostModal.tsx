@@ -162,11 +162,11 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
       const newPostRef = await addDoc(collection(db, 'posts'), postData);
 
       // Handle mentions
-      await handleMentions(postContent, newPostRef.id, userProfile);
+      await handleMentions(postContent, newPostRef.id, userProfile, imageUrl);
 
       // Notify followers about new post (if not a reply)
       if (!replyTo) {
-        await notifyFollowers(userProfile, postContent);
+        await notifyFollowers(userProfile, postContent, imageUrl);
       }
 
       if (replyTo) {

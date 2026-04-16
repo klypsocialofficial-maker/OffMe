@@ -36,22 +36,102 @@ if (firebase) {
   messaging.onBackgroundMessage((payload: any) => {
     console.log('[sw.ts] Received background message ', payload);
     
-    // If the message has a notification property, the FCM SDK will 
-    // automatically display a notification on most platforms.
-    // We only need to show a manual notification if we want to customize it
-    // or if it's a data-only message.
-    if (payload.notification) {
-      console.log('Notification already handled by FCM SDK');
-      return;
+    const notificationTitle = payload.notification?.title || 'Nova Notificação';
+    const notificationOptions: any = {
+      body: payload.notification?.body || payload.data?.body || 'Você tem uma nova mensagem.',
+      icon: '/ghost.svg',
+      data: payload.data,
+      tag: payload.data?.conversationId || 'general',
+      renotify: true,
+      actions: []
+    };
+
+    // Add quick reply for chat messages
+    if (payload.data?.type === 'chat') {
+      notificationOptions.actions.push({
+        action: 'reply',
+        title: 'Responder',
+        type: 'text',
+        placeholder: 'Digite sua mensagem...'
+      });
     }
 
-    const notificationTitle = 'Nova Notificação';
-    const notificationOptions = {
-      body: payload.data?.body || 'Você tem uma nova mensagem.',
-      icon: '/ghost.svg',
-      data: payload.data
-    };
+    // Add open action
+    notificationOptions.actions.push({
+      action: 'open',
+      title: 'Abrir'
+    });
+
+    // If it's a mention or post, we might want to show an image preview if available
+    if (payload.data?.imageUrl) {
+      notificationOptions.image = payload.data.imageUrl;
+    }
 
     self.registration.showNotification(notificationTitle, notificationOptions);
   });
 }
+
+// Handle notification clicks and actions
+self.addEventListener('notificationclick', (event: any) => {
+  const notification = event.notification;
+  const action = event.action;
+  const data = notification.data;
+
+  notification.close();
+
+  if (action === 'reply' && event.reply) {
+    // Handle quick reply
+    const replyText = event.reply;
+    const conversationId = data.conversationId;
+    const senderId = data.senderId; // This is the ID of the person who sent the message to US
+
+    // We need to send this reply back. 
+    // Note: In a real app, we'd need the CURRENT user's ID. 
+    // But since we are replying to a message sent TO us, 
+    // the senderId in the data is actually the person we want to reply TO.
+    // Wait, the senderId in the data is the person who sent the message.
+    // So if I reply, I am the sender. 
+    // This is tricky because the SW doesn't know the current user's UID easily 
+    // unless we stored it or passed it in the data.
+    
+    // Let's assume we passed the RECIPIENT ID (our ID) in the data too.
+    // I'll update the Chat.tsx to include recipientId.
+    
+    if (conversationId && data.recipientId && replyText) {
+      event.waitUntil(
+        fetch('/api/reply-to-message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            conversationId: conversationId,
+            senderId: data.recipientId, // I am the sender now
+            text: replyText
+          })
+        }).then(response => {
+          if (!response.ok) throw new Error('Failed to send reply');
+        }).catch(err => console.error('Error sending quick reply:', err))
+      );
+    }
+  } else {
+    // Default action: Open the app
+    let url = '/';
+    if (data?.type === 'chat' && data?.conversationId) {
+      url = `/messages/${data.conversationId}`;
+    } else if (data?.postId) {
+      url = `/post/${data.postId}`;
+    }
+
+    event.waitUntil(
+      self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList: any) => {
+        for (const client of clientList) {
+          if (client.url === url && 'focus' in client) {
+            return client.focus();
+          }
+        }
+        if (self.clients.openWindow) {
+          return self.clients.openWindow(url);
+        }
+      })
+    );
+  }
+});

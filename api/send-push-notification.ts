@@ -41,7 +41,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { userId, title, body } = req.body;
+  const { userId, title, body, data } = req.body;
 
   try {
     const { db, messaging } = getFirebaseAdmin();
@@ -60,6 +60,10 @@ export default async function handler(req, res) {
         title,
         body
       },
+      data: data ? Object.keys(data).reduce((acc, key) => {
+        acc[key] = String(data[key]);
+        return acc;
+      }, {} as Record<string, string>) : {},
       tokens: fcmTokens
     };
 

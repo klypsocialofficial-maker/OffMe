@@ -209,7 +209,14 @@ export default function Chat() {
         await sendPushNotification(
           otherId,
           `Mensagem de ${userProfile.displayName}`,
-          messageText
+          messageText,
+          {
+            type: 'chat',
+            conversationId: conversationId,
+            senderId: userProfile.uid,
+            senderName: userProfile.displayName,
+            recipientId: otherId
+          }
         );
       }
       

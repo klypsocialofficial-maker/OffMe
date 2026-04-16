@@ -282,10 +282,10 @@ export default function Home() {
       });
 
       // Handle mentions
-      await handleMentions(postContent, newPostRef.id, userProfile);
+      await handleMentions(postContent, newPostRef.id, userProfile, imageUrl);
 
       // Notify followers about new post (if not a reply)
-      await notifyFollowers(userProfile, postContent);
+      await notifyFollowers(userProfile, postContent, imageUrl);
 
       setNewPost('');
       setImageFile(null);
