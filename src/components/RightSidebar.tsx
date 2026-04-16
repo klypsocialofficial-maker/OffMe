@@ -7,10 +7,11 @@ import VerifiedBadge from './VerifiedBadge';
 import { useNavigate } from 'react-router-dom';
 
 export default function RightSidebar() {
-  const { userProfile } = useAuth();
+  const { userProfile, followUser, unfollowUser } = useAuth();
   const navigate = useNavigate();
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [followingStates, setFollowingStates] = useState<Record<string, boolean>>({});
 
   const trendingTopics = [
     { category: 'Tecnologia · Em alta', title: '#OffMe', posts: '12.5K posts' },
@@ -23,15 +24,74 @@ export default function RightSidebar() {
   useEffect(() => {
     const fetchSuggestions = async () => {
       if (!db || !userProfile?.uid) return;
+      setLoading(true);
       try {
-        const q = query(
-          collection(db, 'users'),
-          where('uid', '!=', userProfile.uid),
-          limit(3)
-        );
-        const snapshot = await getDocs(q);
-        const users = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
-        setSuggestions(users);
+        const following = userProfile.following || [];
+        let suggestedUids: string[] = [];
+
+        // 1. Try Mutual Connections (Friends of Friends)
+        if (following.length > 0) {
+          // Fetch a few people the user follows
+          const followedUsersQuery = query(
+            collection(db, 'users'),
+            where('uid', 'in', following.slice(0, 10))
+          );
+          const followedUsersSnap = await getDocs(followedUsersQuery);
+          
+          const mutualCandidates: Record<string, number> = {};
+          followedUsersSnap.docs.forEach(doc => {
+            const data = doc.data();
+            const theirFollowing = data.following || [];
+            theirFollowing.forEach((uid: string) => {
+              if (uid !== userProfile.uid && !following.includes(uid)) {
+                mutualCandidates[uid] = (mutualCandidates[uid] || 0) + 1;
+              }
+            });
+          });
+
+          suggestedUids = Object.entries(mutualCandidates)
+            .sort(([, a], [, b]) => b - a)
+            .map(([uid]) => uid)
+            .slice(0, 5);
+        }
+
+        // 2. Fallback to Popular Users or Random if not enough mutuals
+        if (suggestedUids.length < 3) {
+          const popularQuery = query(
+            collection(db, 'users'),
+            where('uid', '!=', userProfile.uid),
+            limit(10)
+          );
+          const popularSnap = await getDocs(popularQuery);
+          const popularUsers = popularSnap.docs
+            .map(doc => ({ uid: doc.id, ...doc.data() }))
+            .filter(u => !following.includes(u.uid) && !suggestedUids.includes(u.uid));
+          
+          // Sort by follower count in memory
+          const sortedPopular = popularUsers.sort((a: any, b: any) => 
+            (b.followers?.length || 0) - (a.followers?.length || 0)
+          );
+
+          suggestedUids = [...suggestedUids, ...sortedPopular.map(u => u.uid)].slice(0, 5);
+        }
+
+        // Fetch full profiles for the suggested UIDs
+        if (suggestedUids.length > 0) {
+          const finalQuery = query(
+            collection(db, 'users'),
+            where('uid', 'in', suggestedUids)
+          );
+          const finalSnap = await getDocs(finalQuery);
+          const finalUsers = finalSnap.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
+          setSuggestions(finalUsers);
+          
+          // Initialize following states
+          const states: Record<string, boolean> = {};
+          finalUsers.forEach(u => {
+            states[u.uid] = following.includes(u.uid);
+          });
+          setFollowingStates(states);
+        }
       } catch (error) {
         console.error('Error fetching suggestions:', error);
       } finally {
@@ -40,7 +100,25 @@ export default function RightSidebar() {
     };
 
     fetchSuggestions();
-  }, [userProfile?.uid]);
+  }, [userProfile?.uid, userProfile?.following?.length]);
+
+  const handleFollowToggle = async (e: React.MouseEvent, targetUser: any) => {
+    e.stopPropagation();
+    if (!userProfile) return;
+
+    const isFollowing = followingStates[targetUser.uid];
+    try {
+      if (isFollowing) {
+        await unfollowUser(targetUser.uid);
+        setFollowingStates(prev => ({ ...prev, [targetUser.uid]: false }));
+      } else {
+        await followUser(targetUser.uid);
+        setFollowingStates(prev => ({ ...prev, [targetUser.uid]: true }));
+      }
+    } catch (error) {
+      console.error('Error toggling follow:', error);
+    }
+  };
 
   return (
     <aside className="hidden lg:flex flex-col w-[350px] sticky top-0 h-screen py-4 px-6 space-y-4 overflow-y-auto">
@@ -117,8 +195,20 @@ export default function RightSidebar() {
                     <p className="text-gray-500 text-xs truncate">@{user.username}</p>
                   </div>
                 </div>
-                <button className="bg-black text-white px-4 py-1.5 rounded-full font-bold text-xs hover:bg-gray-800 transition-colors">
-                  Seguir
+                <button 
+                  onClick={(e) => handleFollowToggle(e, user)}
+                  className={`px-4 py-1.5 rounded-full font-bold text-xs transition-colors ${
+                    followingStates[user.uid] 
+                      ? 'bg-transparent border border-gray-300 text-black hover:bg-red-50 hover:text-red-600 hover:border-red-200 group/btn' 
+                      : 'bg-black text-white hover:bg-gray-800'
+                  }`}
+                >
+                  <span className={followingStates[user.uid] ? 'group-hover/btn:hidden' : ''}>
+                    {followingStates[user.uid] ? 'Seguindo' : 'Seguir'}
+                  </span>
+                  {followingStates[user.uid] && (
+                    <span className="hidden group-hover/btn:inline">Deixar de seguir</span>
+                  )}
                 </button>
               </div>
             ))

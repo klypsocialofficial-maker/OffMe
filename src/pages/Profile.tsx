@@ -72,7 +72,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 
 export default function Profile() {
   const [verificationSent, setVerificationSent] = useState(false);
-  const { userProfile, currentUser, sendVerificationEmail } = useAuth();
+  const { userProfile, currentUser, sendVerificationEmail, followUser, unfollowUser } = useAuth();
   const { username } = useParams();
   const navigate = useNavigate();
   const [profileUser, setProfileUser] = useState<any>(null);
@@ -386,37 +386,10 @@ export default function Profile() {
     const isFollowing = userProfile.following?.includes(profileUser.uid);
     
     try {
-      // Update current user's following list
-      await updateDoc(doc(db, 'users', userProfile.uid), {
-        following: isFollowing ? arrayRemove(profileUser.uid) : arrayUnion(profileUser.uid)
-      });
-      
-      // Update target user's followers list
-      await updateDoc(doc(db, 'users', profileUser.uid), {
-        followers: isFollowing ? arrayRemove(userProfile.uid) : arrayUnion(userProfile.uid)
-      });
-      
-      // Create notification if following
-      if (!isFollowing) {
-        await addDoc(collection(db, 'notifications'), {
-          recipientId: profileUser.uid,
-          senderId: userProfile.uid,
-          senderName: userProfile.displayName,
-          senderUsername: userProfile.username,
-          senderPhoto: userProfile.photoURL || null,
-          senderVerified: userProfile.isVerified || userProfile.username === 'Rulio',
-          senderPremiumTier: userProfile.premiumTier || null,
-          type: 'follow',
-          read: false,
-          createdAt: serverTimestamp()
-        });
-
-        // Trigger push notification
-        await sendPushNotification(
-          profileUser.uid,
-          'Novo Seguidor',
-          `${userProfile.displayName} começou a seguir você.`
-        );
+      if (isFollowing) {
+        await unfollowUser(profileUser.uid);
+      } else {
+        await followUser(profileUser.uid);
       }
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'users');

@@ -16,7 +16,8 @@ import {
   ConfirmationResult,
   sendEmailVerification
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, onSnapshot, serverTimestamp, collection, query, where, getDocs, updateDoc, arrayUnion, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot, serverTimestamp, collection, query, where, getDocs, updateDoc, arrayUnion, deleteDoc, addDoc } from 'firebase/firestore';
+import { sendPushNotification } from '../lib/notifications';
 
 enum OperationType {
   CREATE = 'create',
@@ -103,6 +104,8 @@ interface AuthContextType {
   updateUserPassword: (password: string) => Promise<void>;
   updateUserUsername: (username: string) => Promise<void>;
   deleteAccount: () => Promise<void>;
+  followUser: (targetUid: string) => Promise<void>;
+  unfollowUser: (targetUid: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -393,6 +396,71 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return signOut(auth);
   };
 
+  const followUser = async (targetUid: string) => {
+    if (!userProfile || !currentUser) throw new Error("User not authenticated");
+    if (userProfile.uid === targetUid) throw new Error("You cannot follow yourself");
+
+    const currentUserRef = doc(db, 'users', currentUser.uid);
+    const targetUserRef = doc(db, 'users', targetUid);
+
+    try {
+      await updateDoc(currentUserRef, {
+        following: arrayUnion(targetUid)
+      });
+      await updateDoc(targetUserRef, {
+        followers: arrayUnion(currentUser.uid)
+      });
+
+      // Create notification
+      await addDoc(collection(db, 'notifications'), {
+        recipientId: targetUid,
+        senderId: userProfile.uid,
+        senderName: userProfile.displayName,
+        senderUsername: userProfile.username,
+        senderPhoto: userProfile.photoURL || null,
+        senderVerified: userProfile.isVerified || userProfile.username === 'Rulio',
+        senderPremiumTier: userProfile.premiumTier || null,
+        type: 'follow',
+        read: false,
+        createdAt: serverTimestamp()
+      });
+
+      // Trigger push notification
+      await sendPushNotification(
+        targetUid,
+        'Novo Seguidor',
+        `${userProfile.displayName} começou a seguir você.`
+      );
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `users/${targetUid}`);
+    }
+  };
+
+  const unfollowUser = async (targetUid: string) => {
+    if (!userProfile || !currentUser) throw new Error("User not authenticated");
+
+    const currentUserRef = doc(db, 'users', currentUser.uid);
+    const targetUserRef = doc(db, 'users', targetUid);
+
+    try {
+      const newFollowing = (userProfile.following || []).filter(id => id !== targetUid);
+      await updateDoc(currentUserRef, {
+        following: newFollowing
+      });
+
+      const targetSnap = await getDoc(targetUserRef);
+      if (targetSnap.exists()) {
+        const targetData = targetSnap.data();
+        const newFollowers = (targetData.followers || []).filter((id: string) => id !== currentUser.uid);
+        await updateDoc(targetUserRef, {
+          followers: newFollowers
+        });
+      }
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `users/${targetUid}`);
+    }
+  };
+
   const value = {
     currentUser,
     userProfile,
@@ -407,7 +475,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     updateUserEmail,
     updateUserPassword,
     updateUserUsername,
-    deleteAccount
+    deleteAccount,
+    followUser,
+    unfollowUser
   };
 
   return (
