@@ -250,7 +250,7 @@ export default function Chat() {
   const otherParticipantInfo = conversation?.participantInfo?.[otherParticipantId];
 
   return (
-    <div className="w-full h-[100dvh] bg-white flex flex-col">
+    <div className="absolute inset-0 bg-white flex flex-col z-50 sm:relative sm:inset-auto sm:h-[100dvh] sm:z-auto">
       {/* Header */}
       <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-2xl border-b border-black/5 shadow-sm pt-[env(safe-area-inset-top)]">
         <div className="px-4 py-3 flex items-center space-x-4">
