@@ -464,36 +464,36 @@ export default function Profile() {
 
   return (
     <div className="w-full min-h-full bg-white">
-      {/* Top Action Bar (Floating on Cover) - Glass Effect */}
-      <div className="sticky top-0 left-0 right-0 z-30 bg-white/80 backdrop-blur-2xl border-b border-black/5 pt-[env(safe-area-inset-top)]">
-        <div className="p-4 flex justify-between items-center">
-          <button 
-            onClick={() => navigate(-1)} 
-            className="p-2.5 bg-black/5 backdrop-blur-xl text-black rounded-full hover:bg-black/10 transition-all active:scale-90 border border-black/5 shadow-sm"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="flex space-x-2">
-            <button className="p-2.5 bg-black/5 backdrop-blur-xl text-black rounded-full hover:bg-black/10 transition-all active:scale-90 border border-black/5 shadow-sm">
-              <Search className="w-5 h-5" />
-            </button>
-            {profileUser.uid === userProfile?.uid && (
-              <button 
-                onClick={() => setIsEditModalOpen(true)}
-                className="p-2.5 bg-black/5 backdrop-blur-xl text-black rounded-full hover:bg-black/10 transition-all active:scale-90 border border-black/5 shadow-sm"
-              >
-                <Edit2 className="w-5 h-5" />
-              </button>
-            )}
-            <button className="p-2.5 bg-black/5 backdrop-blur-xl text-black rounded-full hover:bg-black/10 transition-all active:scale-90 border border-black/5 shadow-sm">
-              <Share className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* Profile Header with Cover Photo and Action Buttons */}
       <div className="relative">
+        {/* Top Action Bar (Floating on Cover) - Glass Effect */}
+        <div className="absolute top-0 left-0 right-0 z-30 pt-[env(safe-area-inset-top)]">
+          <div className="p-4 flex justify-between items-center">
+            <button 
+              onClick={() => navigate(-1)} 
+              className="p-2.5 bg-black/20 backdrop-blur-md text-white rounded-full hover:bg-black/30 transition-all active:scale-90 shadow-sm"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div className="flex space-x-2">
+              <button className="p-2.5 bg-black/20 backdrop-blur-md text-white rounded-full hover:bg-black/30 transition-all active:scale-90 shadow-sm">
+                <Search className="w-5 h-5" />
+              </button>
+              {profileUser.uid === userProfile?.uid && (
+                <button 
+                  onClick={() => setIsEditModalOpen(true)}
+                  className="p-2.5 bg-black/20 backdrop-blur-md text-white rounded-full hover:bg-black/30 transition-all active:scale-90 shadow-sm"
+                >
+                  <Edit2 className="w-5 h-5" />
+                </button>
+              )}
+              <button className="p-2.5 bg-black/20 backdrop-blur-md text-white rounded-full hover:bg-black/30 transition-all active:scale-90 shadow-sm">
+                <Share className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Cover Photo */}
         <div 
           className="h-40 sm:h-56 bg-gray-100 w-full relative overflow-hidden cursor-zoom-in"

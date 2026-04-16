@@ -486,16 +486,18 @@ export default function PostDetail() {
                 <Heart className={`w-6 h-6 ${post.likes?.includes(userProfile?.uid) ? 'fill-current' : ''}`} />
                 <span className="text-sm font-medium">{post.likesCount || 0}</span>
               </motion.button>
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedStatsPostId(post.id);
-                  setIsStatsModalOpen(true);
-                }}
-                className="flex items-center space-x-2 hover:text-blue-500 transition-colors p-2 rounded-full hover:bg-blue-50"
-              >
-                <BarChart2 className="w-6 h-6" />
-              </button>
+              {post.authorId === userProfile?.uid && (
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedStatsPostId(post.id);
+                    setIsStatsModalOpen(true);
+                  }}
+                  className="flex items-center space-x-2 hover:text-blue-500 transition-colors p-2 rounded-full hover:bg-blue-50"
+                >
+                  <BarChart2 className="w-6 h-6" />
+                </button>
+              )}
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
@@ -708,16 +710,18 @@ export default function PostDetail() {
                           <Heart className={`w-4 h-4 ${reply.likes?.includes(userProfile?.uid) ? 'fill-current' : ''}`} />
                           <span className="text-xs">{reply.likesCount || 0}</span>
                         </button>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedStatsPostId(reply.id);
-                            setIsStatsModalOpen(true);
-                          }}
-                          className="flex items-center space-x-1 hover:text-blue-500 transition-colors"
-                        >
-                          <BarChart2 className="w-4 h-4" />
-                        </button>
+                        {reply.authorId === userProfile?.uid && (
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedStatsPostId(reply.id);
+                              setIsStatsModalOpen(true);
+                            }}
+                            className="flex items-center space-x-1 hover:text-blue-500 transition-colors"
+                          >
+                            <BarChart2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   </article>
