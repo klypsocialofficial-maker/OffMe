@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { doc, onSnapshot, collection, query, where, orderBy, serverTimestamp, addDoc, deleteDoc, updateDoc, arrayRemove, arrayUnion } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { User as UserIcon, ArrowLeft, MoreHorizontal, Trash2, Edit2, BarChart2, Heart, Repeat, MessageCircle, Share2 } from 'lucide-react';
+import { User as UserIcon, ArrowLeft, MoreHorizontal, Trash2, Edit2, BarChart2, Heart, Repeat, MessageCircle, Send, Zap as ZapIcon } from 'lucide-react';
 import VerifiedBadge from '../components/VerifiedBadge';
 import PostContent from '../components/PostContent';
 import QuotedPost from '../components/QuotedPost';
@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { formatRelativeTime } from '../lib/dateUtils';
 import { sendPushNotification } from '../lib/notifications';
 import CreatePostModal from '../components/CreatePostModal';
+import SharePostModal from '../components/SharePostModal';
 import Toast from '../components/Toast';
 import ConfirmModal from '../components/ConfirmModal';
 import { auth } from '../firebase';
@@ -76,12 +77,15 @@ export default function PostDetail() {
   const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [replyToPost, setReplyToPost] = useState<any>(null);
+  const [quotePost, setQuotePost] = useState<any | null>(null);
   const [activeMenuPostId, setActiveMenuPostId] = useState<string | null>(null);
   const [activeMenuReplyId, setActiveMenuReplyId] = useState<string | null>(null);
   const [editingPost, setEditingPost] = useState<any | null>(null);
   const [editContent, setEditContent] = useState('');
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
   const [selectedStatsPostId, setSelectedStatsPostId] = useState<string | null>(null);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [selectedSharePost, setSelectedSharePost] = useState<any | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'info' | 'success' | 'error'; isOpen: boolean }>({
     message: '',
     type: 'info',
@@ -454,16 +458,7 @@ export default function PostDetail() {
                 <img src={post.imageUrl} alt="Post attachment" className="w-full h-auto max-h-[500px] object-cover" />
               </div>
             )}
-            <div className="mt-4 py-3 border-y border-gray-50 text-gray-500 flex space-x-4 text-sm">
-              <span>
-                <strong className="text-gray-900">{post.repostsCount || 0}</strong> Reposts
-              </span>
-              <span>
-                <strong className="text-gray-900">{post.likesCount || 0}</strong> Curtidas
-              </span>
-            </div>
-
-            <div className="flex justify-around mt-2 py-1 text-gray-500">
+            <div className="flex justify-around mt-4 py-3 border-t border-gray-50 text-gray-500">
               <button 
                 onClick={() => {
                   setReplyToPost(post);
@@ -472,12 +467,14 @@ export default function PostDetail() {
                 className="flex items-center space-x-2 hover:text-blue-500 transition-colors p-2 rounded-full hover:bg-blue-50"
               >
                 <MessageCircle className="w-6 h-6" />
+                <span className="text-sm font-medium">{post.repliesCount || 0}</span>
               </button>
               <button 
                 onClick={() => handleRepost(post)}
                 className={`flex items-center space-x-2 transition-colors p-2 rounded-full ${post.reposts?.includes(userProfile?.uid) ? 'text-green-500 bg-green-50' : 'hover:text-green-500 hover:bg-green-50'}`}
               >
                 <Repeat className={`w-6 h-6 ${post.reposts?.includes(userProfile?.uid) ? 'stroke-[3px]' : ''}`} />
+                <span className="text-sm font-medium">{post.repostsCount || 0}</span>
               </button>
               <motion.button 
                 whileTap={{ scale: 1.3 }}
@@ -487,6 +484,7 @@ export default function PostDetail() {
                 className={`flex items-center space-x-2 transition-colors p-2 rounded-full ${post.likes?.includes(userProfile?.uid) ? 'text-red-500 bg-red-50' : 'hover:text-red-500 hover:bg-red-50'}`}
               >
                 <Heart className={`w-6 h-6 ${post.likes?.includes(userProfile?.uid) ? 'fill-current' : ''}`} />
+                <span className="text-sm font-medium">{post.likesCount || 0}</span>
               </motion.button>
               <button 
                 onClick={(e) => {
@@ -498,8 +496,25 @@ export default function PostDetail() {
               >
                 <BarChart2 className="w-6 h-6" />
               </button>
-              <button className="flex items-center space-x-2 hover:text-blue-500 transition-colors p-2 rounded-full hover:bg-blue-50">
-                <Share2 className="w-6 h-6" />
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setQuotePost(post);
+                  setIsCreateModalOpen(true);
+                }}
+                className="flex items-center space-x-2 hover:text-blue-500 transition-colors p-2 rounded-full hover:bg-blue-50"
+              >
+                <ZapIcon className="w-6 h-6" />
+              </button>
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedSharePost(post);
+                  setIsShareModalOpen(true);
+                }}
+                className="flex items-center space-x-2 hover:text-blue-500 transition-colors p-2 rounded-full hover:bg-blue-50"
+              >
+                <Send className="w-6 h-6" />
               </button>
             </div>
           </div>
@@ -724,11 +739,22 @@ export default function PostDetail() {
         onClose={() => {
           setIsCreateModalOpen(false);
           setReplyToPost(null);
+          setQuotePost(null);
         }}
         userProfile={userProfile}
         handleFirestoreError={handleFirestoreError}
         OperationType={OperationType}
         replyTo={replyToPost}
+        quotePost={quotePost}
+      />
+
+      <SharePostModal 
+        isOpen={isShareModalOpen}
+        onClose={() => {
+          setIsShareModalOpen(false);
+          setSelectedSharePost(null);
+        }}
+        post={selectedSharePost}
       />
 
       <Toast 
