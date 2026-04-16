@@ -20,7 +20,6 @@ import PostDetail from './pages/PostDetail';
 import Trending from './pages/Trending';
 import Premium from './pages/Premium';
 import Bookmarks from './pages/Bookmarks';
-import Lists from './pages/Lists';
 import Settings from './pages/Settings';
 import AccountSettings from './pages/AccountSettings';
 import DisplaySettings from './pages/DisplaySettings';
@@ -79,7 +78,6 @@ export default function App() {
             <Route path="trending" element={<Trending />} />
             <Route path="premium" element={<Premium />} />
             <Route path="bookmarks" element={<Bookmarks />} />
-            <Route path="lists" element={<Lists />} />
             <Route path="settings" element={<Settings />} />
             <Route path="settings/account" element={<AccountSettings />} />
             <Route path="settings/privacy" element={<div className="p-8 text-center text-gray-500">Privacidade em breve...</div>} />
