@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, Image as ImageIcon, User as UserIcon, Trash2, Check, CheckCheck } from 'lucide-react';
+import { ArrowLeft, Send, Image as ImageIcon, User as UserIcon, Trash2, Check, CheckCheck, Phone, Video, PhoneIncoming } from 'lucide-react';
 import { sendPushNotification } from '../lib/notifications';
 import VerifiedBadge from '../components/VerifiedBadge';
 import { useAuth } from '../contexts/AuthContext';
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, getDoc, updateDoc, deleteDoc, writeBatch, increment } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, getDoc, updateDoc, deleteDoc, writeBatch, increment, limit, where } from 'firebase/firestore';
 import { db, auth } from '../firebase';
+import CallOverlay from '../components/CallOverlay';
 
 enum OperationType {
   CREATE = 'create',
@@ -70,6 +71,12 @@ export default function Chat() {
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [otherUserTyping, setOtherUserTyping] = useState(false);
+  const [activeCall, setActiveCall] = useState<{
+    id?: string;
+    type: 'audio' | 'video';
+    isIncoming: boolean;
+    callerId: string;
+  } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -152,6 +159,37 @@ export default function Chat() {
       }).catch(() => {});
     };
   }, [conversationId, userProfile?.uid, navigate]);
+
+  useEffect(() => {
+    if (!conversationId || !db || !userProfile?.uid) return;
+
+    const q = query(
+      collection(db, 'conversations', conversationId, 'calls'),
+      orderBy('createdAt', 'desc'),
+      limit(1)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      if (!snapshot.empty) {
+        const callDoc = snapshot.docs[0];
+        const callData = callDoc.data();
+        
+        // If it's a ringing call and we are the callee
+        if (callData.status === 'calling' && callData.calleeId === userProfile.uid) {
+          setActiveCall({
+            id: callDoc.id,
+            type: callData.type,
+            isIncoming: true,
+            callerId: callData.callerId
+          });
+        } else if (callData.status === 'ended' && activeCall?.id === callDoc.id) {
+          setActiveCall(null);
+        }
+      }
+    });
+
+    return unsubscribe;
+  }, [conversationId, userProfile?.uid, activeCall?.id]);
 
   const handleTyping = () => {
     if (!conversationId || !userProfile?.uid || !db) return;
@@ -253,25 +291,42 @@ export default function Chat() {
     <div className="absolute inset-0 bg-white flex flex-col z-50 sm:relative sm:inset-auto sm:h-[100dvh] sm:z-auto">
       {/* Header */}
       <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-2xl border-b border-black/5 shadow-sm pt-[env(safe-area-inset-top)]">
-        <div className="px-4 py-3 flex items-center space-x-4">
-          <button onClick={() => navigate('/messages')} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
-              {otherParticipantInfo?.photoURL ? (
-                <img src={otherParticipantInfo.photoURL} alt={otherParticipantInfo.displayName} className="w-full h-full object-cover" />
-              ) : (
-                <UserIcon className="w-full h-full p-2 text-gray-400" />
-              )}
-            </div>
-            <div>
-              <div className="flex items-center space-x-1">
-                <h2 className="font-bold leading-tight">{otherParticipantInfo?.displayName || 'Usuário'}</h2>
-                {(otherParticipantInfo?.isVerified || otherParticipantInfo?.username === 'Rulio') && <VerifiedBadge tier={otherParticipantInfo?.premiumTier} />}
+        <div className="px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <button onClick={() => navigate('/messages')} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+                {otherParticipantInfo?.photoURL ? (
+                  <img src={otherParticipantInfo.photoURL} alt={otherParticipantInfo.displayName} className="w-full h-full object-cover" />
+                ) : (
+                  <UserIcon className="w-full h-full p-2 text-gray-400" />
+                )}
               </div>
-              <p className="text-xs text-gray-500">@{otherParticipantInfo?.username || 'usuario'}</p>
+              <div>
+                <div className="flex items-center space-x-1">
+                  <h2 className="font-bold leading-tight">{otherParticipantInfo?.displayName || 'Usuário'}</h2>
+                  {(otherParticipantInfo?.isVerified || otherParticipantInfo?.username === 'Rulio') && <VerifiedBadge tier={otherParticipantInfo?.premiumTier} />}
+                </div>
+                <p className="text-xs text-gray-500">@{otherParticipantInfo?.username || 'usuario'}</p>
+              </div>
             </div>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <button 
+              onClick={() => setActiveCall({ type: 'audio', isIncoming: false, callerId: userProfile?.uid || '' })}
+              className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition-colors"
+            >
+              <Phone className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={() => setActiveCall({ type: 'video', isIncoming: false, callerId: userProfile?.uid || '' })}
+              className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition-colors"
+            >
+              <Video className="w-5 h-5" />
+            </button>
           </div>
         </div>
       </div>
@@ -398,6 +453,20 @@ export default function Chat() {
           </button>
         </form>
       </div>
+
+      {activeCall && conversationId && userProfile?.uid && otherParticipantId && (
+        <CallOverlay
+          conversationId={conversationId}
+          currentUserId={userProfile.uid}
+          otherUserId={otherParticipantId}
+          otherUserName={otherParticipantInfo?.displayName || 'Usuário'}
+          otherUserPhoto={otherParticipantInfo?.photoURL || null}
+          callType={activeCall.type}
+          isIncoming={activeCall.isIncoming}
+          callDocId={activeCall.id}
+          onEndCall={() => setActiveCall(null)}
+        />
+      )}
     </div>
   );
 }
