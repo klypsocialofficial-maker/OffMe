@@ -14,15 +14,17 @@ export default function DisplaySettings() {
   ] as const;
 
   return (
-    <div className="w-full h-full bg-transparent p-4 pt-[calc(1rem+env(safe-area-inset-top))]">
-      <div className="flex items-center space-x-3 mb-6 border-b border-gray-100 pb-4">
-        <button onClick={() => navigate(-1)} className="p-2 -ml-2 hover:bg-black/5 rounded-full transition-colors">
-          <ArrowLeft className="w-6 h-6" />
-        </button>
-        <h1 className="text-xl font-bold">Display</h1>
+    <div className="w-full h-full bg-transparent">
+      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-2xl border-b border-black/5 shadow-sm pt-[env(safe-area-inset-top)]">
+        <div className="px-4 py-3 flex items-center space-x-3">
+          <button onClick={() => navigate(-1)} className="p-2 -ml-2 hover:bg-black/5 rounded-full transition-colors">
+            <ArrowLeft className="w-6 h-6" />
+          </button>
+          <h1 className="text-xl font-black tracking-tight">Exibição</h1>
+        </div>
       </div>
 
-      <div className="space-y-6">
+      <div className="p-4 space-y-6">
         <section>
           <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3 px-1">Tema</h2>
           <div className="p-4 bg-white/40 border border-gray-100 rounded-2xl">

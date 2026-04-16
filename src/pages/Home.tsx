@@ -463,9 +463,9 @@ export default function Home() {
   return (
     <div className="w-full min-h-full bg-transparent relative">
       {/* Sticky Header with Liquid Glass & Tabs */}
-      <div className="sticky top-0 z-30 bg-white/70 backdrop-blur-3xl border-b border-white/10 shadow-sm pt-[env(safe-area-inset-top)]">
+      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-2xl border-b border-black/5 shadow-sm pt-[env(safe-area-inset-top)]">
         <div className="w-full px-4 py-2">
-          <div className="flex items-center justify-between relative">
+          <div className="flex items-center justify-between relative h-12">
             {/* Mobile Avatar (Left) */}
             <div className="sm:hidden flex-shrink-0 z-10">
               <button 
@@ -484,18 +484,18 @@ export default function Home() {
             </div>
 
             {/* Liquid Glass Tab Switcher (Center) */}
-            <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 z-10">
-              <nav className="liquid-glass-pill p-1 rounded-full flex items-center relative overflow-hidden border border-white/40 shadow-lg">
+            <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 z-10 w-auto max-w-[60%]">
+              <nav className="liquid-glass-pill p-1 rounded-full flex items-center relative overflow-hidden border border-white/40 shadow-lg whitespace-nowrap">
                 <button
                   onClick={() => setActiveTab('foryou')}
-                  className={`relative px-4 py-1.5 text-sm font-bold transition-all duration-300 z-10 ${
+                  className={`relative px-5 py-1.5 text-sm font-bold transition-all duration-300 z-10 flex-shrink-0 ${
                     activeTab === 'foryou' ? 'text-black' : 'text-gray-500 hover:text-black'
                   }`}
                 >
                   {activeTab === 'foryou' && (
                     <motion.div
                       layoutId="feed-tab-blob"
-                      className="absolute inset-0 bg-white/80 rounded-full -z-10 shadow-sm"
+                      className="absolute inset-0 bg-white/90 rounded-full -z-10 shadow-sm"
                       transition={{ type: "spring", stiffness: 400, damping: 30 }}
                     />
                   )}
@@ -503,14 +503,14 @@ export default function Home() {
                 </button>
                 <button
                   onClick={() => setActiveTab('following')}
-                  className={`relative px-4 py-1.5 text-sm font-bold transition-all duration-300 z-10 ${
+                  className={`relative px-5 py-1.5 text-sm font-bold transition-all duration-300 z-10 flex-shrink-0 ${
                     activeTab === 'following' ? 'text-black' : 'text-gray-500 hover:text-black'
                   }`}
                 >
                   {activeTab === 'following' && (
                     <motion.div
                       layoutId="feed-tab-blob"
-                      className="absolute inset-0 bg-white/80 rounded-full -z-10 shadow-sm"
+                      className="absolute inset-0 bg-white/90 rounded-full -z-10 shadow-sm"
                       transition={{ type: "spring", stiffness: 400, damping: 30 }}
                     />
                   )}
@@ -520,12 +520,14 @@ export default function Home() {
             </div>
 
             {/* Search Toggle Button (Right) */}
-            <button 
-              onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className={`p-2.5 rounded-full transition-all duration-300 border border-white/40 shadow-sm z-10 ${isSearchOpen ? 'bg-black text-white' : 'liquid-glass-pill text-gray-500'}`}
-            >
-              <Search className="w-5 h-5" />
-            </button>
+            <div className="flex-shrink-0 z-10">
+              <button 
+                onClick={() => setIsSearchOpen(!isSearchOpen)}
+                className={`p-2.5 rounded-full transition-all duration-300 border border-white/40 shadow-sm ${isSearchOpen ? 'bg-black text-white' : 'liquid-glass-pill text-gray-500'}`}
+              >
+                <Search className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
           {/* Search Bar (Animated) */}

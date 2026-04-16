@@ -24,15 +24,17 @@ export default function Settings() {
   };
 
   return (
-    <div className="w-full h-full bg-white/50 p-4 pt-[calc(1rem+env(safe-area-inset-top))]">
-      <div className="flex items-center space-x-3 mb-6 border-b border-gray-100 pb-4">
-        <button onClick={() => navigate(-1)} className="p-2 -ml-2 hover:bg-black/5 rounded-full transition-colors">
-          <ArrowLeft className="w-6 h-6" />
-        </button>
-        <SettingsIcon className="w-6 h-6" />
-        <h1 className="text-xl font-bold">Configurações</h1>
+    <div className="w-full h-full bg-white/50">
+      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-2xl border-b border-black/5 shadow-sm pt-[env(safe-area-inset-top)]">
+        <div className="px-4 py-3 flex items-center space-x-3">
+          <button onClick={() => navigate(-1)} className="p-2 -ml-2 hover:bg-black/5 rounded-full transition-colors">
+            <ArrowLeft className="w-6 h-6" />
+          </button>
+          <SettingsIcon className="w-6 h-6" />
+          <h1 className="text-xl font-black tracking-tight">Configurações</h1>
+        </div>
       </div>
-      <div className="space-y-4">
+      <div className="p-4 space-y-4">
         <div className="p-4 bg-white rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <Bell className="w-5 h-5 text-gray-500" />

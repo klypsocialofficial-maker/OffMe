@@ -98,13 +98,16 @@ export default function AccountSettings() {
   };
 
   return (
-    <div className="w-full h-full bg-white/50 p-4 pt-[calc(1rem+env(safe-area-inset-top))] overflow-y-auto pb-20">
-      <div className="flex items-center space-x-3 mb-6 border-b border-gray-100 pb-4">
-        <button onClick={() => navigate(-1)} className="p-2 -ml-2 hover:bg-black/5 rounded-full transition-colors">
-          <ArrowLeft className="w-6 h-6" />
-        </button>
-        <h1 className="text-xl font-bold">Informações da conta</h1>
+    <div className="w-full h-full bg-white/50 overflow-y-auto pb-20">
+      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-2xl border-b border-black/5 shadow-sm pt-[env(safe-area-inset-top)]">
+        <div className="px-4 py-3 flex items-center space-x-3">
+          <button onClick={() => navigate(-1)} className="p-2 -ml-2 hover:bg-black/5 rounded-full transition-colors">
+            <ArrowLeft className="w-6 h-6" />
+          </button>
+          <h1 className="text-xl font-black tracking-tight">Informações da conta</h1>
+        </div>
       </div>
+      <div className="p-4">
 
       {status && (
         <motion.div 
@@ -247,6 +250,7 @@ export default function AccountSettings() {
         cancelText="Cancelar"
         type="danger"
       />
+      </div>
     </div>
   );
 }

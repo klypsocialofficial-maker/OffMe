@@ -103,9 +103,9 @@ export default function Notifications() {
 
   return (
     <div className="w-full min-h-full bg-transparent relative">
-      <div className="sticky top-0 z-30 bg-white/70 backdrop-blur-3xl border-b border-white/10 shadow-sm pt-[env(safe-area-inset-top)]">
+      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-2xl border-b border-black/5 shadow-sm pt-[env(safe-area-inset-top)]">
         <div className="w-full px-4 py-2">
-          <div className="flex items-center justify-between relative mb-4">
+          <div className="flex items-center justify-between relative mb-4 h-10">
             <button onClick={openDrawer} className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 sm:hidden border border-white/40 shadow-sm z-10">
               {userProfile?.photoURL ? (
                 <img src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full object-cover" />
@@ -114,13 +114,13 @@ export default function Notifications() {
               )}
             </button>
             <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 z-10">
-              <h1 className="text-xl font-bold">Notifications</h1>
+              <h1 className="text-lg font-black tracking-tight">Notificações</h1>
             </div>
             <div className="w-10 h-10 sm:hidden z-10" /> {/* Spacer */}
           </div>
 
           <div className="flex justify-center">
-            <nav className="liquid-glass-pill p-1 rounded-full flex items-center relative overflow-hidden border border-white/40 shadow-lg">
+            <nav className="liquid-glass-pill p-1 rounded-full flex items-center relative overflow-hidden border border-white/40 shadow-lg whitespace-nowrap">
               <button 
                 onClick={() => setActiveTab('all')}
                 className={`relative px-6 py-2 text-sm font-bold transition-all duration-300 z-10 ${
