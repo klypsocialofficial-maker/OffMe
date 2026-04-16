@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send, Image as ImageIcon, User as UserIcon, Trash2, Check, CheckCheck } from 'lucide-react';
+import { sendPushNotification } from '../lib/notifications';
 import VerifiedBadge from '../components/VerifiedBadge';
 import { useAuth } from '../contexts/AuthContext';
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, getDoc, updateDoc, deleteDoc, writeBatch, increment } from 'firebase/firestore';
@@ -202,6 +203,15 @@ export default function Chat() {
         updatedAt: serverTimestamp(),
         [`unreadCount.${otherId}`]: increment(1)
       });
+
+      // Send push notification to other participant
+      if (otherId) {
+        await sendPushNotification(
+          otherId,
+          `Mensagem de ${userProfile.displayName}`,
+          messageText
+        );
+      }
       
       scrollToBottom();
     } catch (error) {

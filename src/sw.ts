@@ -35,10 +35,21 @@ if (firebase) {
 
   messaging.onBackgroundMessage((payload: any) => {
     console.log('[sw.ts] Received background message ', payload);
-    const notificationTitle = payload.notification?.title || 'Nova Notificação';
+    
+    // If the message has a notification property, the FCM SDK will 
+    // automatically display a notification on most platforms.
+    // We only need to show a manual notification if we want to customize it
+    // or if it's a data-only message.
+    if (payload.notification) {
+      console.log('Notification already handled by FCM SDK');
+      return;
+    }
+
+    const notificationTitle = 'Nova Notificação';
     const notificationOptions = {
-      body: payload.notification?.body,
-      icon: '/ghost.svg'
+      body: payload.data?.body || 'Você tem uma nova mensagem.',
+      icon: '/ghost.svg',
+      data: payload.data
     };
 
     self.registration.showNotification(notificationTitle, notificationOptions);
