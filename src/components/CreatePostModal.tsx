@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import VerifiedBadge from './VerifiedBadge';
 import { GiphyFetch } from '@giphy/js-fetch-api';
 import { Grid } from '@giphy/react-components';
+import { handleMentions, sendPushNotification } from '../lib/notifications';
 
 const gf = new GiphyFetch('rJC35Qp0ILjTI6mBlDGRcKCNnCucBBYn');
 
@@ -161,36 +162,7 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
       const newPostRef = await addDoc(collection(db, 'posts'), postData);
 
       // Handle mentions
-      const mentions = postContent.match(/@(\w+)/g);
-      const mentionedUsernames = mentions ? [...new Set(mentions.map(m => m.substring(1)))] : [];
-
-      if (mentionedUsernames.length > 0) {
-        for (const username of mentionedUsernames) {
-          if (username === userProfile.username) continue; // Don't notify self
-          
-          const userQuery = query(collection(db, 'users'), where('username', '==', username));
-          const userSnapshot = await getDocs(userQuery);
-          
-          if (!userSnapshot.empty) {
-            const mentionedUserId = userSnapshot.docs[0].id;
-            
-            await addDoc(collection(db, 'notifications'), {
-              recipientId: mentionedUserId,
-              senderId: userProfile.uid,
-              senderName: userProfile.displayName,
-              senderUsername: userProfile.username,
-              senderPhoto: userProfile.photoURL || null,
-              senderVerified: userProfile.isVerified || userProfile.username === 'Rulio',
-              senderPremiumTier: userProfile.premiumTier || null,
-              type: 'mention',
-              postId: newPostRef.id,
-              content: postContent,
-              read: false,
-              createdAt: serverTimestamp()
-            });
-          }
-        }
-      }
+      await handleMentions(postContent, newPostRef.id, userProfile);
 
       if (replyTo) {
         await updateDoc(doc(db, 'posts', replyTo.id), {
@@ -211,6 +183,13 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
             read: false,
             createdAt: serverTimestamp()
           });
+
+          // Trigger push notification for reply
+          await sendPushNotification(
+            replyTo.authorId,
+            'Nova Resposta',
+            `@${userProfile.username} respondeu ao seu post.`
+          );
         }
       }
 

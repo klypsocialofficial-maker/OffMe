@@ -10,6 +10,7 @@ import QuotedPost from '../components/QuotedPost';
 import Poll from '../components/Poll';
 import { motion, AnimatePresence } from 'motion/react';
 import { formatRelativeTime } from '../lib/dateUtils';
+import { sendPushNotification } from '../lib/notifications';
 import CreatePostModal from '../components/CreatePostModal';
 import Toast from '../components/Toast';
 import ConfirmModal from '../components/ConfirmModal';
@@ -238,6 +239,13 @@ export default function PostDetail() {
           read: false,
           createdAt: serverTimestamp()
         });
+
+        // Trigger push notification
+        await sendPushNotification(
+          postToLike.authorId,
+          'Novo Like',
+          `${userProfile.displayName} curtiu seu post.`
+        );
       }
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'posts');
@@ -270,6 +278,13 @@ export default function PostDetail() {
           read: false,
           createdAt: serverTimestamp()
         });
+
+        // Trigger push notification
+        await sendPushNotification(
+          postToRepost.authorId,
+          'Novo Repost',
+          `${userProfile.displayName} repostou seu post.`
+        );
       }
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'posts');

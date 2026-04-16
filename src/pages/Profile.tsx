@@ -13,6 +13,7 @@ import Poll from '../components/Poll';
 import ImageViewer from '../components/ImageViewer';
 import SharePostModal from '../components/SharePostModal';
 import PostCard from '../components/PostCard';
+import { handleMentions, sendPushNotification } from '../lib/notifications';
 import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, arrayRemove, arrayUnion, addDoc, serverTimestamp, deleteDoc, getDocs } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { motion, AnimatePresence } from 'motion/react';
@@ -247,6 +248,13 @@ export default function Profile() {
           read: false,
           createdAt: serverTimestamp()
         });
+
+        // Trigger push notification
+        await sendPushNotification(
+          post.authorId,
+          'Novo Like',
+          `${userProfile.displayName} curtiu seu post.`
+        );
       }
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'posts');
@@ -279,6 +287,13 @@ export default function Profile() {
           read: false,
           createdAt: serverTimestamp()
         });
+
+        // Trigger push notification
+        await sendPushNotification(
+          post.authorId,
+          'Novo Repost',
+          `${userProfile.displayName} repostou seu post.`
+        );
       }
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'posts');
@@ -364,6 +379,13 @@ export default function Profile() {
           read: false,
           createdAt: serverTimestamp()
         });
+
+        // Trigger push notification
+        await sendPushNotification(
+          profileUser.uid,
+          'Novo Seguidor',
+          `${userProfile.displayName} começou a seguir você.`
+        );
       }
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'users');

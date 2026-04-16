@@ -14,6 +14,7 @@ import SharePostModal from '../components/SharePostModal';
 import ImageViewer from '../components/ImageViewer';
 import PostCard from '../components/PostCard';
 import GoogleAd from '../components/GoogleAd';
+import { handleMentions, sendPushNotification } from '../lib/notifications';
 import { uploadToImgBB } from '../lib/imgbb';
 import PullToRefresh from '../components/PullToRefresh';
 import { motion, AnimatePresence } from 'motion/react';
@@ -263,8 +264,9 @@ export default function Home() {
         imageUrl = await uploadToImgBB(imageFile);
       }
 
-      await addDoc(collection(db, 'posts'), {
-        content: newPost.trim(),
+      const postContent = newPost.trim();
+      const newPostRef = await addDoc(collection(db, 'posts'), {
+        content: postContent,
         imageUrl,
         authorId: userProfile.uid,
         authorName: userProfile.displayName || '',
@@ -278,6 +280,10 @@ export default function Home() {
         likes: [],
         reposts: []
       });
+
+      // Handle mentions
+      await handleMentions(postContent, newPostRef.id, userProfile);
+
       setNewPost('');
       setImageFile(null);
       setImagePreview(null);
@@ -395,15 +401,11 @@ export default function Home() {
         });
         
         // Trigger push notification
-        fetch('/api/send-push-notification', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: post.authorId,
-            title: 'Novo Like',
-            body: `${userProfile.displayName} curtiu seu post.`
-          })
-        }).catch(console.error);
+        await sendPushNotification(
+          post.authorId,
+          'Novo Like',
+          `${userProfile.displayName} curtiu seu post.`
+        );
       }
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'posts');
