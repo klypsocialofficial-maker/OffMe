@@ -101,8 +101,12 @@ export default function Home() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot | null>(null);
   const [activeMenuPostId, setActiveMenuPostId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const loaderRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = () => {
@@ -136,15 +140,19 @@ export default function Home() {
     setIsViewerOpen(true);
   };
 
+  const POSTS_PER_PAGE = 15;
+
   useEffect(() => {
     if (!db) return;
     
     setIsFetching(true);
+    setHasMore(true);
+    setLastDoc(null);
     
     let q = query(
       collection(db, 'posts'),
       orderBy('createdAt', 'desc'),
-      limit(50)
+      limit(POSTS_PER_PAGE)
     );
 
     // If Following tab and user is following people
@@ -156,12 +164,13 @@ export default function Home() {
           collection(db, 'posts'),
           where('authorId', 'in', followingIds),
           orderBy('createdAt', 'desc'),
-          limit(50)
+          limit(POSTS_PER_PAGE)
         );
       } else {
         // Not following anyone
         setFetchedPosts([]);
         setIsFetching(false);
+        setHasMore(false);
         return;
       }
     }
@@ -173,6 +182,13 @@ export default function Home() {
       }));
       
       setFetchedPosts(newPosts);
+      
+      // Only set lastDoc on initial load or if we haven't loaded more yet
+      if (isInitialLoadRef.current && snapshot.docs.length > 0) {
+        setLastDoc(snapshot.docs[snapshot.docs.length - 1]);
+        setHasMore(snapshot.docs.length === POSTS_PER_PAGE);
+      }
+      
       setIsFetching(false);
     }, (error) => {
       console.error("Feed error:", error);
@@ -182,6 +198,71 @@ export default function Home() {
 
     return () => unsubscribe();
   }, [activeTab, db, userProfile?.following]);
+
+  const loadMorePosts = useCallback(async () => {
+    if (isLoadingMore || !hasMore || !lastDoc || !db) return;
+
+    setIsLoadingMore(true);
+    try {
+      let q = query(
+        collection(db, 'posts'),
+        orderBy('createdAt', 'desc'),
+        startAfter(lastDoc),
+        limit(POSTS_PER_PAGE)
+      );
+
+      if (activeTab === 'following' && userProfile?.following && userProfile.following.length > 0) {
+        const followingIds = userProfile.following.slice(0, 30);
+        q = query(
+          collection(db, 'posts'),
+          where('authorId', 'in', followingIds),
+          orderBy('createdAt', 'desc'),
+          startAfter(lastDoc),
+          limit(POSTS_PER_PAGE)
+        );
+      }
+
+      const snapshot = await getDocs(q);
+      if (snapshot.empty) {
+        setHasMore(false);
+      } else {
+        const morePosts = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        
+        setDisplayedPosts(prev => {
+          const existingIds = new Set(prev.map(p => p.id));
+          const uniqueMorePosts = morePosts.filter(p => !existingIds.has(p.id));
+          return [...prev, ...uniqueMorePosts];
+        });
+        
+        setLastDoc(snapshot.docs[snapshot.docs.length - 1]);
+        setHasMore(snapshot.docs.length === POSTS_PER_PAGE);
+      }
+    } catch (error) {
+      console.error("Error loading more posts:", error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [isLoadingMore, hasMore, lastDoc, activeTab, userProfile?.following]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoadingMore && !isFetching) {
+          loadMorePosts();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (loaderRef.current) {
+      observer.observe(loaderRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [loadMorePosts, hasMore, isLoadingMore, isFetching]);
 
   useEffect(() => {
     if (isInitialLoadRef.current) {
@@ -196,13 +277,14 @@ export default function Home() {
       return;
     }
 
-    const current = displayedPostsRef.current;
+    const current = [...displayedPostsRef.current];
     if (current.length === 0) {
       setDisplayedPosts(fetchedPosts);
       setPendingPostsCount(0);
       return;
     }
 
+    // 1. Identify new posts at the very top
     const currentIds = new Set(current.map(p => p.id));
     const newPostsAtTop = [];
     for (const p of fetchedPosts) {
@@ -213,20 +295,20 @@ export default function Home() {
       }
     }
 
+    // 2. Update existing posts in displayedPosts with fresh data from fetchedPosts
+    const fetchedMap = new Map(fetchedPosts.map(p => [p.id, p]));
+    const updatedCurrent = current.map(p => fetchedMap.has(p.id) ? fetchedMap.get(p.id) : p);
+
     const hasMyPost = newPostsAtTop.some(p => p.authorId === userProfile?.uid);
 
     if (hasMyPost) {
-      setDisplayedPosts(fetchedPosts);
+      // Prepend new posts to the current list
+      setDisplayedPosts([...newPostsAtTop, ...updatedCurrent]);
       setPendingPostsCount(0);
     } else {
+      // Just update existing posts and set pending count
+      setDisplayedPosts(updatedCurrent);
       setPendingPostsCount(newPostsAtTop.length);
-      
-      const fetchedMap = new Map(fetchedPosts.map(p => [p.id, p]));
-      const nextDisplayed = current
-        .filter(p => fetchedMap.has(p.id))
-        .map(p => fetchedMap.get(p.id));
-        
-      setDisplayedPosts(nextDisplayed);
     }
   }, [fetchedPosts, userProfile?.uid, isFetching]);
 
@@ -559,7 +641,10 @@ export default function Home() {
             >
               <button
                 onClick={() => {
-                  setDisplayedPosts(fetchedPosts);
+                  const current = displayedPostsRef.current;
+                  const currentIds = new Set(current.map(p => p.id));
+                  const newPosts = fetchedPosts.filter(p => !currentIds.has(p.id));
+                  setDisplayedPosts([...newPosts, ...current]);
                   setPendingPostsCount(0);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
@@ -582,7 +667,10 @@ export default function Home() {
           className="focus-visible:outline-none"
         >
           <PullToRefresh onRefresh={async () => {
-            setDisplayedPosts(fetchedPosts);
+            const current = displayedPostsRef.current;
+            const currentIds = new Set(current.map(p => p.id));
+            const newPosts = fetchedPosts.filter(p => !currentIds.has(p.id));
+            setDisplayedPosts([...newPosts, ...current]);
             setPendingPostsCount(0);
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}>
@@ -665,7 +753,25 @@ export default function Home() {
                       // }
                     });
 
-                    return elements;
+                    return (
+                      <>
+                        {elements}
+                        {/* Intersection Observer Sentinel */}
+                        <div ref={loaderRef} className="h-10 flex items-center justify-center">
+                          {isLoadingMore && (
+                            <div className="flex space-x-1">
+                              {[0, 1, 2].map((i) => (
+                                <div
+                                  key={i}
+                                  className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce"
+                                  style={{ animationDelay: `${i * 0.1}s` }}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    );
                   })()}
                 </div>
               )}
