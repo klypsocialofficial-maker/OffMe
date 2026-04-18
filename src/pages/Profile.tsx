@@ -18,7 +18,7 @@ import GamerCard from '../components/GamerCard';
 import LazyImage from '../components/LazyImage';
 import { handleMentions, sendPushNotification } from '../lib/notifications';
 import { awardPoints } from '../services/gamificationService';
-import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, arrayRemove, arrayUnion, addDoc, serverTimestamp, deleteDoc, getDocs } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, arrayRemove, arrayUnion, addDoc, serverTimestamp, deleteDoc, getDocs, limit } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { motion, AnimatePresence } from 'motion/react';
 import { formatRelativeTime } from '../lib/dateUtils';
@@ -261,13 +261,15 @@ export default function Profile() {
   const handleLikePost = async (post: any) => {
     if (!userProfile?.uid || !db) return;
     
-    const isLiked = post.likes?.includes(userProfile.uid);
-    const postRef = doc(db, 'posts', post.id);
+    // Redirect interaction to the original post if it's a repost
+    const targetPost = post.type === 'repost' ? { id: post.repostedPostId, ...post } : post;
+    const isLiked = targetPost.likes?.includes(userProfile.uid);
+    const postRef = doc(db, 'posts', targetPost.id);
     
     try {
       await updateDoc(postRef, {
         likes: isLiked ? arrayRemove(userProfile.uid) : arrayUnion(userProfile.uid),
-        likesCount: isLiked ? Math.max(0, (post.likesCount || 0) - 1) : (post.likesCount || 0) + 1
+        likesCount: isLiked ? Math.max(0, (targetPost.likesCount || 0) - 1) : (targetPost.likesCount || 0) + 1
       });
       
       if (!isLiked) {
@@ -305,36 +307,90 @@ export default function Profile() {
   const handleRepost = async (post: any) => {
     if (!userProfile?.uid || !db) return;
     
-    const isReposted = post.reposts?.includes(userProfile.uid);
-    const postRef = doc(db, 'posts', post.id);
+    // We can't repost a repost directly in this simple implementation, 
+    // we repost the original post.
+    const targetPost = post.type === 'repost' ? { id: post.repostedPostId, ...post } : post;
+    const isReposted = targetPost.reposts?.includes(userProfile.uid);
+    const postRef = doc(db, 'posts', targetPost.id);
     
     try {
-      await updateDoc(postRef, {
-        reposts: isReposted ? arrayRemove(userProfile.uid) : arrayUnion(userProfile.uid),
-        repostsCount: isReposted ? Math.max(0, (post.repostsCount || 0) - 1) : (post.repostsCount || 0) + 1
-      });
-      
-      if (!isReposted && post.authorId !== userProfile.uid) {
-        await addDoc(collection(db, 'notifications'), {
-          recipientId: post.authorId,
-          senderId: userProfile.uid,
-          senderName: userProfile.displayName,
-          senderUsername: userProfile.username,
-          senderPhoto: userProfile.photoURL || null,
-          senderVerified: userProfile.isVerified || userProfile.username === 'Rulio',
-          senderPremiumTier: userProfile.premiumTier || null,
+      if (isReposted) {
+        // Remove repost
+        await updateDoc(postRef, {
+          reposts: arrayRemove(userProfile.uid),
+          repostsCount: Math.max(0, (targetPost.repostsCount || 0) - 1)
+        });
+
+        // Find and delete the repost document
+        const q = query(
+          collection(db, 'posts'),
+          where('authorId', '==', userProfile.uid),
+          where('repostedPostId', '==', targetPost.id),
+          where('type', '==', 'repost'),
+          limit(1)
+        );
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) {
+          await deleteDoc(doc(db, 'posts', snapshot.docs[0].id));
+        }
+
+        showToast('Repost removido', 'info');
+      } else {
+        // Add repost
+        await updateDoc(postRef, {
+          reposts: arrayUnion(userProfile.uid),
+          repostsCount: (targetPost.repostsCount || 0) + 1
+        });
+
+        // Create new repost document
+        await addDoc(collection(db, 'posts'), {
+          authorId: userProfile.uid,
+          authorName: userProfile.displayName,
+          authorUsername: userProfile.username,
+          authorPhoto: userProfile.photoURL || null,
+          authorVerified: userProfile.isVerified || userProfile.username === 'Rulio',
+          authorPremiumTier: userProfile.premiumTier || null,
           type: 'repost',
-          postId: post.id,
-          read: false,
+          repostedPostId: targetPost.id,
+          // Copy original post data for easy display
+          content: targetPost.content || '',
+          imageUrls: targetPost.imageUrls || [],
+          originalPostAuthorId: targetPost.authorId,
+          originalPostAuthorName: targetPost.authorName,
+          originalPostAuthorUsername: targetPost.authorUsername,
+          originalPostAuthorPhoto: targetPost.authorPhoto || null,
+          originalPostAuthorVerified: targetPost.authorVerified || false,
+          originalPostAuthorPremiumTier: targetPost.authorPremiumTier || null,
           createdAt: serverTimestamp()
         });
 
-        // Trigger push notification
-        await sendPushNotification(
-          post.authorId,
-          'Novo Repost',
-          `${userProfile.displayName} repostou seu post.`
-        );
+        showToast('Repostado com sucesso!', 'success');
+        
+        // Award points for reposting
+        await awardPoints(userProfile.uid, 10);
+
+        if (targetPost.authorId !== userProfile.uid) {
+          await addDoc(collection(db, 'notifications'), {
+            recipientId: targetPost.authorId,
+            senderId: userProfile.uid,
+            senderName: userProfile.displayName,
+            senderUsername: userProfile.username,
+            senderPhoto: userProfile.photoURL || null,
+            senderVerified: userProfile.isVerified || userProfile.username === 'Rulio',
+            senderPremiumTier: userProfile.premiumTier || null,
+            type: 'repost',
+            postId: targetPost.id,
+            read: false,
+            createdAt: serverTimestamp()
+          });
+          
+          // Trigger push notification
+          await sendPushNotification(
+            targetPost.authorId,
+            'Novo Repost',
+            `${userProfile.displayName} repostou seu post.`
+          );
+        }
       }
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'posts');

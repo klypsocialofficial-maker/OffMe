@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, onSnapshot, collection, query, where, orderBy, serverTimestamp, addDoc, deleteDoc, updateDoc, arrayRemove, arrayUnion } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where, orderBy, serverTimestamp, addDoc, deleteDoc, updateDoc, arrayRemove, arrayUnion, getDocs, limit } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { User as UserIcon, ArrowLeft, MoreHorizontal, Trash2, Edit2, BarChart2, Heart, Repeat, MessageCircle, Send, Zap as ZapIcon } from 'lucide-react';
@@ -233,13 +233,15 @@ export default function PostDetail() {
   const handleLikePost = async (postToLike: any) => {
     if (!userProfile?.uid || !db) return;
     
-    const isLiked = postToLike.likes?.includes(userProfile.uid);
-    const postRef = doc(db, 'posts', postToLike.id);
+    // Redirect interaction to the original post if it's a repost
+    const targetPost = postToLike.type === 'repost' ? { id: postToLike.repostedPostId, ...postToLike } : postToLike;
+    const isLiked = targetPost.likes?.includes(userProfile.uid);
+    const postRef = doc(db, 'posts', targetPost.id);
     
     try {
       await updateDoc(postRef, {
         likes: isLiked ? arrayRemove(userProfile.uid) : arrayUnion(userProfile.uid),
-        likesCount: isLiked ? Math.max(0, (postToLike.likesCount || 0) - 1) : (postToLike.likesCount || 0) + 1
+        likesCount: isLiked ? Math.max(0, (targetPost.likesCount || 0) - 1) : (targetPost.likesCount || 0) + 1
       });
       
       if (!isLiked) {
@@ -301,36 +303,90 @@ export default function PostDetail() {
   const handleRepost = async (postToRepost: any) => {
     if (!userProfile?.uid || !db) return;
     
-    const isReposted = postToRepost.reposts?.includes(userProfile.uid);
-    const postRef = doc(db, 'posts', postToRepost.id);
+    // We can't repost a repost directly in this simple implementation, 
+    // we repost the original post.
+    const targetPost = postToRepost.type === 'repost' ? { id: postToRepost.repostedPostId, ...postToRepost } : postToRepost;
+    const isReposted = targetPost.reposts?.includes(userProfile.uid);
+    const postRef = doc(db, 'posts', targetPost.id);
     
     try {
-      await updateDoc(postRef, {
-        reposts: isReposted ? arrayRemove(userProfile.uid) : arrayUnion(userProfile.uid),
-        repostsCount: isReposted ? Math.max(0, (postToRepost.repostsCount || 0) - 1) : (postToRepost.repostsCount || 0) + 1
-      });
-      
-      if (!isReposted && postToRepost.authorId !== userProfile.uid) {
-        await addDoc(collection(db, 'notifications'), {
-          recipientId: postToRepost.authorId,
-          senderId: userProfile.uid,
-          senderName: userProfile.displayName,
-          senderUsername: userProfile.username,
-          senderPhoto: userProfile.photoURL || null,
-          senderVerified: userProfile.isVerified || userProfile.username === 'Rulio',
-          senderPremiumTier: userProfile.premiumTier || null,
+      if (isReposted) {
+        // Remove repost
+        await updateDoc(postRef, {
+          reposts: arrayRemove(userProfile.uid),
+          repostsCount: Math.max(0, (targetPost.repostsCount || 0) - 1)
+        });
+
+        // Find and delete the repost document
+        const q = query(
+          collection(db, 'posts'),
+          where('authorId', '==', userProfile.uid),
+          where('repostedPostId', '==', targetPost.id),
+          where('type', '==', 'repost'),
+          limit(1)
+        );
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) {
+          await deleteDoc(doc(db, 'posts', snapshot.docs[0].id));
+        }
+
+        showToast('Repost removido', 'info');
+      } else {
+        // Add repost
+        await updateDoc(postRef, {
+          reposts: arrayUnion(userProfile.uid),
+          repostsCount: (targetPost.repostsCount || 0) + 1
+        });
+
+        // Create new repost document
+        await addDoc(collection(db, 'posts'), {
+          authorId: userProfile.uid,
+          authorName: userProfile.displayName,
+          authorUsername: userProfile.username,
+          authorPhoto: userProfile.photoURL || null,
+          authorVerified: userProfile.isVerified || userProfile.username === 'Rulio',
+          authorPremiumTier: userProfile.premiumTier || null,
           type: 'repost',
-          postId: postToRepost.id,
-          read: false,
+          repostedPostId: targetPost.id,
+          // Copy original post data for easy display
+          content: targetPost.content || '',
+          imageUrls: targetPost.imageUrls || [],
+          originalPostAuthorId: targetPost.authorId,
+          originalPostAuthorName: targetPost.authorName,
+          originalPostAuthorUsername: targetPost.authorUsername,
+          originalPostAuthorPhoto: targetPost.authorPhoto || null,
+          originalPostAuthorVerified: targetPost.authorVerified || false,
+          originalPostAuthorPremiumTier: targetPost.authorPremiumTier || null,
           createdAt: serverTimestamp()
         });
 
-        // Trigger push notification
-        await sendPushNotification(
-          postToRepost.authorId,
-          'Novo Repost',
-          `${userProfile.displayName} repostou seu post.`
-        );
+        showToast('Repostado com sucesso!', 'success');
+        
+        // Award points for reposting
+        await awardPoints(userProfile.uid, 10);
+
+        if (targetPost.authorId !== userProfile.uid) {
+          await addDoc(collection(db, 'notifications'), {
+            recipientId: targetPost.authorId,
+            senderId: userProfile.uid,
+            senderName: userProfile.displayName,
+            senderUsername: userProfile.username,
+            senderPhoto: userProfile.photoURL || null,
+            senderVerified: userProfile.isVerified || userProfile.username === 'Rulio',
+            senderPremiumTier: userProfile.premiumTier || null,
+            type: 'repost',
+            postId: targetPost.id,
+            read: false,
+            createdAt: serverTimestamp()
+          });
+          
+          // Trigger push notification
+          await sendPushNotification(
+            targetPost.authorId,
+            'Novo Repost',
+            `${userProfile.displayName} repostou seu post.`
+          );
+        }
       }
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'posts');

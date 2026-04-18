@@ -70,50 +70,78 @@ export default function PostCard({
     onShare(post);
   };
 
+  const effectivePost = post.type === 'repost' ? { ...post, id: post.repostedPostId } : post;
+
   return (
     <motion.article 
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      onClick={() => navigate(`/post/${post.id}`)}
-      className="group relative p-4 bg-white border-b border-gray-100 hover:bg-gray-50 transition-all cursor-pointer flex space-x-3"
+      onClick={() => navigate(`/post/${effectivePost.id}`)}
+      className="group relative p-4 bg-white border-b border-gray-100 hover:bg-gray-50 transition-all cursor-pointer flex flex-col"
     >
-      {/* Avatar */}
-      <div 
-        className={`w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 ${post.authorId !== 'anonymous' ? 'cursor-pointer' : ''}`}
-        onClick={(e) => {
-          if (post.authorId === 'anonymous') return;
-          stopPropagation(e);
-          navigate(`/${post.authorUsername}`);
-        }}
-      >
-        {post.authorPhoto ? (
-          <LazyImage src={post.authorPhoto} alt={post.authorName} className="w-full h-full" />
-        ) : (
-          <UserIcon className="w-full h-full p-2 text-gray-400" />
-        )}
-      </div>
+      {/* Repost Header */}
+      {post.type === 'repost' && (
+        <div className="flex items-center space-x-2 text-gray-500 text-xs font-bold mb-2 ml-10">
+          <Repeat className="w-3.5 h-3.5" />
+          <span>{post.authorId === userProfile?.uid ? 'Você' : post.authorName} repostou</span>
+        </div>
+      )}
 
-      {/* Content */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between">
-          <div 
-            className={`flex items-center space-x-1 min-w-0 ${post.authorId !== 'anonymous' ? 'cursor-pointer' : ''}`}
-            onClick={(e) => {
-              if (post.authorId === 'anonymous') return;
-              stopPropagation(e);
-              navigate(`/${post.authorUsername}`);
-            }}
-          >
-            <span className={`font-bold truncate ${post.authorId !== 'anonymous' ? 'hover:underline' : ''}`}>{post.authorName}</span>
-            {(post.authorVerified || post.authorUsername === 'Rulio') && <VerifiedBadge className="w-4 h-4 flex-shrink-0" tier={post.authorPremiumTier} />}
-            <span className="text-gray-500 truncate">@{post.authorUsername}</span>
-            <span className="text-gray-500">·</span>
-            <span className="text-gray-500 text-sm whitespace-nowrap">
-              {post.createdAt?.toDate ? formatRelativeTime(post.createdAt.toDate()) : 'Agora'}
-            </span>
-            {post.isEdited && <span className="text-gray-400 text-xs">(editado)</span>}
-          </div>
+      <div className="flex space-x-3">
+        {/* Avatar */}
+        <div 
+          className={`w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 ${post.authorId !== 'anonymous' ? 'cursor-pointer' : ''}`}
+          onClick={(e) => {
+            const authorId = post.type === 'repost' ? post.originalPostAuthorId : post.authorId;
+            const authorUsername = post.type === 'repost' ? post.originalPostAuthorUsername : post.authorUsername;
+            
+            if (authorId === 'anonymous') return;
+            stopPropagation(e);
+            navigate(`/${authorUsername}`);
+          }}
+        >
+          {post.type === 'repost' ? (
+            post.originalPostAuthorPhoto ? (
+              <LazyImage src={post.originalPostAuthorPhoto} alt={post.originalPostAuthorName} className="w-full h-full" />
+            ) : (
+              <UserIcon className="w-full h-full p-2 text-gray-400" />
+            )
+          ) : post.authorPhoto ? (
+            <LazyImage src={post.authorPhoto} alt={post.authorName} className="w-full h-full" />
+          ) : (
+            <UserIcon className="w-full h-full p-2 text-gray-400" />
+          )}
+        </div>
+
+        {/* Content Section */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between">
+            <div 
+              className={`flex items-center space-x-1 min-w-0 ${post.authorId !== 'anonymous' ? 'cursor-pointer' : ''}`}
+              onClick={(e) => {
+                const authorId = post.type === 'repost' ? post.originalPostAuthorId : post.authorId;
+                const authorUsername = post.type === 'repost' ? post.originalPostAuthorUsername : post.authorUsername;
+                
+                if (authorId === 'anonymous') return;
+                stopPropagation(e);
+                navigate(`/${authorUsername}`);
+              }}
+            >
+              <span className={`font-bold truncate ${post.authorId !== 'anonymous' ? 'hover:underline' : ''}`}>
+                {post.type === 'repost' ? post.originalPostAuthorName : post.authorName}
+              </span>
+              {( (post.type === 'repost' ? post.originalPostAuthorVerified : post.authorVerified) || 
+                 (post.type === 'repost' ? post.originalPostAuthorUsername : post.authorUsername) === 'Rulio') && (
+                <VerifiedBadge className="w-4 h-4 flex-shrink-0" tier={post.type === 'repost' ? post.originalPostAuthorPremiumTier : post.authorPremiumTier} />
+              )}
+              <span className="text-gray-500 truncate">@{post.type === 'repost' ? post.originalPostAuthorUsername : post.authorUsername}</span>
+              <span className="text-gray-500">·</span>
+              <span className="text-gray-500 text-sm whitespace-nowrap">
+                {post.createdAt?.toDate ? formatRelativeTime(post.createdAt.toDate()) : 'Agora'}
+              </span>
+              {post.isEdited && <span className="text-gray-400 text-xs">(editado)</span>}
+            </div>
 
           <div className="relative">
             <button 
@@ -210,14 +238,14 @@ export default function PostCard({
             whileTap={{ scale: 0.9 }}
             onClick={(e) => {
               stopPropagation(e);
-              onReply(post);
+              onReply(effectivePost);
             }}
             className="flex items-center space-x-2 group/action hover:text-blue-500 transition-colors"
           >
             <div className="p-2 group-hover/action:bg-blue-50 rounded-full transition-colors">
               <MessageCircle className="w-4.5 h-4.5" />
             </div>
-            <span className="text-xs">{post.repliesCount || 0}</span>
+            <span className="text-sm">{effectivePost.repliesCount || 0}</span>
           </motion.button>
 
           <motion.button 
@@ -225,14 +253,14 @@ export default function PostCard({
             whileTap={{ scale: 0.9 }}
             onClick={(e) => {
               stopPropagation(e);
-              onRepost(post);
+              onRepost(effectivePost);
             }}
-            className={`flex items-center space-x-2 group/action transition-colors ${post.reposts?.includes(userProfile?.uid) ? 'text-green-500' : 'hover:text-green-500'}`}
+            className={`flex items-center space-x-2 group/action transition-colors ${effectivePost.reposts?.includes(userProfile?.uid) ? 'text-green-500' : 'hover:text-green-500'}`}
           >
             <div className="p-2 group-hover/action:bg-green-50 rounded-full transition-colors">
               <Repeat className="w-4.5 h-4.5" />
             </div>
-            <span className="text-xs">{post.repostsCount || 0}</span>
+            <span className="text-sm">{effectivePost.repostsCount || 0}</span>
           </motion.button>
 
           <motion.button 
@@ -240,14 +268,14 @@ export default function PostCard({
             whileTap={{ scale: 0.8 }}
             onClick={(e) => {
               stopPropagation(e);
-              onLike(post);
+              onLike(effectivePost);
             }}
-            className={`flex items-center space-x-2 group/action transition-colors ${post.likes?.includes(userProfile?.uid) ? 'text-red-500' : 'hover:text-red-500'}`}
+            className={`flex items-center space-x-2 group/action transition-colors ${effectivePost.likes?.includes(userProfile?.uid) ? 'text-red-500' : 'hover:text-red-500'}`}
           >
             <div className="p-2 group-hover/action:bg-red-50 rounded-full transition-colors">
-              <Heart className={`w-4.5 h-4.5 ${post.likes?.includes(userProfile?.uid) ? 'fill-current' : ''}`} />
+              <Heart className={`w-4.5 h-4.5 ${effectivePost.likes?.includes(userProfile?.uid) ? 'fill-current' : ''}`} />
             </div>
-            <span className="text-xs">{post.likesCount || 0}</span>
+            <span className="text-sm">{effectivePost.likesCount || 0}</span>
           </motion.button>
 
           <motion.button 
@@ -255,7 +283,7 @@ export default function PostCard({
             whileTap={{ scale: 0.9 }}
             onClick={(e) => {
               stopPropagation(e);
-              onQuote(post);
+              onQuote(effectivePost);
             }}
             className="flex items-center space-x-2 group/action hover:text-blue-500 transition-colors"
           >
@@ -276,6 +304,7 @@ export default function PostCard({
           </motion.button>
         </div>
       </div>
-    </motion.article>
+    </div>
+  </motion.article>
   );
 }
