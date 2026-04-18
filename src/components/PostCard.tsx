@@ -44,6 +44,32 @@ export default function PostCard({
 
   const stopPropagation = (e: React.MouseEvent) => e.stopPropagation();
 
+  const handleShare = async (e: React.MouseEvent) => {
+    stopPropagation(e);
+    setIsMenuOpen(false);
+    
+    // Check if Web Share API is available
+    if (navigator.share) {
+      const shareData = {
+        title: `Post de ${post.authorName} no Offme`,
+        text: post.content.substring(0, 100) + (post.content.length > 100 ? '...' : ''),
+        url: `${window.location.origin}/post/${post.id}`
+      };
+
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (error) {
+        // If aborted by user, don't do anything
+        if ((error as Error).name === 'AbortError') return;
+        console.error('Erro ao compartilhar nativamente:', error);
+      }
+    }
+    
+    // Fallback to existing share modal
+    onShare(post);
+  };
+
   return (
     <motion.article 
       initial={{ opacity: 0, y: 10 }}
@@ -54,8 +80,9 @@ export default function PostCard({
     >
       {/* Avatar */}
       <div 
-        className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0"
+        className={`w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 ${post.authorId !== 'anonymous' ? 'cursor-pointer' : ''}`}
         onClick={(e) => {
+          if (post.authorId === 'anonymous') return;
           stopPropagation(e);
           navigate(`/${post.authorUsername}`);
         }}
@@ -71,13 +98,14 @@ export default function PostCard({
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between">
           <div 
-            className="flex items-center space-x-1 min-w-0 cursor-pointer"
+            className={`flex items-center space-x-1 min-w-0 ${post.authorId !== 'anonymous' ? 'cursor-pointer' : ''}`}
             onClick={(e) => {
+              if (post.authorId === 'anonymous') return;
               stopPropagation(e);
               navigate(`/${post.authorUsername}`);
             }}
           >
-            <span className="font-bold truncate hover:underline">{post.authorName}</span>
+            <span className={`font-bold truncate ${post.authorId !== 'anonymous' ? 'hover:underline' : ''}`}>{post.authorName}</span>
             {(post.authorVerified || post.authorUsername === 'Rulio') && <VerifiedBadge className="w-4 h-4 flex-shrink-0" tier={post.authorPremiumTier} />}
             <span className="text-gray-500 truncate">@{post.authorUsername}</span>
             <span className="text-gray-500">·</span>
@@ -100,7 +128,7 @@ export default function PostCard({
             
             {isMenuOpen && (
               <div className="absolute right-0 mt-1 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-20" onClick={stopPropagation}>
-                {post.authorId === userProfile?.uid ? (
+                {post.authorId === userProfile?.uid && post.authorId !== 'anonymous' ? (
                   <>
                     <button 
                       onClick={() => {
@@ -126,20 +154,19 @@ export default function PostCard({
                       <span>Editar post</span>
                     </button>
                   </>
-                ) : (
+                ) : post.authorId !== 'anonymous' ? (
                   <button 
                     className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
                   >
                     <UserIcon className="w-4 h-4" />
                     <span>Seguir @{post.authorUsername}</span>
                   </button>
+                ) : (
+                  <div className="px-4 py-2 text-xs text-gray-400 italic">Post anônimo</div>
                 )}
                 
                 <button 
-                   onClick={() => {
-                     onShare(post);
-                     setIsMenuOpen(false);
-                   }}
+                   onClick={handleShare}
                    className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
                  >
                    <Send className="w-4 h-4" />
@@ -240,10 +267,7 @@ export default function PostCard({
           <motion.button 
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
-            onClick={(e) => {
-              stopPropagation(e);
-              onShare(post);
-            }}
+            onClick={handleShare}
             className="flex items-center space-x-2 group/action hover:text-blue-500 transition-colors"
           >
             <div className="p-2 group-hover/action:bg-blue-50 rounded-full transition-colors">

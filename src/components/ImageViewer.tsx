@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'motion/react';
 import { X, Download } from 'lucide-react';
+import LazyImage from './LazyImage';
 
 interface ImageViewerProps {
   src: string | null;
@@ -97,7 +98,7 @@ export default function ImageViewer({ src, isOpen, onClose, alt = "Visualizaçã
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             className="relative max-w-full max-h-full flex items-center justify-center z-0 pointer-events-auto cursor-grab active:cursor-grabbing"
           >
-            <img
+            <LazyImage
               src={src}
               alt={alt}
               className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl pointer-events-none select-none"

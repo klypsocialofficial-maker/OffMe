@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { User as UserIcon, Send, MoreHorizontal, Trash2, Edit2, BarChart2, Plus, Heart, Repeat, MessageCircle, ArrowUp, Search, X, Image as ImageIcon, Zap as ZapIcon } from 'lucide-react';
+import { User as UserIcon, Send, MoreHorizontal, Trash2, Edit2, BarChart2, Plus, Heart, Repeat, MessageCircle, ArrowUp, Search, X, Image as ImageIcon, Zap as ZapIcon, Ghost } from 'lucide-react';
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, where, deleteDoc, doc, updateDoc, limit, arrayUnion, arrayRemove, startAfter, getDocs, QueryDocumentSnapshot } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { useOutletContext, useNavigate } from 'react-router-dom';
@@ -14,6 +14,7 @@ import SharePostModal from '../components/SharePostModal';
 import ImageViewer from '../components/ImageViewer';
 import ConfirmModal from '../components/ConfirmModal';
 import PostCard from '../components/PostCard';
+import LazyImage from '../components/LazyImage';
 import PostSkeleton from '../components/PostSkeleton';
 import { handleMentions, sendPushNotification, notifyFollowers } from '../lib/notifications';
 import { uploadToImgBB } from '../lib/imgbb';
@@ -77,7 +78,10 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 export default function Home() {
   const { userProfile, logout } = useAuth();
   const navigate = useNavigate();
-  const { openDrawer, openCreateModal } = useOutletContext<{ openDrawer: () => void; openCreateModal: (replyTo?: any, quotePost?: any) => void }>();
+  const { openDrawer, openCreateModal } = useOutletContext<{ 
+    openDrawer: () => void; 
+    openCreateModal: (replyTo?: any, quotePost?: any, isAnonymous?: boolean) => void 
+  }>();
   const [activeTab, setActiveTab] = useState<'foryou' | 'following'>('foryou');
   const [fetchedPosts, setFetchedPosts] = useState<any[]>([]);
   const [displayedPosts, setDisplayedPosts] = useState<any[]>([]);
@@ -531,7 +535,7 @@ export default function Home() {
                 className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 cursor-pointer border border-white/40 shadow-sm"
               >
                 {userProfile?.photoURL ? (
-                  <img src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full object-cover" />
+                  <LazyImage src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full" />
                 ) : (
                   <UserIcon className="w-full h-full p-2 text-gray-400" />
                 )}
@@ -574,8 +578,15 @@ export default function Home() {
               </nav>
             </div>
 
-            {/* Search Toggle Button (Right) */}
-            <div className="flex-shrink-0 z-10">
+            {/* Search Toggle & Anonymous Post Buttons (Right) */}
+            <div className="flex-shrink-0 z-10 flex items-center space-x-2">
+              <button 
+                onClick={() => openCreateModal(null, null, true)}
+                className="p-2.5 rounded-full transition-all duration-300 border border-white/40 shadow-sm liquid-glass-pill text-gray-500 hover:text-black hover:bg-white"
+                title="Postar Anonimamente"
+              >
+                <Ghost className="w-5 h-5" />
+              </button>
               <button 
                 onClick={() => setIsSearchOpen(!isSearchOpen)}
                 className={`p-2.5 rounded-full transition-all duration-300 border border-white/40 shadow-sm ${isSearchOpen ? 'bg-black text-white' : 'liquid-glass-pill text-gray-500'}`}

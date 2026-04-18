@@ -274,6 +274,30 @@ export default function PostDetail() {
     }
   };
 
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!post) return;
+    
+    if (navigator.share) {
+      const shareData = {
+        title: `Post de ${post.authorName} no Offme`,
+        text: post.content.substring(0, 100) + (post.content.length > 100 ? '...' : ''),
+        url: window.location.href
+      };
+
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (error) {
+        if ((error as Error).name === 'AbortError') return;
+        console.error('Erro ao compartilhar nativamente:', error);
+      }
+    }
+    
+    setSelectedSharePost(post);
+    setIsShareModalOpen(true);
+  };
+
   const handleRepost = async (postToRepost: any) => {
     if (!userProfile?.uid || !db) return;
     
@@ -524,11 +548,7 @@ export default function PostDetail() {
                 <ZapIcon className="w-6 h-6" />
               </button>
               <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedSharePost(post);
-                  setIsShareModalOpen(true);
-                }}
+                onClick={handleShare}
                 className="flex items-center space-x-2 hover:text-blue-500 transition-colors p-2 rounded-full hover:bg-blue-50"
               >
                 <Send className="w-6 h-6" />

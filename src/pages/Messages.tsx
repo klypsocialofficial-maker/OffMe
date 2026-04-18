@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, User as UserIcon, Send, MoreHorizontal, Trash2, Archive } from 'lucide-react';
 import VerifiedBadge from '../components/VerifiedBadge';
+import LazyImage from '../components/LazyImage';
 import ConfirmModal from '../components/ConfirmModal';
 import Toast from '../components/Toast';
 import { useAuth } from '../contexts/AuthContext';
@@ -154,7 +155,7 @@ export default function Messages() {
           <div className="flex items-center space-x-4">
             <button onClick={openDrawer} className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 sm:hidden">
               {userProfile?.photoURL ? (
-                <img src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full object-cover" />
+                <LazyImage src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full" />
               ) : (
                 <UserIcon className="w-full h-full p-1.5 text-gray-400" />
               )}
@@ -184,7 +185,7 @@ export default function Messages() {
                 >
                   <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
                     {otherParticipantInfo?.photoURL ? (
-                      <img src={otherParticipantInfo.photoURL} alt={otherParticipantInfo.displayName} className="w-full h-full object-cover" />
+                      <LazyImage src={otherParticipantInfo.photoURL} alt={otherParticipantInfo.displayName} className="w-full h-full" />
                     ) : (
                       <UserIcon className="w-full h-full p-2 text-gray-400" />
                     )}

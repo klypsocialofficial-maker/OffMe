@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { LogOut, User as UserIcon, Plus } from 'lucide-react';
 import VerifiedBadge from '../VerifiedBadge';
+import LazyImage from '../LazyImage';
 
 interface AndroidLayoutProps {
   userProfile: any;
@@ -121,7 +122,7 @@ export default function AndroidLayout({
                   className="w-16 h-16 rounded-full bg-gray-200 overflow-hidden mb-4 border-2 border-white shadow-md"
                   onClick={() => userProfile?.photoURL && openImageViewer(userProfile.photoURL, `Avatar de ${userProfile.displayName}`)}
                 >
-                  <img src={userProfile?.photoURL || '/ghost.svg'} alt={userProfile?.displayName} className="w-full h-full object-cover" />
+                  <LazyImage src={userProfile?.photoURL || '/ghost.svg'} alt={userProfile?.displayName} className="w-full h-full" />
                 </div>
                 <div className="flex items-center space-x-1">
                   <h2 className="font-bold text-lg text-gray-900">{userProfile?.displayName}</h2>

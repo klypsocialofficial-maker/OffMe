@@ -10,8 +10,15 @@ export default function LazyImage({ src, alt, className, aspectRatio, ...props }
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState(false);
 
+  // If no aspectRatio is provided and it's a grid-like image, 
+  // we might want a default min-height to avoid 0-height shimmer
+  const containerStyle = aspectRatio ? { aspectRatio } : {};
+
   return (
-    <div className={`relative overflow-hidden bg-gray-100 ${className}`} style={{ aspectRatio }}>
+    <div 
+      className={`relative overflow-hidden bg-gray-100 min-h-[40px] ${className}`} 
+      style={containerStyle}
+    >
       <AnimatePresence>
         {!isLoaded && !error && (
           <motion.div

@@ -6,6 +6,7 @@ import { uploadToImgBB } from '../lib/imgbb';
 import { awardPoints } from '../services/gamificationService';
 import { motion, AnimatePresence } from 'motion/react';
 import VerifiedBadge from './VerifiedBadge';
+import LazyImage from './LazyImage';
 import { GiphyFetch } from '@giphy/js-fetch-api';
 import { Grid } from '@giphy/react-components';
 import { handleMentions, sendPushNotification, notifyFollowers } from '../lib/notifications';
@@ -20,14 +21,20 @@ interface CreatePostModalProps {
   OperationType: any;
   replyTo?: any;
   quotePost?: any;
+  isAnonymousDefault?: boolean;
 }
 
-export default function CreatePostModal({ isOpen, onClose, userProfile, handleFirestoreError, OperationType, replyTo, quotePost }: CreatePostModalProps) {
+export default function CreatePostModal({ isOpen, onClose, userProfile, handleFirestoreError, OperationType, replyTo, quotePost, isAnonymousDefault = false }: CreatePostModalProps) {
   const [content, setContent] = useState('');
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isAnonymous, setIsAnonymous] = useState(isAnonymousDefault);
+
+  useEffect(() => {
+    setIsAnonymous(isAnonymousDefault || !userProfile);
+  }, [isAnonymousDefault, userProfile, isOpen]);
 
   // Poll state
   const [showPoll, setShowPoll] = useState(false);
@@ -121,7 +128,8 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
     const validPollOptions = pollOptions.filter(opt => opt.trim() !== '');
     const hasValidPoll = showPoll && validPollOptions.length >= 2;
     
-    if ((!content.trim() && imageFiles.length === 0 && !gifUrl && !hasValidPoll) || !userProfile || !db || content.length > 1000) return;
+    const canPostAnonymously = isAnonymous;
+    if ((!content.trim() && imageFiles.length === 0 && !gifUrl && !hasValidPoll) || (!userProfile && !canPostAnonymously) || !db || content.length > 1000) return;
 
     try {
       setLoading(true);
@@ -133,14 +141,23 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
 
       const postContent = content.trim();
       
+      const authorId = isAnonymous ? 'anonymous' : userProfile.uid;
+      const authorName = isAnonymous ? 'Anônimo' : (userProfile.displayName || '');
+      const authorUsername = isAnonymous ? 'anonimo' : (userProfile.username || '');
+      const authorPhoto = isAnonymous ? '' : (userProfile.photoURL || '');
+      const authorVerified = isAnonymous ? false : (userProfile.isVerified || userProfile.username === 'Rulio' || false);
+      const authorPremiumTier = isAnonymous ? null : (userProfile.premiumTier || null);
+
       const postData: any = {
         content: postContent,
         imageUrls,
-        authorId: userProfile.uid,
-        authorName: userProfile.displayName || '',
-        authorUsername: userProfile.username || '',
-        authorPhoto: userProfile.photoURL || '',
-        authorVerified: userProfile.isVerified || userProfile.username === 'Rulio' || false,
+        authorId,
+        authorName,
+        authorUsername,
+        authorPhoto,
+        authorVerified,
+        authorPremiumTier,
+        isAnonymous,
         createdAt: serverTimestamp(),
         likesCount: 0,
         repliesCount: 0,
@@ -166,16 +183,18 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
 
       const newPostRef = await addDoc(collection(db, 'posts'), postData);
 
-      // Award points for posting
-      if (!replyTo) {
+      // Award points for posting (only if not anonymous)
+      if (!replyTo && !isAnonymous && userProfile) {
         await awardPoints(userProfile.uid, 20);
       }
 
       // Handle mentions
-      await handleMentions(postContent, newPostRef.id, userProfile, imageUrls[0] || null);
+      if (!isAnonymous && userProfile) {
+        await handleMentions(postContent, newPostRef.id, userProfile, imageUrls[0] || null);
+      }
 
-      // Notify followers about new post (if not a reply)
-      if (!replyTo) {
+      // Notify followers about new post (if not a reply and not anonymous)
+      if (!replyTo && !isAnonymous && userProfile) {
         await notifyFollowers(userProfile, postContent, imageUrls[0] || null);
       }
 
@@ -184,17 +203,19 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
           repliesCount: increment(1)
         });
         
-        // Award points for replying
-        await awardPoints(userProfile.uid, 10);
+        // Award points for replying (only if not anonymous)
+        if (!isAnonymous && userProfile) {
+          await awardPoints(userProfile.uid, 10);
+        }
         
-        if (replyTo.authorId !== userProfile.uid) {
+        if (replyTo.authorId !== authorId && replyTo.authorId !== 'anonymous') {
           await addDoc(collection(db, 'notifications'), {
             recipientId: replyTo.authorId,
-            senderId: userProfile.uid,
-            senderName: userProfile.displayName,
-            senderUsername: userProfile.username,
-            senderPhoto: userProfile.photoURL || null,
-            senderVerified: userProfile.isVerified || userProfile.username === 'Rulio',
+            senderId: authorId,
+            senderName: authorName,
+            senderUsername: authorUsername,
+            senderPhoto: authorPhoto || null,
+            senderVerified: authorVerified,
             type: 'reply',
             postId: newPostRef.id,
             content: postContent,
@@ -206,7 +227,7 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
           await sendPushNotification(
             replyTo.authorId,
             'Nova Resposta',
-            `@${userProfile.username} respondeu ao seu post.`
+            `@${authorUsername} respondeu ao seu post.`
           );
         }
       }
@@ -269,13 +290,23 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
               <h2 className="font-bold text-base text-gray-900 absolute left-1/2 -translate-x-1/2">
                 {replyTo ? 'Responder' : 'Novo post'}
               </h2>
-              <button
-                onClick={handlePost}
-                disabled={(!content.trim() && imageFiles.length === 0 && !gifUrl && !(showPoll && pollOptions.filter(o => o.trim()).length >= 2)) || loading || content.length > 1000}
-                className="bg-blue-500 text-white px-4 py-1.5 rounded-full font-bold hover:bg-blue-600 disabled:bg-blue-300 disabled:opacity-50 transition-colors text-sm"
-              >
-                {loading ? 'Postando...' : 'Post'}
-              </button>
+              <div className="flex items-center space-x-2">
+                {userProfile && (
+                  <button 
+                    onClick={() => setIsAnonymous(!isAnonymous)}
+                    className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${isAnonymous ? 'bg-black text-white' : 'bg-gray-100 text-gray-500'}`}
+                  >
+                    {isAnonymous ? 'Anônimo ON' : 'Anônimo OFF'}
+                  </button>
+                )}
+                <button
+                  onClick={handlePost}
+                  disabled={(!content.trim() && imageFiles.length === 0 && !gifUrl && !(showPoll && pollOptions.filter(o => o.trim()).length >= 2)) || loading || content.length > 1000}
+                  className="bg-blue-500 text-white px-4 py-1.5 rounded-full font-bold hover:bg-blue-600 disabled:bg-blue-300 disabled:opacity-50 transition-colors text-sm"
+                >
+                  {loading ? 'Postando...' : 'Post'}
+                </button>
+              </div>
             </div>
 
             {/* Body */}
@@ -285,7 +316,7 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
                   <div className="flex flex-col items-center">
                     <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
                       {replyTo.authorPhoto ? (
-                        <img src={replyTo.authorPhoto} alt={replyTo.authorName} className="w-full h-full object-cover" />
+                        <LazyImage src={replyTo.authorPhoto} alt={replyTo.authorName} className="w-full h-full" />
                       ) : (
                         <UserIcon className="w-full h-full p-2 text-gray-400" />
                       )}
@@ -304,8 +335,10 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
               <div className="flex space-x-3">
                 {/* Avatar */}
                 <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
-                  {userProfile?.photoURL ? (
-                    <img src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full object-cover" />
+                  {isAnonymous ? (
+                    <UserIcon className="w-full h-full p-2 text-gray-400" />
+                  ) : userProfile?.photoURL ? (
+                    <LazyImage src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full" />
                   ) : (
                     <UserIcon className="w-full h-full p-2 text-gray-400" />
                   )}

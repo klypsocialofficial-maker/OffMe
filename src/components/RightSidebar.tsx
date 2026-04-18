@@ -5,6 +5,7 @@ import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import VerifiedBadge from './VerifiedBadge';
 import { useNavigate } from 'react-router-dom';
+import LazyImage from './LazyImage';
 
 export default function RightSidebar() {
   const { userProfile, followUser, unfollowUser } = useAuth();
@@ -185,7 +186,7 @@ export default function RightSidebar() {
               >
                 <div className="flex items-center space-x-3 min-w-0">
                   <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
-                    <img src={user.photoURL || '/ghost.svg'} alt={user.displayName} className="w-full h-full object-cover" />
+                    <LazyImage src={user.photoURL || '/ghost.svg'} alt={user.displayName} className="w-full h-full" />
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center space-x-1">

@@ -63,12 +63,14 @@ export default function Layout() {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [replyToPost, setReplyToPost] = useState<any | null>(null);
   const [quotePost, setQuotePost] = useState<any | null>(null);
+  const [isAnonymousDefault, setIsAnonymousDefault] = useState(false);
   const [viewerImage, setViewerImage] = useState<{ src: string; alt: string } | null>(null);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
 
-  const openCreateModal = (replyTo: any = null, quotePost: any = null) => {
+  const openCreateModal = (replyTo: any = null, quotePost: any = null, isAnonymous: boolean = false) => {
     setReplyToPost(replyTo);
     setQuotePost(quotePost);
+    setIsAnonymousDefault(isAnonymous);
     setIsCreateModalOpen(true);
   };
 
@@ -185,12 +187,14 @@ export default function Layout() {
           setIsCreateModalOpen(false);
           setReplyToPost(null);
           setQuotePost(null);
+          setIsAnonymousDefault(false);
         }} 
         userProfile={userProfile}
         handleFirestoreError={handleFirestoreError}
         OperationType={OperationType}
         replyTo={replyToPost}
         quotePost={quotePost}
+        isAnonymousDefault={isAnonymousDefault}
       />
 
       <ConfirmModal

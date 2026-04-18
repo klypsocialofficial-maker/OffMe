@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { LogOut, User as UserIcon, Plus } from 'lucide-react';
 import VerifiedBadge from '../VerifiedBadge';
+import LazyImage from '../LazyImage';
 
 interface IOSLayoutProps {
   userProfile: any;
@@ -151,7 +152,7 @@ export default function IOSLayout({
                     className="w-16 h-16 rounded-2xl bg-gray-100 overflow-hidden mb-4 shadow-xl cursor-zoom-in transform transition-transform active:scale-95 border-2 border-white"
                     onClick={() => userProfile?.photoURL && openImageViewer(userProfile.photoURL, `Avatar de ${userProfile.displayName}`)}
                   >
-                    <img src={userProfile?.photoURL || '/ghost.svg'} alt={userProfile?.displayName} className="w-full h-full object-cover" />
+                    <LazyImage src={userProfile?.photoURL || '/ghost.svg'} alt={userProfile?.displayName} className="w-full h-full" />
                   </div>
                   <div className="flex items-center space-x-1.5">
                     <h2 className="font-black text-xl leading-tight text-gray-900 tracking-tight truncate">{userProfile?.displayName}</h2>

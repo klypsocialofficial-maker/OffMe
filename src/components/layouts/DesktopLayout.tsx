@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { LogOut, Plus } from 'lucide-react';
 import VerifiedBadge from '../VerifiedBadge';
 import RightSidebar from '../RightSidebar';
+import LazyImage from '../LazyImage';
 
 interface DesktopLayoutProps {
   userProfile: any;
@@ -125,7 +126,7 @@ export default function DesktopLayout({
               onClick={() => navigate(`/${userProfile.username}`)}
             >
               <div className="w-10 h-10 rounded-full bg-gray-100 overflow-hidden flex-shrink-0 border border-gray-200">
-                <img src={userProfile.photoURL || '/ghost.svg'} alt={userProfile.displayName} className="w-full h-full object-cover" />
+                <LazyImage src={userProfile.photoURL || '/ghost.svg'} alt={userProfile.displayName} className="w-full h-full" />
               </div>
               <div className="ml-3 overflow-hidden hidden xl:block">
                 <div className="flex items-center space-x-1">

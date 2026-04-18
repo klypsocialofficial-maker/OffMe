@@ -20,7 +20,7 @@ export default function PostImageGrid({ imageUrls, onImageClick }: PostImageGrid
           <LazyImage
             src={imageUrls[0]}
             alt="Post attachment"
-            className="w-full h-auto max-h-[512px] cursor-pointer"
+            className="w-full h-auto max-h-[512px] min-h-[200px] cursor-pointer"
             referrerPolicy="no-referrer"
             onClick={(e) => {
               stopPropagation(e);
