@@ -18,6 +18,7 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot, serverTimestamp, collection, query, where, getDocs, updateDoc, arrayUnion, deleteDoc, addDoc } from 'firebase/firestore';
 import { sendPushNotification } from '../lib/notifications';
+import { awardPoints } from '../services/gamificationService';
 
 enum OperationType {
   CREATE = 'create',
@@ -86,6 +87,9 @@ interface UserProfile {
   isVerified?: boolean;
   isPremium?: boolean;
   premiumTier?: 'silver' | 'gold' | 'black';
+  points?: number;
+  level?: number;
+  badges?: string[];
   createdAt?: any;
 }
 
@@ -410,6 +414,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await updateDoc(targetUserRef, {
         followers: arrayUnion(currentUser.uid)
       });
+
+      // Award points for following
+      await awardPoints(currentUser.uid, 5);
 
       // Create notification
       await addDoc(collection(db, 'notifications'), {

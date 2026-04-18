@@ -12,10 +12,12 @@ import QuotedPost from '../components/QuotedPost';
 import Poll from '../components/Poll';
 import SharePostModal from '../components/SharePostModal';
 import ImageViewer from '../components/ImageViewer';
+import ConfirmModal from '../components/ConfirmModal';
 import PostCard from '../components/PostCard';
 import PostSkeleton from '../components/PostSkeleton';
 import { handleMentions, sendPushNotification, notifyFollowers } from '../lib/notifications';
 import { uploadToImgBB } from '../lib/imgbb';
+import { awardPoints } from '../services/gamificationService';
 import PullToRefresh from '../components/PullToRefresh';
 import { motion, AnimatePresence } from 'motion/react';
 import { formatRelativeTime } from '../lib/dateUtils';
@@ -124,6 +126,18 @@ export default function Home() {
     message: '',
     type: 'info',
     isOpen: false
+  });
+
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {}
   });
 
   const showToast = (message: string, type: 'info' | 'success' | 'error' = 'info') => {
@@ -339,16 +353,44 @@ export default function Home() {
     
     const isFollowing = userProfile.following?.includes(authorId);
     
+    if (isFollowing) {
+      setConfirmModal({
+        isOpen: true,
+        title: `Deixar de seguir @${authorName}?`,
+        message: `As publicações de @${authorName} não aparecerão mais na sua aba Seguindo.`,
+        onConfirm: async () => {
+          try {
+            await updateDoc(doc(db, 'users', userProfile.uid), {
+              following: arrayRemove(authorId)
+            });
+            await updateDoc(doc(db, 'users', authorId), {
+              followers: arrayRemove(userProfile.uid)
+            });
+            showToast(`Você deixou de seguir @${authorName}`, 'info');
+          } catch (error) {
+            handleFirestoreError(error, OperationType.UPDATE, 'users');
+          }
+        }
+      });
+      setActiveMenuPostId(null);
+      return;
+    }
+
     try {
       // Update current user's following list
       await updateDoc(doc(db, 'users', userProfile.uid), {
-        following: isFollowing ? arrayRemove(authorId) : arrayUnion(authorId)
+        following: arrayUnion(authorId)
       });
       
       // Update target user's followers list
       await updateDoc(doc(db, 'users', authorId), {
-        followers: isFollowing ? arrayRemove(userProfile.uid) : arrayUnion(userProfile.uid)
+        followers: arrayUnion(userProfile.uid)
       });
+      
+      showToast(`Agora você segue @${authorName}`, 'success');
+      
+      // Award points for following
+      await awardPoints(userProfile.uid, 5);
       
       // Create notification if following
       if (!isFollowing) {
@@ -383,6 +425,12 @@ export default function Home() {
         likes: isLiked ? arrayRemove(userProfile.uid) : arrayUnion(userProfile.uid),
         likesCount: isLiked ? Math.max(0, (post.likesCount || 0) - 1) : (post.likesCount || 0) + 1
       });
+      
+      if (!isLiked) {
+        // showToast('Post curtido!', 'success'); // Optional, maybe too noisy
+        // Award points for liking
+        await awardPoints(userProfile.uid, 5);
+      }
       
       if (!isLiked && post.authorId !== userProfile.uid) {
         await addDoc(collection(db, 'notifications'), {
@@ -422,6 +470,12 @@ export default function Home() {
         reposts: isReposted ? arrayRemove(userProfile.uid) : arrayUnion(userProfile.uid),
         repostsCount: isReposted ? Math.max(0, (post.repostsCount || 0) - 1) : (post.repostsCount || 0) + 1
       });
+      
+      if (isReposted) {
+        showToast('Repost removido', 'info');
+      } else {
+        showToast('Repostado com sucesso!', 'success');
+      }
       
       if (!isReposted && post.authorId !== userProfile.uid) {
         await addDoc(collection(db, 'notifications'), {
@@ -730,6 +784,13 @@ export default function Home() {
           isOpen={isViewerOpen}
           onClose={() => setIsViewerOpen(false)}
           alt={viewerImage?.alt}
+        />
+        <ConfirmModal 
+          isOpen={confirmModal.isOpen}
+          onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+          onConfirm={confirmModal.onConfirm}
+          title={confirmModal.title}
+          message={confirmModal.message}
         />
     </div>
   );

@@ -55,8 +55,11 @@ export default function IOSLayout({
 
       {/* iOS Bottom Navigation - Ultra Glassmorphism */}
       {location.pathname !== '/premium' && !(location.pathname.startsWith('/messages/') && location.pathname !== '/messages') && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/70 backdrop-blur-2xl border-t border-black/5 pb-[env(safe-area-inset-bottom)]">
-          <nav className="flex justify-around items-center h-[65px] relative px-4">
+        <div className="fixed bottom-0 left-0 right-0 z-40 px-4 pb-[calc(10px+env(safe-area-inset-bottom))]">
+          <nav className="mx-auto max-w-lg bg-white/60 backdrop-blur-[40px] border border-white/40 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] flex justify-around items-center h-[65px] rounded-[32px] px-2 relative">
+            {/* Inner background highlight */}
+            <div className="absolute inset-0 rounded-[32px] bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
+            
             {[navItems[0], navItems[1], navItems[2], navItems[3], navItems[5]].map((item) => {
               const isActive = location.pathname === item.path;
               
@@ -65,9 +68,9 @@ export default function IOSLayout({
                   <button
                     key={item.path}
                     onClick={() => openCreateModal()}
-                    className="relative p-2 rounded-2xl transition-all duration-300 z-10 flex flex-col items-center justify-center active:scale-90"
+                    className="relative flex items-center justify-center active:scale-90 transition-transform"
                   >
-                    <div className="bg-black text-white p-2.5 rounded-2xl shadow-xl shadow-black/20 ring-4 ring-white/50">
+                    <div className="bg-black text-white p-3 rounded-2xl shadow-xl shadow-black/20 ring-4 ring-white/30">
                       <Plus className="w-6 h-6 stroke-[3px]" />
                     </div>
                   </button>
@@ -88,6 +91,13 @@ export default function IOSLayout({
                   >
                     <item.icon className={`w-6 h-6 transition-all duration-300 ${isActive ? 'stroke-[2.5px]' : 'stroke-[2px]'}`} />
                     
+                    {isActive && (
+                      <motion.div 
+                        layoutId="active-dot"
+                        className="absolute -bottom-1 w-1 h-1 bg-black rounded-full"
+                      />
+                    )}
+
                     <AnimatePresence>
                       {((item.path === '/notifications' && unreadNotificationsCount > 0) || 
                         (item.path === '/messages' && unreadMessagesCount > 0)) && (
@@ -124,14 +134,16 @@ export default function IOSLayout({
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
-              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              className="fixed top-0 left-0 bottom-0 w-[85%] max-w-[320px] bg-white/95 backdrop-blur-3xl z-50 sm:hidden shadow-[20px_0_50px_rgba(0,0,0,0.1)] flex flex-col overflow-hidden"
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed top-2 left-2 bottom-2 w-[85%] max-w-[320px] bg-white/80 backdrop-blur-[50px] z-50 sm:hidden shadow-[0_20px_50px_rgba(0,0,0,0.2)] flex flex-col rounded-[32px] border border-white/40 overflow-hidden"
             >
+              <div className="absolute inset-0 rounded-[32px] bg-gradient-to-br from-white/30 to-white/5 pointer-events-none" />
+              
               {/* Header with Profile Info */}
-              <div className="relative pt-[max(env(safe-area-inset-top),20px)] border-b border-gray-50">
+              <div className="relative pt-[max(env(safe-area-inset-top),20px)] border-b border-black/5 z-10">
                 {/* Beta Badge */}
-                <div className="absolute top-[max(env(safe-area-inset-top),20px)] right-6 z-20">
-                  <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest bg-amber-100/80 px-2 py-1 rounded-lg border border-amber-200 shadow-sm">Beta</span>
+                <div className="absolute top-[max(env(safe-area-inset-top),20px)] right-6">
+                  <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest bg-blue-100/50 px-2 py-1 rounded-lg border border-blue-200/50 shadow-sm backdrop-blur-sm">IOS</span>
                 </div>
                 
                 <div className="p-6">
@@ -161,7 +173,7 @@ export default function IOSLayout({
               </div>
               
               {/* Scrollable Navigation */}
-              <nav className="flex-1 overflow-y-auto py-2 px-3 space-y-1 custom-scrollbar">
+              <nav className="flex-1 overflow-y-auto py-2 px-3 space-y-1 custom-scrollbar z-10">
                 {navItems.filter(item => !item.isAction).map((item) => {
                   const isActive = location.pathname === item.path;
                   return (
@@ -169,11 +181,13 @@ export default function IOSLayout({
                       key={item.path}
                       to={item.path} 
                       onClick={closeDrawer} 
-                      className={`flex items-center px-4 py-3.5 text-base font-bold rounded-xl transition-all active:scale-[0.98] ${
-                        isActive ? 'bg-black text-white shadow-lg' : 'text-gray-800 hover:bg-gray-100'
+                      className={`flex items-center px-4 py-4 text-base font-bold rounded-2xl transition-all active:scale-[0.96] ${
+                        isActive 
+                        ? 'bg-black text-white shadow-lg shadow-black/20' 
+                        : 'text-gray-800 hover:bg-black/5'
                       }`}
                     >
-                      <item.icon className={`mr-4 w-5 h-5 ${isActive ? 'stroke-[2.5px]' : 'stroke-[2px]'}`} /> 
+                      <item.icon className={`mr-4 w-5.5 h-5.5 ${isActive ? 'stroke-[2.5px]' : 'stroke-[2px]'}`} /> 
                       {item.label}
                     </Link>
                   );
@@ -181,12 +195,12 @@ export default function IOSLayout({
               </nav>
               
               {/* Footer with Logout */}
-              <div className="p-4 border-t border-gray-100 pb-[max(env(safe-area-inset-bottom),20px)]">
+              <div className="p-4 border-t border-black/5 pb-[max(env(safe-area-inset-bottom),20px)] z-10">
                 <button 
                   onClick={() => { closeDrawer(); setIsLogoutModalOpen(true); }} 
-                  className="flex items-center font-black text-[#FF3B30] hover:bg-red-50 w-full p-3.5 rounded-xl transition-all active:scale-95"
+                  className="flex items-center font-black text-[#FF3B30] hover:bg-red-50/50 w-full p-4 rounded-2xl transition-all active:scale-[0.96] backdrop-blur-sm"
                 >
-                  <LogOut className="mr-4 w-5 h-5" /> Sair da conta
+                  <LogOut className="mr-4 w-5.5 h-5.5" /> Sair da conta
                 </button>
               </div>
             </motion.div>

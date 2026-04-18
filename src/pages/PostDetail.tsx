@@ -11,6 +11,7 @@ import Poll from '../components/Poll';
 import { motion, AnimatePresence } from 'motion/react';
 import { formatRelativeTime } from '../lib/dateUtils';
 import { sendPushNotification } from '../lib/notifications';
+import { awardPoints } from '../services/gamificationService';
 import CreatePostModal from '../components/CreatePostModal';
 import SharePostModal from '../components/SharePostModal';
 import Toast from '../components/Toast';
@@ -19,6 +20,7 @@ import { auth } from '../firebase';
 
 import PostImageGrid from '../components/PostImageGrid';
 import ImageViewer from '../components/ImageViewer';
+import LazyImage from '../components/LazyImage';
 
 enum OperationType {
   CREATE = 'create',
@@ -240,6 +242,11 @@ export default function PostDetail() {
         likesCount: isLiked ? Math.max(0, (postToLike.likesCount || 0) - 1) : (postToLike.likesCount || 0) + 1
       });
       
+      if (!isLiked) {
+        // Award points for liking
+        await awardPoints(userProfile.uid, 5);
+      }
+      
       if (!isLiked && postToLike.authorId !== userProfile.uid) {
         await addDoc(collection(db, 'notifications'), {
           recipientId: postToLike.authorId,
@@ -346,7 +353,7 @@ export default function PostDetail() {
           <div className="flex space-x-4">
             <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
               {post.authorPhoto ? (
-                <img src={post.authorPhoto} alt={post.authorName} className="w-full h-full object-cover" />
+                <LazyImage src={post.authorPhoto} alt={post.authorName} className="w-full h-full" />
               ) : (
                 <UserIcon className="w-full h-full p-2 text-gray-400" />
               )}
@@ -540,7 +547,7 @@ export default function PostDetail() {
         >
           <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
             {userProfile?.photoURL ? (
-              <img src={userProfile.photoURL} alt="Your profile" className="w-full h-full object-cover" />
+              <LazyImage src={userProfile.photoURL} alt="Your profile" className="w-full h-full" />
             ) : (
               <UserIcon className="w-full h-full p-2 text-gray-400" />
             )}
@@ -577,7 +584,7 @@ export default function PostDetail() {
                   >
                     <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
                       {reply.authorPhoto ? (
-                        <img src={reply.authorPhoto} alt={reply.authorName} className="w-full h-full object-cover" />
+                        <LazyImage src={reply.authorPhoto} alt={reply.authorName} className="w-full h-full" />
                       ) : (
                         <UserIcon className="w-full h-full p-2 text-gray-400" />
                       )}

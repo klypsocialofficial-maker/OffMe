@@ -3,6 +3,9 @@ import { Search, User as UserIcon, TrendingUp, Music, Trophy, Tv, Cpu, Hash, Mor
 import { motion, AnimatePresence } from 'motion/react';
 import VerifiedBadge from '../components/VerifiedBadge';
 import TrendingPosts from '../components/TrendingPosts';
+import ConfirmModal from '../components/ConfirmModal';
+import Toast from '../components/Toast';
+import LazyImage from '../components/LazyImage';
 import { useAuth } from '../contexts/AuthContext';
 import { useOutletContext, Link, useNavigate } from 'react-router-dom';
 import { collection, query, where, onSnapshot, limit, addDoc, serverTimestamp, getDocs, doc, updateDoc, arrayUnion, arrayRemove, orderBy, getDoc } from 'firebase/firestore';
@@ -88,6 +91,27 @@ export default function Explore() {
   const [activeTab, setActiveTab] = useState('foryou');
   const [loading, setLoading] = useState(false);
   const [loadingSuggestions, setLoadingSuggestions] = useState(true);
+  const [toast, setToast] = useState<{ message: string; type: 'info' | 'success' | 'error'; isOpen: boolean }>({
+    message: '',
+    type: 'info',
+    isOpen: false
+  });
+
+  const showToast = (message: string, type: 'info' | 'success' | 'error' = 'info') => {
+    setToast({ message, type, isOpen: true });
+  };
+
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  });
 
   const handleMessageClick = async (otherUser: any) => {
     if (!userProfile?.uid || !db) return;
@@ -147,16 +171,40 @@ export default function Explore() {
     
     const isFollowing = userProfile.following?.includes(otherUser.id);
     
+    if (isFollowing) {
+      setConfirmModal({
+        isOpen: true,
+        title: `Deixar de seguir @${otherUser.username}?`,
+        message: `As publicações de @${otherUser.username} não aparecerão mais na sua aba Seguindo.`,
+        onConfirm: async () => {
+          try {
+            await updateDoc(doc(db, 'users', userProfile.uid), {
+              following: arrayRemove(otherUser.id)
+            });
+            await updateDoc(doc(db, 'users', otherUser.id), {
+              followers: arrayRemove(userProfile.uid)
+            });
+            showToast(`Você deixou de seguir @${otherUser.username}`, 'info');
+          } catch (error) {
+            handleFirestoreError(error, OperationType.UPDATE, 'users');
+          }
+        }
+      });
+      return;
+    }
+
     try {
       // Update current user's following list
       await updateDoc(doc(db, 'users', userProfile.uid), {
-        following: isFollowing ? arrayRemove(otherUser.id) : arrayUnion(otherUser.id)
+        following: arrayUnion(otherUser.id)
       });
       
       // Update target user's followers list
       await updateDoc(doc(db, 'users', otherUser.id), {
-        followers: isFollowing ? arrayRemove(userProfile.uid) : arrayUnion(userProfile.uid)
+        followers: arrayUnion(userProfile.uid)
       });
+      
+      showToast(`Agora você segue @${otherUser.username}`, 'success');
       
       // Create notification if following
       if (!isFollowing) {
@@ -369,7 +417,7 @@ export default function Explore() {
           <div className="flex items-center space-x-3">
             <button onClick={openDrawer} className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 sm:hidden border border-white/40 shadow-sm transition-transform active:scale-95">
               {userProfile?.photoURL ? (
-                <img src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full object-cover" />
+                <LazyImage src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full" />
               ) : (
                 <UserIcon className="w-full h-full p-2 text-gray-400" />
               )}
@@ -442,7 +490,7 @@ export default function Explore() {
                       <div className="flex items-center space-x-3 min-w-0 flex-1">
                         <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 border border-white/40 shadow-sm">
                           {user.photoURL ? (
-                            <img src={user.photoURL} alt={user.displayName} className="w-full h-full object-cover" />
+                            <LazyImage src={user.photoURL} alt={user.displayName} className="w-full h-full" />
                           ) : (
                             <UserIcon className="w-full h-full p-2 text-gray-400" />
                           )}
@@ -508,10 +556,10 @@ export default function Explore() {
                   {activeTab === 'foryou' && (
                     <div className="px-4 mb-8">
                       <div className="relative h-48 rounded-3xl overflow-hidden group cursor-pointer shadow-xl">
-                        <img 
+                        <LazyImage 
                           src="https://picsum.photos/seed/offme/800/400" 
                           alt="Featured" 
-                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                          className="w-full h-full transition-transform duration-700 group-hover:scale-110"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                         <div className="absolute bottom-6 left-6 right-6">
@@ -592,7 +640,7 @@ export default function Explore() {
                               >
                                 <div className="w-20 h-20 rounded-full bg-gray-200 overflow-hidden mb-3 border-4 border-white shadow-sm ring-1 ring-black/5">
                                   {user.photoURL ? (
-                                    <img src={user.photoURL} alt={user.displayName} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                                    <LazyImage src={user.photoURL} alt={user.displayName} className="w-full h-full group-hover:scale-110 transition-transform" />
                                   ) : (
                                     <UserIcon className="w-full h-full p-4 text-gray-400" />
                                   )}
@@ -634,10 +682,10 @@ export default function Explore() {
                               onClick={() => setActiveTab(cat.id)}
                               className="relative h-24 rounded-2xl overflow-hidden group border border-black/5 shadow-sm"
                             >
-                              <img 
+                              <LazyImage 
                                 src={`https://picsum.photos/seed/${cat.id}/300/200`} 
                                 alt={cat.label} 
-                                className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity"
+                                className="w-full h-full opacity-60 group-hover:opacity-100 transition-opacity"
                               />
                               <div className="absolute inset-0 bg-slate-900/40 group-hover:bg-slate-900/20 transition-colors" />
                               <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
@@ -656,6 +704,21 @@ export default function Explore() {
           )}
         </AnimatePresence>
       </div>
+
+      <ConfirmModal 
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+      />
+
+      <Toast 
+        message={toast.message}
+        type={toast.type}
+        isOpen={toast.isOpen}
+        onClose={() => setToast(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

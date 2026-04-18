@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { User as UserIcon, Calendar, MapPin, Link as LinkIcon, Edit2, Trash2, BarChart2, MessageCircle, Heart, Repeat, Send, MoreHorizontal, ArrowLeft, Search, Share, Briefcase, Plus, AlertCircle } from 'lucide-react';
+import { User as UserIcon, Calendar, MapPin, Link as LinkIcon, Edit2, Trash2, BarChart2, MessageCircle, Heart, Repeat, Send, MoreHorizontal, ArrowLeft, Search, Share, Briefcase, Plus, AlertCircle, Star } from 'lucide-react';
 import EditProfileModal from '../components/EditProfileModal';
 import CreatePostModal from '../components/CreatePostModal';
 import Toast from '../components/Toast';
@@ -13,7 +13,11 @@ import Poll from '../components/Poll';
 import ImageViewer from '../components/ImageViewer';
 import SharePostModal from '../components/SharePostModal';
 import PostCard from '../components/PostCard';
+import BadgeDisplay from '../components/BadgeDisplay';
+import GamerCard from '../components/GamerCard';
+import LazyImage from '../components/LazyImage';
 import { handleMentions, sendPushNotification } from '../lib/notifications';
+import { awardPoints } from '../services/gamificationService';
 import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, arrayRemove, arrayUnion, addDoc, serverTimestamp, deleteDoc, getDocs } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { motion, AnimatePresence } from 'motion/react';
@@ -108,6 +112,7 @@ export default function Profile() {
   });
 
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isGamerCardOpen, setIsGamerCardOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -265,6 +270,11 @@ export default function Profile() {
         likesCount: isLiked ? Math.max(0, (post.likesCount || 0) - 1) : (post.likesCount || 0) + 1
       });
       
+      if (!isLiked) {
+        // Award points for liking
+        await awardPoints(userProfile.uid, 5);
+      }
+      
       if (!isLiked && post.authorId !== userProfile.uid) {
         await addDoc(collection(db, 'notifications'), {
           recipientId: post.authorId,
@@ -385,12 +395,26 @@ export default function Profile() {
     
     const isFollowing = userProfile.following?.includes(profileUser.uid);
     
+    if (isFollowing) {
+      setConfirmModal({
+        isOpen: true,
+        title: `Deixar de seguir @${profileUser.username}?`,
+        message: `As publicações de @${profileUser.username} não aparecerão mais na sua aba Seguindo.`,
+        onConfirm: async () => {
+          try {
+            await unfollowUser(profileUser.uid);
+            showToast(`Você deixou de seguir @${profileUser.username}`, 'info');
+          } catch (error) {
+            handleFirestoreError(error, OperationType.UPDATE, 'users');
+          }
+        }
+      });
+      return;
+    }
+
     try {
-      if (isFollowing) {
-        await unfollowUser(profileUser.uid);
-      } else {
-        await followUser(profileUser.uid);
-      }
+      await followUser(profileUser.uid);
+      showToast(`Agora você segue @${profileUser.username}`, 'success');
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'users');
     }
@@ -513,18 +537,32 @@ export default function Profile() {
           className="h-40 sm:h-56 bg-gray-100 w-full relative overflow-hidden cursor-zoom-in"
           onClick={() => profileUser.bannerURL && openImageViewer(profileUser.bannerURL, `Banner de ${profileUser.displayName}`)}
         >
-          <img src={profileUser.bannerURL || '/ghost.svg'} alt="Banner" className="w-full h-full object-cover" />
+          <LazyImage src={profileUser.bannerURL || '/ghost.svg'} alt="Banner" className="w-full h-full" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-white/10"></div>
         </div>
 
         {/* Profile Photo (Overlapping) */}
-        <div className="absolute -bottom-12 left-4 sm:left-8 z-10">
+        <div className="absolute -bottom-12 left-4 sm:left-8 z-10 group/avatar">
           <div 
             className="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-white bg-white overflow-hidden shadow-2xl cursor-zoom-in transform transition-transform active:scale-95"
             onClick={() => profileUser.photoURL && openImageViewer(profileUser.photoURL, `Avatar de ${profileUser.displayName}`)}
           >
-            <img src={profileUser.photoURL || '/ghost.svg'} alt={profileUser.displayName} className="w-full h-full object-cover" />
+            <LazyImage src={profileUser.photoURL || '/ghost.svg'} alt={profileUser.displayName} className="w-full h-full" />
           </div>
+          
+          {/* Level Star Badge */}
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsGamerCardOpen(true);
+            }}
+            className="absolute -bottom-1 -right-1 bg-gradient-to-tr from-yellow-400 to-orange-400 p-2 rounded-full border-4 border-white shadow-lg text-black hover:scale-110 active:scale-90 transition-all z-20"
+          >
+            <Star className="w-4 h-4 fill-black" />
+            <div className="absolute -top-1 -right-1 bg-black text-white text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-white">
+              {profileUser.level || 1}
+            </div>
+          </button>
         </div>
       </div>
 
@@ -571,6 +609,8 @@ export default function Profile() {
             {profileUser.bio}
           </p>
         )}
+
+        <BadgeDisplay badges={profileUser.badges} />
 
         {/* Metadata Grid */}
         <div className="flex flex-wrap gap-y-2 gap-x-4 mt-4 text-gray-500 text-sm">
@@ -748,6 +788,44 @@ export default function Profile() {
         isOpen={toast.isOpen}
         onClose={() => setToast(prev => ({ ...prev, isOpen: false }))}
       />
+
+      {/* Gamer Card Modal */}
+      <AnimatePresence>
+        {isGamerCardOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsGamerCardOpen(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative w-full max-w-sm"
+            >
+              <div className="absolute -top-12 right-0">
+                <button 
+                  onClick={() => setIsGamerCardOpen(false)}
+                  className="p-2 bg-white/10 text-white rounded-full hover:bg-white/20 transition-colors"
+                >
+                  <Plus className="w-6 h-6 rotate-45" />
+                </button>
+              </div>
+              <GamerCard 
+                level={profileUser.level} 
+                points={profileUser.points} 
+                displayName={profileUser.displayName} 
+              />
+              <div className="mt-4 text-center">
+                <p className="text-white/60 text-xs font-medium">Toque fora para fechar</p>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <ConfirmModal 
         isOpen={confirmModal.isOpen}

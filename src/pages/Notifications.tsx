@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, User as UserIcon, Heart, UserPlus, MessageCircle, Repeat, AtSign } from 'lucide-react';
+import LazyImage from '../components/LazyImage';
 import VerifiedBadge from '../components/VerifiedBadge';
 import { useAuth } from '../contexts/AuthContext';
 import { useOutletContext, useNavigate } from 'react-router-dom';
@@ -65,6 +66,15 @@ export default function Notifications() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'all' | 'verified'>('all');
+  const [activeType, setActiveType] = useState<'all' | 'like' | 'reply' | 'mention' | 'follow'>('all');
+
+  const typeFilters = [
+    { id: 'all', label: 'Tudo' },
+    { id: 'like', label: 'Curtidas' },
+    { id: 'reply', label: 'Respostas' },
+    { id: 'mention', label: 'Menções' },
+    { id: 'follow', label: 'Seguidores' },
+  ];
 
   useEffect(() => {
     if (!userProfile?.uid || !db) return;
@@ -108,7 +118,7 @@ export default function Notifications() {
           <div className="flex items-center justify-between relative mb-4 h-10">
             <button onClick={openDrawer} className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 sm:hidden border border-white/40 shadow-sm z-10">
               {userProfile?.photoURL ? (
-                <img src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full object-cover" />
+                <LazyImage src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full" />
               ) : (
                 <UserIcon className="w-full h-full p-2 text-gray-400" />
               )}
@@ -153,71 +163,131 @@ export default function Notifications() {
               </button>
             </nav>
           </div>
+
+          <div className="flex items-center space-x-2 overflow-x-auto pb-2 px-1 mt-4 no-scrollbar">
+            {typeFilters.map((filter) => (
+              <button
+                key={filter.id}
+                onClick={() => setActiveType(filter.id as any)}
+                className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-bold transition-all ${
+                  activeType === filter.id 
+                    ? 'bg-black text-white shadow-md active:scale-95' 
+                    : 'bg-white/50 text-gray-500 hover:bg-gray-100'
+                }`}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="px-4 pb-20">
+      <div className="px-4 pb-20 mt-4">
         {loading ? (
           <div className="p-8 text-center text-gray-500">Loading...</div>
-        ) : (activeTab === 'verified' ? notifications.filter(n => n.senderVerified || n.senderUsername === 'Rulio') : notifications).length > 0 ? (
-          <div className="space-y-3">
-            {(activeTab === 'verified' ? notifications.filter(n => n.senderVerified || n.senderUsername === 'Rulio') : notifications).map(notification => (
-              <motion.div 
-                key={notification.id} 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                onClick={() => {
-                  if (notification.postId) {
-                    navigate(`/post/${notification.postId}`);
-                  } else if (notification.type === 'follow' && notification.senderUsername) {
-                    navigate(`/${notification.senderUsername}`); 
-                  }
-                }}
-                className={`p-4 rounded-2xl transition-all flex space-x-4 cursor-pointer liquid-glass-card ${
-                  notification.read ? 'opacity-80 hover:opacity-100' : 'border-l-4 border-l-blue-500'
-                }`}
-              >
-                <div className="flex-shrink-0 pt-1">
-                  {notification.type === 'like' && <Heart className="w-6 h-6 text-red-500 fill-current" />}
-                  {notification.type === 'follow' && <UserPlus className="w-6 h-6 text-blue-500" />}
-                  {notification.type === 'reply' && <MessageCircle className="w-6 h-6 text-green-500" />}
-                  {notification.type === 'repost' && <Repeat className="w-6 h-6 text-green-600" />}
-                  {notification.type === 'mention' && <AtSign className="w-6 h-6 text-purple-500" />}
-                </div>
-                <div className="flex-1">
-                  <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden mb-2 flex-shrink-0">
-                    {notification.senderPhoto ? (
-                      <img src={notification.senderPhoto} alt={notification.senderName} className="w-full h-full object-cover" />
-                    ) : (
-                      <UserIcon className="w-full h-full p-2 text-gray-400" />
-                    )}
-                  </div>
-                  <p className="text-gray-900">
-                    <span className="flex items-center space-x-1">
-                      <span className="font-bold">{notification.senderName}</span>
-                      {(notification.senderVerified || notification.senderUsername === 'Rulio') && <VerifiedBadge tier={notification.senderPremiumTier} />}
-                    </span>{' '}
-                    {notification.type === 'like' && 'curtiu seu post'}
-                    {notification.type === 'follow' && 'começou a seguir você'}
-                    {notification.type === 'reply' && 'respondeu ao seu post'}
-                    {notification.type === 'repost' && 'repostou seu post'}
-                    {notification.type === 'mention' && 'mencionou você'}
-                  </p>
-                  {notification.content && (
-                    <p className="text-gray-500 mt-1 line-clamp-2">{notification.content}</p>
-                  )}
-                </div>
-              </motion.div>
-            ))}
-          </div>
         ) : (
-          <div className="flex flex-col items-center justify-center p-12 text-center text-gray-500 mt-10">
-            <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-6">
-              <Bell className="w-10 h-10 text-blue-500" />
-            </div>
-            <p className="text-2xl font-bold text-black mb-2">Tudo limpo por aqui</p>
-            <p>Quando alguém interagir com você ou com suas postagens, você verá aqui.</p>
-          </div>
+          (() => {
+            let filtered = activeTab === 'verified' 
+              ? notifications.filter(n => n.senderVerified || n.senderUsername === 'Rulio') 
+              : notifications;
+            
+            if (activeType !== 'all') {
+              filtered = filtered.filter(n => n.type === activeType);
+            }
+            
+            if (filtered.length > 0) {
+              return (
+                <div className="space-y-3">
+                  {filtered.map(notification => (
+                    <motion.div 
+                      key={notification.id} 
+                      initial={{ opacity: 0, scale: 0.98 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      layout
+                      onClick={() => {
+                        if (notification.postId) {
+                          navigate(`/post/${notification.postId}`);
+                        } else if (notification.type === 'follow' && notification.senderUsername) {
+                          navigate(`/${notification.senderUsername}`); 
+                        }
+                      }}
+                      className={`p-4 rounded-2xl transition-all flex space-x-4 cursor-pointer liquid-glass-card ${
+                        notification.read ? 'opacity-80 hover:opacity-100' : 'border-l-4 border-l-blue-500'
+                      }`}
+                    >
+                      <div className="flex-shrink-0 pt-1">
+                        {notification.type === 'like' && <Heart className="w-6 h-6 text-red-500 fill-current" />}
+                        {notification.type === 'follow' && <UserPlus className="w-6 h-6 text-blue-500" />}
+                        {notification.type === 'reply' && <MessageCircle className="w-6 h-6 text-green-500" />}
+                        {notification.type === 'repost' && <Repeat className="w-6 h-6 text-green-600" />}
+                        {notification.type === 'mention' && <AtSign className="w-6 h-6 text-purple-500" />}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex justify-between items-start mb-2">
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (notification.senderUsername) {
+                                navigate(`/${notification.senderUsername}`);
+                              }
+                            }}
+                            className="w-10 h-10 rounded-full bg-gray-100 overflow-hidden flex-shrink-0 active:scale-95 transition-transform border border-white/40 shadow-sm"
+                          >
+                            {notification.senderPhoto ? (
+                              <LazyImage src={notification.senderPhoto} alt={notification.senderName} className="w-full h-full" />
+                            ) : (
+                              <UserIcon className="w-full h-full p-2 text-gray-400" />
+                            )}
+                          </button>
+                          {!notification.read && (
+                            <div className="w-2.5 h-2.5 bg-blue-500 rounded-full mt-1.5 shadow-[0_0_8px_rgba(59,130,246,0.6)] animate-pulse" />
+                          )}
+                        </div>
+                        <p className="text-gray-900 leading-tight">
+                          <span className="flex items-baseline space-x-1 flex-wrap">
+                            <span 
+                              className="font-bold hover:underline cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (notification.senderUsername) {
+                                  navigate(`/${notification.senderUsername}`);
+                                }
+                              }}
+                            >
+                              {notification.senderName}
+                            </span>
+                            {(notification.senderVerified || notification.senderUsername === 'Rulio') && <VerifiedBadge tier={notification.senderPremiumTier} className="w-3.5 h-3.5" />}
+                            <span className="text-gray-600 font-medium">
+                              {notification.type === 'like' && 'curtiu seu post'}
+                              {notification.type === 'follow' && 'começou a seguir você'}
+                              {notification.type === 'reply' && 'respondeu ao seu post'}
+                              {notification.type === 'repost' && 'repostou seu post'}
+                              {notification.type === 'mention' && 'mencionou você'}
+                            </span>
+                          </span>
+                        </p>
+                        {notification.content && (
+                          <div className="mt-2 p-3 bg-black/5 rounded-xl border border-black/5 italic text-gray-600 text-[14px] line-clamp-2">
+                            {notification.content}
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              );
+            }
+            
+            return (
+              <div className="flex flex-col items-center justify-center p-12 text-center text-gray-500 mt-10">
+                <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-6">
+                  <Bell className="w-10 h-10 text-blue-500" />
+                </div>
+                <p className="text-2xl font-bold text-black mb-2">Tudo limpo por aqui</p>
+                <p>Nenhuma notificação encontrada com esse filtro.</p>
+              </div>
+            );
+          })()
         )}
       </div>
     </div>

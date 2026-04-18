@@ -3,6 +3,7 @@ import { User as UserIcon, Image as ImageIcon, X, BarChart2, Film } from 'lucide
 import { addDoc, collection, serverTimestamp, doc, updateDoc, increment, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { uploadToImgBB } from '../lib/imgbb';
+import { awardPoints } from '../services/gamificationService';
 import { motion, AnimatePresence } from 'motion/react';
 import VerifiedBadge from './VerifiedBadge';
 import { GiphyFetch } from '@giphy/js-fetch-api';
@@ -165,6 +166,11 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
 
       const newPostRef = await addDoc(collection(db, 'posts'), postData);
 
+      // Award points for posting
+      if (!replyTo) {
+        await awardPoints(userProfile.uid, 20);
+      }
+
       // Handle mentions
       await handleMentions(postContent, newPostRef.id, userProfile, imageUrls[0] || null);
 
@@ -177,6 +183,9 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
         await updateDoc(doc(db, 'posts', replyTo.id), {
           repliesCount: increment(1)
         });
+        
+        // Award points for replying
+        await awardPoints(userProfile.uid, 10);
         
         if (replyTo.authorId !== userProfile.uid) {
           await addDoc(collection(db, 'notifications'), {

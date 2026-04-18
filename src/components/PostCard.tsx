@@ -10,6 +10,7 @@ import Poll from './Poll';
 import { useAuth } from '../contexts/AuthContext';
 
 import PostImageGrid from './PostImageGrid';
+import LazyImage from './LazyImage';
 
 interface PostCardProps {
   key?: any;
@@ -60,7 +61,7 @@ export default function PostCard({
         }}
       >
         {post.authorPhoto ? (
-          <img src={post.authorPhoto} alt={post.authorName} className="w-full h-full object-cover" />
+          <LazyImage src={post.authorPhoto} alt={post.authorName} className="w-full h-full" />
         ) : (
           <UserIcon className="w-full h-full p-2 text-gray-400" />
         )}
@@ -177,7 +178,9 @@ export default function PostCard({
 
         {/* Actions */}
         <div className="mt-3 flex items-center justify-between max-w-md text-gray-500">
-          <button 
+          <motion.button 
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
             onClick={(e) => {
               stopPropagation(e);
               onReply(post);
@@ -188,9 +191,11 @@ export default function PostCard({
               <MessageCircle className="w-4.5 h-4.5" />
             </div>
             <span className="text-xs">{post.repliesCount || 0}</span>
-          </button>
+          </motion.button>
 
-          <button 
+          <motion.button 
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
             onClick={(e) => {
               stopPropagation(e);
               onRepost(post);
@@ -201,9 +206,11 @@ export default function PostCard({
               <Repeat className="w-4.5 h-4.5" />
             </div>
             <span className="text-xs">{post.repostsCount || 0}</span>
-          </button>
+          </motion.button>
 
-          <button 
+          <motion.button 
+            whileHover={{ scale: 1.2 }}
+            whileTap={{ scale: 0.8 }}
             onClick={(e) => {
               stopPropagation(e);
               onLike(post);
@@ -214,9 +221,11 @@ export default function PostCard({
               <Heart className={`w-4.5 h-4.5 ${post.likes?.includes(userProfile?.uid) ? 'fill-current' : ''}`} />
             </div>
             <span className="text-xs">{post.likesCount || 0}</span>
-          </button>
+          </motion.button>
 
-          <button 
+          <motion.button 
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
             onClick={(e) => {
               stopPropagation(e);
               onQuote(post);
@@ -226,9 +235,11 @@ export default function PostCard({
             <div className="p-2 group-hover/action:bg-blue-50 rounded-full transition-colors">
               <ZapIcon className="w-4.5 h-4.5" />
             </div>
-          </button>
+          </motion.button>
 
-          <button 
+          <motion.button 
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
             onClick={(e) => {
               stopPropagation(e);
               onShare(post);
@@ -238,7 +249,7 @@ export default function PostCard({
             <div className="p-2 group-hover/action:bg-blue-50 rounded-full transition-colors">
               <Send className="w-4.5 h-4.5" />
             </div>
-          </button>
+          </motion.button>
         </div>
       </div>
     </motion.article>
