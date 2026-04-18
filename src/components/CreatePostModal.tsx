@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User as UserIcon, Image as ImageIcon, X, BarChart2, Film } from 'lucide-react';
+import { User as UserIcon, Image as ImageIcon, X, BarChart2, Film, Ghost } from 'lucide-react';
 import { addDoc, collection, serverTimestamp, doc, updateDoc, increment, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { uploadToImgBB } from '../lib/imgbb';
@@ -294,9 +294,14 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
                 {userProfile && (
                   <button 
                     onClick={() => setIsAnonymous(!isAnonymous)}
-                    className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${isAnonymous ? 'bg-black text-white' : 'bg-gray-100 text-gray-500'}`}
+                    className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                      isAnonymous 
+                        ? 'bg-gradient-to-r from-gray-800 to-black text-white shadow-md' 
+                        : 'bg-white border border-gray-200 text-gray-500 hover:border-gray-300'
+                    }`}
                   >
-                    {isAnonymous ? 'Anônimo ON' : 'Anônimo OFF'}
+                    <Ghost className={`w-3.5 h-3.5 ${isAnonymous ? 'text-purple-300' : 'text-gray-400'}`} />
+                    <span className="hidden xs:inline">{isAnonymous ? 'Anônimo' : 'Público'}</span>
                   </button>
                 )}
                 <button
@@ -334,9 +339,9 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
               )}
               <div className="flex space-x-3">
                 {/* Avatar */}
-                <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+                <div className={`w-10 h-10 rounded-full flex-shrink-0 overflow-hidden ${isAnonymous ? 'bg-gradient-to-br from-indigo-50 to-purple-100 border border-purple-200 flex items-center justify-center' : 'bg-gray-200'}`}>
                   {isAnonymous ? (
-                    <UserIcon className="w-full h-full p-2 text-gray-400" />
+                    <Ghost className="w-5 h-5 text-indigo-400" />
                   ) : userProfile?.photoURL ? (
                     <LazyImage src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full" />
                   ) : (

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
-import { User as UserIcon, MoreHorizontal, Trash2, Edit2, Send, Zap as ZapIcon, MessageCircle, Repeat, Heart } from 'lucide-react';
+import { User as UserIcon, MoreHorizontal, Trash2, Edit2, Send, Zap as ZapIcon, MessageCircle, Repeat, Heart, Ghost } from 'lucide-react';
 import { formatRelativeTime } from '../lib/dateUtils';
 import VerifiedBadge from './VerifiedBadge';
 import PostContent from './PostContent';
@@ -91,7 +91,7 @@ export default function PostCard({
       <div className="flex space-x-3">
         {/* Avatar */}
         <div 
-          className={`w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 ${post.authorId !== 'anonymous' ? 'cursor-pointer' : ''}`}
+          className={`w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 ${post.authorId !== 'anonymous' ? 'cursor-pointer' : ''} ${post.authorId === 'anonymous' ? 'bg-gradient-to-br from-indigo-50 to-purple-100 border border-purple-200 flex items-center justify-center' : ''}`}
           onClick={(e) => {
             const authorId = post.type === 'repost' ? post.originalPostAuthorId : post.authorId;
             const authorUsername = post.type === 'repost' ? post.originalPostAuthorUsername : post.authorUsername;
@@ -101,7 +101,9 @@ export default function PostCard({
             navigate(`/${authorUsername}`);
           }}
         >
-          {post.type === 'repost' ? (
+          {post.authorId === 'anonymous' ? (
+            <Ghost className="w-5 h-5 text-indigo-400" />
+          ) : post.type === 'repost' ? (
             post.originalPostAuthorPhoto ? (
               <LazyImage src={post.originalPostAuthorPhoto} alt={post.originalPostAuthorName} className="w-full h-full" />
             ) : (
@@ -128,13 +130,13 @@ export default function PostCard({
                 navigate(`/${authorUsername}`);
               }}
             >
-              <span className={`font-bold truncate ${post.authorId !== 'anonymous' ? 'hover:underline' : ''}`}>
+              <span className={`font-bold truncate ${post.authorId !== 'anonymous' ? 'hover:underline' : ''} ${post.authorId === 'anonymous' ? 'text-indigo-600 italic' : ''}`}>
                 {post.type === 'repost' ? post.originalPostAuthorName : post.authorName}
               </span>
-              {( (post.type === 'repost' ? post.originalPostAuthorVerified : post.authorVerified) || 
+              {post.authorId !== 'anonymous' && (( (post.type === 'repost' ? post.originalPostAuthorVerified : post.authorVerified) || 
                  (post.type === 'repost' ? post.originalPostAuthorUsername : post.authorUsername) === 'Rulio') && (
                 <VerifiedBadge className="w-4 h-4 flex-shrink-0" tier={post.type === 'repost' ? post.originalPostAuthorPremiumTier : post.authorPremiumTier} />
-              )}
+              ))}
               <span className="text-gray-500 truncate">@{post.type === 'repost' ? post.originalPostAuthorUsername : post.authorUsername}</span>
               <span className="text-gray-500">·</span>
               <span className="text-gray-500 text-sm whitespace-nowrap">

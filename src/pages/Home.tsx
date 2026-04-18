@@ -581,30 +581,32 @@ export default function Home() {
       {/* Sticky Header with Liquid Glass & Tabs */}
       <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-2xl border-b border-black/5 shadow-sm pt-[env(safe-area-inset-top)]">
         <div className="w-full px-4 py-2">
-          <div className="flex items-center justify-between relative h-12">
-            {/* Mobile Avatar (Left) */}
-            <div className="sm:hidden flex-shrink-0 z-10">
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openDrawer();
-                }} 
-                className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 cursor-pointer border border-white/40 shadow-sm"
-              >
-                {userProfile?.photoURL ? (
-                  <LazyImage src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full" />
-                ) : (
-                  <UserIcon className="w-full h-full p-2 text-gray-400" />
-                )}
-              </button>
+          <div className="flex items-center justify-between h-12 relative px-1">
+            {/* Left Section (Mobile Avatar) */}
+            <div className="flex-1 flex items-center justify-start z-10 min-w-0">
+              <div className="sm:hidden flex-shrink-0">
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openDrawer();
+                  }} 
+                  className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 cursor-pointer border border-white/40 shadow-sm"
+                >
+                  {userProfile?.photoURL ? (
+                    <LazyImage src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full" />
+                  ) : (
+                    <UserIcon className="w-full h-full p-2 text-gray-400" />
+                  )}
+                </button>
+              </div>
             </div>
 
             {/* Liquid Glass Tab Switcher (Center) */}
-            <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 z-10 w-auto max-w-[60%]">
+            <div className="flex-shrink-0 z-10 mx-2">
               <nav className="liquid-glass-pill p-1 rounded-full flex items-center relative overflow-hidden border border-white/40 shadow-lg whitespace-nowrap">
                 <button
                   onClick={() => setActiveTab('foryou')}
-                  className={`relative px-5 py-1.5 text-sm font-bold transition-all duration-300 z-10 flex-shrink-0 ${
+                  className={`relative px-4 sm:px-5 py-1.5 text-xs sm:text-sm font-bold transition-all duration-300 z-10 flex-shrink-0 ${
                     activeTab === 'foryou' ? 'text-black' : 'text-gray-500 hover:text-black'
                   }`}
                 >
@@ -619,7 +621,7 @@ export default function Home() {
                 </button>
                 <button
                   onClick={() => setActiveTab('following')}
-                  className={`relative px-5 py-1.5 text-sm font-bold transition-all duration-300 z-10 flex-shrink-0 ${
+                  className={`relative px-4 sm:px-5 py-1.5 text-xs sm:text-sm font-bold transition-all duration-300 z-10 flex-shrink-0 ${
                     activeTab === 'following' ? 'text-black' : 'text-gray-500 hover:text-black'
                   }`}
                 >
@@ -636,19 +638,22 @@ export default function Home() {
             </div>
 
             {/* Search Toggle & Anonymous Post Buttons (Right) */}
-            <div className="flex-shrink-0 z-10 flex items-center space-x-2">
-              <button 
+            <div className="flex-1 flex items-center justify-end z-10 space-x-1 sm:space-x-2 min-w-0">
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => openCreateModal(null, null, true)}
-                className="p-2.5 rounded-full transition-all duration-300 border border-white/40 shadow-sm liquid-glass-pill text-gray-500 hover:text-black hover:bg-white"
+                className="group relative p-2 sm:p-2.5 rounded-full transition-all duration-300 border border-white/40 shadow-sm overflow-hidden flex-shrink-0"
                 title="Postar Anonimamente"
               >
-                <Ghost className="w-5 h-5" />
-              </button>
+                <div className="absolute inset-0 bg-gradient-to-tr from-purple-50 via-gray-50 to-blue-50 opacity-100 group-hover:opacity-80 transition-opacity"></div>
+                <Ghost className="w-4.5 h-4.5 sm:w-5 h-5 text-gray-500 group-hover:text-black relative z-10" />
+              </motion.button>
               <button 
                 onClick={() => setIsSearchOpen(!isSearchOpen)}
-                className={`p-2.5 rounded-full transition-all duration-300 border border-white/40 shadow-sm ${isSearchOpen ? 'bg-black text-white' : 'liquid-glass-pill text-gray-500'}`}
+                className={`p-2 sm:p-2.5 rounded-full transition-all duration-300 border border-white/40 shadow-sm flex-shrink-0 ${isSearchOpen ? 'bg-black text-white' : 'liquid-glass-pill text-gray-500'}`}
               >
-                <Search className="w-5 h-5" />
+                <Search className="w-4.5 h-4.5 sm:w-5 h-5" />
               </button>
             </div>
           </div>
