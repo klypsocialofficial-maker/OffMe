@@ -45,7 +45,6 @@ export default function CreatePostModal({
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isAnonymous, setIsAnonymous] = useState(isAnonymousDefault);
-  const [isMoment, setIsMoment] = useState(false);
 
   useEffect(() => {
     setIsAnonymous(isAnonymousDefault || !userProfile);
@@ -174,8 +173,7 @@ export default function CreatePostModal({
         authorPremiumTier,
         ownerId: userProfile?.uid || null,
         isAnonymous,
-        isMoment,
-        expiresAt: isMoment ? new Date(Date.now() + 24 * 60 * 60 * 1000) : null,
+        expiresAt: null,
         createdAt: serverTimestamp(),
         likesCount: 0,
         repliesCount: 0,
@@ -258,7 +256,6 @@ export default function CreatePostModal({
       setContent('');
       setImageFiles([]);
       setImagePreviews([]);
-      setIsMoment(false);
       removeGif();
       setShowPoll(false);
       setPollOptions(['', '']);
@@ -518,13 +515,6 @@ export default function CreatePostModal({
                   className={`p-2 rounded-full transition-colors ${showGifPicker ? 'bg-blue-50 text-blue-500' : 'text-blue-500 hover:bg-blue-50'}`}
                 >
                   <Film className="w-5 h-5" />
-                </button>
-                <button 
-                  type="button"
-                  onClick={() => { setIsMoment(!isMoment); setShowPoll(false); setShowGifPicker(false); }} 
-                  className={`p-2 rounded-full transition-colors ${isMoment ? 'bg-amber-50 text-amber-500' : 'text-blue-500 hover:bg-blue-50'}`}
-                >
-                  <Clock className="w-5 h-5" />
                 </button>
               </div>
               

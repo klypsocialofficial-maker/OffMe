@@ -50,8 +50,6 @@
         "likes": { "type": "array", "items": { "type": "string" }, "description": "Array of UIDs who liked the post." },
         "reposts": { "type": "array", "items": { "type": "string" }, "description": "Array of UIDs who reposted the post." },
         "hashtags": { "type": "array", "items": { "type": "string" }, "description": "List of hashtags extracted from content." },
-        "isMoment": { "type": "boolean", "description": "Whether this is a story post." },
-        "expiresAt": { "type": "timestamp", "description": "Expiration time for moments." },
         "scheduledFor": { "type": "timestamp", "description": "Time to publish (Premium)." },
         "communityId": { "type": "string", "description": "The community this post belongs to." }
       },
