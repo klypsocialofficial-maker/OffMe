@@ -201,7 +201,7 @@ export default function PostDetail() {
   };
 
   const canEditPost = (post: any) => {
-    if (post.authorId !== userProfile?.uid) return false;
+    if (post.authorId !== userProfile?.uid && post.ownerId !== userProfile?.uid) return false;
     if ((userProfile as any)?.isPremium) return true;
     
     if (!post.createdAt) return true;
@@ -464,7 +464,7 @@ export default function PostDetail() {
                   
                   {activeMenuPostId === post.id && (
                     <div className="absolute right-0 mt-1 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-10" onClick={(e) => e.stopPropagation()}>
-                      {post.authorId === userProfile?.uid ? (
+                      {(post.authorId === userProfile?.uid || post.ownerId === userProfile?.uid) ? (
                         <>
                           <button 
                             onClick={() => handleDeletePost(post.id)}
@@ -689,7 +689,7 @@ export default function PostDetail() {
                           
                           {activeMenuReplyId === reply.id && (
                             <div className="absolute right-0 mt-1 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-10" onClick={(e) => e.stopPropagation()}>
-                              {reply.authorId === userProfile?.uid ? (
+                              {(reply.authorId === userProfile?.uid || reply.ownerId === userProfile?.uid) ? (
                                 <>
                                   <button 
                                     onClick={() => handleDeleteReply(reply.id)}

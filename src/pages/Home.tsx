@@ -506,6 +506,7 @@ export default function Home() {
         // Create new repost document
         await addDoc(collection(db, 'posts'), {
           authorId: userProfile.uid,
+          ownerId: userProfile.uid,
           authorName: userProfile.displayName,
           authorUsername: userProfile.username,
           authorPhoto: userProfile.photoURL || null,
@@ -562,7 +563,7 @@ export default function Home() {
   const PREMIUM_EDIT_TIME_MINUTES = 60;
 
   const canEditPost = (post: any) => {
-    if (post.authorId !== userProfile?.uid) return false;
+    if (post.authorId !== userProfile?.uid && post.ownerId !== userProfile?.uid) return false;
 
     const isPremium = (userProfile as any)?.isPremium;
     const editLimitMinutes = isPremium ? PREMIUM_EDIT_TIME_MINUTES : BASE_EDIT_TIME_MINUTES;

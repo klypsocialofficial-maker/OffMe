@@ -158,7 +158,7 @@ export default function PostCard({
             
             {isMenuOpen && (
               <div className="absolute right-0 mt-1 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-20" onClick={stopPropagation}>
-                {post.authorId === userProfile?.uid && post.authorId !== 'anonymous' ? (
+                {(post.authorId === userProfile?.uid || post.ownerId === userProfile?.uid) ? (
                   <>
                     <button 
                       onClick={() => {

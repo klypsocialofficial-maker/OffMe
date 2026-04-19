@@ -157,6 +157,7 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
         authorPhoto,
         authorVerified,
         authorPremiumTier,
+        ownerId: userProfile?.uid || null,
         isAnonymous,
         createdAt: serverTimestamp(),
         likesCount: 0,

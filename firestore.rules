@@ -79,7 +79,10 @@ service cloud.firestore {
     }
     
     function isDocOwner() {
-      return isAuthenticated() && request.auth.uid == resource.data.authorId;
+      return isAuthenticated() && (
+        request.auth.uid == resource.data.authorId || 
+        resource.data.get('ownerId', null) == request.auth.uid
+      );
     }
     
     function uidUnchanged() {
@@ -131,7 +134,7 @@ service cloud.firestore {
     }
 
     function isValidPost(data) {
-      return hasOnlyAllowedFields(['content', 'imageUrls', 'authorId', 'authorName', 'authorUsername', 'authorPhoto', 'authorVerified', 'authorPremiumTier', 'createdAt', 'updatedAt', 'isEdited', 'likesCount', 'repliesCount', 'replyToId', 'replyToUsername', 'replyToVerified', 'likes', 'repostsCount', 'reposts', 'threadId', 'quotedPostId', 'quotedPostContent', 'quotedPostAuthor', 'poll', 'isAnonymous', 'type', 'repostedPostId', 'originalPostAuthorId', 'originalPostAuthorName', 'originalPostAuthorUsername', 'originalPostAuthorPhoto', 'originalPostAuthorVerified', 'originalPostAuthorPremiumTier']) &&
+      return hasOnlyAllowedFields(['content', 'imageUrls', 'authorId', 'authorName', 'authorUsername', 'authorPhoto', 'authorVerified', 'authorPremiumTier', 'createdAt', 'updatedAt', 'isEdited', 'likesCount', 'repliesCount', 'replyToId', 'replyToUsername', 'replyToVerified', 'likes', 'repostsCount', 'reposts', 'threadId', 'quotedPostId', 'quotedPostContent', 'quotedPostAuthor', 'poll', 'isAnonymous', 'type', 'repostedPostId', 'originalPostAuthorId', 'originalPostAuthorName', 'originalPostAuthorUsername', 'originalPostAuthorPhoto', 'originalPostAuthorVerified', 'originalPostAuthorPremiumTier', 'ownerId']) &&
              data.content is string && data.content.size() >= 0 && data.content.size() <= 1000 &&
              (!('imageUrls' in data) || data.imageUrls is list && data.imageUrls.size() <= 4) &&
              data.authorId is string && (data.authorId == request.auth.uid || data.authorId == 'anonymous') &&
@@ -171,7 +174,8 @@ service cloud.firestore {
                data.poll.options.size() <= 4 &&
                data.poll.totalVotes is number &&
                data.poll.voters is list
-             ));
+             )) &&
+             (!('ownerId' in data) || data.ownerId == null || (data.ownerId is string && data.ownerId.size() <= 128));
     }
 
     function isValidAd(data) {
