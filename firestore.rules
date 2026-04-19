@@ -128,10 +128,10 @@ service cloud.firestore {
     }
 
     function isValidPost(data) {
-      return hasOnlyAllowedFields(['content', 'imageUrls', 'authorId', 'authorName', 'authorUsername', 'authorPhoto', 'authorVerified', 'authorPremiumTier', 'createdAt', 'updatedAt', 'isEdited', 'likesCount', 'repliesCount', 'replyToId', 'replyToUsername', 'replyToVerified', 'likes', 'repostsCount', 'reposts', 'threadId', 'quotedPostId', 'quotedPostContent', 'quotedPostAuthor', 'poll']) &&
+      return hasOnlyAllowedFields(['content', 'imageUrls', 'authorId', 'authorName', 'authorUsername', 'authorPhoto', 'authorVerified', 'authorPremiumTier', 'createdAt', 'updatedAt', 'isEdited', 'likesCount', 'repliesCount', 'replyToId', 'replyToUsername', 'replyToVerified', 'likes', 'repostsCount', 'reposts', 'threadId', 'quotedPostId', 'quotedPostContent', 'quotedPostAuthor', 'poll', 'isAnonymous', 'type', 'repostedPostId', 'originalPostAuthorId', 'originalPostAuthorName', 'originalPostAuthorUsername', 'originalPostAuthorPhoto', 'originalPostAuthorVerified', 'originalPostAuthorPremiumTier']) &&
              data.content is string && data.content.size() >= 0 && data.content.size() <= 1000 &&
              (!('imageUrls' in data) || data.imageUrls is list && data.imageUrls.size() <= 4) &&
-             data.authorId is string && data.authorId == request.auth.uid &&
+             data.authorId is string && (data.authorId == request.auth.uid || data.authorId == 'anonymous') &&
              data.authorName is string && data.authorName.size() >= 0 && data.authorName.size() <= 50 &&
              data.authorUsername is string && data.authorUsername.size() >= 0 && data.authorUsername.size() <= 30 &&
              (!('authorPhoto' in data) || data.authorPhoto == null || data.authorPhoto == '' || (data.authorPhoto is string && data.authorPhoto.size() <= 2000)) &&
@@ -140,8 +140,17 @@ service cloud.firestore {
              data.createdAt is timestamp &&
              (!('updatedAt' in data) || data.updatedAt is timestamp) &&
              (!('isEdited' in data) || data.isEdited is bool) &&
-             data.likesCount is number && data.likesCount >= 0 &&
-             data.repliesCount is number && data.repliesCount >= 0 &&
+             (!('isAnonymous' in data) || data.isAnonymous is bool) &&
+             (!('type' in data) || data.type in ['post', 'repost']) &&
+             (!('repostedPostId' in data) || (data.repostedPostId is string && data.repostedPostId.size() <= 100)) &&
+             (!('originalPostAuthorId' in data) || (data.originalPostAuthorId is string && data.originalPostAuthorId.size() <= 128)) &&
+             (!('originalPostAuthorName' in data) || (data.originalPostAuthorName is string && data.originalPostAuthorName.size() <= 50)) &&
+             (!('originalPostAuthorUsername' in data) || (data.originalPostAuthorUsername is string && data.originalPostAuthorUsername.size() <= 30)) &&
+             (!('originalPostAuthorPhoto' in data) || data.originalPostAuthorPhoto == null || (data.originalPostAuthorPhoto is string && data.originalPostAuthorPhoto.size() <= 2000)) &&
+             (!('originalPostAuthorVerified' in data) || data.originalPostAuthorVerified is bool) &&
+             (!('originalPostAuthorPremiumTier' in data) || data.originalPostAuthorPremiumTier in ['silver', 'gold', 'black']) &&
+             (!('likesCount' in data) || (data.likesCount is number && data.likesCount >= 0)) &&
+             (!('repliesCount' in data) || (data.repliesCount is number && data.repliesCount >= 0)) &&
              (!('repostsCount' in data) || data.repostsCount is number && data.repostsCount >= 0) &&
              (!('replyToId' in data) || data.replyToId == null || (data.replyToId is string && data.replyToId.size() <= 100)) &&
              (!('replyToUsername' in data) || data.replyToUsername == null || (data.replyToUsername is string && data.replyToUsername.size() <= 30)) &&
@@ -200,15 +209,18 @@ service cloud.firestore {
     }
 
     match /posts/{postId} {
-      // Anyone authenticated can read posts
-      allow read: if isAuthenticated();
+      // Allow reading posts without authentication to support guest viewing
+      allow read: if true;
       
-      // Only the author can create a post
-      allow create: if isAuthenticated() && 
-                    request.resource.data.authorId == request.auth.uid && 
-                    isValidPost(request.resource.data);
+      // Allow creation of posts
+      allow create: if (
+                      // 1. Regular authenticated post
+                      (isAuthenticated() && request.resource.data.authorId == request.auth.uid) || 
+                      // 2. Anonymous post (can be from guest or logged in user)
+                      (request.resource.data.authorId == 'anonymous' && request.resource.data.isAnonymous == true)
+                    ) && isValidPost(request.resource.data);
                     
-      // Only the author can update their post (for now, no likes/replies logic implemented)
+      // Only the author can update their post
       allow update: if (isDocOwner() && 
                     isValidPost(request.resource.data) &&
                     request.resource.data.authorId == resource.data.authorId &&
