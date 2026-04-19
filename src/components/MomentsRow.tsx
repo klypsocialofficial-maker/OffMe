@@ -10,12 +10,20 @@ import { getDefaultAvatar } from '../lib/avatar';
 interface MomentsRowProps {
   userProfile: any;
   openCreateModal: (replyTo?: any, quotePost?: any, isAnonymous?: boolean) => void;
+  openStoryCreator: () => void;
+  openStoryViewer: (stories: any[], startIndex?: number) => void;
 }
 
-export default function MomentsRow({ userProfile, openCreateModal }: MomentsRowProps) {
+export default function MomentsRow({ 
+  userProfile, 
+  openCreateModal, 
+  openStoryCreator, 
+  openStoryViewer 
+}: MomentsRowProps) {
   const [moments, setMoments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const [allMomentsData, setAllMomentsData] = useState<any[]>([]);
 
   useEffect(() => {
     if (!db) return;
@@ -31,6 +39,7 @@ export default function MomentsRow({ userProfile, openCreateModal }: MomentsRowP
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const results = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+      setAllMomentsData(results);
       
       // Group by author to show one per user
       const uniqueAuthors = new Map();
@@ -56,7 +65,7 @@ export default function MomentsRow({ userProfile, openCreateModal }: MomentsRowP
         {/* Your Story Button */}
         <div className="flex flex-col items-center space-y-1.5 flex-shrink-0">
           <button 
-            onClick={() => openCreateModal()}
+            onClick={() => openStoryCreator()}
             className="w-16 h-16 rounded-full border-2 border-dashed border-gray-200 p-1 group active:scale-95 transition-all"
           >
             <div className="w-full h-full rounded-full bg-gray-50 flex items-center justify-center relative overflow-hidden group-hover:bg-gray-100">
@@ -68,12 +77,12 @@ export default function MomentsRow({ userProfile, openCreateModal }: MomentsRowP
                <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                  <Plus className="w-6 h-6 text-white" />
                </div>
-               <div className="absolute bottom-0 right-0 w-5 h-5 bg-black rounded-full border-2 border-white flex items-center justify-center">
+               <div className="absolute bottom-1 right-1 w-5 h-5 bg-blue-500 rounded-full border-2 border-white flex items-center justify-center shadow-lg">
                  <Plus className="w-3 h-3 text-white" />
                </div>
             </div>
           </button>
-          <span className="text-[10px] font-bold text-gray-500">Seu Momento</span>
+          <span className="text-[10px] font-bold text-gray-500">Seu Story</span>
         </div>
 
         {/* Other Moments */}
@@ -84,11 +93,15 @@ export default function MomentsRow({ userProfile, openCreateModal }: MomentsRowP
              ))}
           </div>
         ) : (
-          moments.map((moment) => (
+          moments.map((moment, index) => (
             <motion.div 
               key={moment.id}
               whileTap={{ scale: 0.95 }}
-              onClick={() => navigate(`/post/${moment.id}`)}
+              onClick={() => {
+                // Find all stories by this author
+                const authorStories = allMomentsData.filter(m => m.authorId === moment.authorId);
+                openStoryViewer(authorStories, 0);
+              }}
               className="flex flex-col items-center space-y-1.5 flex-shrink-0 cursor-pointer"
             >
               <div className="w-16 h-16 rounded-full p-[2.5px] bg-gradient-to-tr from-amber-400 via-pink-500 to-purple-600 shadow-lg shadow-pink-500/10 active:shadow-none transition-shadow">

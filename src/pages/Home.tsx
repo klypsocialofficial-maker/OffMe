@@ -15,6 +15,8 @@ import ImageViewer from '../components/ImageViewer';
 import ConfirmModal from '../components/ConfirmModal';
 import PostCard from '../components/PostCard';
 import MomentsRow from '../components/MomentsRow';
+import StoryCreator from '../components/StoryCreator';
+import StoryViewer from '../components/StoryViewer';
 import LazyImage from '../components/LazyImage';
 import PostSkeleton from '../components/PostSkeleton';
 import { handleMentions, sendPushNotification, notifyFollowers } from '../lib/notifications';
@@ -128,6 +130,10 @@ export default function Home() {
   const [selectedSharePost, setSelectedSharePost] = useState<any | null>(null);
   const [viewerImage, setViewerImage] = useState<{ src: string; alt: string } | null>(null);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
+  const [isStoryCreatorOpen, setIsStoryCreatorOpen] = useState(false);
+  const [isStoryViewerOpen, setIsStoryViewerOpen] = useState(false);
+  const [activeStories, setActiveStories] = useState<any[]>([]);
+  const [storyStartIndex, setStoryStartIndex] = useState(0);
   const [toast, setToast] = useState<{ message: string; type: 'info' | 'success' | 'error'; isOpen: boolean }>({
     message: '',
     type: 'info',
@@ -742,6 +748,16 @@ export default function Home() {
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
             >
+              <MomentsRow 
+                userProfile={userProfile} 
+                openCreateModal={openCreateModal} 
+                openStoryCreator={() => setIsStoryCreatorOpen(true)}
+                openStoryViewer={(stories, index) => {
+                  setActiveStories(stories);
+                  setStoryStartIndex(index || 0);
+                  setIsStoryViewerOpen(true);
+                }}
+              />
               {isFetching ? (
                 <div className="space-y-4">
                   {[...Array(5)].map((_, i) => (
@@ -760,7 +776,6 @@ export default function Home() {
                 </div>
               ) : (
                 <div className="px-4 space-y-4 pb-20">
-                  <MomentsRow userProfile={userProfile} openCreateModal={openCreateModal} />
                   {(() => {
                     const filtered = displayedPosts.filter(post => {
                       const isMuted = userProfile?.mutedUsers?.includes(post.authorId);
@@ -872,6 +887,20 @@ export default function Home() {
           onConfirm={confirmModal.onConfirm}
           title={confirmModal.title}
           message={confirmModal.message}
+        />
+
+        <StoryCreator 
+          isOpen={isStoryCreatorOpen}
+          onClose={() => setIsStoryCreatorOpen(false)}
+          userProfile={userProfile}
+          handleFirestoreError={handleFirestoreError}
+        />
+
+        <StoryViewer 
+          isOpen={isStoryViewerOpen}
+          stories={activeStories}
+          initialStoryIndex={storyStartIndex}
+          onClose={() => setIsStoryViewerOpen(false)}
         />
     </div>
   );
