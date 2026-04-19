@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
-import { User as UserIcon, MoreHorizontal, Trash2, Edit2, Send, MessageCircle, Repeat, Heart, Ghost, VolumeX, UserX, ShieldAlert, Bookmark, BookmarkCheck, Pin, PinOff } from 'lucide-react';
+import { User as UserIcon, MoreHorizontal, Trash2, Edit2, Send, MessageCircle, Repeat, Heart, Ghost, VolumeX, UserX, ShieldAlert, Bookmark, BookmarkCheck, Pin, PinOff, Users } from 'lucide-react';
 import { formatRelativeTime } from '../lib/dateUtils';
 import VerifiedBadge from './VerifiedBadge';
 import PostContent from './PostContent';
@@ -167,6 +167,16 @@ export default function PostCard({
         <div className="flex items-center space-x-2 text-gray-500 text-xs font-bold mb-2 ml-10">
           <Pin className="w-3.5 h-3.5 fill-current" />
           <span>Fixado</span>
+        </div>
+      )}
+
+      {/* Circle Header */}
+      {post.privacy === 'circle' && (
+        <div className="flex items-center space-x-2 text-emerald-600 text-xs font-bold mb-2 ml-10">
+          <div className="bg-emerald-100 p-1 rounded-full">
+            <Users className="w-3 h-3" />
+          </div>
+          <span>Meu Círculo</span>
         </div>
       )}
 

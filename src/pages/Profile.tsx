@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { User as UserIcon, Calendar, MapPin, Link as LinkIcon, Edit2, Trash2, BarChart2, MessageCircle, Heart, Repeat, Send, MoreHorizontal, ArrowLeft, Search, Share, Briefcase, Plus, AlertCircle, Star, VolumeX, Volume2, UserX, Bookmark } from 'lucide-react';
+import { User as UserIcon, Calendar, MapPin, Link as LinkIcon, Edit2, Trash2, BarChart2, MessageCircle, Heart, Repeat, Send, MoreHorizontal, ArrowLeft, Search, Share, Briefcase, Plus, AlertCircle, Star, VolumeX, Volume2, UserX, Bookmark, Users } from 'lucide-react';
 import EditProfileModal from '../components/EditProfileModal';
 import CreatePostModal from '../components/CreatePostModal';
 import Toast from '../components/Toast';
@@ -78,13 +78,14 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 
 export default function Profile() {
   const [verificationSent, setVerificationSent] = useState(false);
-  const { userProfile, currentUser, sendVerificationEmail, followUser, unfollowUser, muteUser, unmuteUser, blockUser, unblockUser } = useAuth();
+  const { userProfile, currentUser, sendVerificationEmail, followUser, unfollowUser, muteUser, unmuteUser, blockUser, unblockUser, addToCircle, removeFromCircle } = useAuth();
   const { username } = useParams();
   const navigate = useNavigate();
   const [profileUser, setProfileUser] = useState<any>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'posts' | 'replies' | 'media' | 'likes' | 'anonymous' | 'bookmarks'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'replies' | 'media' | 'likes' | 'anonymous' | 'bookmarks' | 'circle'>('posts');
   const [posts, setPosts] = useState<any[]>([]);
+  const [circleUsers, setCircleUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeMenuPostId, setActiveMenuPostId] = useState<string | null>(null);
   const [editingPost, setEditingPost] = useState<any | null>(null);
@@ -481,6 +482,31 @@ export default function Profile() {
     }
   };
 
+  const handleCircleToggle = async () => {
+    if (!userProfile?.uid || !profileUser?.uid || !db || profileUser.uid === userProfile.uid) return;
+    const isInCircle = userProfile.circleMembers?.includes(profileUser.uid);
+    try {
+      if (isInCircle) {
+        await removeFromCircle(profileUser.uid);
+        showToast(`Removido do seu Círculo`, 'info');
+      } else {
+        await addToCircle(profileUser.uid);
+        showToast(`Adicionado ao seu Círculo`, 'success');
+      }
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, 'users');
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'circle' && profileUser?.uid === userProfile?.uid && userProfile?.circleMembers?.length > 0) {
+      const q = query(collection(db, 'users'), where('uid', 'in', userProfile.circleMembers.slice(0, 10)));
+      getDocs(q).then(snap => {
+        setCircleUsers(snap.docs.map(d => d.data()));
+      });
+    }
+  }, [activeTab, userProfile?.circleMembers, profileUser?.uid]);
+
   const handleFollowClick = async () => {
     if (!userProfile?.uid || !profileUser?.uid || !db || profileUser.uid === userProfile.uid) return;
     
@@ -721,6 +747,17 @@ export default function Profile() {
                 <UserX className="w-4 h-4" />
               </button>
               <button 
+                onClick={handleCircleToggle}
+                className={`p-2 border rounded-full transition-all active:scale-95 ${
+                  userProfile?.circleMembers?.includes(profileUser.uid)
+                    ? 'bg-emerald-50 border-emerald-100 text-emerald-600'
+                    : 'border-gray-200 text-black hover:bg-gray-50'
+                }`}
+                title={userProfile?.circleMembers?.includes(profileUser.uid) ? 'Remover do Círculo' : 'Adicionar ao Círculo'}
+              >
+                <Users className="w-4 h-4" />
+              </button>
+              <button 
                 onClick={handleMessageClick}
                 className="p-2 border border-gray-200 rounded-full hover:bg-gray-50 transition-all active:scale-95"
               >
@@ -897,7 +934,7 @@ export default function Profile() {
             {profileUser.uid === userProfile?.uid && (
               <button 
                 onClick={() => setActiveTab('anonymous')}
-                className={`relative w-1/2 flex-shrink-0 px-4 py-2 text-sm font-bold transition-colors duration-300 z-10 snap-center ${activeTab === 'anonymous' ? 'text-black' : 'text-gray-500 hover:text-black'}`}
+                className={`relative w-1/3 flex-shrink-0 px-4 py-2 text-sm font-bold transition-colors duration-300 z-10 snap-center ${activeTab === 'anonymous' ? 'text-black' : 'text-gray-500 hover:text-black'}`}
               >
                 {activeTab === 'anonymous' && (
                   <motion.div
@@ -909,13 +946,67 @@ export default function Profile() {
                 Anônimos
               </button>
             )}
+            {profileUser.uid === userProfile?.uid && (
+              <button 
+                onClick={() => setActiveTab('circle')}
+                className={`relative w-1/3 flex-shrink-0 px-4 py-2 text-sm font-bold transition-colors duration-300 z-10 snap-center ${activeTab === 'circle' ? 'text-black' : 'text-gray-500 hover:text-black'}`}
+              >
+                {activeTab === 'circle' && (
+                  <motion.div
+                    layoutId="profile-tab-blob"
+                    className="absolute inset-0 bg-white/90 rounded-full -z-10 shadow-sm"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                )}
+                Círculo
+              </button>
+            )}
           </nav>
         </div>
       </div>
 
       <div className="pb-20">
-        {loading ? (
+        {loading && activeTab !== 'circle' ? (
           <div className="p-12 text-center text-gray-400 font-medium">Carregando conteúdo...</div>
+        ) : activeTab === 'circle' ? (
+          <div className="p-4 space-y-4">
+            <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl mb-4">
+              <p className="text-emerald-800 font-bold text-sm">Seu Círculo do OffMe</p>
+              <p className="text-emerald-600 text-xs mt-1">Pessoas que podem ver e responder aos seus posts exclusivos para o círculo.</p>
+            </div>
+            {circleUsers.length > 0 ? (
+              circleUsers.map(user => (
+                <div key={user.uid} className="flex items-center justify-between p-3 liquid-glass-card rounded-2xl">
+                  <div 
+                    className="flex items-center space-x-3 cursor-pointer"
+                    onClick={() => navigate(`/${user.username}`)}
+                  >
+                    <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden">
+                      <LazyImage src={user.photoURL || getDefaultAvatar(user.displayName, user.username)} alt={user.displayName} className="w-full h-full" />
+                    </div>
+                    <div>
+                      <div className="flex items-center space-x-1">
+                        <p className="font-bold text-sm">{user.displayName}</p>
+                        {(user.isVerified || user.username === 'Rulio') && <VerifiedBadge className="w-3 h-3" tier={user.premiumTier} />}
+                      </div>
+                      <p className="text-xs text-gray-500">@{user.username}</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => removeFromCircle(user.uid)}
+                    className="px-4 py-1.5 bg-red-50 text-red-500 rounded-full text-xs font-bold hover:bg-red-100 transition-all"
+                  >
+                    Remover
+                  </button>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-12 text-gray-500">
+                <p className="font-bold text-black mb-1">Seu círculo está vazio</p>
+                <p className="text-sm">Adicione pessoas visitando o perfil delas.</p>
+              </div>
+            )}
+          </div>
         ) : posts.length > 0 ? (
           <div className="px-4 space-y-4">
             {posts.map((post) => (

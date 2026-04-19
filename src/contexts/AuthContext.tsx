@@ -95,6 +95,7 @@ interface UserProfile {
   points?: number;
   level?: number;
   badges?: string[];
+  circleMembers?: string[];
   createdAt?: any;
 }
 
@@ -115,6 +116,8 @@ interface AuthContextType {
   deleteAccount: () => Promise<void>;
   followUser: (targetUid: string) => Promise<void>;
   unfollowUser: (targetUid: string) => Promise<void>;
+  addToCircle: (targetUid: string) => Promise<void>;
+  removeFromCircle: (targetUid: string) => Promise<void>;
   muteUser: (targetUid: string) => Promise<void>;
   unmuteUser: (targetUid: string) => Promise<void>;
   blockUser: (targetUid: string) => Promise<void>;
@@ -483,6 +486,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const addToCircle = async (targetUid: string) => {
+    if (!currentUser || !userProfile) throw new Error("User not authenticated");
+    if (currentUser.uid === targetUid) throw new Error("You cannot add yourself to your circle");
+    const userRef = doc(db, 'users', currentUser.uid);
+    try {
+      await updateDoc(userRef, {
+        circleMembers: arrayUnion(targetUid)
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `users/${currentUser.uid}`);
+    }
+  };
+
+  const removeFromCircle = async (targetUid: string) => {
+    if (!currentUser || !userProfile) throw new Error("User not authenticated");
+    const userRef = doc(db, 'users', currentUser.uid);
+    try {
+      await updateDoc(userRef, {
+        circleMembers: arrayRemove(targetUid)
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `users/${currentUser.uid}`);
+    }
+  };
+
   const unmuteUser = async (targetUid: string) => {
     if (!currentUser || !userProfile) throw new Error("User not authenticated");
     const userRef = doc(db, 'users', currentUser.uid);
@@ -635,6 +663,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     deleteAccount,
     followUser,
     unfollowUser,
+    addToCircle,
+    removeFromCircle,
     muteUser,
     unmuteUser,
     blockUser,

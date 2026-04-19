@@ -25,6 +25,7 @@
         "points": { "type": "number", "description": "The user's earned points." },
         "level": { "type": "number", "description": "The user's current level." },
         "badges": { "type": "array", "items": { "type": "string" }, "description": "Array of earned badge IDs." },
+        "circleMembers": { "type": "array", "items": { "type": "string" }, "description": "Array of UIDs in the user's circle." },
         "createdAt": { "type": "timestamp", "description": "The time the user was created." }
       },
       "required": ["uid", "email", "username", "displayName"]
@@ -50,10 +51,26 @@
         "likes": { "type": "array", "items": { "type": "string" }, "description": "Array of UIDs who liked the post." },
         "reposts": { "type": "array", "items": { "type": "string" }, "description": "Array of UIDs who reposted the post." },
         "hashtags": { "type": "array", "items": { "type": "string" }, "description": "List of hashtags extracted from content." },
+        "privacy": { "type": "string", "description": "The privacy level of the post ('public' or 'circle')." },
+        "audience": { "type": "array", "items": { "type": "string" }, "description": "Array of UIDs allowed to see the post if privacy is 'circle'." },
         "scheduledFor": { "type": "timestamp", "description": "Time to publish (Premium)." },
         "communityId": { "type": "string", "description": "The community this post belongs to." }
       },
       "required": ["content", "authorId", "authorName", "authorUsername", "createdAt", "likesCount", "repliesCount", "repostsCount"]
+    },
+    "List": {
+      "title": "List",
+      "description": "A custom feed based on a list of users.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "The name of the list." },
+        "description": { "type": "string", "description": "A brief description of the list." },
+        "ownerId": { "type": "string", "description": "The UID of the user who owns the list." },
+        "memberIds": { "type": "array", "items": { "type": "string" }, "description": "Array of UIDs in this list." },
+        "isPrivate": { "type": "boolean", "description": "Whether the list is private to the owner." },
+        "createdAt": { "type": "timestamp", "description": "The time the list was created." }
+      },
+      "required": ["name", "ownerId", "memberIds", "createdAt"]
     },
     "Community": {
       "title": "Community",
@@ -200,6 +217,10 @@
     "/missions/{missionId}": {
       "schema": { "$ref": "#/entities/Mission" },
       "description": "Stores daily goals."
+    },
+    "/lists/{listId}": {
+      "schema": { "$ref": "#/entities/List" },
+      "description": "Stores user-created lists of accounts."
     }
   }
 }

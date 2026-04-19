@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User as UserIcon, Image as ImageIcon, X, BarChart2, Film, Ghost, Clock } from 'lucide-react';
+import { User as UserIcon, Image as ImageIcon, X, BarChart2, Film, Ghost, Clock, Users } from 'lucide-react';
 import { addDoc, collection, serverTimestamp, doc, updateDoc, increment, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { uploadToImgBB } from '../lib/imgbb';
@@ -45,6 +45,7 @@ export default function CreatePostModal({
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isAnonymous, setIsAnonymous] = useState(isAnonymousDefault);
+  const [postAudience, setPostAudience] = useState<'public' | 'circle'>('public');
 
   useEffect(() => {
     setIsAnonymous(isAnonymousDefault || !userProfile);
@@ -173,6 +174,8 @@ export default function CreatePostModal({
         authorPremiumTier,
         ownerId: userProfile?.uid || null,
         isAnonymous,
+        privacy: postAudience,
+        audience: postAudience === 'circle' ? (userProfile?.circleMembers || []) : [],
         expiresAt: null,
         createdAt: serverTimestamp(),
         likesCount: 0,
@@ -312,6 +315,19 @@ export default function CreatePostModal({
                 {replyTo ? 'Responder' : 'Novo post'}
               </h2>
               <div className="flex items-center space-x-2">
+                {userProfile && !replyTo && (
+                  <button 
+                    onClick={() => setPostAudience(postAudience === 'public' ? 'circle' : 'public')}
+                    className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                      postAudience === 'circle'
+                        ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-md' 
+                        : 'bg-white border border-gray-200 text-blue-500 hover:border-blue-300'
+                    }`}
+                  >
+                    <Users className={`w-3.5 h-3.5 ${postAudience === 'circle' ? 'text-white' : 'text-blue-500'}`} />
+                    <span className="hidden xs:inline">{postAudience === 'circle' ? 'Meu Círculo' : 'Público'}</span>
+                  </button>
+                )}
                 {userProfile && (
                   <button 
                     onClick={() => setIsAnonymous(!isAnonymous)}
@@ -322,7 +338,7 @@ export default function CreatePostModal({
                     }`}
                   >
                     <Ghost className={`w-3.5 h-3.5 ${isAnonymous ? 'text-purple-300' : 'text-gray-400'}`} />
-                    <span className="hidden xs:inline">{isAnonymous ? 'Anônimo' : 'Público'}</span>
+                    <span className="hidden xs:inline">{isAnonymous ? 'Anônimo' : 'Modo Público'}</span>
                   </button>
                 )}
                 <button

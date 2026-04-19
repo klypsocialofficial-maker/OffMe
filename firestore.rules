@@ -110,7 +110,7 @@ service cloud.firestore {
     // ===============================================================
 
     function isValidUser(data) {
-      return hasOnlyAllowedFields(['uid', 'email', 'username', 'displayName', 'photoURL', 'bannerURL', 'bio', 'location', 'website', 'following', 'followers', 'isVerified', 'isPremium', 'premiumTier', 'category', 'createdAt', 'updatedAt', 'fcmTokens', 'points', 'level', 'badges', 'mutedUsers']) &&
+      return hasOnlyAllowedFields(['uid', 'email', 'username', 'displayName', 'photoURL', 'bannerURL', 'bio', 'location', 'website', 'following', 'followers', 'isVerified', 'isPremium', 'premiumTier', 'category', 'createdAt', 'updatedAt', 'fcmTokens', 'points', 'level', 'badges', 'mutedUsers', 'circleMembers']) &&
              data.uid is string && data.uid == request.auth.uid &&
              data.email is string && isValidEmail(data.email) &&
              data.username is string && data.username.size() > 0 && data.username.size() <= 50 &&
@@ -124,6 +124,7 @@ service cloud.firestore {
              (!('following' in data) || data.following is list) &&
              (!('followers' in data) || data.followers is list) &&
              (!('mutedUsers' in data) || data.mutedUsers is list) &&
+             (!('circleMembers' in data) || data.circleMembers is list) &&
              (!('isVerified' in data) || data.isVerified is bool) &&
              (!('isPremium' in data) || data.isPremium is bool) &&
              (!('premiumTier' in data) || data.premiumTier == null || data.premiumTier in ['silver', 'gold', 'black']) &&
@@ -135,7 +136,7 @@ service cloud.firestore {
     }
 
     function isValidPost(data) {
-      return hasOnlyAllowedFields(['content', 'imageUrls', 'authorId', 'authorName', 'authorUsername', 'authorPhoto', 'authorVerified', 'authorPremiumTier', 'createdAt', 'updatedAt', 'isEdited', 'likesCount', 'repliesCount', 'replyToId', 'replyToUsername', 'replyToVerified', 'likes', 'repostsCount', 'reposts', 'threadId', 'quotedPostId', 'quotedPostContent', 'quotedPostAuthor', 'poll', 'isAnonymous', 'type', 'repostedPostId', 'originalPostAuthorId', 'originalPostAuthorName', 'originalPostAuthorUsername', 'originalPostAuthorPhoto', 'originalPostAuthorVerified', 'originalPostAuthorPremiumTier', 'ownerId']) &&
+      return hasOnlyAllowedFields(['content', 'imageUrls', 'authorId', 'authorName', 'authorUsername', 'authorPhoto', 'authorVerified', 'authorPremiumTier', 'createdAt', 'updatedAt', 'isEdited', 'likesCount', 'repliesCount', 'replyToId', 'replyToUsername', 'replyToVerified', 'likes', 'repostsCount', 'reposts', 'threadId', 'quotedPostId', 'quotedPostContent', 'quotedPostAuthor', 'poll', 'isAnonymous', 'type', 'repostedPostId', 'originalPostAuthorId', 'originalPostAuthorName', 'originalPostAuthorUsername', 'originalPostAuthorPhoto', 'originalPostAuthorVerified', 'originalPostAuthorPremiumTier', 'ownerId', 'privacy', 'audience']) &&
              data.content is string && data.content.size() >= 0 && data.content.size() <= 1000 &&
              (!('imageUrls' in data) || data.imageUrls is list && data.imageUrls.size() <= 4) &&
              data.authorId is string && (data.authorId == request.auth.uid || data.authorId == 'anonymous') &&
@@ -148,6 +149,8 @@ service cloud.firestore {
              (!('updatedAt' in data) || data.updatedAt is timestamp) &&
              (!('isEdited' in data) || data.isEdited is bool) &&
              (!('isAnonymous' in data) || data.isAnonymous is bool) &&
+             (!('privacy' in data) || data.privacy in ['public', 'circle']) &&
+             (!('audience' in data) || data.audience is list) &&
              (!('type' in data) || data.type in ['post', 'repost']) &&
              (!('repostedPostId' in data) || (data.repostedPostId is string && data.repostedPostId.size() <= 100)) &&
              (!('originalPostAuthorId' in data) || (data.originalPostAuthorId is string && data.originalPostAuthorId.size() <= 128)) &&
@@ -177,6 +180,16 @@ service cloud.firestore {
                data.poll.voters is list
              )) &&
              (!('ownerId' in data) || data.ownerId == null || (data.ownerId is string && data.ownerId.size() <= 128));
+    }
+
+    function isValidList(data) {
+      return hasOnlyAllowedFields(['name', 'description', 'ownerId', 'memberIds', 'isPrivate', 'createdAt']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 50 &&
+             (!('description' in data) || data.description is string && data.description.size() <= 160) &&
+             data.ownerId is string && data.ownerId == request.auth.uid &&
+             data.memberIds is list && data.memberIds.size() <= 200 &&
+             (!('isPrivate' in data) || data.isPrivate is bool) &&
+             data.createdAt is timestamp;
     }
 
     function isValidAd(data) {
@@ -217,8 +230,13 @@ service cloud.firestore {
     }
 
     match /posts/{postId} {
-      // Allow reading posts without authentication to support guest viewing
-      allow read: if true;
+      // Allow reading posts if they are public or if user is the author or in the circle audience
+      allow read: if (resource.data.get('privacy', 'public') == 'public') || 
+                   (isAuthenticated() && (
+                     resource.data.authorId == request.auth.uid || 
+                     request.auth.uid in resource.data.get('audience', []) ||
+                     resource.data.get('ownerId', '') == request.auth.uid
+                   ));
       
       // Allow creation of posts
       allow create: if (
@@ -267,6 +285,13 @@ service cloud.firestore {
                     );
                     
       allow delete: if isDocOwner();
+    }
+
+    match /lists/{listId} {
+      allow read: if (resource.data.get('isPrivate', false) == false) || (isAuthenticated() && resource.data.ownerId == request.auth.uid);
+      allow create: if isAuthenticated() && isValidList(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.ownerId == request.auth.uid && isValidList(request.resource.data);
+      allow delete: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
     }
     
     match /notifications/{notificationId} {
