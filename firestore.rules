@@ -107,7 +107,7 @@ service cloud.firestore {
     // ===============================================================
 
     function isValidUser(data) {
-      return hasOnlyAllowedFields(['uid', 'email', 'username', 'displayName', 'photoURL', 'bannerURL', 'bio', 'location', 'website', 'following', 'followers', 'isVerified', 'isPremium', 'premiumTier', 'category', 'createdAt', 'updatedAt', 'fcmTokens']) &&
+      return hasOnlyAllowedFields(['uid', 'email', 'username', 'displayName', 'photoURL', 'bannerURL', 'bio', 'location', 'website', 'following', 'followers', 'isVerified', 'isPremium', 'premiumTier', 'category', 'createdAt', 'updatedAt', 'fcmTokens', 'points', 'level', 'badges']) &&
              data.uid is string && data.uid == request.auth.uid &&
              data.email is string && isValidEmail(data.email) &&
              data.username is string && data.username.size() > 0 && data.username.size() <= 50 &&
@@ -122,7 +122,10 @@ service cloud.firestore {
              (!('followers' in data) || data.followers is list) &&
              (!('isVerified' in data) || data.isVerified is bool) &&
              (!('isPremium' in data) || data.isPremium is bool) &&
-             (!('premiumTier' in data) || data.premiumTier in ['silver', 'gold', 'black']) &&
+             (!('premiumTier' in data) || data.premiumTier == null || data.premiumTier in ['silver', 'gold', 'black']) &&
+             (!('points' in data) || data.points is number) &&
+             (!('level' in data) || data.level is number) &&
+             (!('badges' in data) || data.badges is list) &&
              (!('createdAt' in data) || data.createdAt is timestamp) &&
              (!('updatedAt' in data) || data.updatedAt is timestamp);
     }
@@ -136,7 +139,7 @@ service cloud.firestore {
              data.authorUsername is string && data.authorUsername.size() >= 0 && data.authorUsername.size() <= 30 &&
              (!('authorPhoto' in data) || data.authorPhoto == null || data.authorPhoto == '' || (data.authorPhoto is string && data.authorPhoto.size() <= 2000)) &&
              (!('authorVerified' in data) || data.authorVerified is bool) &&
-             (!('authorPremiumTier' in data) || data.authorPremiumTier in ['silver', 'gold', 'black']) &&
+             (!('authorPremiumTier' in data) || data.authorPremiumTier == null || data.authorPremiumTier in ['silver', 'gold', 'black']) &&
              data.createdAt is timestamp &&
              (!('updatedAt' in data) || data.updatedAt is timestamp) &&
              (!('isEdited' in data) || data.isEdited is bool) &&
@@ -148,7 +151,7 @@ service cloud.firestore {
              (!('originalPostAuthorUsername' in data) || (data.originalPostAuthorUsername is string && data.originalPostAuthorUsername.size() <= 30)) &&
              (!('originalPostAuthorPhoto' in data) || data.originalPostAuthorPhoto == null || (data.originalPostAuthorPhoto is string && data.originalPostAuthorPhoto.size() <= 2000)) &&
              (!('originalPostAuthorVerified' in data) || data.originalPostAuthorVerified is bool) &&
-             (!('originalPostAuthorPremiumTier' in data) || data.originalPostAuthorPremiumTier in ['silver', 'gold', 'black']) &&
+             (!('originalPostAuthorPremiumTier' in data) || data.originalPostAuthorPremiumTier == null || data.originalPostAuthorPremiumTier in ['silver', 'gold', 'black']) &&
              (!('likesCount' in data) || (data.likesCount is number && data.likesCount >= 0)) &&
              (!('repliesCount' in data) || (data.repliesCount is number && data.repliesCount >= 0)) &&
              (!('repostsCount' in data) || data.repostsCount is number && data.repostsCount >= 0) &&
