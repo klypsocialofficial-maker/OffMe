@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
+import { getDefaultAvatar } from '../lib/avatar';
 
 enum OperationType {
   CREATE = 'create',
@@ -101,9 +102,12 @@ export default function Messages() {
         ...doc.data()
       }));
       
-      // Filter out archived and sort by updatedAt descending in memory
+      // Filter out archived, muted and sort by updatedAt descending in memory
       results = results
-        .filter((conv: any) => conv.archived !== true)
+        .filter((conv: any) => {
+          const otherParticipantId = conv.participants.find((id: string) => id !== userProfile?.uid);
+          return conv.archived !== true && !userProfile?.mutedUsers?.includes(otherParticipantId);
+        })
         .sort((a: any, b: any) => {
           const timeA = typeof a.updatedAt?.toMillis === 'function' ? a.updatedAt.toMillis() : 0;
           const timeB = typeof b.updatedAt?.toMillis === 'function' ? b.updatedAt.toMillis() : 0;
@@ -157,7 +161,7 @@ export default function Messages() {
               {userProfile?.photoURL ? (
                 <LazyImage src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full" />
               ) : (
-                <UserIcon className="w-full h-full p-1.5 text-gray-400" />
+                <LazyImage src={getDefaultAvatar(userProfile?.displayName || '', userProfile?.username || '')} alt={userProfile?.displayName} className="w-full h-full" />
               )}
             </button>
             <h1 className="text-xl font-black tracking-tight">Mensagens</h1>
@@ -187,7 +191,7 @@ export default function Messages() {
                     {otherParticipantInfo?.photoURL ? (
                       <LazyImage src={otherParticipantInfo.photoURL} alt={otherParticipantInfo.displayName} className="w-full h-full" />
                     ) : (
-                      <UserIcon className="w-full h-full p-2 text-gray-400" />
+                      <LazyImage src={getDefaultAvatar(otherParticipantInfo?.displayName || 'Usuário', otherParticipantInfo?.username || '')} alt={otherParticipantInfo?.displayName} className="w-full h-full" />
                     )}
                   </div>
                       <div className="flex-1 min-w-0">

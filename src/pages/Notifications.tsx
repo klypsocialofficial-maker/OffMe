@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { collection, query, where, orderBy, onSnapshot, limit, doc, updateDoc, writeBatch, getDocs } from 'firebase/firestore';
 import { db, auth } from '../firebase';
+import { getDefaultAvatar } from '../lib/avatar';
 import { motion, AnimatePresence } from 'motion/react';
 
 enum OperationType {
@@ -120,7 +121,7 @@ export default function Notifications() {
               {userProfile?.photoURL ? (
                 <LazyImage src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full" />
               ) : (
-                <UserIcon className="w-full h-full p-2 text-gray-400" />
+                <LazyImage src={getDefaultAvatar(userProfile?.displayName || '', userProfile?.username || '')} alt={userProfile?.displayName} className="w-full h-full" />
               )}
             </button>
             <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 z-10">
@@ -191,6 +192,9 @@ export default function Notifications() {
               ? notifications.filter(n => n.senderVerified || n.senderUsername === 'Rulio') 
               : notifications;
             
+            // Filter out notifications from muted users
+            filtered = filtered.filter(n => !userProfile?.mutedUsers?.includes(n.senderId));
+            
             if (activeType !== 'all') {
               filtered = filtered.filter(n => n.type === activeType);
             }
@@ -236,7 +240,7 @@ export default function Notifications() {
                             {notification.senderPhoto ? (
                               <LazyImage src={notification.senderPhoto} alt={notification.senderName} className="w-full h-full" />
                             ) : (
-                              <UserIcon className="w-full h-full p-2 text-gray-400" />
+                              <LazyImage src={getDefaultAvatar(notification.senderName, notification.senderUsername)} alt={notification.senderName} className="w-full h-full" />
                             )}
                           </button>
                           {!notification.read && (

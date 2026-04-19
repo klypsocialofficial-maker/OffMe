@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { LogOut, User as UserIcon, Plus } from 'lucide-react';
 import VerifiedBadge from '../VerifiedBadge';
 import LazyImage from '../LazyImage';
+import { getDefaultAvatar } from '../../lib/avatar';
 
 interface AndroidLayoutProps {
   userProfile: any;
@@ -118,12 +119,16 @@ export default function AndroidLayout({
               className="fixed top-0 left-0 bottom-0 w-[280px] bg-white z-50 sm:hidden shadow-2xl flex flex-col"
             >
               <div className="p-6 bg-gray-50 border-b border-gray-100">
-                <div 
-                  className="w-16 h-16 rounded-full bg-gray-200 overflow-hidden mb-4 border-2 border-white shadow-md"
-                  onClick={() => userProfile?.photoURL && openImageViewer(userProfile.photoURL, `Avatar de ${userProfile.displayName}`)}
-                >
-                  <LazyImage src={userProfile?.photoURL || '/ghost.svg'} alt={userProfile?.displayName} className="w-full h-full" />
-                </div>
+                  <div 
+                    className="w-16 h-16 rounded-full bg-gray-200 overflow-hidden mb-4 border-2 border-white shadow-md"
+                    onClick={() => userProfile?.photoURL && openImageViewer(userProfile.photoURL, `Avatar de ${userProfile.displayName}`)}
+                  >
+                    {userProfile?.photoURL ? (
+                      <LazyImage src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full" />
+                    ) : (
+                      <LazyImage src={getDefaultAvatar(userProfile?.displayName || '', userProfile?.username || '')} alt={userProfile?.displayName} className="w-full h-full" />
+                    )}
+                  </div>
                 <div className="flex items-center space-x-1">
                   <h2 className="font-bold text-lg text-gray-900">{userProfile?.displayName}</h2>
                   {(userProfile?.isVerified || userProfile?.username === 'Rulio') && <VerifiedBadge className="w-4 h-4" tier={userProfile?.premiumTier} />}

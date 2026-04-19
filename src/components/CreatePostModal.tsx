@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import VerifiedBadge from './VerifiedBadge';
 import LazyImage from './LazyImage';
 import { GiphyFetch } from '@giphy/js-fetch-api';
+import { getDefaultAvatar } from '../lib/avatar';
 import { Grid } from '@giphy/react-components';
 import { handleMentions, sendPushNotification, notifyFollowers } from '../lib/notifications';
 
@@ -129,7 +130,7 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
     const hasValidPoll = showPoll && validPollOptions.length >= 2;
     
     const canPostAnonymously = isAnonymous;
-    if ((!content.trim() && imageFiles.length === 0 && !gifUrl && !hasValidPoll) || (!userProfile && !canPostAnonymously) || !db || content.length > 1000) return;
+    if (!content.trim() || (!userProfile && !canPostAnonymously) || !db || content.length > 1000) return;
 
     try {
       setLoading(true);
@@ -307,7 +308,7 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
                 )}
                 <button
                   onClick={handlePost}
-                  disabled={(!content.trim() && imageFiles.length === 0 && !gifUrl && !(showPoll && pollOptions.filter(o => o.trim()).length >= 2)) || loading || content.length > 1000}
+                  disabled={!content.trim() || loading || content.length > 1000}
                   className="bg-blue-500 text-white px-4 py-1.5 rounded-full font-bold hover:bg-blue-600 disabled:bg-blue-300 disabled:opacity-50 transition-colors text-sm"
                 >
                   {loading ? 'Postando...' : 'Post'}
@@ -324,7 +325,7 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
                       {replyTo.authorPhoto ? (
                         <LazyImage src={replyTo.authorPhoto} alt={replyTo.authorName} className="w-full h-full" />
                       ) : (
-                        <UserIcon className="w-full h-full p-2 text-gray-400" />
+                        <LazyImage src={getDefaultAvatar(replyTo.authorName, replyTo.authorUsername)} alt={replyTo.authorName} className="w-full h-full" />
                       )}
                     </div>
                     <div className="w-0.5 flex-1 bg-gray-200 my-1" />
@@ -346,7 +347,7 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
                   ) : userProfile?.photoURL ? (
                     <LazyImage src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full" />
                   ) : (
-                    <UserIcon className="w-full h-full p-2 text-gray-400" />
+                    <LazyImage src={getDefaultAvatar(userProfile?.displayName || '', userProfile?.username || '')} alt={userProfile?.displayName} className="w-full h-full" />
                   )}
                 </div>
 

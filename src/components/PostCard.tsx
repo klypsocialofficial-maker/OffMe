@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
-import { User as UserIcon, MoreHorizontal, Trash2, Edit2, Send, Zap as ZapIcon, MessageCircle, Repeat, Heart, Ghost } from 'lucide-react';
+import { User as UserIcon, MoreHorizontal, Trash2, Edit2, Send, Zap as ZapIcon, MessageCircle, Repeat, Heart, Ghost, VolumeX, UserX, ShieldAlert } from 'lucide-react';
 import { formatRelativeTime } from '../lib/dateUtils';
 import VerifiedBadge from './VerifiedBadge';
 import PostContent from './PostContent';
 import QuotedPost from './QuotedPost';
 import Poll from './Poll';
 import { useAuth } from '../contexts/AuthContext';
+import { getDefaultAvatar } from '../lib/avatar';
 
 import PostImageGrid from './PostImageGrid';
 import LazyImage from './LazyImage';
@@ -39,7 +40,7 @@ export default function PostCard({
   canEdit
 }: PostCardProps) {
   const navigate = useNavigate();
-  const { userProfile } = useAuth();
+  const { userProfile, muteUser, unmuteUser, blockUser, unblockUser } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const stopPropagation = (e: React.MouseEvent) => e.stopPropagation();
@@ -71,6 +72,12 @@ export default function PostCard({
   };
 
   const effectivePost = post.type === 'repost' ? { ...post, id: post.repostedPostId } : post;
+
+  // Don't show posts from blocked users
+  const authorId = post.type === 'repost' ? post.originalPostAuthorId : post.authorId;
+  if (userProfile?.blockedUsers?.includes(authorId)) {
+    return null;
+  }
 
   return (
     <motion.article 
@@ -107,12 +114,12 @@ export default function PostCard({
             post.originalPostAuthorPhoto ? (
               <LazyImage src={post.originalPostAuthorPhoto} alt={post.originalPostAuthorName} className="w-full h-full" />
             ) : (
-              <UserIcon className="w-full h-full p-2 text-gray-400" />
+              <LazyImage src={getDefaultAvatar(post.originalPostAuthorName, post.originalPostAuthorUsername)} alt={post.originalPostAuthorName} className="w-full h-full" />
             )
           ) : post.authorPhoto ? (
             <LazyImage src={post.authorPhoto} alt={post.authorName} className="w-full h-full" />
           ) : (
-            <UserIcon className="w-full h-full p-2 text-gray-400" />
+            <LazyImage src={getDefaultAvatar(post.authorName, post.authorUsername)} alt={post.authorName} className="w-full h-full" />
           )}
         </div>
 
@@ -185,12 +192,64 @@ export default function PostCard({
                     </button>
                   </>
                 ) : post.authorId !== 'anonymous' ? (
-                  <button 
-                    className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
-                  >
-                    <UserIcon className="w-4 h-4" />
-                    <span>Seguir @{post.authorUsername}</span>
-                  </button>
+                  <>
+                    <button 
+                      onClick={async () => {
+                        try {
+                          await navigate(`/${post.authorUsername}`);
+                        } finally {
+                          setIsMenuOpen(false);
+                        }
+                      }}
+                      className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                    >
+                      <UserIcon className="w-4 h-4" />
+                      <span>Ver perfil @{post.authorUsername}</span>
+                    </button>
+
+                    <button 
+                      onClick={async () => {
+                        try {
+                          if (userProfile?.mutedUsers?.includes(post.authorId)) {
+                            await unmuteUser(post.authorId);
+                          } else {
+                            await muteUser(post.authorId);
+                          }
+                        } finally {
+                          setIsMenuOpen(false);
+                        }
+                      }}
+                      className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                    >
+                      <VolumeX className="w-4 h-4" />
+                      <span>{userProfile?.mutedUsers?.includes(post.authorId) ? 'Desmutar' : 'Mutar'} @{post.authorUsername}</span>
+                    </button>
+
+                    <button 
+                      onClick={async () => {
+                        try {
+                          await blockUser(post.authorId);
+                        } finally {
+                          setIsMenuOpen(false);
+                        }
+                      }}
+                      className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 flex items-center space-x-2"
+                    >
+                      <UserX className="w-4 h-4" />
+                      <span>Bloquear @{post.authorUsername}</span>
+                    </button>
+
+                    <button 
+                      onClick={async () => {
+                        setIsMenuOpen(false);
+                        // Reporting logic would go here
+                      }}
+                      className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                    >
+                      <ShieldAlert className="w-4 h-4" />
+                      <span>Denunciar post</span>
+                    </button>
+                  </>
                 ) : (
                   <div className="px-4 py-2 text-xs text-gray-400 italic">Post anônimo</div>
                 )}

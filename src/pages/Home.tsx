@@ -22,6 +22,7 @@ import { awardPoints } from '../services/gamificationService';
 import PullToRefresh from '../components/PullToRefresh';
 import { motion, AnimatePresence } from 'motion/react';
 import { formatRelativeTime } from '../lib/dateUtils';
+import { getDefaultAvatar } from '../lib/avatar';
 
 enum OperationType {
   CREATE = 'create',
@@ -596,7 +597,7 @@ export default function Home() {
                   {userProfile?.photoURL ? (
                     <LazyImage src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full" />
                   ) : (
-                    <UserIcon className="w-full h-full p-2 text-gray-400" />
+                    <LazyImage src={getDefaultAvatar(userProfile?.displayName || '', userProfile?.username || '')} alt={userProfile?.displayName} className="w-full h-full" />
                   )}
                 </button>
               </div>
@@ -759,11 +760,15 @@ export default function Home() {
               ) : (
                 <div className="px-4 space-y-4 pb-20">
                   {(() => {
-                    const filtered = displayedPosts.filter(post => 
-                      post.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      post.authorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      post.authorUsername.toLowerCase().includes(searchQuery.toLowerCase())
-                    );
+                    const filtered = displayedPosts.filter(post => {
+                      const isMuted = userProfile?.mutedUsers?.includes(post.authorId);
+                      const isBlocked = userProfile?.blockedUsers?.includes(post.authorId);
+                      if (isMuted || isBlocked) return false;
+
+                      return post.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        post.authorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        post.authorUsername.toLowerCase().includes(searchQuery.toLowerCase());
+                    });
                     
                     if (filtered.length === 0 && searchQuery) {
                       return (

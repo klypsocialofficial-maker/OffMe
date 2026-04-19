@@ -110,7 +110,7 @@ service cloud.firestore {
     // ===============================================================
 
     function isValidUser(data) {
-      return hasOnlyAllowedFields(['uid', 'email', 'username', 'displayName', 'photoURL', 'bannerURL', 'bio', 'location', 'website', 'following', 'followers', 'isVerified', 'isPremium', 'premiumTier', 'category', 'createdAt', 'updatedAt', 'fcmTokens', 'points', 'level', 'badges']) &&
+      return hasOnlyAllowedFields(['uid', 'email', 'username', 'displayName', 'photoURL', 'bannerURL', 'bio', 'location', 'website', 'following', 'followers', 'isVerified', 'isPremium', 'premiumTier', 'category', 'createdAt', 'updatedAt', 'fcmTokens', 'points', 'level', 'badges', 'mutedUsers']) &&
              data.uid is string && data.uid == request.auth.uid &&
              data.email is string && isValidEmail(data.email) &&
              data.username is string && data.username.size() > 0 && data.username.size() <= 50 &&
@@ -123,6 +123,7 @@ service cloud.firestore {
              (!('category' in data) || data.category == '' || (data.category is string && data.category.size() <= 50)) &&
              (!('following' in data) || data.following is list) &&
              (!('followers' in data) || data.followers is list) &&
+             (!('mutedUsers' in data) || data.mutedUsers is list) &&
              (!('isVerified' in data) || data.isVerified is bool) &&
              (!('isPremium' in data) || data.isPremium is bool) &&
              (!('premiumTier' in data) || data.premiumTier == null || data.premiumTier in ['silver', 'gold', 'black']) &&

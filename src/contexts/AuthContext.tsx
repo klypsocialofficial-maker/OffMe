@@ -16,7 +16,7 @@ import {
   ConfirmationResult,
   sendEmailVerification
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, onSnapshot, serverTimestamp, collection, query, where, getDocs, updateDoc, arrayUnion, deleteDoc, addDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot, serverTimestamp, collection, query, where, getDocs, updateDoc, arrayUnion, arrayRemove, deleteDoc, addDoc } from 'firebase/firestore';
 import { sendPushNotification } from '../lib/notifications';
 import { awardPoints } from '../services/gamificationService';
 
@@ -84,6 +84,8 @@ interface UserProfile {
   category?: string;
   following?: string[];
   followers?: string[];
+  mutedUsers?: string[];
+  blockedUsers?: string[];
   isVerified?: boolean;
   isPremium?: boolean;
   premiumTier?: 'silver' | 'gold' | 'black';
@@ -110,6 +112,10 @@ interface AuthContextType {
   deleteAccount: () => Promise<void>;
   followUser: (targetUid: string) => Promise<void>;
   unfollowUser: (targetUid: string) => Promise<void>;
+  muteUser: (targetUid: string) => Promise<void>;
+  unmuteUser: (targetUid: string) => Promise<void>;
+  blockUser: (targetUid: string) => Promise<void>;
+  unblockUser: (targetUid: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -468,6 +474,69 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const unmuteUser = async (targetUid: string) => {
+    if (!currentUser || !userProfile) throw new Error("User not authenticated");
+    const userRef = doc(db, 'users', currentUser.uid);
+    try {
+      await updateDoc(userRef, {
+        mutedUsers: arrayRemove(targetUid)
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `users/${currentUser.uid}`);
+    }
+  };
+
+  const muteUser = async (targetUid: string) => {
+    if (!currentUser || !userProfile) throw new Error("User not authenticated");
+    const userRef = doc(db, 'users', currentUser.uid);
+    try {
+      await updateDoc(userRef, {
+        mutedUsers: arrayUnion(targetUid)
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `users/${currentUser.uid}`);
+    }
+  };
+
+  const blockUser = async (targetUid: string) => {
+    if (!currentUser || !userProfile) throw new Error("User not authenticated");
+    const userRef = doc(db, 'users', currentUser.uid);
+    try {
+      // Blocking automatically unfollows
+      const newFollowing = (userProfile.following || []).filter(id => id !== targetUid);
+      
+      await updateDoc(userRef, {
+        blockedUsers: arrayUnion(targetUid),
+        following: newFollowing
+      });
+
+      // Also remove current user from target user's followers
+      const targetUserRef = doc(db, 'users', targetUid);
+      const targetSnap = await getDoc(targetUserRef);
+      if (targetSnap.exists()) {
+        const targetData = targetSnap.data();
+        const newFollowers = (targetData.followers || []).filter((id: string) => id !== currentUser.uid);
+        await updateDoc(targetUserRef, {
+          followers: newFollowers
+        });
+      }
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `users/${currentUser.uid}`);
+    }
+  };
+
+  const unblockUser = async (targetUid: string) => {
+    if (!currentUser || !userProfile) throw new Error("User not authenticated");
+    const userRef = doc(db, 'users', currentUser.uid);
+    try {
+      await updateDoc(userRef, {
+        blockedUsers: arrayRemove(targetUid)
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `users/${currentUser.uid}`);
+    }
+  };
+
   const value = {
     currentUser,
     userProfile,
@@ -484,7 +553,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     updateUserUsername,
     deleteAccount,
     followUser,
-    unfollowUser
+    unfollowUser,
+    muteUser,
+    unmuteUser,
+    blockUser,
+    unblockUser
   };
 
   return (

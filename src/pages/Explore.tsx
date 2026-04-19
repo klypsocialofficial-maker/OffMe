@@ -8,6 +8,7 @@ import Toast from '../components/Toast';
 import LazyImage from '../components/LazyImage';
 import { useAuth } from '../contexts/AuthContext';
 import { useOutletContext, Link, useNavigate } from 'react-router-dom';
+import { getDefaultAvatar } from '../lib/avatar';
 import { collection, query, where, onSnapshot, limit, addDoc, serverTimestamp, getDocs, doc, updateDoc, arrayUnion, arrayRemove, orderBy, getDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { rankSuggestedUsers } from '../lib/gemini';
@@ -115,6 +116,10 @@ export default function Explore() {
 
   const handleMessageClick = async (otherUser: any) => {
     if (!userProfile?.uid || !db) return;
+    if (userProfile?.blockedUsers?.includes(otherUser.id)) {
+      showToast('Você bloqueou este usuário.', 'error');
+      return;
+    }
 
     try {
       // Check if conversation already exists
@@ -169,6 +174,11 @@ export default function Explore() {
   const handleFollowClick = async (otherUser: any) => {
     if (!userProfile?.uid || !db) return;
     
+    if (userProfile?.blockedUsers?.includes(otherUser.id)) {
+      showToast('Usuário bloqueado.', 'error');
+      return;
+    }
+
     const isFollowing = userProfile.following?.includes(otherUser.id);
     
     if (isFollowing) {
@@ -306,7 +316,8 @@ export default function Explore() {
           });
         }
 
-        const candidates = Array.from(candidatesMap.values());
+        const candidates = Array.from(candidatesMap.values())
+          .filter(u => !userProfile?.blockedUsers?.includes(u.id));
         
         // 5. Gemini Ranking
         if (candidates.length > 0) {
@@ -399,7 +410,10 @@ export default function Explore() {
         addDocs(snap3);
         addDocs(snap4);
 
-        setSearchResults(Array.from(resultsMap.values()).slice(0, 20));
+        const finalResults = Array.from(resultsMap.values())
+          .filter(u => !userProfile?.blockedUsers?.includes(u.id));
+
+        setSearchResults(finalResults.slice(0, 20));
       } catch (error) {
         console.error("Error searching users:", error);
       } finally {
@@ -419,7 +433,7 @@ export default function Explore() {
               {userProfile?.photoURL ? (
                 <LazyImage src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full" />
               ) : (
-                <UserIcon className="w-full h-full p-2 text-gray-400" />
+                <LazyImage src={getDefaultAvatar(userProfile?.displayName || '', userProfile?.username || '')} alt={userProfile?.displayName} className="w-full h-full" />
               )}
             </button>
             <div className="relative flex-1 group">
@@ -492,7 +506,7 @@ export default function Explore() {
                           {user.photoURL ? (
                             <LazyImage src={user.photoURL} alt={user.displayName} className="w-full h-full" />
                           ) : (
-                            <UserIcon className="w-full h-full p-2 text-gray-400" />
+                            <LazyImage src={getDefaultAvatar(user.displayName, user.username)} alt={user.displayName} className="w-full h-full" />
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
@@ -642,7 +656,7 @@ export default function Explore() {
                                   {user.photoURL ? (
                                     <LazyImage src={user.photoURL} alt={user.displayName} className="w-full h-full group-hover:scale-110 transition-transform" />
                                   ) : (
-                                    <UserIcon className="w-full h-full p-4 text-gray-400" />
+                                    <LazyImage src={getDefaultAvatar(user.displayName, user.username)} alt={user.displayName} className="w-full h-full group-hover:scale-110 transition-transform" />
                                   )}
                                 </div>
                                 <div className="min-w-0 w-full mb-3">

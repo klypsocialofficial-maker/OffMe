@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { formatRelativeTime } from '../lib/dateUtils';
 import { sendPushNotification } from '../lib/notifications';
 import { awardPoints } from '../services/gamificationService';
+import { getDefaultAvatar } from '../lib/avatar';
 import CreatePostModal from '../components/CreatePostModal';
 import SharePostModal from '../components/SharePostModal';
 import Toast from '../components/Toast';
@@ -153,15 +154,18 @@ export default function PostDetail() {
       const repliesData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
-      }));
-      setReplies(repliesData);
+      }) as any);
+      
+      // Filter out replies from muted users
+      const filteredReplies = repliesData.filter((reply: any) => !userProfile?.mutedUsers?.includes(reply.authorId));
+      setReplies(filteredReplies);
     });
 
     return () => {
       unsubscribePost();
       unsubscribeReplies();
     };
-  }, [postId]);
+  }, [postId, userProfile?.mutedUsers]);
 
   const handleDeleteReply = async (replyId: string) => {
     if (!db || !userProfile) return;
@@ -341,6 +345,7 @@ export default function PostDetail() {
         // Create new repost document
         await addDoc(collection(db, 'posts'), {
           authorId: userProfile.uid,
+          ownerId: userProfile.uid,
           authorName: userProfile.displayName,
           authorUsername: userProfile.username,
           authorPhoto: userProfile.photoURL || null,
@@ -435,7 +440,7 @@ export default function PostDetail() {
               {post.authorPhoto ? (
                 <LazyImage src={post.authorPhoto} alt={post.authorName} className="w-full h-full" />
               ) : (
-                <UserIcon className="w-full h-full p-2 text-gray-400" />
+                <LazyImage src={getDefaultAvatar(post.authorName, post.authorUsername)} alt={post.authorName} className="w-full h-full" />
               )}
             </div>
             <div className="flex-1 min-w-0">
@@ -625,7 +630,7 @@ export default function PostDetail() {
             {userProfile?.photoURL ? (
               <LazyImage src={userProfile.photoURL} alt="Your profile" className="w-full h-full" />
             ) : (
-              <UserIcon className="w-full h-full p-2 text-gray-400" />
+              <LazyImage src={getDefaultAvatar(userProfile?.displayName || '', userProfile?.username || '')} alt="Your profile" className="w-full h-full" />
             )}
           </div>
           <span className="text-gray-500 text-lg">Postar sua resposta</span>
@@ -662,7 +667,7 @@ export default function PostDetail() {
                       {reply.authorPhoto ? (
                         <LazyImage src={reply.authorPhoto} alt={reply.authorName} className="w-full h-full" />
                       ) : (
-                        <UserIcon className="w-full h-full p-2 text-gray-400" />
+                        <LazyImage src={getDefaultAvatar(reply.authorName, reply.authorUsername)} alt={reply.authorName} className="w-full h-full" />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">

@@ -2,6 +2,9 @@
 
 import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
 import { clientsClaim } from 'workbox-core';
+import { registerRoute, NavigationRoute } from 'workbox-routing';
+import { NetworkFirst } from 'workbox-strategies';
+import * as navigationPreload from 'workbox-navigation-preload';
 
 declare const self: ServiceWorkerGlobalScope & {
   __WB_MANIFEST: any;
@@ -10,6 +13,29 @@ declare const self: ServiceWorkerGlobalScope & {
 // PWA Logic
 cleanupOutdatedCaches();
 precacheAndRoute(self.__WB_MANIFEST);
+
+// Enable navigation preload
+navigationPreload.enable();
+
+// Register a route for navigation requests (HTML)
+// Use NetworkFirst strategy which will use the preloaded response if available.
+// We also add a plugin to fallback to index.html if the network is down or the request fails.
+const navigationRoute = new NavigationRoute(
+  new NetworkFirst({
+    cacheName: 'navigations',
+    plugins: [
+      {
+        // If the fetch fails (e.g., offline and not in cache), return the precached index.html
+        handlerDidError: async () => {
+          return await caches.match('/index.html') || Response.error();
+        },
+      },
+    ],
+  })
+);
+
+registerRoute(navigationRoute);
+
 self.skipWaiting();
 clientsClaim();
 

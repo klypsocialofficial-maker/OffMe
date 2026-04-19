@@ -5,11 +5,13 @@ import { useAuth } from '../contexts/AuthContext';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { motion } from 'motion/react';
+import UserListModal from '../components/UserListModal';
 
 export default function PrivacySettings() {
   const navigate = useNavigate();
   const { userProfile } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [isBlockedModalOpen, setIsBlockedModalOpen] = useState(false);
   const [settings, setSettings] = useState({
     privateProfile: false,
     sensitiveContent: false,
@@ -117,7 +119,10 @@ export default function PrivacySettings() {
         <section>
           <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4 px-1">Segurança</h2>
           <div className="space-y-4">
-            <button className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-zinc-900 rounded-2xl border border-gray-100 dark:border-zinc-800 hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+            <button 
+              onClick={() => setIsBlockedModalOpen(true)}
+              className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-zinc-900 rounded-2xl border border-gray-100 dark:border-zinc-800 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+            >
               <div className="flex items-center space-x-4">
                 <div className="p-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full">
                   <UserX className="w-5 h-5" />
@@ -145,6 +150,14 @@ export default function PrivacySettings() {
           </div>
         </section>
       </div>
+
+      <UserListModal 
+        isOpen={isBlockedModalOpen}
+        onClose={() => setIsBlockedModalOpen(false)}
+        title="Contas bloqueadas"
+        uids={userProfile?.blockedUsers || []}
+        isBlockedList
+      />
     </div>
   );
 }

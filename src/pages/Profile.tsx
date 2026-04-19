@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { User as UserIcon, Calendar, MapPin, Link as LinkIcon, Edit2, Trash2, BarChart2, MessageCircle, Heart, Repeat, Send, MoreHorizontal, ArrowLeft, Search, Share, Briefcase, Plus, AlertCircle, Star } from 'lucide-react';
+import { User as UserIcon, Calendar, MapPin, Link as LinkIcon, Edit2, Trash2, BarChart2, MessageCircle, Heart, Repeat, Send, MoreHorizontal, ArrowLeft, Search, Share, Briefcase, Plus, AlertCircle, Star, VolumeX, Volume2, UserX } from 'lucide-react';
 import EditProfileModal from '../components/EditProfileModal';
 import CreatePostModal from '../components/CreatePostModal';
 import Toast from '../components/Toast';
@@ -16,8 +16,10 @@ import PostCard from '../components/PostCard';
 import BadgeDisplay from '../components/BadgeDisplay';
 import GamerCard from '../components/GamerCard';
 import LazyImage from '../components/LazyImage';
+import UserListModal from '../components/UserListModal';
 import { handleMentions, sendPushNotification } from '../lib/notifications';
 import { awardPoints } from '../services/gamificationService';
+import { getDefaultAvatar } from '../lib/avatar';
 import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, arrayRemove, arrayUnion, addDoc, serverTimestamp, deleteDoc, getDocs, limit } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { motion, AnimatePresence } from 'motion/react';
@@ -76,12 +78,12 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 
 export default function Profile() {
   const [verificationSent, setVerificationSent] = useState(false);
-  const { userProfile, currentUser, sendVerificationEmail, followUser, unfollowUser } = useAuth();
+  const { userProfile, currentUser, sendVerificationEmail, followUser, unfollowUser, muteUser, unmuteUser, blockUser, unblockUser } = useAuth();
   const { username } = useParams();
   const navigate = useNavigate();
   const [profileUser, setProfileUser] = useState<any>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'posts' | 'replies' | 'media' | 'likes'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'replies' | 'media' | 'likes' | 'anonymous'>('posts');
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeMenuPostId, setActiveMenuPostId] = useState<string | null>(null);
@@ -113,6 +115,9 @@ export default function Profile() {
 
   const [isScrolled, setIsScrolled] = useState(false);
   const [isGamerCardOpen, setIsGamerCardOpen] = useState(false);
+  const [isUserListModalOpen, setIsUserListModalOpen] = useState(false);
+  const [userListTitle, setUserListTitle] = useState('');
+  const [userListUids, setUserListUids] = useState<string[]>([]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -177,7 +182,7 @@ export default function Profile() {
         const unique = Array.from(new Map(merged.map(item => [item.id, item])).values());
         
         // Filter out replies for the main "Posts" tab
-        const filtered = unique.filter((post: any) => !post.replyToId);
+        const filtered = unique.filter((post: any) => !post.replyToId && !post.isAnonymous);
         
         // Sort by createdAt
         filtered.sort((a: any, b: any) => {
@@ -221,6 +226,13 @@ export default function Profile() {
         q = query(
           collection(db, 'posts'),
           where('likes', 'array-contains', profileUser.uid),
+          orderBy('createdAt', 'desc')
+        );
+      } else if (activeTab === 'anonymous') {
+        q = query(
+          collection(db, 'posts'),
+          where('ownerId', '==', profileUser.uid),
+          where('isAnonymous', '==', true),
           orderBy('createdAt', 'desc')
         );
       } else {
@@ -603,7 +615,7 @@ export default function Profile() {
             className="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-white bg-white overflow-hidden shadow-2xl cursor-zoom-in transform transition-transform active:scale-95"
             onClick={() => profileUser.photoURL && openImageViewer(profileUser.photoURL, `Avatar de ${profileUser.displayName}`)}
           >
-            <LazyImage src={profileUser.photoURL || '/ghost.svg'} alt={profileUser.displayName} className="w-full h-full" />
+            <LazyImage src={profileUser.photoURL || getDefaultAvatar(profileUser.displayName, profileUser.username)} alt={profileUser.displayName} className="w-full h-full" />
           </div>
           
           {/* Level Star Badge */}
@@ -640,6 +652,52 @@ export default function Profile() {
           {profileUser.uid !== userProfile?.uid && (
             <div className="flex space-x-2">
               <button 
+                onClick={async () => {
+                  try {
+                    if (userProfile?.mutedUsers?.includes(profileUser.uid)) {
+                      await unmuteUser(profileUser.uid);
+                      showToast(`Você desmutou @${profileUser.username}`, 'info');
+                    } else {
+                      await muteUser(profileUser.uid);
+                      showToast(`Você mutou @${profileUser.username}`, 'success');
+                    }
+                  } catch (error) {
+                    handleFirestoreError(error, OperationType.UPDATE, 'users');
+                  }
+                }}
+                className={`p-2 border rounded-full transition-all active:scale-95 ${
+                  userProfile?.mutedUsers?.includes(profileUser.uid)
+                    ? 'bg-red-50 border-red-100 text-red-500'
+                    : 'border-gray-200 text-black hover:bg-gray-50'
+                }`}
+                title={userProfile?.mutedUsers?.includes(profileUser.uid) ? 'Desmutar' : 'Mutar'}
+              >
+                {userProfile?.mutedUsers?.includes(profileUser.uid) ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+              </button>
+              <button 
+                onClick={async () => {
+                  try {
+                    if (userProfile?.blockedUsers?.includes(profileUser.uid)) {
+                      await unblockUser(profileUser.uid);
+                      showToast(`Você desbloqueou @${profileUser.username}`, 'info');
+                    } else {
+                      await blockUser(profileUser.uid);
+                      showToast(`Você bloqueou @${profileUser.username}`, 'success');
+                    }
+                  } catch (error) {
+                    handleFirestoreError(error, OperationType.UPDATE, 'users');
+                  }
+                }}
+                className={`p-2 border rounded-full transition-all active:scale-95 ${
+                  userProfile?.blockedUsers?.includes(profileUser.uid)
+                    ? 'bg-red-600 border-red-600 text-white'
+                    : 'border-gray-200 text-black hover:bg-gray-50'
+                }`}
+                title={userProfile?.blockedUsers?.includes(profileUser.uid) ? 'Desbloquear' : 'Bloquear'}
+              >
+                <UserX className="w-4 h-4" />
+              </button>
+              <button 
                 onClick={handleMessageClick}
                 className="p-2 border border-gray-200 rounded-full hover:bg-gray-50 transition-all active:scale-95"
               >
@@ -658,6 +716,22 @@ export default function Profile() {
             </div>
           )}
         </div>
+
+        {/* Blocked Overlay Message */}
+        {userProfile?.blockedUsers?.includes(profileUser.uid) && (
+          <div className="mt-4 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center justify-between">
+            <div>
+              <p className="text-red-800 font-bold">Você bloqueou @{profileUser.username}</p>
+              <p className="text-red-600 text-xs">Os posts e interações deste usuário estão ocultos.</p>
+            </div>
+            <button 
+              onClick={() => unblockUser(profileUser.uid)}
+              className="px-4 py-2 bg-red-600 text-white rounded-full font-bold text-sm hover:bg-red-700 transition-colors"
+            >
+              Desbloquear
+            </button>
+          </div>
+        )}
 
         {/* Bio with Stylized Look */}
         {profileUser.bio && (
@@ -697,11 +771,25 @@ export default function Profile() {
 
         {/* Stats */}
         <div className="flex space-x-4 mt-4">
-          <button className="flex items-center space-x-1.5 group">
+          <button 
+            className="flex items-center space-x-1.5 group"
+            onClick={() => {
+              setUserListTitle('Seguindo');
+              setUserListUids(profileUser.following || []);
+              setIsUserListModalOpen(true);
+            }}
+          >
             <span className="font-bold text-black">{profileUser.following?.length || 0}</span>
             <span className="text-gray-500 group-hover:underline text-sm">Seguindo</span>
           </button>
-          <button className="flex items-center space-x-1.5 group">
+          <button 
+            className="flex items-center space-x-1.5 group"
+            onClick={() => {
+              setUserListTitle('Seguidores');
+              setUserListUids(profileUser.followers || []);
+              setIsUserListModalOpen(true);
+            }}
+          >
             <span className="font-bold text-black">{profileUser.followers?.length || 0}</span>
             <span className="text-gray-500 group-hover:underline text-sm">Seguidores</span>
           </button>
@@ -768,6 +856,21 @@ export default function Profile() {
               )}
               Curtidas
             </button>
+            {profileUser.uid === userProfile?.uid && (
+              <button 
+                onClick={() => setActiveTab('anonymous')}
+                className={`relative w-1/2 flex-shrink-0 px-4 py-2 text-sm font-bold transition-colors duration-300 z-10 snap-center ${activeTab === 'anonymous' ? 'text-black' : 'text-gray-500 hover:text-black'}`}
+              >
+                {activeTab === 'anonymous' && (
+                  <motion.div
+                    layoutId="profile-tab-blob"
+                    className="absolute inset-0 bg-white/90 rounded-full -z-10 shadow-sm"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                )}
+                Anônimos
+              </button>
+            )}
           </nav>
         </div>
       </div>
@@ -905,6 +1008,13 @@ export default function Profile() {
         isOpen={isViewerOpen}
         onClose={() => setIsViewerOpen(false)}
         alt={viewerImage?.alt}
+      />
+
+      <UserListModal 
+        isOpen={isUserListModalOpen}
+        onClose={() => setIsUserListModalOpen(false)}
+        title={userListTitle}
+        uids={userListUids}
       />
     </div>
   );

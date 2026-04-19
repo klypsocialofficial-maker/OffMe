@@ -6,6 +6,7 @@ import { sendPushNotification } from '../lib/notifications';
 import VerifiedBadge from '../components/VerifiedBadge';
 import LazyImage from '../components/LazyImage';
 import { useAuth } from '../contexts/AuthContext';
+import { getDefaultAvatar } from '../lib/avatar';
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, getDoc, updateDoc, deleteDoc, writeBatch, increment, limit, where } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import CallOverlay from '../components/CallOverlay';
@@ -64,7 +65,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 export default function Chat() {
   const { conversationId } = useParams();
   const navigate = useNavigate();
-  const { userProfile } = useAuth();
+  const { userProfile, blockUser, unblockUser } = useAuth();
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
@@ -289,6 +290,7 @@ export default function Chat() {
 
   const otherParticipantId = conversation?.participants?.find((id: string) => id !== userProfile?.uid);
   const otherParticipantInfo = conversation?.participantInfo?.[otherParticipantId];
+  const isBlocked = otherParticipantId && userProfile?.blockedUsers?.includes(otherParticipantId);
 
   return (
     <div className="fixed inset-0 bg-white flex flex-col z-50 sm:absolute sm:inset-0">
@@ -304,7 +306,7 @@ export default function Chat() {
                 {otherParticipantInfo?.photoURL ? (
                   <LazyImage src={otherParticipantInfo.photoURL} alt={otherParticipantInfo.displayName} className="w-full h-full" />
                 ) : (
-                  <UserIcon className="w-full h-full p-2 text-gray-400" />
+                  <LazyImage src={getDefaultAvatar(otherParticipantInfo?.displayName || 'Usuário', otherParticipantInfo?.username || '')} alt={otherParticipantInfo?.displayName} className="w-full h-full" />
                 )}
               </div>
               <div>
@@ -319,14 +321,16 @@ export default function Chat() {
           
           <div className="flex items-center space-x-2">
             <button 
-              onClick={() => setActiveCall({ type: 'audio', isIncoming: false, callerId: userProfile?.uid || '' })}
-              className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition-colors"
+              onClick={() => !isBlocked && setActiveCall({ type: 'audio', isIncoming: false, callerId: userProfile?.uid || '' })}
+              disabled={isBlocked}
+              className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition-colors disabled:opacity-30"
             >
               <Phone className="w-5 h-5" />
             </button>
             <button 
-              onClick={() => setActiveCall({ type: 'video', isIncoming: false, callerId: userProfile?.uid || '' })}
-              className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition-colors"
+              onClick={() => !isBlocked && setActiveCall({ type: 'video', isIncoming: false, callerId: userProfile?.uid || '' })}
+              disabled={isBlocked}
+              className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition-colors disabled:opacity-30"
             >
               <Video className="w-5 h-5" />
             </button>
@@ -350,7 +354,7 @@ export default function Chat() {
                       otherParticipantInfo?.photoURL ? (
                         <LazyImage src={otherParticipantInfo.photoURL} alt={otherParticipantInfo.displayName} className="w-full h-full" />
                       ) : (
-                        <UserIcon className="w-full h-full p-1.5 text-gray-400" />
+                        <LazyImage src={getDefaultAvatar(otherParticipantInfo?.displayName || 'Usuário', otherParticipantInfo?.username || '')} alt={otherParticipantInfo?.displayName} className="w-full h-full" />
                       )
                     ) : (
                       <div className="w-8 h-8" /> // Placeholder to maintain alignment
@@ -433,28 +437,40 @@ export default function Chat() {
 
       {/* Input Area */}
       <div className="p-3 border-t border-gray-100 bg-white pb-[calc(env(safe-area-inset-bottom)+12px)] shrink-0 mt-auto">
-        <form onSubmit={handleSendMessage} className="flex items-center space-x-2 bg-gray-100 rounded-full px-4 py-2 w-full">
-          <button type="button" className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition-colors flex-shrink-0">
-            <ImageIcon className="w-5 h-5" />
-          </button>
-          <input
-            type="text"
-            value={newMessage}
-            onChange={(e) => {
-              setNewMessage(e.target.value);
-              handleTyping();
-            }}
-            placeholder="Comece uma mensagem"
-            className="flex-1 bg-transparent outline-none py-2"
-          />
-          <button 
-            type="submit" 
-            disabled={!newMessage.trim()}
-            className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition-colors disabled:opacity-50 flex-shrink-0"
-          >
-            <Send className="w-5 h-5" />
-          </button>
-        </form>
+        {isBlocked ? (
+          <div className="flex flex-col items-center justify-center space-y-2 py-4">
+            <p className="text-sm text-gray-500">Você bloqueou este usuário.</p>
+            <button 
+              onClick={() => unblockUser(otherParticipantId)}
+              className="text-sm font-bold text-red-600 hover:underline"
+            >
+              Desbloquear para enviar mensagem
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleSendMessage} className="flex items-center space-x-2 bg-gray-100 rounded-full px-4 py-2 w-full">
+            <button type="button" className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition-colors flex-shrink-0">
+              <ImageIcon className="w-5 h-5" />
+            </button>
+            <input
+              type="text"
+              value={newMessage}
+              onChange={(e) => {
+                setNewMessage(e.target.value);
+                handleTyping();
+              }}
+              placeholder="Comece uma mensagem"
+              className="flex-1 bg-transparent outline-none py-2"
+            />
+            <button 
+              type="submit" 
+              disabled={!newMessage.trim()}
+              className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition-colors disabled:opacity-50 flex-shrink-0"
+            >
+              <Send className="w-5 h-5" />
+            </button>
+          </form>
+        )}
       </div>
 
       {activeCall && conversationId && userProfile?.uid && otherParticipantId && (
