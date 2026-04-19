@@ -17,6 +17,11 @@
         "mutedUsers": { "type": "array", "items": { "type": "string" }, "description": "Array of UIDs this user has muted." },
         "blockedUsers": { "type": "array", "items": { "type": "string" }, "description": "Array of UIDs this user has blocked." },
         "bookmarks": { "type": "array", "items": { "type": "string" }, "description": "Array of post IDs this user has bookmarked." },
+        "pinnedPostIds": { "type": "array", "items": { "type": "string" }, "description": "Array of post IDs pinned to the user's profile." },
+        "mutedWords": { "type": "array", "items": { "type": "string" }, "description": "List of words or hashtags to filter from the feed." },
+        "profileTheme": { "type": "string", "description": "CSS or identifier for personal profile styling." },
+        "lastSeen": { "type": "timestamp", "description": "Last time the user was active." },
+        "activeMissions": { "type": "array", "items": { "type": "string" }, "description": "Current daily missions." },
         "points": { "type": "number", "description": "The user's earned points." },
         "level": { "type": "number", "description": "The user's current level." },
         "badges": { "type": "array", "items": { "type": "string" }, "description": "Array of earned badge IDs." },
@@ -43,9 +48,57 @@
         "replyToUsername": { "type": "string", "description": "The username of the author being replied to." },
         "replyToVerified": { "type": "boolean", "description": "Whether the author being replied to is verified." },
         "likes": { "type": "array", "items": { "type": "string" }, "description": "Array of UIDs who liked the post." },
-        "reposts": { "type": "array", "items": { "type": "string" }, "description": "Array of UIDs who reposted the post." }
+        "reposts": { "type": "array", "items": { "type": "string" }, "description": "Array of UIDs who reposted the post." },
+        "hashtags": { "type": "array", "items": { "type": "string" }, "description": "List of hashtags extracted from content." },
+        "isMoment": { "type": "boolean", "description": "Whether this is a story post." },
+        "expiresAt": { "type": "timestamp", "description": "Expiration time for moments." },
+        "scheduledFor": { "type": "timestamp", "description": "Time to publish (Premium)." },
+        "communityId": { "type": "string", "description": "The community this post belongs to." }
       },
       "required": ["content", "authorId", "authorName", "authorUsername", "createdAt", "likesCount", "repliesCount", "repostsCount"]
+    },
+    "Community": {
+      "title": "Community",
+      "description": "A group based on interests.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "slug": { "type": "string" },
+        "description": { "type": "string" },
+        "bannerUrl": { "type": "string" },
+        "memberCount": { "type": "number" },
+        "members": { "type": "array", "items": { "type": "string" } },
+        "moderators": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "timestamp" }
+      },
+      "required": ["name", "slug", "createdAt"]
+    },
+    "Report": {
+      "title": "Report",
+      "description": "A moderation report.",
+      "type": "object",
+      "properties": {
+        "reporterId": { "type": "string" },
+        "targetId": { "type": "string", "description": "Post ID or User ID being reported." },
+        "targetType": { "type": "string", "enum": ["post", "user", "comment"] },
+        "reason": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "resolved", "dismissed"] },
+        "createdAt": { "type": "timestamp" }
+      },
+      "required": ["reporterId", "targetId", "targetType", "reason", "status", "createdAt"]
+    },
+    "Mission": {
+      "title": "Mission",
+      "description": "A daily engagement goal.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "type": { "type": "string", "enum": ["like", "repost", "reply", "post"] },
+        "requirement": { "type": "number", "description": "Count needed to complete." },
+        "reward": { "type": "number", "description": "Points bestowed upon completion." },
+        "createdAt": { "type": "timestamp" }
+      },
+      "required": ["title", "type", "requirement", "reward", "createdAt"]
     },
     "Conversation": {
       "title": "Conversation",
@@ -137,6 +190,18 @@
     "/ads/{adId}": {
       "schema": { "$ref": "#/entities/Ad" },
       "description": "Stores advertisements."
+    },
+    "/communities/{communityId}": {
+      "schema": { "$ref": "#/entities/Community" },
+      "description": "Stores interest-based groups."
+    },
+    "/reports/{reportId}": {
+      "schema": { "$ref": "#/entities/Report" },
+      "description": "Stores moderation reports."
+    },
+    "/missions/{missionId}": {
+      "schema": { "$ref": "#/entities/Mission" },
+      "description": "Stores daily goals."
     }
   }
 }

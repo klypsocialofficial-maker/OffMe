@@ -6,6 +6,7 @@ import TrendingPosts from '../components/TrendingPosts';
 import ConfirmModal from '../components/ConfirmModal';
 import Toast from '../components/Toast';
 import LazyImage from '../components/LazyImage';
+import PostCard from '../components/PostCard';
 import { useAuth } from '../contexts/AuthContext';
 import { useOutletContext, Link, useNavigate } from 'react-router-dom';
 import { getDefaultAvatar } from '../lib/avatar';
@@ -90,7 +91,9 @@ export default function Explore() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [suggestedUsers, setSuggestedUsers] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState('foryou');
+  const [searchTab, setSearchTab] = useState<'users' | 'posts'>('users');
   const [loading, setLoading] = useState(false);
+  const [postsResults, setPostsResults] = useState<any[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(true);
   const [toast, setToast] = useState<{ message: string; type: 'info' | 'success' | 'error'; isOpen: boolean }>({
     message: '',
@@ -388,6 +391,22 @@ export default function Explore() {
 
     const fetchResults = async () => {
       try {
+        if (cleanQuery.startsWith('#')) {
+          setSearchTab('posts');
+          const hashtag = cleanQuery.substring(1).toLowerCase();
+          const qPosts = query(
+            collection(db, 'posts'),
+            where('hashtags', 'array-contains', hashtag),
+            orderBy('createdAt', 'desc'),
+            limit(20)
+          );
+          const postSnap = await getDocs(qPosts);
+          setPostsResults(postSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+          setSearchResults([]);
+          return;
+        }
+
+        // Default to users search but also fetch posts if available
         const [snap1, snap2, snap3, snap4] = await Promise.all([
           getDocs(qUsername),
           getDocs(qUsernameLower),
@@ -414,6 +433,16 @@ export default function Explore() {
           .filter(u => !userProfile?.blockedUsers?.includes(u.id));
 
         setSearchResults(finalResults.slice(0, 20));
+
+        // Also search for posts matching the content if not doing a hashtag search
+        const qContent = query(
+          collection(db, 'posts'),
+          where('content', '>=', searchQuery),
+          where('content', '<=', searchQuery + '\uf8ff'),
+          limit(20)
+        );
+        const postSnap = await getDocs(qContent);
+        setPostsResults(postSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       } catch (error) {
         console.error("Error searching users:", error);
       } finally {
@@ -449,7 +478,24 @@ export default function Explore() {
           </div>
         </div>
 
-        {!searchQuery.trim() && (
+        {searchQuery.trim() ? (
+          <div className="flex border-b border-black/5">
+            <button 
+              onClick={() => setSearchTab('users')}
+              className={`flex-1 py-3 text-sm font-bold transition-all relative ${searchTab === 'users' ? 'text-black' : 'text-gray-500'}`}
+            >
+              Pessoas
+              {searchTab === 'users' && <motion.div layoutId="search-tab-indicator" className="absolute bottom-0 left-8 right-8 h-0.5 bg-black rounded-full" />}
+            </button>
+            <button 
+              onClick={() => setSearchTab('posts')}
+              className={`flex-1 py-3 text-sm font-bold transition-all relative ${searchTab === 'posts' ? 'text-black' : 'text-gray-500'}`}
+            >
+              Posts
+              {searchTab === 'posts' && <motion.div layoutId="search-tab-indicator" className="absolute bottom-0 left-8 right-8 h-0.5 bg-black rounded-full" />}
+            </button>
+          </div>
+        ) : (
           <div className="px-2 pb-1 overflow-x-auto no-scrollbar">
             <div className="flex items-center space-x-1 min-w-max px-2">
               {CATEGORIES.map((cat) => (
@@ -486,68 +532,100 @@ export default function Explore() {
               exit={{ opacity: 0 }}
               className="px-4 mt-4"
             >
-              {loading ? (
+                {loading ? (
                 <div className="flex flex-col items-center justify-center p-12 space-y-4">
                   <div className="w-8 h-8 border-2 border-black/10 border-t-black rounded-full animate-spin" />
                   <p className="text-gray-500 text-sm font-medium">Buscando...</p>
                 </div>
-              ) : searchResults.length > 0 ? (
-                <div className="space-y-3">
-                  {searchResults.map((user) => (
-                    <motion.div 
-                      key={`search-${user.id}`} 
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="p-4 bg-white rounded-2xl shadow-sm border border-black/5 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-all"
-                      onClick={() => navigate(`/${user.username}`)}
-                    >
-                      <div className="flex items-center space-x-3 min-w-0 flex-1">
-                        <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 border border-white/40 shadow-sm">
-                          {user.photoURL ? (
-                            <LazyImage src={user.photoURL} alt={user.displayName} className="w-full h-full" />
-                          ) : (
-                            <LazyImage src={getDefaultAvatar(user.displayName, user.username)} alt={user.displayName} className="w-full h-full" />
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center space-x-1">
-                            <p className="font-bold text-black truncate">{user.displayName}</p>
-                            {(user.isVerified || user.username === 'Rulio') && (
-                              <VerifiedBadge tier={user.premiumTier} className="flex-shrink-0" />
+              ) : searchTab === 'users' ? (
+                searchResults.length > 0 ? (
+                  <div className="space-y-3">
+                    {searchResults.map((user) => (
+                      <motion.div 
+                        key={`search-${user.id}`} 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="p-4 bg-white rounded-2xl shadow-sm border border-black/5 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-all"
+                        onClick={() => navigate(`/${user.username}`)}
+                      >
+                        <div className="flex items-center space-x-3 min-w-0 flex-1">
+                          <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 border border-white/40 shadow-sm">
+                            {user.photoURL ? (
+                              <LazyImage src={user.photoURL} alt={user.displayName} className="w-full h-full" />
+                            ) : (
+                              <LazyImage src={getDefaultAvatar(user.displayName, user.username)} alt={user.displayName} className="w-full h-full" />
                             )}
                           </div>
-                          <p className="text-gray-500 text-sm truncate">@{user.username}</p>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center space-x-1">
+                              <p className="font-bold text-black truncate">{user.displayName}</p>
+                              {(user.isVerified || user.username === 'Rulio') && (
+                                <VerifiedBadge tier={user.premiumTier} className="flex-shrink-0" />
+                              )}
+                            </div>
+                            <p className="text-gray-500 text-sm truncate">@{user.username}</p>
+                          </div>
                         </div>
-                      </div>
-                      
-                      {user.id !== userProfile?.uid && (
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleFollowClick(user);
-                          }}
-                          className={`px-5 py-2 rounded-xl text-sm font-bold transition-all active:scale-95 ${
-                            userProfile?.following?.includes(user.id)
-                              ? 'bg-gray-100 text-gray-600 border border-black/5'
-                              : 'bg-black text-white shadow-lg'
-                          }`}
-                        >
-                          {userProfile?.following?.includes(user.id) ? 'Seguindo' : 'Seguir'}
-                        </button>
-                      )}
-                    </motion.div>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center p-12 text-center">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                    <Search className="w-8 h-8 text-gray-300" />
+                        
+                        {user.id !== userProfile?.uid && (
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleFollowClick(user);
+                            }}
+                            className={`px-5 py-2 rounded-xl text-sm font-bold transition-all active:scale-95 ${
+                              userProfile?.following?.includes(user.id)
+                                ? 'bg-gray-100 text-gray-600 border border-black/5'
+                                : 'bg-black text-white shadow-lg'
+                            }`}
+                          >
+                            {userProfile?.following?.includes(user.id) ? 'Seguindo' : 'Seguir'}
+                          </button>
+                        )}
+                      </motion.div>
+                    ))}
                   </div>
-                  <h3 className="font-bold text-gray-900">Nenhum resultado</h3>
-                  <p className="text-gray-500 text-sm mt-1">
-                    Não encontramos ninguém com "{searchQuery}"
-                  </p>
-                </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center p-12 text-center">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                      <Search className="w-8 h-8 text-gray-300" />
+                    </div>
+                    <h3 className="font-bold text-gray-900">Nenhum resultado</h3>
+                    <p className="text-gray-500 text-sm mt-1">
+                      Não encontramos ninguém com "{searchQuery}"
+                    </p>
+                  </div>
+                )
+              ) : (
+                postsResults.length > 0 ? (
+                  <div className="space-y-0 -mx-4">
+                    {postsResults.map((post) => (
+                      <PostCard 
+                        key={`search-post-${post.id}`}
+                        post={post}
+                        onLike={() => {}}
+                        onRepost={() => {}}
+                        onDelete={() => {}}
+                        onEdit={() => {}}
+                        onShare={() => {}}
+                        onReply={() => {}}
+                        onQuote={() => {}}
+                        onImageClick={() => {}}
+                        canEdit={() => false}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center p-12 text-center">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                      <Hash className="w-8 h-8 text-gray-300" />
+                    </div>
+                    <h3 className="font-bold text-gray-900">Nenhum post encontrado</h3>
+                    <p className="text-gray-500 text-sm mt-1">
+                      Não encontramos posts com "{searchQuery}"
+                    </p>
+                  </div>
+                )
               )}
             </motion.div>
           ) : (

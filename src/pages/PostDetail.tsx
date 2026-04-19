@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { doc, onSnapshot, collection, query, where, orderBy, serverTimestamp, addDoc, deleteDoc, updateDoc, arrayRemove, arrayUnion, getDocs, limit } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { User as UserIcon, ArrowLeft, MoreHorizontal, Trash2, Edit2, BarChart2, Heart, Repeat, MessageCircle, Send, Zap as ZapIcon } from 'lucide-react';
+import { User as UserIcon, ArrowLeft, MoreHorizontal, Trash2, Edit2, BarChart2, Heart, Repeat, MessageCircle, Send, Bookmark, BookmarkCheck } from 'lucide-react';
 import VerifiedBadge from '../components/VerifiedBadge';
 import PostContent from '../components/PostContent';
 import QuotedPost from '../components/QuotedPost';
@@ -77,8 +77,59 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 export default function PostDetail() {
   const { postId } = useParams();
   const navigate = useNavigate();
-  const { userProfile } = useAuth();
+  const { userProfile, bookmarkPost, unbookmarkPost } = useAuth();
   const [post, setPost] = useState<any>(null);
+  const repostTimerRef = React.useRef<any>(null);
+
+  const stopPropagation = (e: React.MouseEvent | React.PointerEvent) => e.stopPropagation();
+
+  const handleRepostPointerDown = (postToRepost: any) => (e: React.PointerEvent) => {
+    stopPropagation(e);
+    repostTimerRef.current = setTimeout(() => {
+      setQuotePost(postToRepost);
+      setIsCreateModalOpen(true);
+      repostTimerRef.current = 'QUOTED';
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+    }, 600);
+  };
+
+  const handleRepostPointerUp = (postToRepost: any) => (e: React.PointerEvent) => {
+    stopPropagation(e);
+    if (repostTimerRef.current === 'QUOTED') {
+      repostTimerRef.current = null;
+      return;
+    }
+    
+    if (repostTimerRef.current) {
+      clearTimeout(repostTimerRef.current);
+      repostTimerRef.current = null;
+      handleRepost(postToRepost);
+    }
+  };
+
+  const handleRepostPointerCancel = () => {
+    if (repostTimerRef.current && repostTimerRef.current !== 'QUOTED') {
+      clearTimeout(repostTimerRef.current);
+    }
+    repostTimerRef.current = null;
+  };
+
+  const handleBookmark = async (e: React.MouseEvent) => {
+    stopPropagation(e);
+    if (!userProfile?.uid || !post) return;
+    
+    try {
+      if (userProfile.bookmarks?.includes(post.id)) {
+        await unbookmarkPost(post.id);
+      } else {
+        await bookmarkPost(post.id);
+      }
+    } catch (error) {
+      console.error('Erro ao favoritar post:', error);
+    }
+  };
   const [replies, setReplies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -570,7 +621,10 @@ export default function PostDetail() {
                 <span className="text-sm font-medium">{post.repliesCount || 0}</span>
               </button>
               <button 
-                onClick={() => handleRepost(post)}
+                onPointerDown={handleRepostPointerDown(post)}
+                onPointerUp={handleRepostPointerUp(post)}
+                onPointerCancel={handleRepostPointerCancel}
+                onContextMenu={(e) => e.preventDefault()}
                 className={`flex items-center space-x-2 transition-colors p-2 rounded-full ${post.reposts?.includes(userProfile?.uid) ? 'text-green-500 bg-green-50' : 'hover:text-green-500 hover:bg-green-50'}`}
               >
                 <Repeat className={`w-6 h-6 ${post.reposts?.includes(userProfile?.uid) ? 'stroke-[3px]' : ''}`} />
@@ -599,14 +653,14 @@ export default function PostDetail() {
                 </button>
               )}
               <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setQuotePost(post);
-                  setIsCreateModalOpen(true);
-                }}
-                className="flex items-center space-x-2 hover:text-blue-500 transition-colors p-2 rounded-full hover:bg-blue-50"
+                onClick={handleBookmark}
+                className={`flex items-center space-x-2 transition-colors p-2 rounded-full ${userProfile?.bookmarks?.includes(post.id) ? 'text-blue-500 bg-blue-50' : 'hover:text-blue-500 hover:bg-blue-50'}`}
               >
-                <ZapIcon className="w-6 h-6" />
+                {userProfile?.bookmarks?.includes(post.id) ? (
+                  <BookmarkCheck className="w-6 h-6 fill-current" />
+                ) : (
+                  <Bookmark className="w-6 h-6" />
+                )}
               </button>
               <button 
                 onClick={handleShare}
@@ -784,10 +838,10 @@ export default function PostDetail() {
                           <span className="text-xs">{reply.repliesCount || 0}</span>
                         </button>
                         <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRepost(reply);
-                          }}
+                          onPointerDown={handleRepostPointerDown(reply)}
+                          onPointerUp={handleRepostPointerUp(reply)}
+                          onPointerCancel={handleRepostPointerCancel}
+                          onContextMenu={(e) => e.preventDefault()}
                           className={`flex items-center space-x-1 transition-colors ${reply.reposts?.includes(userProfile?.uid) ? 'text-green-500' : 'hover:text-green-500'}`}
                         >
                           <Repeat className={`w-4 h-4 ${reply.reposts?.includes(userProfile?.uid) ? 'stroke-[3px]' : ''}`} />

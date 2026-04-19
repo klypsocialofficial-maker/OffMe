@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User as UserIcon, Image as ImageIcon, X, BarChart2, Film, Ghost } from 'lucide-react';
+import { User as UserIcon, Image as ImageIcon, X, BarChart2, Film, Ghost, Clock } from 'lucide-react';
 import { addDoc, collection, serverTimestamp, doc, updateDoc, increment, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { uploadToImgBB } from '../lib/imgbb';
@@ -23,15 +23,29 @@ interface CreatePostModalProps {
   replyTo?: any;
   quotePost?: any;
   isAnonymousDefault?: boolean;
+  communityId?: string;
+  communityName?: string;
 }
 
-export default function CreatePostModal({ isOpen, onClose, userProfile, handleFirestoreError, OperationType, replyTo, quotePost, isAnonymousDefault = false }: CreatePostModalProps) {
+export default function CreatePostModal({ 
+  isOpen, 
+  onClose, 
+  userProfile, 
+  handleFirestoreError, 
+  OperationType, 
+  replyTo, 
+  quotePost, 
+  isAnonymousDefault = false,
+  communityId,
+  communityName 
+}: CreatePostModalProps) {
   const [content, setContent] = useState('');
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isAnonymous, setIsAnonymous] = useState(isAnonymousDefault);
+  const [isMoment, setIsMoment] = useState(false);
 
   useEffect(() => {
     setIsAnonymous(isAnonymousDefault || !userProfile);
@@ -160,6 +174,8 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
         authorPremiumTier,
         ownerId: userProfile?.uid || null,
         isAnonymous,
+        isMoment,
+        expiresAt: isMoment ? new Date(Date.now() + 24 * 60 * 60 * 1000) : null,
         createdAt: serverTimestamp(),
         likesCount: 0,
         repliesCount: 0,
@@ -174,6 +190,11 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
         quotedPostContent: quotePost?.content || null,
         quotedPostAuthor: quotePost?.authorName || null
       };
+
+      if (communityId) {
+        postData.communityId = communityId;
+        postData.communityName = communityName;
+      }
 
       if (hasValidPoll) {
         postData.poll = {
@@ -237,6 +258,7 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
       setContent('');
       setImageFiles([]);
       setImagePreviews([]);
+      setIsMoment(false);
       removeGif();
       setShowPoll(false);
       setPollOptions(['', '']);
@@ -496,6 +518,13 @@ export default function CreatePostModal({ isOpen, onClose, userProfile, handleFi
                   className={`p-2 rounded-full transition-colors ${showGifPicker ? 'bg-blue-50 text-blue-500' : 'text-blue-500 hover:bg-blue-50'}`}
                 >
                   <Film className="w-5 h-5" />
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => { setIsMoment(!isMoment); setShowPoll(false); setShowGifPicker(false); }} 
+                  className={`p-2 rounded-full transition-colors ${isMoment ? 'bg-amber-50 text-amber-500' : 'text-blue-500 hover:bg-blue-50'}`}
+                >
+                  <Clock className="w-5 h-5" />
                 </button>
               </div>
               

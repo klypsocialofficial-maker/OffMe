@@ -87,6 +87,8 @@ interface UserProfile {
   mutedUsers?: string[];
   blockedUsers?: string[];
   bookmarks?: string[];
+  pinnedPostIds?: string[];
+  mutedWords?: string[];
   isVerified?: boolean;
   isPremium?: boolean;
   premiumTier?: 'silver' | 'gold' | 'black';
@@ -119,6 +121,10 @@ interface AuthContextType {
   unblockUser: (targetUid: string) => Promise<void>;
   bookmarkPost: (postId: string) => Promise<void>;
   unbookmarkPost: (postId: string) => Promise<void>;
+  pinPost: (postId: string) => Promise<void>;
+  unpinPost: (postId: string) => Promise<void>;
+  addMutedWord: (word: string) => Promise<void>;
+  removeMutedWord: (word: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -564,6 +570,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const pinPost = async (postId: string) => {
+    if (!currentUser || !userProfile) throw new Error("User not authenticated");
+    const userRef = doc(db, 'users', currentUser.uid);
+    try {
+      await updateDoc(userRef, {
+        pinnedPostIds: arrayUnion(postId)
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `users/${currentUser.uid}`);
+    }
+  };
+
+  const unpinPost = async (postId: string) => {
+    if (!currentUser || !userProfile) throw new Error("User not authenticated");
+    const userRef = doc(db, 'users', currentUser.uid);
+    try {
+      await updateDoc(userRef, {
+        pinnedPostIds: arrayRemove(postId)
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `users/${currentUser.uid}`);
+    }
+  };
+
+  const addMutedWord = async (word: string) => {
+    if (!currentUser || !userProfile) throw new Error("User not authenticated");
+    const userRef = doc(db, 'users', currentUser.uid);
+    try {
+      await updateDoc(userRef, {
+        mutedWords: arrayUnion(word.toLowerCase())
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `users/${currentUser.uid}`);
+    }
+  };
+
+  const removeMutedWord = async (word: string) => {
+    if (!currentUser || !userProfile) throw new Error("User not authenticated");
+    const userRef = doc(db, 'users', currentUser.uid);
+    try {
+      await updateDoc(userRef, {
+        mutedWords: arrayRemove(word.toLowerCase())
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `users/${currentUser.uid}`);
+    }
+  };
+
   const value = {
     currentUser,
     userProfile,
@@ -586,7 +640,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     blockUser,
     unblockUser,
     bookmarkPost,
-    unbookmarkPost
+    unbookmarkPost,
+    pinPost,
+    unpinPost,
+    addMutedWord,
+    removeMutedWord
   };
 
   return (

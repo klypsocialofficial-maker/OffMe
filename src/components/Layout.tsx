@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Home as HomeIcon, Search, Bell, Mail, User as UserIcon, Bookmark, List, Zap as ZapIcon, Settings, Plus } from 'lucide-react';
+import { LogOut, Home as HomeIcon, Search, Bell, Mail, User as UserIcon, Bookmark, List, Zap as ZapIcon, Settings, Plus, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import VerifiedBadge from './VerifiedBadge';
 import CreatePostModal from './CreatePostModal';
@@ -48,6 +48,7 @@ export default function Layout() {
   const navItems = [
     { path: '/', icon: HomeIcon, label: 'Início' },
     { path: '/explore', icon: Search, label: 'Explorar' },
+    { path: '/communities', icon: Users, label: 'Comunidades' },
     { path: '#create', icon: Plus, label: 'Postar', isAction: true },
     { path: '/notifications', icon: Bell, label: 'Notificações' },
     { path: '/messages', icon: Mail, label: 'Mensagens' },

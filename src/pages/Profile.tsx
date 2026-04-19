@@ -184,8 +184,16 @@ export default function Profile() {
         // Filter out replies for the main "Posts" tab
         const filtered = unique.filter((post: any) => !post.replyToId && !post.isAnonymous);
         
-        // Sort by createdAt
+        // Sort by pinned status (profile owner's choice) and then createdAt
+        const pinnedIds = profileUser?.pinnedPostIds || [];
+        
         filtered.sort((a: any, b: any) => {
+          const aIsPinned = pinnedIds.includes(a.id) && !a.type;
+          const bIsPinned = pinnedIds.includes(b.id) && !b.type;
+          
+          if (aIsPinned && !bIsPinned) return -1;
+          if (!aIsPinned && bIsPinned) return 1;
+          
           const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date();
           const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date();
           return dateB.getTime() - dateA.getTime();

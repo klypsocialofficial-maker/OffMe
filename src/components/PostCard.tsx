@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
-import { User as UserIcon, MoreHorizontal, Trash2, Edit2, Send, MessageCircle, Repeat, Heart, Ghost, VolumeX, UserX, ShieldAlert, Bookmark, BookmarkCheck } from 'lucide-react';
+import { User as UserIcon, MoreHorizontal, Trash2, Edit2, Send, MessageCircle, Repeat, Heart, Ghost, VolumeX, UserX, ShieldAlert, Bookmark, BookmarkCheck, Pin, PinOff } from 'lucide-react';
 import { formatRelativeTime } from '../lib/dateUtils';
 import VerifiedBadge from './VerifiedBadge';
 import PostContent from './PostContent';
@@ -9,6 +9,7 @@ import QuotedPost from './QuotedPost';
 import Poll from './Poll';
 import { useAuth } from '../contexts/AuthContext';
 import { getDefaultAvatar } from '../lib/avatar';
+import ReportModal from './ReportModal';
 
 import PostImageGrid from './PostImageGrid';
 import LazyImage from './LazyImage';
@@ -40,8 +41,9 @@ export default function PostCard({
   canEdit
 }: PostCardProps) {
   const navigate = useNavigate();
-  const { userProfile, muteUser, unmuteUser, blockUser, unblockUser, bookmarkPost, unbookmarkPost } = useAuth();
+  const { userProfile, muteUser, unmuteUser, blockUser, unblockUser, bookmarkPost, unbookmarkPost, pinPost, unpinPost } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const repostTimerRef = React.useRef<any>(null);
 
   const stopPropagation = (e: React.MouseEvent | React.PointerEvent) => e.stopPropagation();
@@ -121,6 +123,23 @@ export default function PostCard({
     }
   };
 
+  const isPinned = userProfile?.pinnedPostIds?.includes(effectivePost.id);
+
+  const handlePin = async (e: React.MouseEvent) => {
+    stopPropagation(e);
+    if (!userProfile?.uid) return;
+    try {
+      if (isPinned) {
+        await unpinPost(effectivePost.id);
+      } else {
+        await pinPost(effectivePost.id);
+      }
+      setIsMenuOpen(false);
+    } catch (error) {
+      console.error('Erro ao fixar post:', error);
+    }
+  };
+
   // Don't show posts from blocked users
   const authorId = post.type === 'repost' ? post.originalPostAuthorId : post.authorId;
   if (userProfile?.blockedUsers?.includes(authorId)) {
@@ -140,6 +159,14 @@ export default function PostCard({
         <div className="flex items-center space-x-2 text-gray-500 text-xs font-bold mb-2 ml-10">
           <Repeat className="w-3.5 h-3.5" />
           <span>{post.authorId === userProfile?.uid ? 'Você' : post.authorName} repostou</span>
+        </div>
+      )}
+
+      {/* Pin Header */}
+      {isPinned && !post.type && (
+        <div className="flex items-center space-x-2 text-gray-500 text-xs font-bold mb-2 ml-10">
+          <Pin className="w-3.5 h-3.5 fill-current" />
+          <span>Fixado</span>
         </div>
       )}
 
@@ -238,6 +265,23 @@ export default function PostCard({
                       <Edit2 className="w-4 h-4" />
                       <span>Editar post</span>
                     </button>
+
+                    <button 
+                      onClick={handlePin}
+                      className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                    >
+                      {isPinned ? (
+                        <>
+                          <PinOff className="w-4 h-4" />
+                          <span>Desafixar do perfil</span>
+                        </>
+                      ) : (
+                        <>
+                          <Pin className="w-4 h-4" />
+                          <span>Fixar no perfil</span>
+                        </>
+                      )}
+                    </button>
                   </>
                 ) : post.authorId !== 'anonymous' ? (
                   <>
@@ -305,9 +349,9 @@ export default function PostCard({
                     </button>
 
                     <button 
-                      onClick={async () => {
+                      onClick={() => {
                         setIsMenuOpen(false);
-                        // Reporting logic would go here
+                        setIsReportModalOpen(true);
                       }}
                       className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
                     >
@@ -430,8 +474,15 @@ export default function PostCard({
             </div>
           </motion.button>
         </div>
+        </div>
       </div>
-    </div>
-  </motion.article>
+      <ReportModal 
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        targetId={effectivePost.id}
+        targetType="post"
+        targetData={{ authorId: effectivePost.authorId, content: effectivePost.content }}
+      />
+    </motion.article>
   );
 }

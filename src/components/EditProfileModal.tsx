@@ -19,6 +19,7 @@ export default function EditProfileModal({ isOpen, onClose, userProfile, handleF
   const [location, setLocation] = useState(userProfile?.location || '');
   const [website, setWebsite] = useState(userProfile?.website || '');
   const [category, setCategory] = useState(userProfile?.category || '');
+  const [profileTheme, setProfileTheme] = useState(userProfile?.profileTheme || 'default');
   const [loading, setLoading] = useState(false);
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -154,6 +155,7 @@ export default function EditProfileModal({ isOpen, onClose, userProfile, handleF
         location: location.trim(),
         website: website.trim(),
         category: category.trim(),
+        profileTheme,
         photoURL: newAvatarUrl,
         bannerURL: newBannerUrl,
         updatedAt: serverTimestamp(),
@@ -352,6 +354,31 @@ export default function EditProfileModal({ isOpen, onClose, userProfile, handleF
                 placeholder="Ex: Artist, Designer, Developer"
                 maxLength={30}
               />
+            </div>
+
+            <div className="space-y-3 pb-8">
+              <label className="text-sm font-bold text-gray-500 px-1">Tema do Perfil</label>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { id: 'default', name: 'Padrão', class: 'bg-white border-gray-200' },
+                  { id: 'minimal', name: 'Mínimo', class: 'bg-gray-50 border-gray-100' },
+                  { id: 'vibrant', name: 'Vibrante', class: 'bg-gradient-to-br from-pink-500 to-orange-400' },
+                  { id: 'neon', name: 'Neon', class: 'bg-black border-purple-500' }
+                ].map((theme) => (
+                  <button
+                    key={theme.id}
+                    onClick={() => setProfileTheme(theme.id)}
+                    className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center space-y-2 ${
+                      profileTheme === theme.id 
+                        ? 'border-blue-500 shadow-md scale-[1.02]' 
+                        : 'border-transparent hover:border-gray-200 grayscale-[0.5]'
+                    }`}
+                  >
+                    <div className={`w-12 h-12 rounded-full border-2 border-white ${theme.class}`} />
+                    <span className="text-xs font-bold">{theme.name}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>

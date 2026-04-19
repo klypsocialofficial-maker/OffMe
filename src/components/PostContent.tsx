@@ -10,10 +10,10 @@ export default function PostContent({ content, className = '' }: PostContentProp
   const navigate = useNavigate();
 
   if (!content) return null;
-
-  // Split by mentions (@username)
-  const parts = content.split(/(@\w+)/g);
-
+  
+  // Split by mentions (@username) OR hashtags (#hashtag)
+  const parts = content.split(/(@\w+|#\w+)/g);
+  
   return (
     <p className={`whitespace-pre-wrap break-words ${className}`}>
       {parts.map((part, index) => {
@@ -32,6 +32,23 @@ export default function PostContent({ content, className = '' }: PostContentProp
             </span>
           );
         }
+        
+        if (part.startsWith('#')) {
+          const tag = part.substring(1);
+          return (
+            <span
+              key={index}
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/explore?q=${encodeURIComponent(part)}`);
+              }}
+              className="text-indigo-500 hover:underline cursor-pointer font-medium"
+            >
+              {part}
+            </span>
+          );
+        }
+        
         return part;
       })}
     </p>

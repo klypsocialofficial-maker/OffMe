@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Shield, Eye, UserX, Lock, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Shield, Eye, UserX, Lock, ChevronRight, CheckCircle2, VolumeX, Plus, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
@@ -12,6 +12,8 @@ export default function PrivacySettings() {
   const { userProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [isBlockedModalOpen, setIsBlockedModalOpen] = useState(false);
+  const [mutedWord, setMutedWord] = useState('');
+  const [mutedWords, setMutedWords] = useState<string[]>([]);
   const [settings, setSettings] = useState({
     privateProfile: false,
     sensitiveContent: false,
@@ -27,6 +29,7 @@ export default function PrivacySettings() {
         discoverability: userProfile.discoverability !== false,
         directMessages: userProfile.directMessages || 'everyone'
       });
+      setMutedWords(userProfile.mutedWords || []);
     }
   }, [userProfile]);
 
@@ -42,6 +45,36 @@ export default function PrivacySettings() {
       console.error('Error updating privacy setting:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAddMutedWord = async () => {
+    if (!mutedWord.trim() || !userProfile?.uid || !db) return;
+    const word = mutedWord.trim().toLowerCase();
+    if (mutedWords.includes(word)) return;
+
+    try {
+      const newWords = [...mutedWords, word];
+      await updateDoc(doc(db, 'users', userProfile.uid), {
+        mutedWords: newWords
+      });
+      setMutedWords(newWords);
+      setMutedWord('');
+    } catch (error) {
+      console.error('Error adding muted word:', error);
+    }
+  };
+
+  const handleRemoveMutedWord = async (word: string) => {
+    if (!userProfile?.uid || !db) return;
+    try {
+      const newWords = mutedWords.filter(w => w !== word);
+      await updateDoc(doc(db, 'users', userProfile.uid), {
+        mutedWords: newWords
+      });
+      setMutedWords(newWords);
+    } catch (error) {
+      console.error('Error removing muted word:', error);
     }
   };
 
@@ -147,6 +180,56 @@ export default function PrivacySettings() {
               </div>
               <ChevronRight className="w-5 h-5 text-gray-400" />
             </button>
+          </div>
+        </section>
+
+        <section>
+          <div className="flex items-center space-x-2 mb-4 px-1">
+             <VolumeX className="w-5 h-5 text-gray-500" />
+             <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider">Palavras Mutadas</h2>
+          </div>
+          <p className="text-xs text-gray-500 mb-4 px-1">
+            Posts que contêm essas palavras ou hashtags serão ocultados do seu feed.
+          </p>
+          
+          <div className="space-y-4">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Ex: futebol, #politica"
+                value={mutedWord}
+                onChange={(e) => setMutedWord(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddMutedWord()}
+                className="w-full bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-2xl px-4 py-3 pr-12 text-sm outline-none focus:border-blue-500 transition-all dark:text-white"
+              />
+              <button 
+                onClick={handleAddMutedWord}
+                disabled={!mutedWord.trim()}
+                className="absolute right-2 top-1.5 p-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 disabled:opacity-50 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {mutedWords.map((word) => (
+                <motion.span
+                  key={word}
+                  layout
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="flex items-center space-x-1 px-3 py-1.5 bg-gray-100 dark:bg-zinc-800 rounded-full text-xs font-bold dark:text-gray-200"
+                >
+                  <span>{word}</span>
+                  <button onClick={() => handleRemoveMutedWord(word)} className="text-gray-400 hover:text-red-500 p-0.5">
+                    <X className="w-3 h-3" />
+                  </button>
+                </motion.span>
+              ))}
+              {mutedWords.length === 0 && (
+                <p className="text-[10px] text-gray-400 italic font-medium px-1">Você ainda não silenciou nenhuma palavra.</p>
+              )}
+            </div>
           </div>
         </section>
       </div>

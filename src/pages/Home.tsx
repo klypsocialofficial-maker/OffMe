@@ -14,6 +14,7 @@ import SharePostModal from '../components/SharePostModal';
 import ImageViewer from '../components/ImageViewer';
 import ConfirmModal from '../components/ConfirmModal';
 import PostCard from '../components/PostCard';
+import MomentsRow from '../components/MomentsRow';
 import LazyImage from '../components/LazyImage';
 import PostSkeleton from '../components/PostSkeleton';
 import { handleMentions, sendPushNotification, notifyFollowers } from '../lib/notifications';
@@ -759,6 +760,7 @@ export default function Home() {
                 </div>
               ) : (
                 <div className="px-4 space-y-4 pb-20">
+                  <MomentsRow userProfile={userProfile} openCreateModal={openCreateModal} />
                   {(() => {
                     const filtered = displayedPosts.filter(post => {
                       const isMuted = userProfile?.mutedUsers?.includes(post.authorId);

@@ -20,6 +20,9 @@ import PostDetail from './pages/PostDetail';
 import Trending from './pages/Trending';
 import Premium from './pages/Premium';
 import Bookmarks from './pages/Bookmarks';
+import Communities from './pages/Communities';
+import CommunityDetail from './pages/CommunityDetail';
+import Missions from './pages/Missions';
 import Settings from './pages/Settings';
 import AccountSettings from './pages/AccountSettings';
 import DisplaySettings from './pages/DisplaySettings';
@@ -79,6 +82,9 @@ export default function App() {
             <Route path="trending" element={<Trending />} />
             <Route path="premium" element={<Premium />} />
             <Route path="bookmarks" element={<Bookmarks />} />
+            <Route path="communities" element={<Communities />} />
+            <Route path="communities/:slug" element={<CommunityDetail />} />
+            <Route path="missions" element={<Missions />} />
             <Route path="settings" element={<Settings />} />
             <Route path="settings/account" element={<AccountSettings />} />
             <Route path="settings/privacy" element={<PrivacySettings />} />
