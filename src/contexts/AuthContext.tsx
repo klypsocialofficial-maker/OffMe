@@ -86,6 +86,7 @@ interface UserProfile {
   followers?: string[];
   mutedUsers?: string[];
   blockedUsers?: string[];
+  bookmarks?: string[];
   isVerified?: boolean;
   isPremium?: boolean;
   premiumTier?: 'silver' | 'gold' | 'black';
@@ -116,6 +117,8 @@ interface AuthContextType {
   unmuteUser: (targetUid: string) => Promise<void>;
   blockUser: (targetUid: string) => Promise<void>;
   unblockUser: (targetUid: string) => Promise<void>;
+  bookmarkPost: (postId: string) => Promise<void>;
+  unbookmarkPost: (postId: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -537,6 +540,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const bookmarkPost = async (postId: string) => {
+    if (!currentUser || !userProfile) throw new Error("User not authenticated");
+    const userRef = doc(db, 'users', currentUser.uid);
+    try {
+      await updateDoc(userRef, {
+        bookmarks: arrayUnion(postId)
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `users/${currentUser.uid}`);
+    }
+  };
+
+  const unbookmarkPost = async (postId: string) => {
+    if (!currentUser || !userProfile) throw new Error("User not authenticated");
+    const userRef = doc(db, 'users', currentUser.uid);
+    try {
+      await updateDoc(userRef, {
+        bookmarks: arrayRemove(postId)
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `users/${currentUser.uid}`);
+    }
+  };
+
   const value = {
     currentUser,
     userProfile,
@@ -557,7 +584,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     muteUser,
     unmuteUser,
     blockUser,
-    unblockUser
+    unblockUser,
+    bookmarkPost,
+    unbookmarkPost
   };
 
   return (

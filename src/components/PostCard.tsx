@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
-import { User as UserIcon, MoreHorizontal, Trash2, Edit2, Send, Zap as ZapIcon, MessageCircle, Repeat, Heart, Ghost, VolumeX, UserX, ShieldAlert } from 'lucide-react';
+import { User as UserIcon, MoreHorizontal, Trash2, Edit2, Send, MessageCircle, Repeat, Heart, Ghost, VolumeX, UserX, ShieldAlert, Bookmark, BookmarkCheck } from 'lucide-react';
 import { formatRelativeTime } from '../lib/dateUtils';
 import VerifiedBadge from './VerifiedBadge';
 import PostContent from './PostContent';
@@ -40,10 +40,43 @@ export default function PostCard({
   canEdit
 }: PostCardProps) {
   const navigate = useNavigate();
-  const { userProfile, muteUser, unmuteUser, blockUser, unblockUser } = useAuth();
+  const { userProfile, muteUser, unmuteUser, blockUser, unblockUser, bookmarkPost, unbookmarkPost } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const repostTimerRef = React.useRef<any>(null);
 
-  const stopPropagation = (e: React.MouseEvent) => e.stopPropagation();
+  const stopPropagation = (e: React.MouseEvent | React.PointerEvent) => e.stopPropagation();
+
+  const handleRepostPointerDown = (e: React.PointerEvent) => {
+    stopPropagation(e);
+    repostTimerRef.current = setTimeout(() => {
+      onQuote(effectivePost);
+      repostTimerRef.current = 'QUOTED';
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+    }, 600);
+  };
+
+  const handleRepostPointerUp = (e: React.PointerEvent) => {
+    stopPropagation(e);
+    if (repostTimerRef.current === 'QUOTED') {
+      repostTimerRef.current = null;
+      return;
+    }
+    
+    if (repostTimerRef.current) {
+      clearTimeout(repostTimerRef.current);
+      repostTimerRef.current = null;
+      onRepost(effectivePost);
+    }
+  };
+
+  const handleRepostPointerCancel = () => {
+    if (repostTimerRef.current && repostTimerRef.current !== 'QUOTED') {
+      clearTimeout(repostTimerRef.current);
+    }
+    repostTimerRef.current = null;
+  };
 
   const handleShare = async (e: React.MouseEvent) => {
     stopPropagation(e);
@@ -72,6 +105,21 @@ export default function PostCard({
   };
 
   const effectivePost = post.type === 'repost' ? { ...post, id: post.repostedPostId } : post;
+
+  const handleBookmark = async (e: React.MouseEvent) => {
+    stopPropagation(e);
+    if (!userProfile?.uid) return;
+    
+    try {
+      if (userProfile.bookmarks?.includes(effectivePost.id)) {
+        await unbookmarkPost(effectivePost.id);
+      } else {
+        await bookmarkPost(effectivePost.id);
+      }
+    } catch (error) {
+      console.error('Erro ao favoritar post:', error);
+    }
+  };
 
   // Don't show posts from blocked users
   const authorId = post.type === 'repost' ? post.originalPostAuthorId : post.authorId;
@@ -194,6 +242,23 @@ export default function PostCard({
                 ) : post.authorId !== 'anonymous' ? (
                   <>
                     <button 
+                      onClick={handleBookmark}
+                      className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                    >
+                      {userProfile.bookmarks?.includes(effectivePost.id) ? (
+                        <>
+                          <BookmarkCheck className="w-4 h-4 text-blue-500" />
+                          <span>Remover dos salvos</span>
+                        </>
+                      ) : (
+                        <>
+                          <Bookmark className="w-4 h-4" />
+                          <span>Salvar post</span>
+                        </>
+                      )}
+                    </button>
+
+                    <button 
                       onClick={async () => {
                         try {
                           await navigate(`/${post.authorUsername}`);
@@ -312,10 +377,10 @@ export default function PostCard({
           <motion.button 
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
-            onClick={(e) => {
-              stopPropagation(e);
-              onRepost(effectivePost);
-            }}
+            onPointerDown={handleRepostPointerDown}
+            onPointerUp={handleRepostPointerUp}
+            onPointerCancel={handleRepostPointerCancel}
+            onContextMenu={(e) => e.preventDefault()}
             className={`flex items-center space-x-2 group/action transition-colors ${effectivePost.reposts?.includes(userProfile?.uid) ? 'text-green-500' : 'hover:text-green-500'}`}
           >
             <div className="p-2 group-hover/action:bg-green-50 rounded-full transition-colors">
@@ -342,14 +407,15 @@ export default function PostCard({
           <motion.button 
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
-            onClick={(e) => {
-              stopPropagation(e);
-              onQuote(effectivePost);
-            }}
-            className="flex items-center space-x-2 group/action hover:text-blue-500 transition-colors"
+            onClick={handleBookmark}
+            className={`flex items-center space-x-2 group/action transition-colors ${userProfile?.bookmarks?.includes(effectivePost.id) ? 'text-blue-500' : 'hover:text-blue-500'}`}
           >
             <div className="p-2 group-hover/action:bg-blue-50 rounded-full transition-colors">
-              <ZapIcon className="w-4.5 h-4.5" />
+              {userProfile?.bookmarks?.includes(effectivePost.id) ? (
+                <BookmarkCheck className="w-4.5 h-4.5 fill-current" />
+              ) : (
+                <Bookmark className="w-4.5 h-4.5" />
+              )}
             </div>
           </motion.button>
 

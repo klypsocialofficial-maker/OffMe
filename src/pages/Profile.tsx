@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { User as UserIcon, Calendar, MapPin, Link as LinkIcon, Edit2, Trash2, BarChart2, MessageCircle, Heart, Repeat, Send, MoreHorizontal, ArrowLeft, Search, Share, Briefcase, Plus, AlertCircle, Star, VolumeX, Volume2, UserX } from 'lucide-react';
+import { User as UserIcon, Calendar, MapPin, Link as LinkIcon, Edit2, Trash2, BarChart2, MessageCircle, Heart, Repeat, Send, MoreHorizontal, ArrowLeft, Search, Share, Briefcase, Plus, AlertCircle, Star, VolumeX, Volume2, UserX, Bookmark } from 'lucide-react';
 import EditProfileModal from '../components/EditProfileModal';
 import CreatePostModal from '../components/CreatePostModal';
 import Toast from '../components/Toast';
@@ -83,7 +83,7 @@ export default function Profile() {
   const navigate = useNavigate();
   const [profileUser, setProfileUser] = useState<any>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'posts' | 'replies' | 'media' | 'likes' | 'anonymous'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'replies' | 'media' | 'likes' | 'anonymous' | 'bookmarks'>('posts');
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeMenuPostId, setActiveMenuPostId] = useState<string | null>(null);
@@ -235,6 +235,16 @@ export default function Profile() {
           where('isAnonymous', '==', true),
           orderBy('createdAt', 'desc')
         );
+      } else if (activeTab === 'bookmarks') {
+        if (!profileUser?.bookmarks || profileUser.bookmarks.length === 0) {
+          setPosts([]);
+          setLoading(false);
+          return;
+        }
+        q = query(
+          collection(db, 'posts'),
+          where('__name__', 'in', profileUser.bookmarks.slice(0, 30))
+        );
       } else {
         q = query(
           collection(db, 'posts'),
@@ -253,6 +263,11 @@ export default function Profile() {
           results = results.filter(post => post.replyToId);
         } else if (activeTab === 'media') {
           results = results.filter(post => post.imageUrls && post.imageUrls.length > 0);
+        } else if (activeTab === 'bookmarks') {
+          // Sort bookmarks by the order in the list
+          results.sort((a, b) => {
+            return profileUser.bookmarks!.indexOf(b.id) - profileUser.bookmarks!.indexOf(a.id);
+          });
         }
 
         setPosts(results);
@@ -856,6 +871,21 @@ export default function Profile() {
               )}
               Curtidas
             </button>
+            {profileUser.uid === userProfile?.uid && (
+              <button 
+                onClick={() => setActiveTab('bookmarks')}
+                className={`relative w-1/2 flex-shrink-0 px-4 py-2 text-sm font-bold transition-colors duration-300 z-10 snap-center ${activeTab === 'bookmarks' ? 'text-black' : 'text-gray-500 hover:text-black'}`}
+              >
+                {activeTab === 'bookmarks' && (
+                  <motion.div
+                    layoutId="profile-tab-blob"
+                    className="absolute inset-0 bg-white/90 rounded-full -z-10 shadow-sm"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                )}
+                Salvos
+              </button>
+            )}
             {profileUser.uid === userProfile?.uid && (
               <button 
                 onClick={() => setActiveTab('anonymous')}
