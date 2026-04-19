@@ -160,52 +160,66 @@ export default function StoryCreator({ isOpen, onClose, userProfile, handleFires
     try {
       let finalMediaUrl = capturedMedia;
       
-      // If it's an image and a dataURL, upload to ImgBB
-      if (mediaType === 'image' && capturedMedia.startsWith('data:image')) {
-        // Convert dataURL to File
-        const response = await fetch(capturedMedia);
-        const blob = await response.blob();
-        const file = new File([blob], 'story.jpg', { type: 'image/jpeg' });
+      // If it's an image (either dataURL or blobURL), upload to ImgBB
+      if (mediaType === 'image') {
+        let file: File;
+        if (capturedMedia.startsWith('data:image')) {
+          const response = await fetch(capturedMedia);
+          const blob = await response.blob();
+          file = new File([blob], 'story.jpg', { type: 'image/jpeg' });
+        } else if (capturedMedia.startsWith('blob:')) {
+          const response = await fetch(capturedMedia);
+          const blob = await response.blob();
+          file = new File([blob], 'story.jpg', { type: 'image/jpeg' });
+        } else {
+          // Standard URL
+          setLoading(false);
+          await addStoryDoc(capturedMedia);
+          return;
+        }
+        
         finalMediaUrl = await uploadToImgBB(file);
-      } else if (mediaType === 'video' || (mediaType === 'image' && capturedMedia.startsWith('blob:'))) {
-        // Since we don't have a video storage API, we'll simulate for now 
-        // In a real app, you'd upload to Cloudinary/S3/Firebase Storage
-        console.warn("Storage for videos/blobs not implemented in this demo enviroment - using blob URI for visual demo");
-        // For the sake of the demo and "real integrations", let's try to convert small videos to base64 if possible
-        // or just accept that it's a blob for now (will only work in current session)
+      } else if (mediaType === 'video') {
+        // Since we don't have video storage, we'll use a placeholder or the blob URL (demo only)
+        // In production, you'd upload this to Firebase Storage/Cloudinary
+        console.warn("Using blob URI for video story - will expire on refresh");
       }
 
-      await addDoc(collection(db, 'posts'), {
-        content: text || '',
-        imageUrls: [finalMediaUrl],
-        authorId: userProfile.uid,
-        authorName: userProfile.displayName,
-        authorUsername: userProfile.username,
-        authorPhoto: userProfile.photoURL || null,
-        authorVerified: userProfile.isVerified || userProfile.username === 'Rulio' || false,
-        authorPremiumTier: userProfile.premiumTier || null,
-        isMoment: true,
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-        createdAt: serverTimestamp(),
-        likesCount: 0,
-        repliesCount: 0,
-        repostsCount: 0,
-        isStory: true, // Marker for enhanced stories
-        mediaType,
-        filter: activeFilter.name,
-      });
-
-      await awardPoints(userProfile.uid, 15);
-      onClose();
-      // Reset state
-      setMode('camera');
-      setCapturedMedia(null);
-      setText('');
-      setLoading(false);
+      await addStoryDoc(finalMediaUrl);
     } catch (err) {
       console.error("Story Post Error:", err);
       setLoading(false);
     }
+  };
+
+  const addStoryDoc = async (mediaUrl: string) => {
+    await addDoc(collection(db, 'posts'), {
+      content: text || '',
+      imageUrls: [mediaUrl],
+      authorId: userProfile.uid,
+      authorName: userProfile.displayName,
+      authorUsername: userProfile.username,
+      authorPhoto: userProfile.photoURL || null,
+      authorVerified: userProfile.isVerified || userProfile.username === 'Rulio' || false,
+      authorPremiumTier: userProfile.premiumTier || null,
+      isMoment: true,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+      createdAt: serverTimestamp(),
+      likesCount: 0,
+      repliesCount: 0,
+      repostsCount: 0,
+      isStory: true, // Marker for enhanced stories
+      mediaType,
+      filter: activeFilter.name,
+    });
+
+    await awardPoints(userProfile.uid, 15);
+    onClose();
+    // Reset state
+    setMode('camera');
+    setCapturedMedia(null);
+    setText('');
+    setLoading(false);
   };
 
   const downloadMedia = () => {
@@ -228,19 +242,19 @@ export default function StoryCreator({ isOpen, onClose, userProfile, handleFires
         className="fixed inset-0 z-[100] bg-black flex flex-col overflow-hidden"
       >
         {/* Header */}
-        <div className="absolute top-0 inset-x-0 p-4 flex items-center justify-between z-10 bg-gradient-to-b from-black/50 to-transparent">
-          <button onClick={onClose} className="p-2 text-white hover:bg-white/10 rounded-full">
+        <div className="absolute top-0 inset-x-0 pt-[calc(env(safe-area-inset-top,0px)+16px)] px-4 flex items-center justify-between z-10 bg-gradient-to-b from-black/60 to-transparent">
+          <button onClick={onClose} className="p-3 text-white hover:bg-white/20 rounded-full transition-colors backdrop-blur-sm bg-black/10">
             <X className="w-6 h-6" />
           </button>
           
           <div className="flex items-center space-x-2">
-            <button onClick={() => setFlash(!flash)} className="p-2 text-white hover:bg-white/10 rounded-full">
+            <button onClick={() => setFlash(!flash)} className="p-3 text-white hover:bg-white/20 rounded-full transition-colors backdrop-blur-sm bg-black/10">
               {flash ? <Zap className="w-6 h-6 text-yellow-400 fill-current" /> : <ZapOff className="w-6 h-6" />}
             </button>
-            <button onClick={() => setShowFilters(!showFilters)} className={`p-2 text-white hover:bg-white/10 rounded-full ${showFilters ? 'bg-white/20' : ''}`}>
+            <button onClick={() => setShowFilters(!showFilters)} className={`p-3 text-white transition-colors backdrop-blur-sm rounded-full ${showFilters ? 'bg-white/30' : 'hover:bg-white/20 bg-black/10'}`}>
               <Wand2 className="w-6 h-6" />
             </button>
-            <button onClick={() => setIsAddingText(!isAddingText)} className={`p-2 text-white hover:bg-white/10 rounded-full ${isAddingText ? 'bg-white/20' : ''}`}>
+            <button onClick={() => setIsAddingText(!isAddingText)} className={`p-3 text-white transition-colors backdrop-blur-sm rounded-full ${isAddingText ? 'bg-white/30' : 'hover:bg-white/20 bg-black/10'}`}>
               <Type className="w-6 h-6" />
             </button>
           </div>
@@ -255,6 +269,7 @@ export default function StoryCreator({ isOpen, onClose, userProfile, handleFires
                 autoPlay 
                 playsInline 
                 muted 
+                controls={false}
                 className={`w-full h-full object-cover transition-all ${activeFilter.class}`}
               />
               <canvas ref={canvasRef} className="hidden" />
@@ -264,7 +279,15 @@ export default function StoryCreator({ isOpen, onClose, userProfile, handleFires
               {mediaType === 'image' ? (
                 <img src={capturedMedia!} className={`w-full h-full object-cover ${activeFilter.class}`} alt="Preview" />
               ) : (
-                <video src={capturedMedia!} autoPlay loop playsInline className={`w-full h-full object-cover ${activeFilter.class}`} />
+                <video 
+                  src={capturedMedia!} 
+                  autoPlay 
+                  loop 
+                  playsInline 
+                  muted 
+                  controls={false}
+                  className={`w-full h-full object-cover ${activeFilter.class}`} 
+                />
               )}
               
               {/* Text Overlay */}
@@ -334,7 +357,7 @@ export default function StoryCreator({ isOpen, onClose, userProfile, handleFires
         </AnimatePresence>
 
         {/* Controls */}
-        <div className="h-[20%] bg-gradient-to-t from-black to-transparent flex items-center justify-around px-8 relative">
+        <div className="pb-[env(safe-area-inset-bottom,20px)] bg-gradient-to-t from-black to-transparent flex items-center justify-around px-8 relative min-h-[160px]">
           {mode === 'camera' ? (
             <>
               <label className="p-4 text-white hover:bg-white/10 rounded-full cursor-pointer">

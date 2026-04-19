@@ -101,7 +101,7 @@ export default function StoryViewer({ isOpen, onClose, stories, initialStoryInde
       >
         <div className="relative w-full max-w-lg h-full bg-neutral-900 overflow-hidden shadow-2xl flex flex-col">
           {/* Progress Bars */}
-          <div className="absolute top-0 inset-x-0 p-2 flex space-x-1 z-20">
+          <div className="absolute top-[env(safe-area-inset-top,0px)] pt-2 inset-x-0 p-2 flex space-x-1 z-20">
             {stories.map((_, idx) => (
               <div key={idx} className="h-1 flex-1 bg-white/20 rounded-full overflow-hidden">
                 <div 
@@ -115,7 +115,7 @@ export default function StoryViewer({ isOpen, onClose, stories, initialStoryInde
           </div>
 
           {/* Header */}
-          <div className="absolute top-4 inset-x-0 p-4 flex items-center justify-between z-20 bg-gradient-to-b from-black/40 to-transparent">
+          <div className="absolute top-[calc(env(safe-area-inset-top,0px)+12px)] inset-x-0 p-4 flex items-center justify-between z-20 bg-gradient-to-b from-black/40 to-transparent">
             <div className="flex items-center space-x-2">
               <div className="w-10 h-10 rounded-full overflow-hidden border border-white/20">
                 <LazyImage 
