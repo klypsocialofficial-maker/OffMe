@@ -128,6 +128,7 @@ interface AuthContextType {
   unpinPost: (postId: string) => Promise<void>;
   addMutedWord: (word: string) => Promise<void>;
   removeMutedWord: (word: string) => Promise<void>;
+  requestNotificationPermission: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -155,46 +156,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user) {
-        // Request notification permission and save token
-        const setupNotifications = async () => {
+        // Just setup listeners and basic stuff, don't request permission yet
+        const setupForegroundMessaging = async () => {
           try {
             if (typeof window !== 'undefined' && 'Notification' in window) {
               const messaging = await getMessagingInstance();
               if (!messaging) return;
 
-              // Handle foreground messages
               onMessage(messaging, (payload) => {
                 console.log('Foreground message received:', payload);
-                // You could show a toast here if you want
               });
-
-              const permission = await Notification.requestPermission();
-              if (permission === 'granted') {
-                // Wait for service worker to be ready
-                if ('serviceWorker' in navigator) {
-                  const registration = await navigator.serviceWorker.ready;
-                  
-                  const token = await getToken(messaging, {
-                    vapidKey: 'BFsixg_JwwMY4m3yMoZC9b-D4LIRsNcepSkQGkzCgBsnkdbGMmXdtjDCEbrgYYfSULAkTjo3WnPnHbXthoO69b0',
-                    serviceWorkerRegistration: registration
-                  });
-
-                  if (token) {
-                    console.log('FCM Token retrieved:', token);
-                    const userRef = doc(db, 'users', user.uid);
-                    await updateDoc(userRef, {
-                      fcmTokens: arrayUnion(token)
-                    }).catch(e => console.error('Error updating FCM token:', e));
-                  }
-                }
-              }
             }
           } catch (error) {
-            console.error('Error registering for push notifications:', error);
+            console.error('Error setup foreground messaging:', error);
           }
         };
 
-        setupNotifications();
+        setupForegroundMessaging();
 
         const docRef = doc(db, 'users', user.uid);
         unsubscribeProfile = onSnapshot(docRef, (docSnap) => {
@@ -646,6 +624,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const requestNotificationPermission = async () => {
+    if (typeof window === 'undefined' || !('Notification' in window)) return false;
+    
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted' && currentUser) {
+        const messaging = await getMessagingInstance();
+        if (messaging && 'serviceWorker' in navigator) {
+          const registration = await navigator.serviceWorker.ready;
+          const token = await getToken(messaging, {
+            vapidKey: 'BFsixg_JwwMY4m3yMoZC9b-D4LIRsNcepSkQGkzCgBsnkdbGMmXdtjDCEbrgYYfSULAkTjo3WnPnHbXthoO69b0',
+            serviceWorkerRegistration: registration
+          });
+
+          if (token) {
+            const userRef = doc(db, 'users', currentUser.uid);
+            await updateDoc(userRef, {
+              fcmTokens: arrayUnion(token)
+            });
+          }
+        }
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error requesting notification permission:', error);
+      return false;
+    }
+  };
+
   const value = {
     currentUser,
     userProfile,
@@ -674,7 +682,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     pinPost,
     unpinPost,
     addMutedWord,
-    removeMutedWord
+    removeMutedWord,
+    requestNotificationPermission
   };
 
   return (

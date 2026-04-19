@@ -83,13 +83,13 @@ export default function IOSLayout({
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`relative p-3 rounded-full transition-all duration-300 z-10 flex flex-col items-center justify-center ${
+                  className={`relative p-3 rounded-full transition-all duration-300 z-10 flex flex-col items-center justify-center active:bg-black/5 ${
                     isActive ? 'text-black' : 'text-gray-400'
                   }`}
                 >
                   <motion.div 
                     className="relative flex flex-col items-center"
-                    whileTap={{ scale: 0.85 }}
+                    whileTap={{ scale: 0.9 }}
                   >
                     <item.icon className={`w-6 h-6 transition-all duration-300 ${isActive ? 'stroke-[2.5px]' : 'stroke-[2px]'}`} />
                     

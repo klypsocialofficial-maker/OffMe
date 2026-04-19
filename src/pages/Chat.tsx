@@ -10,6 +10,7 @@ import { getDefaultAvatar } from '../lib/avatar';
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, getDoc, updateDoc, deleteDoc, writeBatch, increment, limit, where } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import CallOverlay from '../components/CallOverlay';
+import ConfirmModal from '../components/ConfirmModal';
 
 enum OperationType {
   CREATE = 'create',
@@ -73,6 +74,7 @@ export default function Chat() {
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [otherUserTyping, setOtherUserTyping] = useState(false);
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState<{ isOpen: boolean, messageId: string }>({ isOpen: false, messageId: '' });
   const [activeCall, setActiveCall] = useState<{
     id?: string;
     type: 'audio' | 'video';
@@ -268,8 +270,9 @@ export default function Chat() {
     }
   };
 
-  const handleDeleteMessage = async (messageId: string) => {
-    if (!conversationId || !db) return;
+  const handleDeleteMessage = async () => {
+    const { messageId } = deleteConfirmModal;
+    if (!conversationId || !db || !messageId) return;
     
     try {
       // Soft delete: mark as deleted
@@ -279,6 +282,7 @@ export default function Chat() {
         updatedAt: serverTimestamp()
       });
       setSelectedMessageId(null);
+      setDeleteConfirmModal({ isOpen: false, messageId: '' });
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `conversations/${conversationId}/messages/${messageId}`);
     }
@@ -404,7 +408,7 @@ export default function Chat() {
                   <button 
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleDeleteMessage(msg.id);
+                      setDeleteConfirmModal({ isOpen: true, messageId: msg.id });
                     }}
                     className="flex items-center space-x-1 text-xs text-red-500 font-medium hover:bg-red-50 px-2 py-1 rounded-full transition-colors"
                   >
@@ -486,6 +490,17 @@ export default function Chat() {
           onEndCall={() => setActiveCall(null)}
         />
       )}
+
+      <ConfirmModal
+        isOpen={deleteConfirmModal.isOpen}
+        onClose={() => setDeleteConfirmModal({ isOpen: false, messageId: '' })}
+        onConfirm={handleDeleteMessage}
+        title="Apagar mensagem?"
+        message="Deseja realmente apagar esta mensagem para todos? Esta ação é irreversível."
+        confirmText="Apagar"
+        cancelText="Cancelar"
+        type="danger"
+      />
     </div>
   );
 }

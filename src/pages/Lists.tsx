@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import LazyImage from '../components/LazyImage';
 import { getDefaultAvatar } from '../lib/avatar';
 import VerifiedBadge from '../components/VerifiedBadge';
+import ConfirmModal from '../components/ConfirmModal';
 
 export default function Lists() {
   const { userProfile } = useAuth();
@@ -19,6 +20,7 @@ export default function Lists() {
   const [newListDesc, setNewListDesc] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean, listId: string }>({ isOpen: false, listId: '' });
 
   useEffect(() => {
     const fetchLists = async () => {
@@ -66,8 +68,9 @@ export default function Lists() {
     }
   };
 
-  const handleDeleteList = async (listId: string) => {
-    if (!window.confirm("Tem certeza que deseja excluir esta lista?")) return;
+  const handleDeleteList = async () => {
+    const { listId } = deleteModal;
+    if (!listId) return;
     try {
       await deleteDoc(doc(db, 'lists', listId));
       setLists(prev => prev.filter(l => l.id !== listId));
@@ -115,7 +118,7 @@ export default function Lists() {
               </div>
               <div className="flex items-center space-x-2">
                 <button 
-                  onClick={() => handleDeleteList(list.id)}
+                  onClick={() => setDeleteModal({ isOpen: true, listId: list.id })}
                   className="p-2 opacity-0 group-hover:opacity-100 hover:bg-red-50 text-red-500 rounded-full transition-all"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -207,6 +210,17 @@ export default function Lists() {
           </div>
         )}
       </AnimatePresence>
+
+      <ConfirmModal 
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, listId: '' })}
+        onConfirm={handleDeleteList}
+        title="Excluir lista?"
+        message="Tem certeza que deseja remover esta lista permanentemente? Todos os membros marcados e as configurações da lista serão perdidos."
+        confirmText="Sim, excluir"
+        cancelText="Cancelar"
+        type="danger"
+      />
     </div>
   );
 }

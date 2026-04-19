@@ -539,20 +539,13 @@ export default function Profile() {
 
   const handleDeletePost = async (postId: string) => {
     if (!db || !userProfile?.uid) return;
-    setConfirmModal({
-      isOpen: true,
-      title: 'Apagar post',
-      message: 'Tem certeza que deseja apagar este post? Esta ação não pode ser desfeita.',
-      onConfirm: async () => {
-        try {
-          await deleteDoc(doc(db, 'posts', postId));
-          setActiveMenuPostId(null);
-          showToast('Post apagado com sucesso', 'success');
-        } catch (error) {
-          handleFirestoreError(error, OperationType.DELETE, `posts/${postId}`);
-        }
-      }
-    });
+    try {
+      await deleteDoc(doc(db, 'posts', postId));
+      setActiveMenuPostId(null);
+      showToast('Post apagado com sucesso', 'success');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `posts/${postId}`);
+    }
   };
 
   const canEditPost = (post: any) => {

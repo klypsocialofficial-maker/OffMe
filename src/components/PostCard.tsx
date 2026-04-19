@@ -10,6 +10,7 @@ import Poll from './Poll';
 import { useAuth } from '../contexts/AuthContext';
 import { getDefaultAvatar } from '../lib/avatar';
 import ReportModal from './ReportModal';
+import ConfirmModal from './ConfirmModal';
 
 import PostImageGrid from './PostImageGrid';
 import LazyImage from './LazyImage';
@@ -44,6 +45,7 @@ export default function PostCard({
   const { userProfile, muteUser, unmuteUser, blockUser, unblockUser, bookmarkPost, unbookmarkPost, pinPost, unpinPost } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const repostTimerRef = React.useRef<any>(null);
 
   const stopPropagation = (e: React.MouseEvent | React.PointerEvent) => e.stopPropagation();
@@ -254,8 +256,8 @@ export default function PostCard({
                   <>
                     <button 
                       onClick={() => {
-                        onDelete(post.id);
                         setIsMenuOpen(false);
+                        setIsDeleteModalOpen(true);
                       }}
                       className="w-full text-left px-4 py-2 text-red-500 hover:bg-red-50 flex items-center space-x-2"
                     >
@@ -492,6 +494,16 @@ export default function PostCard({
         targetId={effectivePost.id}
         targetType="post"
         targetData={{ authorId: effectivePost.authorId, content: effectivePost.content }}
+      />
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={() => onDelete(post.id)}
+        title="Apagar post?"
+        message="Tem certeza que deseja apagar este post? Esta ação não pode ser desfeita e o post será removido permanentemente."
+        confirmText="Sim, apagar"
+        cancelText="Cancelar"
+        type="danger"
       />
     </motion.article>
   );

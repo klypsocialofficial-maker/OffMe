@@ -78,21 +78,26 @@ export default function AndroidLayout({
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`relative p-3 rounded-xl transition-all duration-200 flex flex-col items-center justify-center ${
+                  className={`relative p-3 rounded-xl transition-all duration-200 flex flex-col items-center justify-center active:bg-black/5 ${
                     isActive ? 'text-black' : 'text-gray-400'
                   }`}
                 >
-                  <item.icon className={`w-6 h-6 ${isActive ? 'stroke-[2.5px]' : 'stroke-[2px]'}`} />
-                  <span className={`text-[10px] mt-1 font-bold ${isActive ? 'opacity-100' : 'opacity-0'}`}>
-                    {item.label}
-                  </span>
-                  
-                  {((item.path === '/notifications' && unreadNotificationsCount > 0) || 
-                    (item.path === '/messages' && unreadMessagesCount > 0)) && (
-                    <span className="absolute top-2 right-2 bg-red-500 text-white text-[9px] font-black min-w-[16px] h-[16px] flex items-center justify-center rounded-full border-2 border-white">
-                      {item.path === '/notifications' ? unreadNotificationsCount : unreadMessagesCount}
+                  <motion.div
+                    className="flex flex-col items-center justify-center"
+                    whileTap={{ scale: 0.9 }}
+                  >
+                    <item.icon className={`w-6 h-6 ${isActive ? 'stroke-[2.5px]' : 'stroke-[2px]'}`} />
+                    <span className={`text-[10px] mt-1 font-bold ${isActive ? 'opacity-100' : 'opacity-0'}`}>
+                      {item.label}
                     </span>
-                  )}
+                    
+                    {((item.path === '/notifications' && unreadNotificationsCount > 0) || 
+                      (item.path === '/messages' && unreadMessagesCount > 0)) && (
+                      <span className="absolute top-2 right-2 bg-red-500 text-white text-[9px] font-black min-w-[16px] h-[16px] flex items-center justify-center rounded-full border-2 border-white">
+                        {item.path === '/notifications' ? unreadNotificationsCount : unreadMessagesCount}
+                      </span>
+                    )}
+                  </motion.div>
                 </Link>
               );
             })}

@@ -8,6 +8,7 @@ import CreatePostModal from './CreatePostModal';
 import ConfirmModal from './ConfirmModal';
 import ImageViewer from './ImageViewer';
 import RightSidebar from './RightSidebar';
+import PermissionPrompt from './PermissionPrompt';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 
@@ -216,6 +217,8 @@ export default function Layout() {
         onClose={() => setIsViewerOpen(false)}
         alt={viewerImage?.alt}
       />
+
+      <PermissionPrompt />
     </div>
   );
 }
