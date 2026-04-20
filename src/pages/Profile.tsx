@@ -643,8 +643,51 @@ export default function Profile() {
     return dateB.getTime() - dateA.getTime();
   });
 
+  const getThemeStyles = () => {
+    switch (profileUser?.profileTheme) {
+      case 'minimal': // Nuvem
+        return {
+          header: 'bg-gradient-to-b from-blue-50 to-white',
+          card: 'bg-white/60 backdrop-blur-md border border-blue-100 shadow-sm',
+          text: 'text-slate-800',
+          accent: 'text-blue-600',
+          button: 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-200',
+          tabs: 'bg-blue-50/50'
+        };
+      case 'vibrant': // Crepúsculo
+        return {
+          header: 'bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-pink-500/10',
+          card: 'bg-white/80 backdrop-blur-lg border border-purple-100 shadow-xl shadow-purple-500/5',
+          text: 'text-indigo-950',
+          accent: 'text-purple-600',
+          button: 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-lg hover:shadow-purple-200 text-white',
+          tabs: 'bg-purple-50/50'
+        };
+      case 'neon': // Cyber
+        return {
+          header: 'bg-stone-950',
+          card: 'bg-stone-900 border border-stone-800 shadow-2xl',
+          text: 'text-stone-100',
+          accent: 'text-amber-400',
+          button: 'bg-amber-400 hover:bg-amber-500 text-black font-black',
+          tabs: 'bg-stone-800'
+        };
+      default:
+        return {
+          header: 'bg-white',
+          card: 'bg-white',
+          text: 'text-black',
+          accent: 'text-black',
+          button: 'bg-black hover:bg-gray-900 text-white',
+          tabs: 'bg-white'
+        };
+    }
+  };
+
+  const theme = getThemeStyles();
+
   return (
-    <div className="w-full min-h-full bg-white">
+    <div className={`w-full min-h-full transition-colors duration-500 ${theme.header}`}>
       {/* Profile Header with Cover Photo and Action Buttons */}
       <div className="relative">
         {/* Top Action Bar (Floating on Cover) - Glass Effect */}
@@ -680,14 +723,14 @@ export default function Profile() {
           className="h-40 sm:h-56 bg-gray-100 w-full relative overflow-hidden cursor-zoom-in"
           onClick={() => profileUser.bannerURL && openImageViewer(profileUser.bannerURL, `Banner de ${profileUser.displayName}`)}
         >
-          <LazyImage src={profileUser.bannerURL || '/ghost.svg'} alt="Banner" className="w-full h-full" />
+          <LazyImage src={profileUser.bannerURL || `https://picsum.photos/seed/${profileUser.uid}/800/400`} alt="Banner" className="w-full h-full" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-white/10"></div>
         </div>
 
         {/* Profile Photo (Overlapping) */}
         <div className="absolute -bottom-12 left-4 sm:left-8 z-10 group/avatar">
           <div 
-            className="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-white bg-white overflow-hidden shadow-2xl cursor-zoom-in transform transition-transform active:scale-95"
+            className={`w-24 h-24 sm:w-32 sm:h-32 rounded-[2rem] border-4 border-white overflow-hidden shadow-2xl cursor-zoom-in transform transition-transform active:scale-95 ${theme.card}`}
             onClick={() => profileUser.photoURL && openImageViewer(profileUser.photoURL, `Avatar de ${profileUser.displayName}`)}
           >
             <LazyImage src={profileUser.photoURL || getDefaultAvatar(profileUser.displayName, profileUser.username)} alt={profileUser.displayName} className="w-full h-full" />
@@ -710,18 +753,18 @@ export default function Profile() {
       </div>
 
       {/* Profile Details */}
-      <div className="px-5 sm:px-8 pt-14 pb-6">
+      <div className={`px-5 sm:px-8 pt-14 pb-6 transition-colors duration-500 ${theme.header === 'bg-white' ? '' : theme.text}`}>
         <div className="flex justify-between items-start">
           <div className="flex-1 min-w-0">
             <div className="flex items-center space-x-1">
-              <h2 className="text-xl sm:text-2xl font-black italic tracking-tighter text-black truncate">
+              <h2 className={`text-xl sm:text-2xl font-black italic tracking-tighter truncate ${theme.text}`}>
                 {profileUser.displayName}
               </h2>
               {(profileUser.isVerified || profileUser.username === 'Rulio') && (
-                <VerifiedBadge className="w-5 h-5 text-black flex-shrink-0" tier={profileUser.premiumTier} />
+                <VerifiedBadge className={`w-5 h-5 flex-shrink-0 ${theme.accent}`} tier={profileUser.premiumTier} />
               )}
             </div>
-            <p className="text-gray-500 text-sm sm:text-base">@{profileUser.username}</p>
+            <p className="opacity-60 text-sm sm:text-base">@{profileUser.username}</p>
             {currentUser && profileUser.uid === currentUser.uid && !currentUser.emailVerified && (
               <button 
                 onClick={handleSendVerification}
@@ -752,7 +795,7 @@ export default function Profile() {
                 className={`p-2 border rounded-full transition-all active:scale-95 ${
                   userProfile?.mutedUsers?.includes(profileUser.uid)
                     ? 'bg-red-50 border-red-100 text-red-500'
-                    : 'border-gray-200 text-black hover:bg-gray-50'
+                    : 'border-gray-200 text-current hover:bg-white/10'
                 }`}
                 title={userProfile?.mutedUsers?.includes(profileUser.uid) ? 'Desmutar' : 'Mutar'}
               >
@@ -775,7 +818,7 @@ export default function Profile() {
                 className={`p-2 border rounded-full transition-all active:scale-95 ${
                   userProfile?.blockedUsers?.includes(profileUser.uid)
                     ? 'bg-red-600 border-red-600 text-white'
-                    : 'border-gray-200 text-black hover:bg-gray-50'
+                    : 'border-gray-200 text-current hover:bg-white/10'
                 }`}
                 title={userProfile?.blockedUsers?.includes(profileUser.uid) ? 'Desbloquear' : 'Bloquear'}
               >
@@ -786,7 +829,7 @@ export default function Profile() {
                 className={`p-2 border rounded-full transition-all active:scale-95 ${
                   userProfile?.circleMembers?.includes(profileUser.uid)
                     ? 'bg-emerald-50 border-emerald-100 text-emerald-600'
-                    : 'border-gray-200 text-black hover:bg-gray-50'
+                    : 'border-gray-200 text-current hover:bg-white/10'
                 }`}
                 title={userProfile?.circleMembers?.includes(profileUser.uid) ? 'Remover do Círculo' : 'Adicionar ao Círculo'}
               >
@@ -794,16 +837,16 @@ export default function Profile() {
               </button>
               <button 
                 onClick={handleMessageClick}
-                className="p-2 border border-gray-200 rounded-full hover:bg-gray-50 transition-all active:scale-95"
+                className="p-2 border border-black/10 rounded-full hover:bg-white/10 transition-all active:scale-95"
               >
-                <MessageCircle className="w-4 h-4 text-black" />
+                <MessageCircle className="w-4 h-4 text-current" />
               </button>
               <button 
                 onClick={handleFollowClick}
                 className={`px-5 py-1.5 rounded-full font-bold text-sm transition-all active:scale-95 ${
                   userProfile?.following?.includes(profileUser.uid)
-                    ? 'border border-gray-200 text-gray-600 hover:bg-gray-50'
-                    : 'bg-black text-white hover:bg-gray-900 shadow-sm shadow-black/10'
+                    ? 'border border-gray-200 text-gray-500 hover:bg-white/10'
+                    : `shadow-sm ${theme.button}`
                 }`}
               >
                 {userProfile?.following?.includes(profileUser.uid) ? 'Seguindo' : 'Seguir'}
@@ -830,7 +873,7 @@ export default function Profile() {
 
         {/* Bio with Stylized Look */}
         {profileUser.bio && (
-          <div className="mt-3 text-gray-800 text-sm sm:text-base leading-relaxed max-w-xl">
+          <div className={`mt-3 opacity-90 text-sm sm:text-base leading-relaxed max-w-xl ${theme.text}`}>
             {profileUser.bio.length > 150 ? (
               <>
                 <p className={`${!showMore ? 'line-clamp-3' : ''}`}>
@@ -838,7 +881,7 @@ export default function Profile() {
                 </p>
                 <button
                   onClick={() => setShowMore(!showMore)}
-                  className="mt-1 text-black font-bold hover:underline"
+                  className={`mt-1 font-bold hover:underline ${theme.accent}`}
                 >
                   {showMore ? 'Mostrar menos' : 'Mostrar mais'}
                 </button>
@@ -852,7 +895,7 @@ export default function Profile() {
         <BadgeDisplay badges={profileUser.badges} />
 
         {/* Metadata Grid */}
-        <div className="flex flex-wrap gap-y-2 gap-x-4 mt-4 text-gray-500 text-sm">
+        <div className="flex flex-wrap gap-y-2 gap-x-4 mt-4 opacity-60 text-sm">
           {profileUser.category && (
             <div className="flex items-center space-x-2">
               <Briefcase className="w-4 h-4" />
@@ -888,8 +931,8 @@ export default function Profile() {
               setIsUserListModalOpen(true);
             }}
           >
-            <span className="font-bold text-black">{profileUser.following?.length || 0}</span>
-            <span className="text-gray-500 group-hover:underline text-sm">Seguindo</span>
+            <span className={`font-bold ${theme.text}`}>{profileUser.following?.length || 0}</span>
+            <span className="opacity-60 group-hover:underline text-sm">Seguindo</span>
           </button>
           <button 
             className="flex items-center space-x-1.5 group"
@@ -899,8 +942,8 @@ export default function Profile() {
               setIsUserListModalOpen(true);
             }}
           >
-            <span className="font-bold text-black">{profileUser.followers?.length || 0}</span>
-            <span className="text-gray-500 group-hover:underline text-sm">Seguidores</span>
+            <span className={`font-bold ${theme.text}`}>{profileUser.followers?.length || 0}</span>
+            <span className="opacity-60 group-hover:underline text-sm">Seguidores</span>
           </button>
         </div>
 
