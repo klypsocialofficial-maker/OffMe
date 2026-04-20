@@ -16,7 +16,7 @@ import {
   ConfirmationResult,
   sendEmailVerification
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, onSnapshot, serverTimestamp, collection, query, where, getDocs, updateDoc, arrayUnion, arrayRemove, deleteDoc, addDoc, writeBatch } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot, serverTimestamp, collection, query, where, getDocs, updateDoc, arrayUnion, arrayRemove, deleteDoc, addDoc, writeBatch, limit } from 'firebase/firestore';
 import { sendPushNotification } from '../lib/notifications';
 import { awardPoints } from '../services/gamificationService';
 
@@ -149,6 +149,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const migrationDoneRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!auth) {
@@ -181,7 +182,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const docRef = doc(db, 'users', user.uid);
         unsubscribeProfile = onSnapshot(docRef, (docSnap) => {
           if (docSnap.exists()) {
-            setUserProfile(docSnap.data() as UserProfile);
+            const profileData = docSnap.data() as UserProfile;
+            setUserProfile(profileData);
+
+            // Migration for legacy posts - run once per user session
+            if (migrationDoneRef.current !== user.uid) {
+              migrationDoneRef.current = user.uid;
+              const migrateLegacyPosts = async () => {
+                try {
+                  const q = query(
+                    collection(db, 'posts'),
+                    where('authorId', '==', user.uid),
+                    limit(50)
+                  );
+                  const snapshot = await getDocs(q);
+                  const legacyDocs = snapshot.docs.filter(d => !d.data().privacy);
+                  
+                  if (legacyDocs.length === 0) return;
+
+                  const batch = writeBatch(db);
+                  legacyDocs.forEach(postDoc => {
+                    batch.update(postDoc.ref, { privacy: 'public' });
+                  });
+                  
+                  await batch.commit();
+                  console.log(`Migrated ${legacyDocs.length} legacy posts for user ${user.uid}`);
+                } catch (migrateError) {
+                  console.error("Migration error:", migrateError);
+                  // Allow retry on next profile update if it was a permission error we just fixed
+                  migrationDoneRef.current = null;
+                }
+              };
+              migrateLegacyPosts();
+            }
           } else {
             // Fallback if profile doesn't exist yet
             setUserProfile({

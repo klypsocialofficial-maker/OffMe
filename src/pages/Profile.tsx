@@ -242,21 +242,11 @@ export default function Profile() {
           where('__name__', 'in', profileUser.bookmarks.slice(0, 30))
         );
       } else {
-        const isOwnProfile = profileUser.uid === userProfile?.uid;
-        if (isOwnProfile) {
-          q = query(
-            collection(db, 'posts'),
-            where('authorId', '==', profileUser.uid),
-            orderBy('createdAt', 'desc')
-          );
-        } else {
-          q = query(
-            collection(db, 'posts'),
-            where('authorId', '==', profileUser.uid),
-            where('privacy', '==', 'public'),
-            orderBy('createdAt', 'desc')
-          );
-        }
+        q = query(
+          collection(db, 'posts'),
+          where('authorId', '==', profileUser.uid),
+          orderBy('createdAt', 'desc')
+        );
       }
 
       unsubscribe = onSnapshot(q, (snapshot) => {

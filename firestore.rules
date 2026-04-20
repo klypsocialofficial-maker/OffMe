@@ -139,7 +139,7 @@ service cloud.firestore {
     }
 
     function isValidPost(data) {
-      return hasOnlyAllowedFields(['content', 'imageUrls', 'authorId', 'authorName', 'authorUsername', 'authorPhoto', 'authorVerified', 'authorPremiumTier', 'createdAt', 'updatedAt', 'isEdited', 'likesCount', 'repliesCount', 'replyToId', 'replyToUsername', 'replyToVerified', 'likes', 'repostsCount', 'reposts', 'threadId', 'quotedPostId', 'quotedPostContent', 'quotedPostAuthor', 'poll', 'isAnonymous', 'type', 'repostedPostId', 'originalPostAuthorId', 'originalPostAuthorName', 'originalPostAuthorUsername', 'originalPostAuthorPhoto', 'originalPostAuthorVerified', 'originalPostAuthorPremiumTier', 'ownerId', 'privacy', 'audience', 'viewCount', 'expiresAt', 'communityId', 'communityName']) &&
+      return hasOnlyAllowedFields(['content', 'imageUrls', 'authorId', 'authorName', 'authorUsername', 'authorPhoto', 'authorVerified', 'authorPremiumTier', 'createdAt', 'updatedAt', 'isEdited', 'likesCount', 'repliesCount', 'replyToId', 'replyToUsername', 'replyToVerified', 'likes', 'repostsCount', 'reposts', 'threadId', 'quotedPostId', 'quotedPostContent', 'quotedPostAuthor', 'poll', 'isAnonymous', 'type', 'repostedPostId', 'originalPostAuthorId', 'originalPostAuthorName', 'originalPostAuthorUsername', 'originalPostAuthorPhoto', 'originalPostAuthorVerified', 'originalPostAuthorPremiumTier', 'ownerId', 'privacy', 'audience', 'viewCount', 'expiresAt', 'communityId', 'communityName', 'hashtags']) &&
              data.content is string && data.content.size() >= 0 && data.content.size() <= 1000 &&
              (!('imageUrls' in data) || data.imageUrls is list && data.imageUrls.size() <= 4) &&
              data.authorId is string && ( (request.auth != null && data.authorId == request.auth.uid) || data.authorId == 'anonymous' ) &&
@@ -259,7 +259,7 @@ service cloud.firestore {
                     request.resource.data.authorId == resource.data.authorId &&
                     request.resource.data.createdAt == resource.data.createdAt &&
                     (
-                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['authorName', 'authorPhoto', 'authorUsername', 'authorVerified', 'authorPremiumTier']) ||
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['authorName', 'authorPhoto', 'authorUsername', 'authorVerified', 'authorPremiumTier', 'privacy']) ||
                       request.time.toMillis() <= resource.data.createdAt.toMillis() + (60 * 60 * 1000) || // 1 hour for all users
                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('premiumTier', 'none') in ['gold', 'black']
                     )) ||
