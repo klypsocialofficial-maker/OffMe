@@ -139,54 +139,35 @@ service cloud.firestore {
     }
 
     function isValidPost(data) {
-      return hasOnlyAllowedFields(['content', 'imageUrls', 'authorId', 'authorName', 'authorUsername', 'authorPhoto', 'authorVerified', 'authorPremiumTier', 'createdAt', 'updatedAt', 'isEdited', 'likesCount', 'repliesCount', 'replyToId', 'replyToUsername', 'replyToVerified', 'likes', 'repostsCount', 'reposts', 'threadId', 'quotedPostId', 'quotedPostContent', 'quotedPostAuthor', 'poll', 'isAnonymous', 'type', 'repostedPostId', 'originalPostAuthorId', 'originalPostAuthorName', 'originalPostAuthorUsername', 'originalPostAuthorPhoto', 'originalPostAuthorVerified', 'originalPostAuthorPremiumTier', 'ownerId', 'privacy', 'audience', 'viewCount', 'expiresAt', 'communityId', 'communityName', 'hashtags']) &&
-             data.content is string && data.content.size() >= 0 && data.content.size() <= 1000 &&
-             (!('imageUrls' in data) || data.imageUrls is list && data.imageUrls.size() <= 4) &&
-             data.authorId is string && ( (request.auth != null && data.authorId == request.auth.uid) || data.authorId == 'anonymous' ) &&
-             data.authorName is string && data.authorName.size() >= 0 && data.authorName.size() <= 50 &&
-             data.authorUsername is string && data.authorUsername.size() >= 0 && data.authorUsername.size() <= 30 &&
+      let allowedFields = ['content', 'imageUrls', 'imageUrl', 'authorId', 'authorName', 'authorUsername', 'authorPhoto', 'authorVerified', 'authorPremiumTier', 'createdAt', 'updatedAt', 'isEdited', 'likesCount', 'repliesCount', 'replyToId', 'replyToUsername', 'replyToVerified', 'likes', 'repostsCount', 'reposts', 'threadId', 'quotedPostId', 'quotedPostContent', 'quotedPostAuthor', 'poll', 'isAnonymous', 'type', 'repostedPostId', 'originalPostAuthorId', 'originalPostAuthorName', 'originalPostAuthorUsername', 'originalPostAuthorPhoto', 'originalPostAuthorVerified', 'originalPostAuthorPremiumTier', 'ownerId', 'privacy', 'audience', 'viewCount', 'expiresAt', 'communityId', 'communityName', 'hashtags', 'id', 'pinned'];
+      let isUpdate = request.method == 'update';
+      
+      return (isUpdate || hasOnlyAllowedFields(allowedFields)) &&
+             (!('content' in data) || (data.content is string && data.content.size() <= 2000)) &&
+             (!('imageUrls' in data) || data.imageUrls is list && data.imageUrls.size() <= 10) &&
+             (!('authorId' in data) || data.authorId is string) &&
+             (!('authorName' in data) || (data.authorName is string && data.authorName.size() <= 100)) &&
+             (!('authorUsername' in data) || (data.authorUsername is string && data.authorUsername.size() <= 100)) &&
              (!('authorPhoto' in data) || data.authorPhoto == null || data.authorPhoto == '' || (data.authorPhoto is string && data.authorPhoto.size() <= 2000)) &&
              (!('authorVerified' in data) || data.authorVerified is bool) &&
              (!('authorPremiumTier' in data) || data.authorPremiumTier == null || data.authorPremiumTier in ['silver', 'gold', 'black']) &&
-             data.createdAt is timestamp &&
+             (!('createdAt' in data) || data.createdAt is timestamp) &&
              (!('updatedAt' in data) || data.updatedAt is timestamp) &&
              (!('isEdited' in data) || data.isEdited is bool) &&
              (!('isAnonymous' in data) || data.isAnonymous is bool) &&
              (!('privacy' in data) || data.privacy in ['public', 'circle']) &&
              (!('audience' in data) || data.audience is list) &&
              (!('type' in data) || data.type in ['post', 'repost']) &&
-             (!('repostedPostId' in data) || (data.repostedPostId is string && data.repostedPostId.size() <= 100)) &&
+             (!('repostedPostId' in data) || (data.repostedPostId is string)) &&
              (!('expiresAt' in data) || data.expiresAt == null || data.expiresAt is timestamp) &&
              (!('communityId' in data) || data.communityId == null || data.communityId is string) &&
              (!('communityName' in data) || data.communityName == null || data.communityName is string) &&
-             (!('originalPostAuthorId' in data) || (data.originalPostAuthorId is string && data.originalPostAuthorId.size() <= 128)) &&
-             (!('originalPostAuthorName' in data) || (data.originalPostAuthorName is string && data.originalPostAuthorName.size() <= 50)) &&
-             (!('originalPostAuthorUsername' in data) || (data.originalPostAuthorUsername is string && data.originalPostAuthorUsername.size() <= 30)) &&
-             (!('originalPostAuthorPhoto' in data) || data.originalPostAuthorPhoto == null || (data.originalPostAuthorPhoto is string && data.originalPostAuthorPhoto.size() <= 2000)) &&
-             (!('originalPostAuthorVerified' in data) || data.originalPostAuthorVerified is bool) &&
-             (!('originalPostAuthorPremiumTier' in data) || data.originalPostAuthorPremiumTier == null || data.originalPostAuthorPremiumTier in ['silver', 'gold', 'black']) &&
-             (!('likesCount' in data) || (data.likesCount is number && data.likesCount >= 0)) &&
-             (!('repliesCount' in data) || (data.repliesCount is number && data.repliesCount >= 0)) &&
-             (!('repostsCount' in data) || data.repostsCount is number && data.repostsCount >= 0) &&
-             (!('replyToId' in data) || data.replyToId == null || (data.replyToId is string && data.replyToId.size() <= 100)) &&
-             (!('replyToUsername' in data) || data.replyToUsername == null || (data.replyToUsername is string && data.replyToUsername.size() <= 30)) &&
-             (!('replyToVerified' in data) || data.replyToVerified is bool) &&
+             (!('likesCount' in data) || data.likesCount is number) &&
+             (!('repliesCount' in data) || data.repliesCount is number) &&
+             (!('repostsCount' in data) || data.repostsCount is number) &&
              (!('likes' in data) || data.likes is list) &&
              (!('reposts' in data) || data.reposts is list) &&
-             (!('threadId' in data) || data.threadId == null || (data.threadId is string && data.threadId.size() <= 100)) &&
-             (!('quotedPostId' in data) || data.quotedPostId == null || (data.quotedPostId is string && data.quotedPostId.size() <= 100)) &&
-             (!('quotedPostContent' in data) || data.quotedPostContent == null || (data.quotedPostContent is string && data.quotedPostContent.size() <= 1000)) &&
-             (!('quotedPostAuthor' in data) || data.quotedPostAuthor == null || (data.quotedPostAuthor is string && data.quotedPostAuthor.size() <= 50)) &&
-             (!('poll' in data) || (
-               data.poll is map &&
-               data.poll.options is list &&
-               data.poll.options.size() >= 2 &&
-               data.poll.options.size() <= 4 &&
-               data.poll.totalVotes is number &&
-               data.poll.voters is list
-             )) &&
-             (!('viewCount' in data) || (data.viewCount is number && data.viewCount >= 0)) &&
-             (!('ownerId' in data) || data.ownerId == null || (data.ownerId is string && data.ownerId.size() <= 128));
+             (!('ownerId' in data) || data.ownerId == null || data.ownerId is string);
     }
 
     function isValidList(data) {
