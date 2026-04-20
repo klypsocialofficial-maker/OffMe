@@ -139,10 +139,10 @@ service cloud.firestore {
     }
 
     function isValidPost(data) {
-      return hasOnlyAllowedFields(['content', 'imageUrls', 'authorId', 'authorName', 'authorUsername', 'authorPhoto', 'authorVerified', 'authorPremiumTier', 'createdAt', 'updatedAt', 'isEdited', 'likesCount', 'repliesCount', 'replyToId', 'replyToUsername', 'replyToVerified', 'likes', 'repostsCount', 'reposts', 'threadId', 'quotedPostId', 'quotedPostContent', 'quotedPostAuthor', 'poll', 'isAnonymous', 'type', 'repostedPostId', 'originalPostAuthorId', 'originalPostAuthorName', 'originalPostAuthorUsername', 'originalPostAuthorPhoto', 'originalPostAuthorVerified', 'originalPostAuthorPremiumTier', 'ownerId', 'privacy', 'audience', 'viewCount']) &&
+      return hasOnlyAllowedFields(['content', 'imageUrls', 'authorId', 'authorName', 'authorUsername', 'authorPhoto', 'authorVerified', 'authorPremiumTier', 'createdAt', 'updatedAt', 'isEdited', 'likesCount', 'repliesCount', 'replyToId', 'replyToUsername', 'replyToVerified', 'likes', 'repostsCount', 'reposts', 'threadId', 'quotedPostId', 'quotedPostContent', 'quotedPostAuthor', 'poll', 'isAnonymous', 'type', 'repostedPostId', 'originalPostAuthorId', 'originalPostAuthorName', 'originalPostAuthorUsername', 'originalPostAuthorPhoto', 'originalPostAuthorVerified', 'originalPostAuthorPremiumTier', 'ownerId', 'privacy', 'audience', 'viewCount', 'expiresAt', 'communityId', 'communityName']) &&
              data.content is string && data.content.size() >= 0 && data.content.size() <= 1000 &&
              (!('imageUrls' in data) || data.imageUrls is list && data.imageUrls.size() <= 4) &&
-             data.authorId is string && (data.authorId == request.auth.uid || data.authorId == 'anonymous') &&
+             data.authorId is string && ( (request.auth != null && data.authorId == request.auth.uid) || data.authorId == 'anonymous' ) &&
              data.authorName is string && data.authorName.size() >= 0 && data.authorName.size() <= 50 &&
              data.authorUsername is string && data.authorUsername.size() >= 0 && data.authorUsername.size() <= 30 &&
              (!('authorPhoto' in data) || data.authorPhoto == null || data.authorPhoto == '' || (data.authorPhoto is string && data.authorPhoto.size() <= 2000)) &&
@@ -156,6 +156,9 @@ service cloud.firestore {
              (!('audience' in data) || data.audience is list) &&
              (!('type' in data) || data.type in ['post', 'repost']) &&
              (!('repostedPostId' in data) || (data.repostedPostId is string && data.repostedPostId.size() <= 100)) &&
+             (!('expiresAt' in data) || data.expiresAt == null || data.expiresAt is timestamp) &&
+             (!('communityId' in data) || data.communityId == null || data.communityId is string) &&
+             (!('communityName' in data) || data.communityName == null || data.communityName is string) &&
              (!('originalPostAuthorId' in data) || (data.originalPostAuthorId is string && data.originalPostAuthorId.size() <= 128)) &&
              (!('originalPostAuthorName' in data) || (data.originalPostAuthorName is string && data.originalPostAuthorName.size() <= 50)) &&
              (!('originalPostAuthorUsername' in data) || (data.originalPostAuthorUsername is string && data.originalPostAuthorUsername.size() <= 30)) &&

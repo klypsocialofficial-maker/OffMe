@@ -156,9 +156,10 @@ export default function PostCard({
 
   return (
     <motion.article 
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-10% 0px -10% 0px" }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
       onClick={() => navigate(`/post/${effectivePost.id}`)}
       className="group relative p-4 bg-white border-b border-gray-100 hover:bg-gray-50 transition-all cursor-pointer flex flex-col"
     >
