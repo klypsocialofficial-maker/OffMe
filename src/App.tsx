@@ -29,6 +29,7 @@ import Settings from './pages/Settings';
 import AccountSettings from './pages/AccountSettings';
 import DisplaySettings from './pages/DisplaySettings';
 import PrivacySettings from './pages/PrivacySettings';
+import CreatorStudio from './pages/CreatorStudio';
 import PWABadge from './components/PWABadge';
 import SplashScreen from './components/SplashScreen';
 
@@ -80,6 +81,7 @@ export default function App() {
             <Route path="messages/:conversationId" element={<Chat />} />
             <Route path="profile" element={<Profile />} />
             <Route path=":username" element={<Profile />} />
+            <Route path="creator-studio" element={<CreatorStudio />} />
             <Route path="post/:postId" element={<PostDetail />} />
             <Route path="trending" element={<Trending />} />
             <Route path="premium" element={<Premium />} />

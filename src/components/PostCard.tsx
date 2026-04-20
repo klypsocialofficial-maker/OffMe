@@ -129,7 +129,7 @@ export default function PostCard({
     }
   };
 
-  const isPinned = isProfilePinned !== undefined ? isProfilePinned : userProfile?.pinnedPostIds?.includes(effectivePost.id);
+  const isPinned = isProfilePinned === true;
 
   const handlePin = async (e: React.MouseEvent) => {
     stopPropagation(e);

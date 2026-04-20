@@ -90,6 +90,9 @@ interface UserProfile {
   pinnedPostIds?: string[];
   mutedWords?: string[];
   isVerified?: boolean;
+  isCreator?: boolean;
+  creatorCategory?: string;
+  monetizationEnabled?: boolean;
   isPremium?: boolean;
   premiumTier?: 'silver' | 'gold' | 'black';
   points?: number;
@@ -129,6 +132,7 @@ interface AuthContextType {
   addMutedWord: (word: string) => Promise<void>;
   removeMutedWord: (word: string) => Promise<void>;
   requestNotificationPermission: () => Promise<boolean>;
+  enableCreatorMode: (category: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -600,6 +604,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const enableCreatorMode = async (category: string) => {
+    if (!currentUser || !userProfile) throw new Error("User not authenticated");
+    const userRef = doc(db, 'users', currentUser.uid);
+    try {
+      await updateDoc(userRef, {
+        isCreator: true,
+        creatorCategory: category,
+        monetizationEnabled: true
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `users/${currentUser.uid}`);
+    }
+  };
+
   const addMutedWord = async (word: string) => {
     if (!currentUser || !userProfile) throw new Error("User not authenticated");
     const userRef = doc(db, 'users', currentUser.uid);
@@ -683,7 +701,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     unpinPost,
     addMutedWord,
     removeMutedWord,
-    requestNotificationPermission
+    requestNotificationPermission,
+    enableCreatorMode
   };
 
   return (
