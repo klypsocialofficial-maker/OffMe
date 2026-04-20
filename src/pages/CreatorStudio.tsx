@@ -1,19 +1,50 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Star, TrendingUp, DollarSign, Users, Award, ShieldCheck, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Star, TrendingUp, DollarSign, Users, Award, ShieldCheck, ChevronRight, Activity } from 'lucide-react';
 import VerifiedBadge from '../components/VerifiedBadge';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../firebase';
 
 export default function CreatorStudio() {
   const { userProfile, enableCreatorMode } = useAuth();
   const navigate = useNavigate();
   const [isJoining, setIsJoining] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('Tech');
+  const [totalEngagement, setTotalEngagement] = useState(0);
+  const [totalPosts, setTotalPosts] = useState(0);
 
   const categories = [
     'Tech', 'Gaming', 'Arte', 'Música', 'Educação', 'Cripto', 'Lifestyle', 'Comédia', 'Notícias', 'Esportes'
   ];
+
+  useEffect(() => {
+    async function fetchStats() {
+      if (!userProfile?.uid || !db) return;
+      try {
+        const q = query(collection(db, 'posts'), where('authorId', '==', userProfile.uid));
+        const snapshot = await getDocs(q);
+        let engagement = 0;
+        setTotalPosts(snapshot.size);
+
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          engagement += (data.likesCount || 0);
+          engagement += (data.repliesCount || 0);
+          engagement += (data.repostsCount || 0);
+        });
+
+        setTotalEngagement(engagement);
+      } catch(err) {
+        console.error("Error fetching creator stats", err);
+      }
+    }
+    
+    if (userProfile?.isCreator) {
+      fetchStats();
+    }
+  }, [userProfile]);
 
   const handleJoin = async () => {
     setIsJoining(true);
@@ -141,7 +172,7 @@ export default function CreatorStudio() {
             <div>
               <span className="bg-white/20 text-xs font-bold uppercase tracking-wider px-2 py-1 rounded border border-white/10 backdrop-blur-sm">Nível Criador: {userProfile.level || 1}</span>
               <h2 className="text-2xl font-bold mt-3">Bem-vindo(a) de volta, {userProfile.displayName}!</h2>
-              <p className="text-indigo-200 mt-1">Seu engajamento subiu 14% nesta semana.</p>
+              <p className="text-indigo-200 mt-1">Nicho principal: <span className="font-bold text-white">{userProfile.creatorCategory || 'Geral'}</span></p>
             </div>
           </div>
         </div>
@@ -156,37 +187,34 @@ export default function CreatorStudio() {
                 <DollarSign className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-2xl font-black text-gray-900">R$ 142,50</div>
-            <div className="text-xs text-green-600 flex items-center mt-1 font-medium">
-              <TrendingUp className="w-3 h-3 mr-1" /> +12%
+            <div className="text-2xl font-black text-gray-900">{userProfile.points || 0} pts</div>
+            <div className="text-xs text-transparent flex items-center mt-1 font-medium">
+              Gorjetas recebidas e acumuladas
             </div>
           </div>
           
           <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100">
             <div className="flex justify-between items-start mb-2">
-              <span className="text-gray-500 font-medium">Novos Fãs</span>
+              <span className="text-gray-500 font-medium">Seguidores</span>
               <div className="p-2 bg-blue-50 text-blue-600 rounded-full">
                 <Users className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-2xl font-black text-gray-900">+48</div>
-            <div className="text-xs text-blue-600 flex items-center mt-1 font-medium">
-              <TrendingUp className="w-3 h-3 mr-1" /> +8%
+            <div className="text-2xl font-black text-gray-900">{userProfile.followers?.length || 0} fãs</div>
+            <div className="text-xs text-transparent flex items-center mt-1 font-medium">
+               Base de usuários inscrita
             </div>
           </div>
 
           <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 col-span-2">
             <div className="flex justify-between items-start mb-2">
-              <span className="text-gray-500 font-medium">Alcance dos Posts</span>
-              <div className="p-2 bg-orange-50 text-orange-600 rounded-full">
-                <TrendingUp className="w-4 h-4" />
+              <span className="text-gray-500 font-medium">Engajamento Global (Comentários, Curtidas e Reposts)</span>
+              <div className="p-2 bg-purple-50 text-purple-600 rounded-full">
+                <Activity className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-2xl font-black text-gray-900">12.4K impressões</div>
-            <div className="mt-4 h-2 bg-gray-100 rounded-full overflow-hidden">
-              <div className="w-[65%] h-full bg-gradient-to-r from-orange-400 to-orange-500 rounded-full"></div>
-            </div>
-            <div className="text-xs text-gray-400 mt-2">65% da sua meta de impressões do mês</div>
+            <div className="text-2xl font-black text-gray-900">{totalEngagement} interações</div>
+            <div className="text-xs text-gray-400 mt-2">Através de seus {totalPosts} posts na plataforma</div>
           </div>
         </div>
 
