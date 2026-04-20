@@ -161,7 +161,6 @@ export default function Home() {
     
     let q = query(
       collection(db, 'posts'),
-      where('privacy', '==', 'public'),
       orderBy('createdAt', 'desc'),
       limit(postsLimit)
     );
@@ -173,7 +172,6 @@ export default function Home() {
         q = query(
           collection(db, 'posts'),
           where('authorId', 'in', followingIds),
-          where('privacy', '==', 'public'),
           orderBy('createdAt', 'desc'),
           limit(postsLimit)
         );
@@ -493,6 +491,14 @@ export default function Home() {
 
   const filteredPosts = useMemo(() => {
     return displayedPosts.filter(post => {
+      // Basic Privacy Logic
+      if (post.privacy === 'circle') {
+        const circleMembers = post.audience || [];
+        const isAuthor = post.authorId === userProfile?.uid || post.ownerId === userProfile?.uid;
+        if (!isAuthor && !circleMembers.includes(userProfile?.uid)) return false;
+      }
+      
+      // Hide posts from blocked users or if it's a private account (future logic)
       const isMuted = userProfile?.mutedUsers?.includes(post.authorId);
       const isBlocked = userProfile?.blockedUsers?.includes(post.authorId);
       if (isMuted || isBlocked) return false;

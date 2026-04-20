@@ -4,9 +4,10 @@ import LazyImage from './LazyImage';
 interface PostImageGridProps {
   imageUrls: string[];
   onImageClick: (src: string, alt: string) => void;
+  altText?: string;
 }
 
-export default function PostImageGrid({ imageUrls, onImageClick }: PostImageGridProps) {
+export default function PostImageGrid({ imageUrls, onImageClick, altText }: PostImageGridProps) {
   if (!imageUrls || imageUrls.length === 0) return null;
 
   const stopPropagation = (e: React.MouseEvent) => e.stopPropagation();
@@ -19,12 +20,12 @@ export default function PostImageGrid({ imageUrls, onImageClick }: PostImageGrid
         <div className="rounded-2xl overflow-hidden border border-gray-100">
           <LazyImage
             src={imageUrls[0]}
-            alt="Post attachment"
+            alt={altText || "Post attachment"}
             className="w-full h-auto max-h-[512px] min-h-[200px] cursor-pointer"
             referrerPolicy="no-referrer"
             onClick={(e) => {
               stopPropagation(e);
-              onImageClick(imageUrls[0], 'Imagem do post');
+              onImageClick(imageUrls[0], altText || 'Imagem do post');
             }}
           />
         </div>

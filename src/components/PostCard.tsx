@@ -468,8 +468,25 @@ export default function PostCard({
           <PostContent content={post.content} />
         </div>
 
-        {/* Image Grid */}
-        <PostImageGrid imageUrls={post.imageUrls} onImageClick={onImageClick} />
+        {/* Image Grid / Video Player */}
+        {post.hasVideo && post.videoUrl ? (
+          <div className="mt-3 rounded-2xl overflow-hidden bg-black aspect-video relative group">
+            <video 
+              src={post.videoUrl} 
+              className="w-full h-full object-contain"
+              controls
+              playsInline
+              loop
+              muted={false}
+            />
+          </div>
+        ) : (
+          <PostImageGrid 
+            imageUrls={post.imageUrls} 
+            onImageClick={onImageClick} 
+            altText={post.altText}
+          />
+        )}
 
         {/* Quote Post */}
         {post.quotePostId && (

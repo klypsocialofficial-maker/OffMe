@@ -8,7 +8,7 @@ import Toast from '../components/Toast';
 import LazyImage from '../components/LazyImage';
 import PostCard from '../components/PostCard';
 import { useAuth } from '../contexts/AuthContext';
-import { useOutletContext, Link, useNavigate } from 'react-router-dom';
+import { useOutletContext, Link, useNavigate, useLocation } from 'react-router-dom';
 import { getDefaultAvatar } from '../lib/avatar';
 import { collection, query, where, onSnapshot, limit, addDoc, serverTimestamp, getDocs, doc, updateDoc, arrayUnion, arrayRemove, orderBy, getDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
@@ -68,10 +68,9 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 const CATEGORIES = [
   { id: 'foryou', label: 'Para você', icon: UserIcon },
   { id: 'trending', label: 'Em alta', icon: TrendingUp },
+  { id: 'videos', label: 'Vídeos', icon: Tv },
   { id: 'news', label: 'Notícias', icon: Hash },
   { id: 'sports', label: 'Esportes', icon: Trophy },
-  { id: 'music', label: 'Música', icon: Music },
-  { id: 'entertainment', label: 'Entretenimento', icon: Tv },
   { id: 'tech', label: 'Tecnologia', icon: Cpu },
 ];
 
@@ -79,9 +78,29 @@ export default function Explore() {
   const { userProfile } = useAuth();
   const { openDrawer } = useOutletContext<{ openDrawer: () => void }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [suggestedUsers, setSuggestedUsers] = useState<any[]>([]);
+
+  // Sync searchQuery with URL param
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const q = params.get('q');
+    if (q) {
+      setSearchQuery(q);
+      if (q.startsWith('#')) {
+        setSearchTab('posts');
+      }
+    }
+  }, [location.search]);
+
+  const [activeTab, setActiveTab] = useState('foryou');
+  const [searchTab, setSearchTab] = useState<'users' | 'posts'>('users');
+  const [loading, setLoading] = useState(false);
+  const [postsResults, setPostsResults] = useState<any[]>([]);
+  const [videoPosts, setVideoPosts] = useState<any[]>([]);
+  const [loadingVideos, setLoadingVideos] = useState(false);
 
   const handleDeletePost = async (postId: string) => {
     if (!db || !userProfile) return;
@@ -154,10 +173,6 @@ export default function Explore() {
        console.error("Error reposting:", error);
     }
   };
-  const [activeTab, setActiveTab] = useState('foryou');
-  const [searchTab, setSearchTab] = useState<'users' | 'posts'>('users');
-  const [loading, setLoading] = useState(false);
-  const [postsResults, setPostsResults] = useState<any[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(true);
   const [trendingHashtags, setTrendingHashtags] = useState<any[]>([]);
   const [toast, setToast] = useState<{ message: string; type: 'info' | 'success' | 'error'; isOpen: boolean }>({
@@ -188,7 +203,6 @@ export default function Explore() {
     // Fetch recent posts to extract real trending hashtags
     const q = query(
       collection(db, 'posts'), 
-      where('privacy', '==', 'public'),
       orderBy('createdAt', 'desc'), 
       limit(100)
     );
@@ -453,6 +467,37 @@ export default function Explore() {
   }, [userProfile?.uid, userProfile?.following]);
 
   useEffect(() => {
+    if (!db || activeTab !== 'videos') return;
+    
+    setLoadingVideos(true);
+    const q = query(
+      collection(db, 'posts'),
+      where('hasVideo', '==', true),
+      orderBy('createdAt', 'desc'),
+      limit(20)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const allVideoPosts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+      // Manual Privacy Filter
+      const publicVideos = allVideoPosts.filter(post => {
+        if (post.privacy === 'circle') {
+          const circleMembers = post.audience || [];
+          return post.authorId === userProfile?.uid || circleMembers.includes(userProfile?.uid);
+        }
+        return true; // Default to public if privacy field is missing or set to 'public'
+      });
+      setVideoPosts(publicVideos);
+      setLoadingVideos(false);
+    }, (error) => {
+      console.error("Error fetching videos:", error);
+      setLoadingVideos(false);
+    });
+
+    return () => unsubscribe();
+  }, [activeTab, db, userProfile?.uid]);
+
+  useEffect(() => {
     const cleanQuery = searchQuery.trim().replace(/^@/, '');
     
     if (!cleanQuery || !db) {
@@ -496,7 +541,7 @@ export default function Explore() {
       limit(10)
     );
 
-    const fetchResults = async () => {
+  const fetchResults = async () => {
       try {
         if (cleanQuery.startsWith('#')) {
           setSearchTab('posts');
@@ -771,7 +816,38 @@ export default function Explore() {
                   )}
 
                   {/* Sections based on tab */}
-                  {activeTab === 'foryou' || activeTab === 'trending' ? (
+                  {activeTab === 'videos' ? (
+                    <div className="space-y-0">
+                      {loadingVideos ? (
+                        <div className="flex flex-col items-center justify-center p-12 space-y-4">
+                          <div className="w-8 h-8 border-2 border-black/10 border-t-black rounded-full animate-spin" />
+                          <p className="text-gray-500 text-sm font-medium">Buscando vídeos...</p>
+                        </div>
+                      ) : videoPosts.length > 0 ? (
+                        videoPosts.map((post) => (
+                          <PostCard 
+                            key={`video-tab-${post.id}`}
+                            post={post}
+                            onLike={() => handleLikePost(post)}
+                            onRepost={() => handleRepost(post)}
+                            onDelete={() => handleDeletePost(post.id)}
+                            onEdit={(p) => navigate(`/post/${p.id}`)}
+                            onShare={() => {}}
+                            onReply={(p) => navigate(`/post/${p.id}`)}
+                            onQuote={(p) => navigate(`/post/${p.id}`)}
+                            onImageClick={(src, alt) => {}}
+                            canEdit={() => false}
+                          />
+                        ))
+                      ) : (
+                        <div className="flex flex-col items-center justify-center p-12 text-center">
+                          <Tv className="w-16 h-16 text-gray-200 mb-4" />
+                          <h3 className="font-bold text-gray-900">Ainda não há vídeos aqui</h3>
+                          <p className="text-gray-500 text-sm mt-1">Seja o primeiro a postar um vídeo!</p>
+                        </div>
+                      )}
+                    </div>
+                  ) : activeTab === 'foryou' || activeTab === 'trending' ? (
                     <>
                       <div className="mb-0">
                         <TrendingPosts isFullList={activeTab === 'trending'} />

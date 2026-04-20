@@ -39,13 +39,10 @@ export default function Missions() {
         if (isCompleted) {
           progress = data.requirement;
         } else {
-          // Compute rough progress based on points just so the bar has some value if they did some actions
-          // Normally we'd track each mission individually, but for real-time we'll approximate based on points
-          if (data.type === 'like' || data.type === 'reply') {
-             progress = Math.min((userProfile?.points || 0), data.requirement);
-          } else {
-             progress = 0; // if it's a specific goal, we leave it at 0
-          }
+          // Use the real progress tracked in DB
+          progress = userProfile?.missionProgress?.[doc.id] || 0;
+          // cap progress at requirement
+          progress = Math.min(progress, data.requirement);
         }
 
         return { 

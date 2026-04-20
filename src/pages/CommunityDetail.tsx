@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Users, MessageSquare, Shield, Globe, MoreHorizontal, Plus, Share, AlertCircle, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Users, MessageSquare, Shield, Globe, MoreHorizontal, Plus, Share, AlertCircle, TrendingUp, Pin, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { collection, query, where, orderBy, onSnapshot, getDocs, doc, updateDoc, arrayUnion, arrayRemove, limit, addDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -17,6 +17,7 @@ export default function CommunityDetail() {
   const { userProfile } = useAuth();
   const [community, setCommunity] = useState<any>(null);
   const [posts, setPosts] = useState<any[]>([]);
+  const [pinnedPosts, setPinnedPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isJoining, setIsJoining] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -53,13 +54,14 @@ export default function CommunityDetail() {
         const postsQuery = query(
           collection(db, 'posts'),
           where('communityId', '==', communityData.id),
-          where('privacy', '==', 'public'),
           orderBy('createdAt', 'desc'),
           limit(20)
         );
 
         const unsubscribePosts = onSnapshot(postsQuery, (postSnapshot) => {
-          setPosts(postSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+          const allPosts = postSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+          setPosts(allPosts.filter(p => !p.isCommunityPinned));
+          setPinnedPosts(allPosts.filter(p => p.isCommunityPinned));
           setLoading(false);
         });
 
@@ -114,6 +116,19 @@ export default function CommunityDetail() {
   }
 
   const isMember = community.members?.includes(userProfile?.uid);
+  const isModerator = community.moderatorIds?.includes(userProfile?.uid) || community.ownerId === userProfile?.uid;
+
+  const handlePinPost = async (postId: string, currentPinned: boolean) => {
+    if (!isModerator) return;
+    try {
+      await updateDoc(doc(db, 'posts', postId), {
+        isCommunityPinned: !currentPinned
+      });
+      showToast(currentPinned ? 'Post desfixado' : 'Post fixado na comunidade!', 'success');
+    } catch (error) {
+      console.error("Error pinning post:", error);
+    }
+  };
 
   const handleDeletePost = async (postId: string) => {
     if (!db || !userProfile) return;
@@ -202,12 +217,20 @@ export default function CommunityDetail() {
 
       <div className="relative">
         {/* Banner */}
-        <div className="h-32 sm:h-48 bg-gray-100 overflow-hidden">
+        <div 
+          className="h-32 sm:h-48 bg-gray-100 overflow-hidden"
+          style={{ backgroundColor: community.themeColor || undefined }}
+        >
           <LazyImage src={community.bannerUrl || `https://picsum.photos/seed/${community.slug}/800/400`} className="w-full h-full" />
         </div>
         {/* Community Icon */}
         <div className="absolute -bottom-10 left-6 w-20 h-20 sm:w-28 sm:h-28 rounded-3xl bg-white p-1 shadow-2xl border-4 border-white overflow-hidden z-10">
-          <LazyImage src={community.iconUrl || `https://picsum.photos/seed/${community.slug}-icon/200/200`} className="w-full h-full rounded-2xl" />
+          <div 
+            className="w-full h-full rounded-2xl overflow-hidden"
+            style={{ border: community.themeColor ? `2px solid ${community.themeColor}` : undefined }}
+          >
+            <LazyImage src={community.iconUrl || `https://picsum.photos/seed/${community.slug}-icon/200/200`} className="w-full h-full" />
+          </div>
         </div>
       </div>
 
@@ -249,7 +272,7 @@ export default function CommunityDetail() {
 
       <div className="min-h-[400px]">
         {activeTab === 'posts' ? (
-          <div>
+          <div className="space-y-0">
             {isMember && (
               <div 
                 onClick={() => setIsCreateModalOpen(true)}
@@ -265,22 +288,58 @@ export default function CommunityDetail() {
               </div>
             )}
 
+            {pinnedPosts.length > 0 && (
+              <div className="bg-blue-50/30 border-b border-black/5">
+                <div className="px-4 py-2 flex items-center space-x-2 text-xs font-bold text-gray-500 uppercase tracking-widest">
+                  <Pin className="w-3.5 h-3.5" />
+                  <span>Posts Fixados</span>
+                </div>
+                <div className="divide-y divide-black/5">
+                  {pinnedPosts.map(post => (
+                    <PostCard 
+                      key={`pinned-${post.id}`} 
+                      post={post}
+                      onLike={() => handleLikePost(post)}
+                      onRepost={() => handleRepost(post)}
+                      onDelete={() => handleDeletePost(post.id)}
+                      onEdit={(p) => navigate(`/post/${p.id}`)}
+                      onShare={() => {}}
+                      onReply={(p) => navigate(`/post/${p.id}`)}
+                      onQuote={(p) => navigate(`/post/${p.id}`)}
+                      onImageClick={(src, alt) => {}}
+                      canEdit={() => false}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
             {posts.length > 0 ? (
               <div className="divide-y divide-black/5">
                 {posts.map(post => (
-                  <PostCard 
-                    key={post.id} 
-                    post={post}
-                    onLike={() => handleLikePost(post)}
-                    onRepost={() => handleRepost(post)}
-                    onDelete={() => handleDeletePost(post.id)}
-                    onEdit={(p) => navigate(`/post/${p.id}`)}
-                    onShare={() => {}}
-                    onReply={(p) => navigate(`/post/${p.id}`)}
-                    onQuote={(p) => navigate(`/post/${p.id}`)}
-                    onImageClick={(src, alt) => {}}
-                    canEdit={() => false}
-                  />
+                  <div key={post.id} className="relative">
+                    <PostCard 
+                      post={post}
+                      onLike={() => handleLikePost(post)}
+                      onRepost={() => handleRepost(post)}
+                      onDelete={() => handleDeletePost(post.id)}
+                      onEdit={(p) => navigate(`/post/${p.id}`)}
+                      onShare={() => {}}
+                      onReply={(p) => navigate(`/post/${p.id}`)}
+                      onQuote={(p) => navigate(`/post/${p.id}`)}
+                      onImageClick={(src, alt) => {}}
+                      canEdit={() => false}
+                    />
+                    {isModerator && (
+                      <button 
+                        onClick={() => handlePinPost(post.id, false)}
+                        className="absolute top-4 right-12 p-2 hover:bg-gray-100 rounded-full text-gray-300 hover:text-blue-500 transition-colors"
+                        title="Fixar post"
+                      >
+                        <Pin className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                 ))}
               </div>
             ) : (
@@ -327,18 +386,37 @@ export default function CommunityDetail() {
             <section>
               <h2 className="text-lg font-black tracking-tight mb-3 flex items-center space-x-2">
                 <Shield className="w-5 h-5 text-green-500" />
-                <span>Moderadores</span>
+                <span>Moderadores & Staff</span>
               </h2>
-              <div className="flex flex-wrap gap-2">
-                {community.moderatorIds?.map((id: string) => (
-                  <div key={id} className="px-3 py-1.5 bg-gray-100 rounded-full text-xs font-bold flex items-center space-x-2">
-                    <div className="w-4 h-4 rounded-full bg-gray-300 overflow-hidden">
-                       <LazyImage src={`https://avatar.vercel.sh/${id}`} />
+              <div className="flex flex-col space-y-2">
+                {community.ownerId && (
+                  <div 
+                    onClick={() => navigate(`/${community.ownerUsername || community.ownerId}`)}
+                    className="p-3 bg-indigo-50 rounded-2xl border border-indigo-100 flex items-center justify-between cursor-pointer hover:bg-indigo-100 transition-colors"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 rounded-full bg-white overflow-hidden border border-indigo-200">
+                         <LazyImage src={`https://avatar.vercel.sh/${community.ownerId}`} />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-indigo-900">Fundador</p>
+                        <p className="text-[10px] text-indigo-500">@{community.ownerUsername || 'dono'}</p>
+                      </div>
                     </div>
-                    <span>ID: {id.substring(0, 6)}</span>
+                    <Star className="w-4 h-4 text-amber-500 fill-current" />
                   </div>
-                ))}
-                {!community.moderatorIds?.length && (
+                )}
+                <div className="flex flex-wrap gap-2">
+                  {community.moderatorIds?.map((id: string) => (
+                    <div key={id} className="px-3 py-1.5 bg-gray-100 rounded-full text-xs font-bold flex items-center space-x-2 border border-black/5">
+                      <div className="w-4 h-4 rounded-full bg-gray-300 overflow-hidden">
+                         <LazyImage src={`https://avatar.vercel.sh/${id}`} />
+                      </div>
+                      <span>Moderador</span>
+                    </div>
+                  ))}
+                </div>
+                {!community.moderatorIds?.length && !community.ownerId && (
                   <p className="text-gray-400 text-sm italic">Comunidade gerida pelo OffMe</p>
                 )}
               </div>

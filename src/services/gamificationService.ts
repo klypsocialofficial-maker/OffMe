@@ -1,4 +1,4 @@
-import { doc, updateDoc, increment, arrayUnion, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, increment, arrayUnion, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { BADGES } from '../constants/badges';
 
@@ -30,9 +30,49 @@ export const awardPoints = async (userId: string, points: number) => {
     // Check for badges based on points/level
     await checkBadges(userId, { ...userData, points: currentPoints, level: newLevel });
     
+    // Automatically track points-related mission progress
+    await trackMissionProgress(userId, 'engage', points);
+    
     return { points: currentPoints, level: newLevel };
   } catch (error) {
     console.error('Error awarding points:', error);
+  }
+};
+
+export const trackMissionProgress = async (userId: string, type: string, amount: number = 1) => {
+  if (!db) return;
+  const userRef = doc(db, 'users', userId);
+  
+  try {
+    const userSnap = await getDoc(userRef);
+    if (!userSnap.exists()) return;
+    const userData = userSnap.data();
+    
+    // Fetch active missions
+    const missionsSnap = await getDocs(query(collection(db, 'missions'), where('type', '==', type)));
+    
+    for (const missionDoc of missionsSnap.docs) {
+      const mission = { id: missionDoc.id, ...missionDoc.data() } as any;
+      const progressKey = `missionProgress.${mission.id}`;
+      const currentProgress = (userData.missionProgress?.[mission.id] || 0) + amount;
+      
+      if (!userData.completedMissionIds?.includes(mission.id)) {
+        await updateDoc(userRef, {
+          [progressKey]: currentProgress
+        });
+
+        if (currentProgress >= mission.requirement) {
+          // Mission completed!
+          await updateDoc(userRef, {
+            completedMissionIds: arrayUnion(mission.id),
+            points: (userData.points || 0) + (mission.reward || 0)
+          });
+          // Could trigger a notification here
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error tracking mission progress:', error);
   }
 };
 

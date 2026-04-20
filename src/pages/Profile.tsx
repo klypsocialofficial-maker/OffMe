@@ -203,13 +203,11 @@ export default function Profile() {
       const q1 = query(
         collection(db, 'posts'),
         where('authorId', '==', profileUser.uid),
-        ...(isOwnProfile ? [] : [where('privacy', '==', 'public')]),
         orderBy('createdAt', 'desc')
       );
       const q2 = query(
         collection(db, 'posts'),
         where('reposts', 'array-contains', profileUser.uid),
-        ...(isOwnProfile ? [] : [where('privacy', '==', 'public')]),
         orderBy('createdAt', 'desc')
       );
 
@@ -220,8 +218,15 @@ export default function Profile() {
         const merged = [...results1, ...results2];
         const unique = Array.from(new Map(merged.map(item => [item.id, item])).values());
         
-        // Filter out replies for the main "Posts" tab
-        const filtered = unique.filter((post: any) => !post.replyToId && !post.isAnonymous);
+        // Filter out replies for the main "Posts" tab and apply privacy rules
+        const filtered = unique.filter((post: any) => {
+          if (post.privacy === 'circle') {
+            const circleMembers = post.audience || [];
+            const isAuthor = post.authorId === userProfile?.uid || post.ownerId === userProfile?.uid;
+            if (!isAuthor && !circleMembers.includes(userProfile?.uid)) return false;
+          }
+          return !post.replyToId && !post.isAnonymous;
+        });
         
         setPosts(filtered);
         setLoading(false);
@@ -258,7 +263,6 @@ export default function Profile() {
         q = query(
           collection(db, 'posts'),
           where('likes', 'array-contains', profileUser.uid),
-          ...(isOwnProfile ? [] : [where('privacy', '==', 'public')]),
           orderBy('createdAt', 'desc')
         );
       } else if (activeTab === 'anonymous') {
@@ -277,14 +281,12 @@ export default function Profile() {
         // Bookmarks are only visible if isOwnProfile, but let's add protection anyway
         q = query(
           collection(db, 'posts'),
-          where('__name__', 'in', profileUser.bookmarks.slice(0, 30)),
-          ...(isOwnProfile ? [] : [where('privacy', '==', 'public')])
+          where('__name__', 'in', profileUser.bookmarks.slice(0, 30))
         );
       } else {
         q = query(
           collection(db, 'posts'),
           where('authorId', '==', profileUser.uid),
-          ...(isOwnProfile ? [] : [where('privacy', '==', 'public')]),
           orderBy('createdAt', 'desc')
         );
       }
@@ -294,6 +296,16 @@ export default function Profile() {
           id: doc.id,
           ...doc.data()
         }));
+
+        // Apply privacy filtering
+        results = results.filter((post: any) => {
+          if (post.privacy === 'circle') {
+            const circleMembers = post.audience || [];
+            const isAuthor = post.authorId === userProfile?.uid || post.ownerId === userProfile?.uid;
+            if (!isAuthor && !circleMembers.includes(userProfile?.uid)) return false;
+          }
+          return true;
+        });
 
         if (activeTab === 'replies') {
           results = results.filter(post => post.replyToId);

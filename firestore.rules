@@ -51,18 +51,17 @@ service cloud.firestore {
     }
 
     match /posts/{postId} {
-      allow read: if isAdmin() || 
-                   (resource.data.get('privacy', 'public') == 'public' && get(/databases/$(database)/documents/users/$(resource.data.authorId)).data.get('privateProfile', false) == false) || 
-                   (isAuthenticated() && (
-                     resource.data.get('authorId', '') == request.auth.uid || 
-                     isFollowing(resource.data.get('authorId', '')) ||
+      allow read: if isAdmin() ||
+                   resource.data.get('privacy', 'public') == 'public' ||
+                   isAuthenticated() && (
+                     resource.data.get('authorId', '') == request.auth.uid ||
                      request.auth.uid in resource.data.get('audience', []) ||
                      resource.data.get('ownerId', '') == request.auth.uid
-                   ));
+                   );
       
       allow create: if (isAuthenticated() || (request.resource.data.get('authorId', '') == 'anonymous')) && isValidPost(request.resource.data);
       
-      allow update: if isAdmin() || 
+      allow update: if isAdmin() ||
                     (isDocOwner() && request.resource.data.get('authorId', '') == resource.data.get('authorId', '') && isValidPost(request.resource.data)) ||
                     (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasAny(['likes', 'likesCount', 'repliesCount', 'reposts', 'repostsCount', 'viewCount']));
       
