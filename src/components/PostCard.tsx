@@ -15,6 +15,7 @@ import ShareViaDMModal from './ShareViaDMModal';
 import ReportModal from './ReportModal';
 import ConfirmModal from './ConfirmModal';
 import TipModal from './TipModal';
+import Toast from './Toast';
 
 import PostImageGrid from './PostImageGrid';
 import LazyImage from './LazyImage';
@@ -56,6 +57,9 @@ export default function PostCard({
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isTipModalOpen, setIsTipModalOpen] = useState(false);
   const [isDMShareModalOpen, setIsDMShareModalOpen] = useState(false);
+  const [isToastOpen, setIsToastOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('info');
   const [showLikeAnimation, setShowLikeAnimation] = useState(false);
   const repostTimerRef = React.useRef<any>(null);
 
@@ -599,6 +603,23 @@ export default function PostCard({
         senderPoints={userProfile?.points || 0}
         receiverId={effectivePost.authorId}
         receiverName={effectivePost.authorName}
+        onSuccess={() => {
+            setToastMessage('Gorjeta enviada com sucesso!');
+            setToastType('success');
+            setIsToastOpen(true);
+            setIsTipModalOpen(false);
+        }}
+        onError={(err) => {
+            setToastMessage(err || 'Erro ao enviar gorjeta.');
+            setToastType('error');
+            setIsToastOpen(true);
+        }}
+      />
+      <Toast 
+        isOpen={isToastOpen}
+        onClose={() => setIsToastOpen(false)}
+        message={toastMessage}
+        type={toastType}
       />
 
       <ReportModal 

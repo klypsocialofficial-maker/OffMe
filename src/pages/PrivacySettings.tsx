@@ -79,8 +79,8 @@ export default function PrivacySettings() {
   };
 
   return (
-    <div className="w-full h-full bg-white/50 dark:bg-black/50 overflow-y-auto flex flex-col">
-      <div className="sticky top-0 z-30 bg-white/80 dark:bg-black/80 backdrop-blur-2xl border-b border-black/5 shadow-sm pt-[env(safe-area-inset-top)] flex-shrink-0">
+    <div className="w-full h-full bg-white/50 dark:bg-black/50 flex flex-col overflow-hidden">
+      <div className="flex-shrink-0 z-30 bg-white/80 dark:bg-black/80 backdrop-blur-2xl border-b border-black/5 shadow-sm pt-[env(safe-area-inset-top)]">
         <div className="px-4 py-3 flex items-center space-x-3">
           <button onClick={() => navigate(-1)} className="p-2 -ml-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors">
             <ArrowLeft className="w-6 h-6" />
@@ -89,7 +89,7 @@ export default function PrivacySettings() {
         </div>
       </div>
 
-      <div className="p-4 space-y-8">
+      <div className="flex-1 overflow-y-auto p-4 space-y-8 pb-20">
         <section>
           <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4 px-1">Sua atividade no OffMe</h2>
           <div className="space-y-4">
