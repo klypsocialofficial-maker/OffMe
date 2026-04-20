@@ -166,6 +166,7 @@ export default function Home() {
     
     let q = query(
       collection(db, 'posts'),
+      where('privacy', '==', 'public'),
       orderBy('createdAt', 'desc'),
       limit(POSTS_PER_PAGE)
     );
@@ -178,6 +179,7 @@ export default function Home() {
         q = query(
           collection(db, 'posts'),
           where('authorId', 'in', followingIds),
+          where('privacy', '==', 'public'),
           orderBy('createdAt', 'desc'),
           limit(POSTS_PER_PAGE)
         );
@@ -221,6 +223,7 @@ export default function Home() {
     try {
       let q = query(
         collection(db, 'posts'),
+        where('privacy', '==', 'public'),
         orderBy('createdAt', 'desc'),
         startAfter(lastDoc),
         limit(POSTS_PER_PAGE)
@@ -231,6 +234,7 @@ export default function Home() {
         q = query(
           collection(db, 'posts'),
           where('authorId', 'in', followingIds),
+          where('privacy', '==', 'public'),
           orderBy('createdAt', 'desc'),
           startAfter(lastDoc),
           limit(POSTS_PER_PAGE)
