@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, TrendingUp, MoreHorizontal, UserPlus } from 'lucide-react';
-import { collection, query, limit, getDocs, where } from 'firebase/firestore';
+import { collection, query, limit, getDocs, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import VerifiedBadge from './VerifiedBadge';
@@ -14,14 +14,48 @@ export default function RightSidebar() {
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [followingStates, setFollowingStates] = useState<Record<string, boolean>>({});
+  const [trendingTopics, setTrendingTopics] = useState<any[]>([]);
 
-  const trendingTopics = [
-    { category: 'Tecnologia · Em alta', title: '#OffMe', posts: '12.5K posts' },
-    { category: 'Brasil · Em alta', title: 'Ghost App', posts: '8,432 posts' },
-    { category: 'Entretenimento · Em alta', title: 'Liquid Glass UI', posts: '5,102 posts' },
-    { category: 'Esportes · Em alta', title: 'Futebol', posts: '45.2K posts' },
-    { category: 'Música · Em alta', title: 'Novo Álbum', posts: '2,100 posts' },
-  ];
+  useEffect(() => {
+    if (!db) return;
+    
+    // Fetch recent posts to extract real trending hashtags
+    const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(50));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const hashtagCounts: Record<string, number> = {};
+      
+      snapshot.docs.forEach(doc => {
+        const content = doc.data().content || '';
+        // Extract hashtags using regex
+        const matches = content.match(/#[a-zA-Z0-9_À-ÿ]+/g);
+        if (matches) {
+          matches.forEach((tag: string) => {
+            const lowerTag = tag.toLowerCase();
+            hashtagCounts[lowerTag] = (hashtagCounts[lowerTag] || 0) + 1;
+          });
+        }
+      });
+      
+      const sortedTags = Object.entries(hashtagCounts)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 5)
+        .map(([tag, count]) => ({
+          category: 'Assunto do momento',
+          title: tag,
+          posts: `${count} posts recentes`
+        }));
+        
+      if (sortedTags.length === 0) {
+        setTrendingTopics([
+           { category: 'Assunto do momento', title: '#OffMe', posts: 'Lançamento' },
+        ]);
+      } else {
+        setTrendingTopics(sortedTags);
+      }
+    });
+    
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const fetchSuggestions = async () => {

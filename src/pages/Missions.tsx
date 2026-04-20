@@ -27,20 +27,32 @@ export default function Missions() {
     if (!db) return;
 
     setLoading(true);
-    // In a real app, you'd fetch specific daily missions
-    // For this demo, we'll fetch all missions and simulate completion state
+    // Fetch the missions configuration from DB
     const q = query(collection(db, 'missions'), orderBy('createdAt', 'desc'));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const results = snapshot.docs.map(doc => {
         const data = doc.data();
-        // Simulate progress for the demo if not in DB
         const isCompleted = userProfile?.completedMissionIds?.includes(doc.id);
+        
+        let progress = 0;
+        if (isCompleted) {
+          progress = data.requirement;
+        } else {
+          // Compute rough progress based on points just so the bar has some value if they did some actions
+          // Normally we'd track each mission individually, but for real-time we'll approximate based on points
+          if (data.type === 'like' || data.type === 'reply') {
+             progress = Math.min((userProfile?.points || 0), data.requirement);
+          } else {
+             progress = 0; // if it's a specific goal, we leave it at 0
+          }
+        }
+
         return { 
           id: doc.id, 
           ...data,
           isCompleted,
-          progress: isCompleted ? data.requirement : Math.floor(Math.random() * data.requirement)
+          progress
         };
       });
       setMissions(results);
@@ -210,12 +222,20 @@ export default function Missions() {
            <Award className="absolute -bottom-4 -right-4 w-32 h-32 opacity-20 rotate-12" />
            <h3 className="text-lg font-black tracking-tight mb-4">Suas Conquistas</h3>
            <div className="flex space-x-4 overflow-x-auto no-scrollbar pb-2">
-             {[1, 2, 3].map(i => (
-               <div key={i} className="flex-shrink-0 flex flex-col items-center space-y-2">
+             {(!userProfile?.badges || userProfile.badges.length === 0) ? (
+                <div className="text-white/60 text-sm font-medium">Continue engajando para desbloquear conquistas exclusivas!</div>
+             ) : userProfile.badges.map((badge: string) => (
+               <div key={badge} className="flex-shrink-0 flex flex-col items-center space-y-2">
                  <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center">
-                    <Star className="w-8 h-8 text-amber-300" />
+                    {badge === 'super_engaged' && <Flame className="w-8 h-8 text-orange-400" />}
+                    {badge === 'top_creator' && <Star className="w-8 h-8 text-amber-300" />}
+                    {badge === 'influencer' && <Trophy className="w-8 h-8 text-blue-300" />}
                  </div>
-                 <span className="text-[10px] font-bold opacity-80">Mestre {i}</span>
+                 <span className="text-[10px] font-bold opacity-80 uppercase tracking-widest text-center px-1">
+                   {badge === 'super_engaged' && 'Super Engajado'}
+                   {badge === 'top_creator' && 'Top Criador'}
+                   {badge === 'influencer' && 'Influencer'}
+                 </span>
                </div>
              ))}
            </div>

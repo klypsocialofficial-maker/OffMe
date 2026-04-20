@@ -76,8 +76,7 @@ export const checkBadges = async (userId: string, userData: any) => {
     newBadges.push('super_engaged');
   }
 
-  // Top Creator: (If we had post count in profile, but we don't yet in this mock)
-  // Let's assume points milestones for now
+  // Top Creator: Based on points milestone
   if (userData.points >= 500 && !earnedBadges.includes('top_creator')) {
     newBadges.push('top_creator');
   }

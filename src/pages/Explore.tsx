@@ -75,14 +75,6 @@ const CATEGORIES = [
   { id: 'tech', label: 'Tecnologia', icon: Cpu },
 ];
 
-const TRENDING_HASHTAGS = [
-  { tag: 'Offme', posts: '125K', category: 'Tech' },
-  { tag: 'Rulio', posts: '89K', category: 'Creator' },
-  { tag: 'Antigravity', posts: '54K', category: 'Coding' },
-  { tag: 'Brasil', posts: '210K', category: 'News' },
-  { tag: 'Futebol', posts: '150K', category: 'Sports' },
-];
-
 export default function Explore() {
   const { userProfile } = useAuth();
   const { openDrawer } = useOutletContext<{ openDrawer: () => void }>();
@@ -95,6 +87,7 @@ export default function Explore() {
   const [loading, setLoading] = useState(false);
   const [postsResults, setPostsResults] = useState<any[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(true);
+  const [trendingHashtags, setTrendingHashtags] = useState<any[]>([]);
   const [toast, setToast] = useState<{ message: string; type: 'info' | 'success' | 'error'; isOpen: boolean }>({
     message: '',
     type: 'info',
@@ -116,6 +109,43 @@ export default function Explore() {
     message: '',
     onConfirm: () => {}
   });
+
+  useEffect(() => {
+    if (!db) return;
+    
+    // Fetch recent posts to extract real trending hashtags
+    const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(100));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const hashtagCounts: Record<string, number> = {};
+      
+      snapshot.docs.forEach(doc => {
+        const content = doc.data().content || '';
+        // Extract hashtags using regex
+        const matches = content.match(/#[a-zA-Z0-9_À-ÿ]+/g);
+        if (matches) {
+          matches.forEach((tag: string) => {
+            const lowerTag = tag.substring(1); // remove #
+            hashtagCounts[lowerTag] = (hashtagCounts[lowerTag] || 0) + 1;
+          });
+        }
+      });
+      
+      const sortedTags = Object.entries(hashtagCounts)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 5)
+        .map(([tag, count]) => ({
+          tag: tag.charAt(0).toUpperCase() + tag.slice(1),
+          category: 'Assunto do momento',
+          posts: `${count} posts`
+        }));
+        
+      if (sortedTags.length > 0) {
+        setTrendingHashtags(sortedTags);
+      }
+    });
+    
+    return () => unsubscribe();
+  }, []);
 
   const handleMessageClick = async (otherUser: any) => {
     if (!userProfile?.uid || !db) return;
@@ -676,19 +706,27 @@ export default function Explore() {
                             <h2 className="text-xl font-black tracking-tight">O que está acontecendo</h2>
                           </div>
                           <div className="bg-white rounded-3xl border border-black/5 divide-y divide-black/5 overflow-hidden shadow-sm">
-                            {TRENDING_HASHTAGS.map((trend) => (
+                            {trendingHashtags.length > 0 ? trendingHashtags.map((trend) => (
                               <button 
                                 key={trend.tag}
                                 className="w-full text-left p-4 hover:bg-gray-50 transition-colors flex items-center justify-between group"
+                                onClick={() => {
+                                  setSearchQuery(trend.tag);
+                                  setSearchTab('posts');
+                                }}
                               >
                                 <div>
                                   <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">{trend.category} · Em alta</p>
                                   <p className="text-base font-bold text-gray-900 group-hover:text-blue-600 transition-colors">#{trend.tag}</p>
-                                  <p className="text-xs text-gray-500">{trend.posts} posts</p>
+                                  <p className="text-xs text-gray-500">{trend.posts}</p>
                                 </div>
                                 <MoreHorizontal className="w-5 h-5 text-gray-300 group-hover:text-gray-600" />
                               </button>
-                            ))}
+                            )) : (
+                              <div className="p-8 text-center text-gray-500 text-sm">
+                                Não há tendências o suficiente agora.
+                              </div>
+                            )}
                             <button className="w-full p-4 text-sm font-bold text-blue-500 hover:bg-gray-50 transition-colors text-left">
                               Mostrar mais
                             </button>
