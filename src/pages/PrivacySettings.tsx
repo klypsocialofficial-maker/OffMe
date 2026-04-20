@@ -79,8 +79,8 @@ export default function PrivacySettings() {
   };
 
   return (
-    <div className="w-full h-full bg-white/50 dark:bg-black/50 overflow-y-auto">
-      <div className="sticky top-0 z-30 bg-white/80 dark:bg-black/80 backdrop-blur-2xl border-b border-black/5 shadow-sm pt-[env(safe-area-inset-top)]">
+    <div className="w-full h-full bg-white/50 dark:bg-black/50 overflow-y-auto flex flex-col">
+      <div className="sticky top-0 z-30 bg-white/80 dark:bg-black/80 backdrop-blur-2xl border-b border-black/5 shadow-sm pt-[env(safe-area-inset-top)] flex-shrink-0">
         <div className="px-4 py-3 flex items-center space-x-3">
           <button onClick={() => navigate(-1)} className="p-2 -ml-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors">
             <ArrowLeft className="w-6 h-6" />
