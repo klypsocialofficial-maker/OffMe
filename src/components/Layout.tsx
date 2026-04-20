@@ -38,7 +38,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 import { usePlatform } from '../hooks/usePlatform';
 import DesktopLayout from './layouts/DesktopLayout';
 import AndroidLayout from './layouts/AndroidLayout';
-import IOSLayout from './layouts/IOSLayout';
+import BetaLayout from './layouts/BetaLayout';
 
 export default function Layout() {
   const { userProfile, logout } = useAuth();
@@ -145,7 +145,7 @@ export default function Layout() {
   const renderLayout = () => {
     if (isIOS) {
       return (
-        <IOSLayout 
+        <BetaLayout 
           userProfile={userProfile}
           navItems={navItems}
           unreadNotificationsCount={unreadNotificationsCount}

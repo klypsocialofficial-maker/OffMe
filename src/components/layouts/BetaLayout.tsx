@@ -6,7 +6,7 @@ import VerifiedBadge from '../VerifiedBadge';
 import LazyImage from '../LazyImage';
 import { getDefaultAvatar } from '../../lib/avatar';
 
-interface IOSLayoutProps {
+interface BetaLayoutProps {
   userProfile: any;
   navItems: any[];
   unreadNotificationsCount: number;
@@ -21,7 +21,7 @@ interface IOSLayoutProps {
   location: any;
 }
 
-export default function IOSLayout({
+export default function BetaLayout({
   userProfile,
   navItems,
   unreadNotificationsCount,
@@ -34,11 +34,11 @@ export default function IOSLayout({
   openImageViewer,
   Outlet,
   location
-}: IOSLayoutProps) {
+}: BetaLayoutProps) {
   const navigate = useNavigate();
 
   return (
-    <div className="flex flex-col w-full min-h-[100dvh] bg-white overflow-x-clip">
+    <div className="flex flex-col w-full min-h-[100dvh] bg-white overflow-x-clip font-sans">
       {/* Main Content Area */}
       <main className={`flex-1 w-full relative ${location.pathname.startsWith('/messages/') && location.pathname !== '/messages' ? '' : 'pb-[calc(85px+env(safe-area-inset-bottom))]'}`}>
         <AnimatePresence mode="wait">
@@ -55,7 +55,7 @@ export default function IOSLayout({
         </AnimatePresence>
       </main>
 
-      {/* iOS Bottom Navigation - Ultra Glassmorphism */}
+      {/* Beta Bottom Navigation - Ultra Glassmorphism */}
       {location.pathname !== '/premium' && !(location.pathname.startsWith('/messages/') && location.pathname !== '/messages') && (
         <div className="fixed bottom-0 left-0 right-0 z-40 px-4 pb-[calc(10px+env(safe-area-inset-bottom))]">
           <nav className="mx-auto max-w-lg bg-white/60 backdrop-blur-[40px] border border-white/40 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] flex justify-around items-center h-[65px] rounded-[32px] px-2 relative">
@@ -121,7 +121,7 @@ export default function IOSLayout({
         </div>
       )}
 
-      {/* iOS Side Drawer - Sliding Panel */}
+      {/* Beta Side Drawer - Sliding Panel */}
       <AnimatePresence>
         {isDrawerOpen && (
           <>
@@ -145,38 +145,49 @@ export default function IOSLayout({
               <div className="relative pt-[max(env(safe-area-inset-top),20px)] border-b border-black/5 z-10">
                 {/* Beta Badge */}
                 <div className="absolute top-[max(env(safe-area-inset-top),20px)] right-6">
-                  <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest bg-blue-100/50 px-2 py-1 rounded-lg border border-blue-200/50 shadow-sm backdrop-blur-sm">IOS</span>
+                  <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest bg-blue-100/50 px-2 py-1 rounded-lg border border-blue-200/50 shadow-sm backdrop-blur-sm">BETA</span>
                 </div>
                 
                 <div className="p-6">
-                  <div 
-                    className="w-16 h-16 rounded-2xl bg-gray-100 overflow-hidden mb-4 shadow-xl cursor-zoom-in transform transition-transform active:scale-95 border-2 border-white"
-                    onClick={() => userProfile?.photoURL && openImageViewer(userProfile.photoURL, `Avatar de ${userProfile.displayName}`)}
-                  >
-                    {userProfile?.photoURL ? (
-                      <LazyImage src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full" />
-                    ) : (
-                      <LazyImage src={getDefaultAvatar(userProfile?.displayName || '', userProfile?.username || '')} alt={userProfile?.displayName} className="w-full h-full" />
-                    )}
+                  <div className="relative mb-4">
+                    {/* Banner area */}
+                    <div className="h-16 w-full bg-gray-200 rounded-2xl overflow-hidden">
+                        {userProfile?.bannerURL && <LazyImage src={userProfile.bannerURL} alt="Banner" className="w-full h-full object-cover" />}
+                    </div>
+                    {/* Avatar overlaying banner */}
+                    <div 
+                      className="absolute -bottom-8 left-4 w-16 h-16 rounded-2xl bg-gray-100 overflow-hidden shadow-xl cursor-zoom-in transform transition-transform active:scale-95 border-2 border-white"
+                      onClick={() => userProfile?.photoURL && openImageViewer(userProfile.photoURL, `Avatar de ${userProfile.displayName}`)}
+                    >
+                      {userProfile?.photoURL ? (
+                        <LazyImage src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full" />
+                      ) : (
+                        <LazyImage src={getDefaultAvatar(userProfile?.displayName || '', userProfile?.username || '')} alt={userProfile?.displayName} className="w-full h-full" />
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-1.5">
-                    <h2 className="font-black text-xl leading-tight text-gray-900 tracking-tight truncate">{userProfile?.displayName}</h2>
-                    {(userProfile?.isVerified || userProfile?.username === 'Rulio') && <VerifiedBadge className="w-4 h-4 flex-shrink-0" tier={userProfile?.premiumTier} />}
-                  </div>
-                  <p className="text-gray-500 font-semibold text-base truncate">@{userProfile?.username}</p>
                   
-                  <div className="flex space-x-4 mt-4">
-                    <div className="flex items-baseline space-x-1">
-                      <span className="font-black text-black text-base">{userProfile?.following?.length || 0}</span>
-                      <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">Seguindo</span>
-                    </div>
-                    <div className="flex items-baseline space-x-1">
-                      <span className="font-black text-black text-base">{userProfile?.followers?.length || 0}</span>
-                      <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">Seguidores</span>
-                    </div>
+                  <div className="mt-10">
+                      <div className="flex items-center space-x-1.5">
+                        <h2 className="font-black text-xl leading-tight text-gray-900 tracking-tight truncate">{userProfile?.displayName}</h2>
+                        {(userProfile?.isVerified || userProfile?.username === 'Rulio') && <VerifiedBadge className="w-4 h-4 flex-shrink-0" tier={userProfile?.premiumTier} />}
+                      </div>
+                      <p className="text-gray-500 font-semibold text-base truncate">@{userProfile?.username}</p>
+                      
+                      <div className="flex space-x-4 mt-4">
+                        <div className="flex items-baseline space-x-1">
+                          <span className="font-black text-black text-base">{userProfile?.following?.length || 0}</span>
+                          <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">Seguindo</span>
+                        </div>
+                        <div className="flex items-baseline space-x-1">
+                          <span className="font-black text-black text-base">{userProfile?.followers?.length || 0}</span>
+                          <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">Seguidores</span>
+                        </div>
+                      </div>
                   </div>
                 </div>
               </div>
+
               
               {/* Scrollable Navigation */}
               <nav className="flex-1 overflow-y-auto py-2 px-3 space-y-1 custom-scrollbar z-10">
