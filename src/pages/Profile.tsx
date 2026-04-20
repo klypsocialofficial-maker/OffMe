@@ -115,6 +115,7 @@ export default function Profile() {
   });
 
   const [isScrolled, setIsScrolled] = useState(false);
+  const [showMore, setShowMore] = useState(false);
   const [isGamerCardOpen, setIsGamerCardOpen] = useState(false);
   const [isUserListModalOpen, setIsUserListModalOpen] = useState(false);
   const [userListTitle, setUserListTitle] = useState('');
@@ -787,9 +788,23 @@ export default function Profile() {
 
         {/* Bio with Stylized Look */}
         {profileUser.bio && (
-          <p className="mt-3 text-gray-800 text-sm sm:text-base leading-relaxed max-w-xl">
-            {profileUser.bio}
-          </p>
+          <div className="mt-3 text-gray-800 text-sm sm:text-base leading-relaxed max-w-xl">
+            {profileUser.bio.length > 150 ? (
+              <>
+                <p className={`${!showMore ? 'line-clamp-3' : ''}`}>
+                  {profileUser.bio}
+                </p>
+                <button
+                  onClick={() => setShowMore(!showMore)}
+                  className="mt-1 text-black font-bold hover:underline"
+                >
+                  {showMore ? 'Mostrar menos' : 'Mostrar mais'}
+                </button>
+              </>
+            ) : (
+              <p>{profileUser.bio}</p>
+            )}
+          </div>
         )}
 
         <BadgeDisplay badges={profileUser.badges} />

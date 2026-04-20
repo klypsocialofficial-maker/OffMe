@@ -19,6 +19,8 @@ export default function PWABadge() {
     },
   });
 
+  console.log('PWA Status - offlineReady:', offlineReady, 'needRefresh:', needRefresh);
+
   const [showChangelog, setShowChangelog] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateProgress, setUpdateProgress] = useState(0);
