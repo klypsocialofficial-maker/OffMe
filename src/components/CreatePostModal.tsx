@@ -342,11 +342,11 @@ export default function CreatePostModal({
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white/80 backdrop-blur-md z-10 pt-[env(safe-area-inset-top)]">
               <button 
                 onClick={onClose} 
-                className="text-blue-500 font-medium text-base"
+                className="text-blue-500 hover:text-blue-600 font-bold text-base"
               >
-                Cancel
+                Cancelar
               </button>
-              <h2 className="font-bold text-base text-gray-900 absolute left-1/2 -translate-x-1/2">
+              <h2 className="font-black italic tracking-tighter text-lg text-gray-900 absolute left-1/2 -translate-x-1/2 whitespace-nowrap">
                 {replyTo ? 'Responder' : 'Novo post'}
               </h2>
               <div className="flex items-center space-x-2">
