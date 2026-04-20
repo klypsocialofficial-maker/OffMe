@@ -35,7 +35,7 @@ export default function DesktopLayout({
   return (
     <div className="flex w-full max-w-[1300px] mx-auto justify-center lg:justify-start">
       {/* Sidebar Navigation (Desktop) */}
-      <header className="hidden sm:flex flex-col w-20 xl:w-64 border-r border-gray-100 px-2 xl:px-4 py-6 sticky top-0 h-screen z-20 bg-white">
+      <header className="hidden sm:flex flex-col w-20 xl:w-64 border-r border-gray-100/50 px-2 xl:px-4 py-6 sticky top-0 h-screen z-20 bg-white/70 backdrop-blur-md">
         <div className="flex items-center mb-8 px-4">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center shadow-lg shadow-black/10 rotate-3">

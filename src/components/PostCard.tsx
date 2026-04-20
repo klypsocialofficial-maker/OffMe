@@ -9,6 +9,7 @@ import QuotedPost from './QuotedPost';
 import Poll from './Poll';
 import { useAuth } from '../contexts/AuthContext';
 import { getDefaultAvatar } from '../lib/avatar';
+import ShareViaDMModal from './ShareViaDMModal';
 import ReportModal from './ReportModal';
 import ConfirmModal from './ConfirmModal';
 import TipModal from './TipModal';
@@ -50,6 +51,7 @@ export default function PostCard({
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isTipModalOpen, setIsTipModalOpen] = useState(false);
+  const [isDMShareModalOpen, setIsDMShareModalOpen] = useState(false);
   const repostTimerRef = React.useRef<any>(null);
 
   const stopPropagation = (e: React.MouseEvent | React.PointerEvent) => e.stopPropagation();
@@ -89,26 +91,6 @@ export default function PostCard({
   const handleShare = async (e: React.MouseEvent) => {
     stopPropagation(e);
     setIsMenuOpen(false);
-    
-    // Check if Web Share API is available
-    if (navigator.share) {
-      const shareData = {
-        title: `Post de ${post.authorName} no Offme`,
-        text: post.content.substring(0, 100) + (post.content.length > 100 ? '...' : ''),
-        url: `${window.location.origin}/post/${post.id}`
-      };
-
-      try {
-        await navigator.share(shareData);
-        return;
-      } catch (error) {
-        // If aborted by user, don't do anything
-        if ((error as Error).name === 'AbortError') return;
-        console.error('Erro ao compartilhar nativamente:', error);
-      }
-    }
-    
-    // Fallback to existing share modal
     onShare(post);
   };
 
@@ -162,7 +144,13 @@ export default function PostCard({
     >
       {/* Repost Header */}
       {post.type === 'repost' && (
-        <div className="flex items-center space-x-2 text-gray-500 text-xs font-bold mb-2 ml-10">
+        <div 
+          className="flex items-center space-x-2 text-gray-500 text-xs font-bold mb-2 ml-10 cursor-pointer hover:underline"
+          onClick={(e) => {
+            stopPropagation(e);
+            navigate(`/${post.authorUsername}`);
+          }}
+        >
           <Repeat className="w-3.5 h-3.5" />
           <span>{post.authorId === userProfile?.uid ? 'Você' : post.authorName} repostou</span>
         </div>
@@ -380,16 +368,33 @@ export default function PostCard({
                 )}
                 
                 <button 
-                   onClick={handleShare}
+                   onClick={(e) => {
+                     stopPropagation(e);
+                     setIsMenuOpen(false);
+                     setIsDMShareModalOpen(true);
+                   }}
                    className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
                  >
                    <Send className="w-4 h-4" />
-                   <span>Compartilhar</span>
+                   <span>Enviar por DM</span>
                  </button>
+                 <button 
+                    onClick={handleShare}
+                    className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                  >
+                    <Send className="w-4 h-4" />
+                    <span>Compartilhar link</span>
+                  </button>
               </div>
             )}
           </div>
         </div>
+        
+        <ShareViaDMModal
+          isOpen={isDMShareModalOpen}
+          onClose={() => setIsDMShareModalOpen(false)}
+          post={effectivePost}
+        />
 
         {/* Post Content */}
         <div className="mt-1 text-[15px] leading-normal text-gray-900 break-words">

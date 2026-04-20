@@ -182,7 +182,7 @@ export default function CreatorStudio() {
       <div className="p-2 sm:p-4 max-w-3xl mx-auto space-y-4 sm:space-y-6 pb-20">
         
         {/* Tab Switcher */}
-        <div className="flex bg-white rounded-full p-1 border border-gray-100 shadow-sm text-sm">
+        <div className="flex bg-white/70 backdrop-blur-md rounded-full p-1 border border-white/20 shadow-sm text-sm">
           {(['overview', 'posts', 'followers'] as const).map(tab => (
             <button
               key={tab}

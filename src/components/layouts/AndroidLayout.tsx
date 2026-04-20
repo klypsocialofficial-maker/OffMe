@@ -57,7 +57,7 @@ export default function AndroidLayout({
 
       {/* Android Bottom Navigation - Material Design feel */}
       {location.pathname !== '/premium' && !(location.pathname.startsWith('/messages/') && location.pathname !== '/messages') && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-100 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/70 backdrop-blur-md border-t border-white/20 shadow-lg">
           <nav className="flex justify-around items-center h-16 relative px-2">
             {[navItems[0], navItems[1], navItems[2], navItems[3], navItems[5]].map((item) => {
               const isActive = location.pathname === item.path;
@@ -121,7 +121,7 @@ export default function AndroidLayout({
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'tween', duration: 0.3 }}
-              className="fixed top-0 left-0 bottom-0 w-[280px] bg-white z-50 sm:hidden shadow-2xl flex flex-col"
+              className="fixed top-0 left-0 bottom-0 w-[280px] bg-white/70 backdrop-blur-lg z-50 sm:hidden shadow-2xl flex flex-col"
             >
               <div className="p-6 bg-gray-50 border-b border-gray-100">
                   <div 
