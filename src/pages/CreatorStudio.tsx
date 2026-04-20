@@ -179,15 +179,15 @@ export default function CreatorStudio() {
         </h1>
       </div>
 
-      <div className="p-4 max-w-3xl mx-auto space-y-6 pb-20">
+      <div className="p-2 sm:p-4 max-w-3xl mx-auto space-y-4 sm:space-y-6 pb-20">
         
         {/* Tab Switcher */}
-        <div className="flex bg-white rounded-full p-1 border border-gray-100 shadow-sm">
+        <div className="flex bg-white rounded-full p-1 border border-gray-100 shadow-sm text-sm">
           {(['overview', 'posts', 'followers'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveSubTab(tab)}
-              className={`flex-1 py-2 rounded-full text-sm font-bold capitalize transition-all ${
+              className={`flex-1 py-2 rounded-full font-bold capitalize transition-all ${
                 activeSubTab === tab ? 'bg-black text-white' : 'text-gray-500 hover:text-black'
               }`}
             >
@@ -199,60 +199,55 @@ export default function CreatorStudio() {
         {activeSubTab === 'overview' && (
           <>
             {/* Welcome Block */}
-            <div className="bg-gradient-to-br from-indigo-900 via-purple-900 to-black rounded-3xl p-6 text-white shadow-xl relative overflow-hidden">
+            <div className="bg-gradient-to-br from-indigo-900 via-purple-900 to-black rounded-3xl p-5 sm:p-6 text-white shadow-xl relative overflow-hidden">
               <div className="absolute top-0 right-0 p-8 opacity-10">
                 <Star className="w-48 h-48" />
               </div>
-              <div className="relative z-10 flex flex-col justify-between h-full min-h-[140px]">
+              <div className="relative z-10 flex flex-col justify-between h-full min-h-[120px] sm:min-h-[140px]">
                 <div>
                   <span className="bg-white/20 text-xs font-bold uppercase tracking-wider px-2 py-1 rounded border border-white/10 backdrop-blur-sm">Nível Criador: {userProfile.level || 1}</span>
-                  <h2 className="text-2xl font-bold mt-3">Bem-vindo(a) de volta, {userProfile.displayName}!</h2>
-                  <p className="text-indigo-200 mt-1">Nicho principal: <span className="font-bold text-white">{userProfile.creatorCategory || 'Geral'}</span></p>
+                  <h2 className="text-xl sm:text-2xl font-bold mt-3">Olá, {userProfile.displayName}!</h2>
+                  <p className="text-indigo-200 mt-1 text-sm sm:text-base">Nicho: <span className="font-bold text-white">{userProfile.creatorCategory || 'Geral'}</span></p>
                 </div>
               </div>
             </div>
 
-            <h3 className="font-bold text-gray-900 text-lg px-1">Visão Geral (Últimos 28 dias)</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100">
+            <h3 className="font-bold text-gray-900 text-lg px-1">Visão Geral (28 dias)</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div className="bg-white p-4 sm:p-5 rounded-3xl shadow-sm border border-gray-100">
                 <div className="flex justify-between items-start mb-2">
-                  <span className="text-gray-500 font-medium">Ganhos (Tips)</span>
+                  <span className="text-gray-500 font-medium text-sm">Ganhos (Tips)</span>
                   <div className="p-2 bg-green-50 text-green-600 rounded-full">
                     <DollarSign className="w-4 h-4" />
                   </div>
                 </div>
-                <div className="text-2xl font-black text-gray-900">{userProfile.points || 0} pts</div>
-                <div className="text-xs text-transparent flex items-center mt-1 font-medium">
-                  Gorjetas recebidas e acumuladas
-                </div>
+                <div className="text-xl sm:text-2xl font-black text-gray-900">{userProfile.points || 0} pts</div>
               </div>
               
-              <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100">
+              <div className="bg-white p-4 sm:p-5 rounded-3xl shadow-sm border border-gray-100">
                 <div className="flex justify-between items-start mb-2">
-                  <span className="text-gray-500 font-medium">Seguidores</span>
+                  <span className="text-gray-500 font-medium text-sm">Seguidores</span>
                   <div className="p-2 bg-blue-50 text-blue-600 rounded-full">
                     <Users className="w-4 h-4" />
                   </div>
                 </div>
-                <div className="text-2xl font-black text-gray-900">{userProfile.followers?.length || 0} fãs</div>
-                <div className="text-xs text-transparent flex items-center mt-1 font-medium">
-                   Base de usuários inscrita
-                </div>
+                <div className="text-xl sm:text-2xl font-black text-gray-900">{userProfile.followers?.length || 0} fãs</div>
               </div>
 
-              <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 col-span-2">
+              <div className="bg-white p-4 sm:p-5 rounded-3xl shadow-sm border border-gray-100 sm:col-span-2">
                 <div className="flex justify-between items-start mb-2">
-                  <span className="text-gray-500 font-medium">Engajamento Global (Comentários, Curtidas e Reposts)</span>
+                  <span className="text-gray-500 font-medium text-sm">Engajamento Global</span>
                   <div className="p-2 bg-purple-50 text-purple-600 rounded-full">
                     <Activity className="w-4 h-4" />
                   </div>
                 </div>
-                <div className="text-2xl font-black text-gray-900">{totalEngagement} interações</div>
-                <div className="text-xs text-gray-400 mt-2">Através de seus {totalPosts} posts na plataforma</div>
+                <div className="text-xl sm:text-2xl font-black text-gray-900">{totalEngagement} interações</div>
+                <p className="text-xs text-gray-400 mt-1">{totalPosts} posts na plataforma</p>
               </div>
             </div>
           </>
         )}
+
         
         {activeSubTab === 'posts' && (
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-4">
@@ -299,7 +294,6 @@ export default function CreatorStudio() {
         {/* Creator Tools */}
         <h3 className="font-bold text-gray-900 text-lg px-1 mt-6">Ferramentas</h3>
         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-            {/* ... tools ... */}
             <button className="w-full flex items-center justify-between p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors">
                 <div className="flex items-center space-x-3">
                 <div className="p-2 bg-purple-50 text-purple-600 rounded-xl">
