@@ -31,6 +31,7 @@ import DisplaySettings from './pages/DisplaySettings';
 import PrivacySettings from './pages/PrivacySettings';
 import CreatorStudio from './pages/CreatorStudio';
 import PWABadge from './components/PWABadge';
+import SplashScreen from './components/SplashScreen';
 import AnonymousFeed from './pages/AnonymousFeed';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
