@@ -20,7 +20,12 @@ export default function RightSidebar() {
     if (!db) return;
     
     // Fetch recent posts to extract real trending hashtags
-    const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(50));
+    const q = query(
+      collection(db, 'posts'),
+      where('privacy', '==', 'public'),
+      orderBy('createdAt', 'desc'),
+      limit(50)
+    );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const hashtagCounts: Record<string, number> = {};
       

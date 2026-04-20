@@ -164,16 +164,20 @@ export default function Profile() {
     setLoading(true);
     let unsubscribe: () => void;
 
+    const isOwnProfile = profileUser?.uid === userProfile?.uid;
+
     if (activeTab === 'posts') {
       // Fetch user's posts and reposted posts
       const q1 = query(
         collection(db, 'posts'),
         where('authorId', '==', profileUser.uid),
+        ...(isOwnProfile ? [] : [where('privacy', '==', 'public')]),
         orderBy('createdAt', 'desc')
       );
       const q2 = query(
         collection(db, 'posts'),
         where('reposts', 'array-contains', profileUser.uid),
+        ...(isOwnProfile ? [] : [where('privacy', '==', 'public')]),
         orderBy('createdAt', 'desc')
       );
 
@@ -222,6 +226,7 @@ export default function Profile() {
         q = query(
           collection(db, 'posts'),
           where('likes', 'array-contains', profileUser.uid),
+          ...(isOwnProfile ? [] : [where('privacy', '==', 'public')]),
           orderBy('createdAt', 'desc')
         );
       } else if (activeTab === 'anonymous') {
@@ -237,14 +242,17 @@ export default function Profile() {
           setLoading(false);
           return;
         }
+        // Bookmarks are only visible if isOwnProfile, but let's add protection anyway
         q = query(
           collection(db, 'posts'),
-          where('__name__', 'in', profileUser.bookmarks.slice(0, 30))
+          where('__name__', 'in', profileUser.bookmarks.slice(0, 30)),
+          ...(isOwnProfile ? [] : [where('privacy', '==', 'public')])
         );
       } else {
         q = query(
           collection(db, 'posts'),
           where('authorId', '==', profileUser.uid),
+          ...(isOwnProfile ? [] : [where('privacy', '==', 'public')]),
           orderBy('createdAt', 'desc')
         );
       }

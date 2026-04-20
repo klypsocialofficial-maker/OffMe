@@ -10,7 +10,7 @@ import PostCard from '../components/PostCard';
 import { useAuth } from '../contexts/AuthContext';
 import { useOutletContext, Link, useNavigate } from 'react-router-dom';
 import { getDefaultAvatar } from '../lib/avatar';
-import { collection, query, where, onSnapshot, limit, addDoc, serverTimestamp, getDocs, doc, updateDoc, arrayUnion, arrayRemove, orderBy, getDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, limit, addDoc, serverTimestamp, getDocs, doc, updateDoc, arrayUnion, arrayRemove, orderBy, getDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { rankSuggestedUsers } from '../lib/gemini';
 
@@ -82,6 +82,78 @@ export default function Explore() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [suggestedUsers, setSuggestedUsers] = useState<any[]>([]);
+
+  const handleDeletePost = async (postId: string) => {
+    if (!db || !userProfile) return;
+    try {
+      await deleteDoc(doc(db, 'posts', postId));
+      showToast('Post apagado com sucesso', 'success');
+      // Update local results
+      setPostsResults(prev => prev.filter(p => p.id !== postId));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `posts/${postId}`);
+    }
+  };
+
+  const handleLikePost = async (post: any) => {
+    if (!userProfile?.uid || !db) return;
+    const isLiked = post.likes?.includes(userProfile.uid);
+    const postRef = doc(db, 'posts', post.id);
+    try {
+      await updateDoc(postRef, {
+        likes: isLiked ? arrayRemove(userProfile.uid) : arrayUnion(userProfile.uid),
+        likesCount: isLiked ? Math.max(0, (post.likesCount || 0) - 1) : (post.likesCount || 0) + 1
+      });
+      setPostsResults(prev => prev.map(p => {
+        if (p.id === post.id) {
+          const newLikes = isLiked 
+            ? p.likes.filter((uid: string) => uid !== userProfile.uid)
+            : [...(p.likes || []), userProfile.uid];
+          return { ...p, likes: newLikes, likesCount: isLiked ? Math.max(0, (p.likesCount || 0) - 1) : (p.likesCount || 0) + 1 };
+        }
+        return p;
+      }));
+    } catch (error) {
+       console.error("Error liking post:", error);
+    }
+  };
+
+  const handleRepost = async (post: any) => {
+    if (!userProfile?.uid || !db) return;
+    const isReposted = post.reposts?.includes(userProfile.uid);
+    const postRef = doc(db, 'posts', post.id);
+    try {
+      if (isReposted) {
+        await updateDoc(postRef, {
+          reposts: arrayRemove(userProfile.uid),
+          repostsCount: Math.max(0, (post.repostsCount || 0) - 1)
+        });
+      } else {
+        await updateDoc(postRef, {
+          reposts: arrayUnion(userProfile.uid),
+          repostsCount: (post.repostsCount || 0) + 1
+        });
+        await addDoc(collection(db, 'posts'), {
+          authorId: userProfile.uid,
+          ownerId: userProfile.uid,
+          authorName: userProfile.displayName,
+          authorUsername: userProfile.username,
+          authorPhoto: userProfile.photoURL || null,
+          authorVerified: userProfile.isVerified || false,
+          type: 'repost',
+          repostedPostId: post.id,
+          content: post.content || '',
+          imageUrls: post.imageUrls || [],
+          originalPostAuthorId: post.authorId,
+          originalPostAuthorName: post.authorName,
+          originalPostAuthorUsername: post.authorUsername,
+          createdAt: serverTimestamp()
+        });
+      }
+    } catch (error) {
+       console.error("Error reposting:", error);
+    }
+  };
   const [activeTab, setActiveTab] = useState('foryou');
   const [searchTab, setSearchTab] = useState<'users' | 'posts'>('users');
   const [loading, setLoading] = useState(false);
@@ -638,14 +710,14 @@ export default function Explore() {
                       <PostCard 
                         key={`search-post-${post.id}`}
                         post={post}
-                        onLike={() => {}}
-                        onRepost={() => {}}
-                        onDelete={() => {}}
-                        onEdit={() => {}}
+                        onLike={() => handleLikePost(post)}
+                        onRepost={() => handleRepost(post)}
+                        onDelete={() => handleDeletePost(post.id)}
+                        onEdit={(p) => navigate(`/post/${p.id}`)}
                         onShare={() => {}}
-                        onReply={() => {}}
-                        onQuote={() => {}}
-                        onImageClick={() => {}}
+                        onReply={(p) => navigate(`/post/${p.id}`)}
+                        onQuote={(p) => navigate(`/post/${p.id}`)}
+                        onImageClick={(src, alt) => {}}
                         canEdit={() => false}
                       />
                     ))}

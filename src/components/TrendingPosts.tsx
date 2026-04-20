@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, limit, onSnapshot, where } from 'firebase/firestore';
 import { db } from '../firebase';
 import { TrendingUp, Heart, Repeat } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -21,6 +21,7 @@ const TrendingPosts: React.FC<TrendingPostsProps> = ({ autoHide = false, isFullL
 
     const q = query(
       collection(db, 'posts'),
+      where('privacy', '==', 'public'),
       orderBy('likesCount', 'desc'),
       limit(isFullList ? 20 : 5)
     );

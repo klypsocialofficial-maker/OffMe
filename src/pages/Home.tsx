@@ -328,6 +328,7 @@ export default function Home() {
     try {
       await deleteDoc(doc(db, 'posts', postId));
       setActiveMenuPostId(null);
+      showToast('Post apagado com sucesso', 'success');
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, `posts/${postId}`);
     }

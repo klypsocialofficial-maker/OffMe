@@ -63,7 +63,8 @@ export default function Bookmarks() {
         
         const q = query(
           collection(db, 'posts'),
-          where('__name__', 'in', bookmarkIds)
+          where('__name__', 'in', bookmarkIds),
+          where('privacy', '==', 'public')
         );
         
         const snapshot = await getDocs(q);

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Users, MessageSquare, Shield, Globe, MoreHorizontal, Plus, Share, AlertCircle, TrendingUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { collection, query, where, orderBy, onSnapshot, getDocs, doc, updateDoc, arrayUnion, arrayRemove, limit, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, getDocs, doc, updateDoc, arrayUnion, arrayRemove, limit, addDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import PostCard from '../components/PostCard';
@@ -53,6 +53,7 @@ export default function CommunityDetail() {
         const postsQuery = query(
           collection(db, 'posts'),
           where('communityId', '==', communityData.id),
+          where('privacy', '==', 'public'),
           orderBy('createdAt', 'desc'),
           limit(20)
         );
@@ -113,6 +114,68 @@ export default function CommunityDetail() {
   }
 
   const isMember = community.members?.includes(userProfile?.uid);
+
+  const handleDeletePost = async (postId: string) => {
+    if (!db || !userProfile) return;
+    try {
+      await deleteDoc(doc(db, 'posts', postId));
+      showToast('Post apagado com sucesso', 'success');
+    } catch (error) {
+      console.error("Error deleting post:", error);
+      showToast('Erro ao apagar post', 'error');
+    }
+  };
+
+  const handleLikePost = async (post: any) => {
+    if (!userProfile?.uid || !db) return;
+    const isLiked = post.likes?.includes(userProfile.uid);
+    const postRef = doc(db, 'posts', post.id);
+    try {
+      await updateDoc(postRef, {
+        likes: isLiked ? arrayRemove(userProfile.uid) : arrayUnion(userProfile.uid),
+        likesCount: isLiked ? Math.max(0, (post.likesCount || 0) - 1) : (post.likesCount || 0) + 1
+      });
+    } catch (error) {
+       console.error("Error liking post:", error);
+    }
+  };
+
+  const handleRepost = async (post: any) => {
+    if (!userProfile?.uid || !db) return;
+    const isReposted = post.reposts?.includes(userProfile.uid);
+    const postRef = doc(db, 'posts', post.id);
+    try {
+      if (isReposted) {
+        await updateDoc(postRef, {
+          reposts: arrayRemove(userProfile.uid),
+          repostsCount: Math.max(0, (post.repostsCount || 0) - 1)
+        });
+      } else {
+        await updateDoc(postRef, {
+          reposts: arrayUnion(userProfile.uid),
+          repostsCount: (post.repostsCount || 0) + 1
+        });
+        await addDoc(collection(db, 'posts'), {
+          authorId: userProfile.uid,
+          ownerId: userProfile.uid,
+          authorName: userProfile.displayName,
+          authorUsername: userProfile.username,
+          authorPhoto: userProfile.photoURL || null,
+          authorVerified: userProfile.isVerified || false,
+          type: 'repost',
+          repostedPostId: post.id,
+          content: post.content || '',
+          imageUrls: post.imageUrls || [],
+          originalPostAuthorId: post.authorId,
+          originalPostAuthorName: post.authorName,
+          originalPostAuthorUsername: post.authorUsername,
+          createdAt: serverTimestamp()
+        });
+      }
+    } catch (error) {
+       console.error("Error reposting:", error);
+    }
+  };
 
   return (
     <div className="w-full min-h-screen bg-white">
@@ -208,14 +271,14 @@ export default function CommunityDetail() {
                   <PostCard 
                     key={post.id} 
                     post={post}
-                    onLike={() => {}} // Handle in PostCard or add functions here
-                    onRepost={() => {}}
-                    onDelete={() => {}}
-                    onEdit={() => {}}
+                    onLike={() => handleLikePost(post)}
+                    onRepost={() => handleRepost(post)}
+                    onDelete={() => handleDeletePost(post.id)}
+                    onEdit={(p) => navigate(`/post/${p.id}`)}
                     onShare={() => {}}
-                    onReply={() => {}}
-                    onQuote={() => {}}
-                    onImageClick={() => {}}
+                    onReply={(p) => navigate(`/post/${p.id}`)}
+                    onQuote={(p) => navigate(`/post/${p.id}`)}
+                    onImageClick={(src, alt) => {}}
                     canEdit={() => false}
                   />
                 ))}

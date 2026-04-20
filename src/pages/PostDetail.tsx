@@ -198,6 +198,7 @@ export default function PostDetail() {
     const repliesQuery = query(
       collection(db, 'posts'),
       where('threadId', '==', postId),
+      where('privacy', '==', 'public'),
       orderBy('createdAt', 'asc')
     );
 
