@@ -80,7 +80,7 @@ export default function CreatorStudio() {
     return (
       <div className="min-h-[100dvh] bg-white flex flex-col pt-safe">
         {/* Header - Fixed to match app standard */}
-        <div className="w-full bg-white/70 backdrop-blur-md border-b border-gray-100 px-4 py-3 sticky top-0 z-20 flex items-center shadow-sm">
+        <div className="w-full bg-white/70 backdrop-blur-md border-b border-gray-100 px-4 py-3 pt-[calc(env(safe-area-inset-top)+12px)] sticky top-0 z-20 flex items-center shadow-sm">
           <button onClick={() => navigate(-1)} className="p-2 mr-2 rounded-full hover:bg-gray-100 transition-colors">
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -157,7 +157,7 @@ export default function CreatorStudio() {
   // Creator Dashboard State
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="w-full bg-white border-b border-gray-100 px-4 py-3 sticky top-0 z-20 flex items-center shadow-sm">
+      <div className="w-full bg-white border-b border-gray-100 px-4 py-3 pt-[calc(env(safe-area-inset-top)+12px)] sticky top-0 z-20 flex items-center shadow-sm">
         <button onClick={() => navigate(-1)} className="p-2 mr-2 rounded-full hover:bg-gray-100 transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </button>

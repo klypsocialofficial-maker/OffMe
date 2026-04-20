@@ -110,7 +110,7 @@ service cloud.firestore {
     // ===============================================================
 
     function isValidUser(data) {
-      return hasOnlyAllowedFields(['uid', 'email', 'username', 'displayName', 'photoURL', 'bannerURL', 'bio', 'location', 'website', 'following', 'followers', 'isVerified', 'isPremium', 'premiumTier', 'category', 'createdAt', 'updatedAt', 'fcmTokens', 'points', 'level', 'badges', 'mutedUsers', 'circleMembers']) &&
+      return hasOnlyAllowedFields(['uid', 'email', 'username', 'displayName', 'photoURL', 'bannerURL', 'bio', 'location', 'website', 'following', 'followers', 'isVerified', 'isPremium', 'premiumTier', 'category', 'creatorCategory', 'isCreator', 'monetizationEnabled', 'createdAt', 'updatedAt', 'fcmTokens', 'points', 'level', 'badges', 'mutedUsers', 'circleMembers']) &&
              data.uid is string && data.uid == request.auth.uid &&
              data.email is string && isValidEmail(data.email) &&
              data.username is string && data.username.size() > 0 && data.username.size() <= 50 &&
@@ -121,6 +121,9 @@ service cloud.firestore {
              (!('location' in data) || data.location == '' || (data.location is string && data.location.size() <= 30)) &&
              (!('website' in data) || data.website == '' || (data.website is string && data.website.size() <= 100)) &&
              (!('category' in data) || data.category == '' || (data.category is string && data.category.size() <= 50)) &&
+             (!('creatorCategory' in data) || data.creatorCategory == '' || (data.creatorCategory is string && data.creatorCategory.size() <= 50)) &&
+             (!('isCreator' in data) || data.isCreator is bool) &&
+             (!('monetizationEnabled' in data) || data.monetizationEnabled is bool) &&
              (!('following' in data) || data.following is list) &&
              (!('followers' in data) || data.followers is list) &&
              (!('mutedUsers' in data) || data.mutedUsers is list) &&
