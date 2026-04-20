@@ -14,37 +14,55 @@ export default function CreatorStudio() {
   const [selectedCategory, setSelectedCategory] = useState('Tech');
   const [totalEngagement, setTotalEngagement] = useState(0);
   const [totalPosts, setTotalPosts] = useState(0);
+  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'posts' | 'followers'>('overview');
+  const [creatorPosts, setCreatorPosts] = useState<any[]>([]);
+  const [followers, setFollowers] = useState<any[]>([]);
+  const [loadingMetrics, setLoadingMetrics] = useState(false);
 
   const categories = [
     'Tech', 'Gaming', 'Arte', 'Música', 'Educação', 'Cripto', 'Lifestyle', 'Comédia', 'Notícias', 'Esportes'
   ];
 
+  // ... rest of the code ...
   useEffect(() => {
-    async function fetchStats() {
-      if (!userProfile?.uid || !db) return;
+    async function fetchCreatorData() {
+      if (!userProfile?.uid || !db || !userProfile.isCreator) return;
+      setLoadingMetrics(true);
       try {
-        const q = query(collection(db, 'posts'), where('authorId', '==', userProfile.uid));
-        const snapshot = await getDocs(q);
+        // Fetch posts
+        const postsQ = query(collection(db, 'posts'), where('authorId', '==', userProfile.uid));
+        const postsSnap = await getDocs(postsQ);
+        const postsList = postsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setCreatorPosts(postsList);
+        setTotalPosts(postsList.length);
+
         let engagement = 0;
-        setTotalPosts(snapshot.size);
-
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          engagement += (data.likesCount || 0);
-          engagement += (data.repliesCount || 0);
-          engagement += (data.repostsCount || 0);
+        postsList.forEach((post: any) => {
+          engagement += (post.likesCount || 0);
+          engagement += (post.repliesCount || 0);
+          engagement += (post.repostsCount || 0);
         });
-
         setTotalEngagement(engagement);
+
+        // Fetch followers
+        if (userProfile.followers && userProfile.followers.length > 0) {
+          const followersQ = query(collection(db, 'users'), where('__name__', 'in', userProfile.followers.slice(0, 30)));
+          const followersSnap = await getDocs(followersQ);
+          setFollowers(followersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        } else {
+            setFollowers([]);
+        }
+
       } catch(err) {
-        console.error("Error fetching creator stats", err);
+        console.error("Error fetching creator data", err);
+      } finally {
+        setLoadingMetrics(false);
       }
     }
     
-    if (userProfile?.isCreator) {
-      fetchStats();
-    }
-  }, [userProfile]);
+    fetchCreatorData();
+  }, [userProfile?.uid, userProfile?.isCreator]);
+
 
   const handleJoin = async () => {
     setIsJoining(true);
@@ -163,91 +181,150 @@ export default function CreatorStudio() {
 
       <div className="p-4 max-w-3xl mx-auto space-y-6 pb-20">
         
-        {/* Welcome Block */}
-        <div className="bg-gradient-to-br from-indigo-900 via-purple-900 to-black rounded-3xl p-6 text-white shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-8 opacity-10">
-            <Star className="w-48 h-48" />
-          </div>
-          <div className="relative z-10 flex flex-col justify-between h-full min-h-[140px]">
-            <div>
-              <span className="bg-white/20 text-xs font-bold uppercase tracking-wider px-2 py-1 rounded border border-white/10 backdrop-blur-sm">Nível Criador: {userProfile.level || 1}</span>
-              <h2 className="text-2xl font-bold mt-3">Bem-vindo(a) de volta, {userProfile.displayName}!</h2>
-              <p className="text-indigo-200 mt-1">Nicho principal: <span className="font-bold text-white">{userProfile.creatorCategory || 'Geral'}</span></p>
-            </div>
-          </div>
+        {/* Tab Switcher */}
+        <div className="flex bg-white rounded-full p-1 border border-gray-100 shadow-sm">
+          {(['overview', 'posts', 'followers'] as const).map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveSubTab(tab)}
+              className={`flex-1 py-2 rounded-full text-sm font-bold capitalize transition-all ${
+                activeSubTab === tab ? 'bg-black text-white' : 'text-gray-500 hover:text-black'
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
         </div>
 
-        {/* Metrics Grid */}
-        <h3 className="font-bold text-gray-900 text-lg px-1">Visão Geral (Últimos 28 dias)</h3>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100">
-            <div className="flex justify-between items-start mb-2">
-              <span className="text-gray-500 font-medium">Ganhos (Tips)</span>
-              <div className="p-2 bg-green-50 text-green-600 rounded-full">
-                <DollarSign className="w-4 h-4" />
+        {activeSubTab === 'overview' && (
+          <>
+            {/* Welcome Block */}
+            <div className="bg-gradient-to-br from-indigo-900 via-purple-900 to-black rounded-3xl p-6 text-white shadow-xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-8 opacity-10">
+                <Star className="w-48 h-48" />
+              </div>
+              <div className="relative z-10 flex flex-col justify-between h-full min-h-[140px]">
+                <div>
+                  <span className="bg-white/20 text-xs font-bold uppercase tracking-wider px-2 py-1 rounded border border-white/10 backdrop-blur-sm">Nível Criador: {userProfile.level || 1}</span>
+                  <h2 className="text-2xl font-bold mt-3">Bem-vindo(a) de volta, {userProfile.displayName}!</h2>
+                  <p className="text-indigo-200 mt-1">Nicho principal: <span className="font-bold text-white">{userProfile.creatorCategory || 'Geral'}</span></p>
+                </div>
               </div>
             </div>
-            <div className="text-2xl font-black text-gray-900">{userProfile.points || 0} pts</div>
-            <div className="text-xs text-transparent flex items-center mt-1 font-medium">
-              Gorjetas recebidas e acumuladas
-            </div>
-          </div>
-          
-          <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100">
-            <div className="flex justify-between items-start mb-2">
-              <span className="text-gray-500 font-medium">Seguidores</span>
-              <div className="p-2 bg-blue-50 text-blue-600 rounded-full">
-                <Users className="w-4 h-4" />
-              </div>
-            </div>
-            <div className="text-2xl font-black text-gray-900">{userProfile.followers?.length || 0} fãs</div>
-            <div className="text-xs text-transparent flex items-center mt-1 font-medium">
-               Base de usuários inscrita
-            </div>
-          </div>
 
-          <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 col-span-2">
-            <div className="flex justify-between items-start mb-2">
-              <span className="text-gray-500 font-medium">Engajamento Global (Comentários, Curtidas e Reposts)</span>
-              <div className="p-2 bg-purple-50 text-purple-600 rounded-full">
-                <Activity className="w-4 h-4" />
+            <h3 className="font-bold text-gray-900 text-lg px-1">Visão Geral (Últimos 28 dias)</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100">
+                <div className="flex justify-between items-start mb-2">
+                  <span className="text-gray-500 font-medium">Ganhos (Tips)</span>
+                  <div className="p-2 bg-green-50 text-green-600 rounded-full">
+                    <DollarSign className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="text-2xl font-black text-gray-900">{userProfile.points || 0} pts</div>
+                <div className="text-xs text-transparent flex items-center mt-1 font-medium">
+                  Gorjetas recebidas e acumuladas
+                </div>
+              </div>
+              
+              <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100">
+                <div className="flex justify-between items-start mb-2">
+                  <span className="text-gray-500 font-medium">Seguidores</span>
+                  <div className="p-2 bg-blue-50 text-blue-600 rounded-full">
+                    <Users className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="text-2xl font-black text-gray-900">{userProfile.followers?.length || 0} fãs</div>
+                <div className="text-xs text-transparent flex items-center mt-1 font-medium">
+                   Base de usuários inscrita
+                </div>
+              </div>
+
+              <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 col-span-2">
+                <div className="flex justify-between items-start mb-2">
+                  <span className="text-gray-500 font-medium">Engajamento Global (Comentários, Curtidas e Reposts)</span>
+                  <div className="p-2 bg-purple-50 text-purple-600 rounded-full">
+                    <Activity className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="text-2xl font-black text-gray-900">{totalEngagement} interações</div>
+                <div className="text-xs text-gray-400 mt-2">Através de seus {totalPosts} posts na plataforma</div>
               </div>
             </div>
-            <div className="text-2xl font-black text-gray-900">{totalEngagement} interações</div>
-            <div className="text-xs text-gray-400 mt-2">Através de seus {totalPosts} posts na plataforma</div>
-          </div>
-        </div>
+          </>
+        )}
+        
+        {activeSubTab === 'posts' && (
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-4">
+                <h3 className="font-bold text-lg mb-4">Engajamento por Post</h3>
+                {loadingMetrics ? <p>Carregando...</p> : (
+                    <div className="space-y-3">
+                        {creatorPosts.map(post => (
+                            <div key={post.id} className="p-4 rounded-2xl bg-gray-50 border border-gray-100 flex justify-between items-center">
+                                <p className="text-sm font-medium truncate w-1/2">{post.content?.substring(0, 50)}...</p>
+                                <div className="flex gap-4 text-xs font-bold text-gray-500">
+                                    <span>❤️ {post.likesCount || 0}</span>
+                                    <span>💬 {post.repliesCount || 0}</span>
+                                    <span>🔁 {post.repostsCount || 0}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        )}
 
+        {activeSubTab === 'followers' && (
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-4">
+                <h3 className="font-bold text-lg mb-4">Seus Seguidores ({followers.length})</h3>
+                {loadingMetrics ? <p>Carregando...</p> : (
+                    <div className="space-y-3">
+                        {followers.map(f => (
+                            <div key={f.id} className="flex justify-between items-center p-3 rounded-2xl hover:bg-gray-50">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-gray-200" />
+                                    <div>
+                                        <p className="font-bold">{f.displayName}</p>
+                                        <p className="text-xs text-gray-500">@{f.username}</p>
+                                    </div>
+                                </div>
+                                <button className="px-4 py-2 bg-black text-white text-xs font-bold rounded-full">Mensagem</button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        )}
+        
         {/* Creator Tools */}
         <h3 className="font-bold text-gray-900 text-lg px-1 mt-6">Ferramentas</h3>
         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-          <button className="w-full flex items-center justify-between p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-purple-50 text-purple-600 rounded-xl">
-                <ShieldCheck className="w-5 h-5" />
-              </div>
-              <div className="text-left">
-                <p className="font-bold text-gray-900">Programa de Verificação</p>
-                <p className="text-xs text-gray-500">Aumente sua credibilidade com o selo dourado</p>
-              </div>
-            </div>
-            <ChevronRight className="w-5 h-5 text-gray-400" />
-          </button>
-          
-          <button className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
-                <Award className="w-5 h-5" />
-              </div>
-              <div className="text-left">
-                <p className="font-bold text-gray-900">Configurar Recompensas</p>
-                <p className="text-xs text-gray-500">Defina o que apoiadores recebem por doar</p>
-              </div>
-            </div>
-            <ChevronRight className="w-5 h-5 text-gray-400" />
-          </button>
+            {/* ... tools ... */}
+            <button className="w-full flex items-center justify-between p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                <div className="flex items-center space-x-3">
+                <div className="p-2 bg-purple-50 text-purple-600 rounded-xl">
+                    <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div className="text-left">
+                    <p className="font-bold text-gray-900">Programa de Verificação</p>
+                    <p className="text-xs text-gray-500">Aumente sua credibilidade com o selo dourado</p>
+                </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-gray-400" />
+            </button>
+            <button className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
+                <div className="flex items-center space-x-3">
+                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
+                    <Award className="w-5 h-5" />
+                </div>
+                <div className="text-left">
+                    <p className="font-bold text-gray-900">Configurar Recompensas</p>
+                    <p className="text-xs text-gray-500">Defina o que apoiadores recebem por doar</p>
+                </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-gray-400" />
+            </button>
         </div>
-
       </div>
     </div>
   );
