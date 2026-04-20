@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
-import { motion } from 'motion/react';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { User as UserIcon, MoreHorizontal, Trash2, Edit2, Send, MessageCircle, Repeat, Heart, Ghost, VolumeX, UserX, ShieldAlert, Bookmark, BookmarkCheck, Pin, PinOff, Users, BarChart2, Gift } from 'lucide-react';
 import { formatRelativeTime } from '../lib/dateUtils';
+import { doc, updateDoc, increment } from 'firebase/firestore';
 import VerifiedBadge from './VerifiedBadge';
 import PostContent from './PostContent';
 import QuotedPost from './QuotedPost';
 import Poll from './Poll';
 import { useAuth } from '../contexts/AuthContext';
+import { db } from '../firebase';
 import { getDefaultAvatar } from '../lib/avatar';
 import ShareViaDMModal from './ShareViaDMModal';
 import ReportModal from './ReportModal';
@@ -52,6 +54,7 @@ export default function PostCard({
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isTipModalOpen, setIsTipModalOpen] = useState(false);
   const [isDMShareModalOpen, setIsDMShareModalOpen] = useState(false);
+  const [showLikeAnimation, setShowLikeAnimation] = useState(false);
   const repostTimerRef = React.useRef<any>(null);
 
   const stopPropagation = (e: React.MouseEvent | React.PointerEvent) => e.stopPropagation();
@@ -110,6 +113,23 @@ export default function PostCard({
       console.error('Erro ao favoritar post:', error);
     }
   };
+
+  // Increment view count on mount
+  useEffect(() => {
+    if (!db || !effectivePost.id || post.type === 'repost') return;
+
+    const incrementView = async () => {
+      try {
+        await updateDoc(doc(db, 'posts', effectivePost.id), {
+          viewCount: increment(1)
+        });
+      } catch (error) {
+        console.error('Error incrementing view count:', error);
+      }
+    };
+
+    incrementView();
+  }, [effectivePost.id, post.type, db]);
 
   const isPinned = isProfilePinned === true;
 
@@ -464,12 +484,26 @@ export default function PostCard({
             whileTap={{ scale: 0.8 }}
             onClick={(e) => {
               stopPropagation(e);
+              setShowLikeAnimation(true);
+              setTimeout(() => setShowLikeAnimation(false), 1000);
               onLike(effectivePost);
             }}
             className={`flex items-center space-x-2 group/action transition-colors ${effectivePost.likes?.includes(userProfile?.uid) ? 'text-red-500' : 'hover:text-red-500'}`}
           >
-            <div className="p-2 group-hover/action:bg-red-50 rounded-full transition-colors">
+            <div className="p-2 group-hover/action:bg-red-50 rounded-full transition-colors relative">
               <Heart className={`w-4.5 h-4.5 ${effectivePost.likes?.includes(userProfile?.uid) ? 'fill-current' : ''}`} />
+              <AnimatePresence>
+                {showLikeAnimation && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 0, scale: 0.5 }}
+                    animate={{ opacity: 1, y: -30, scale: 1.5 }}
+                    exit={{ opacity: 0 }}
+                    className="absolute -top-6 left-0 z-50 text-indigo-500"
+                  >
+                    <Ghost className="w-6 h-6 fill-current" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
             <span className="text-sm">{effectivePost.likesCount || 0}</span>
           </motion.button>
@@ -487,7 +521,7 @@ export default function PostCard({
               <BarChart2 className="w-4.5 h-4.5" />
             </div>
             <span className="text-sm">
-              {effectivePost.viewCount || Math.max((effectivePost.likesCount || 0) * 11 + (effectivePost.repostsCount || 0) * 23 + (effectivePost.repliesCount || 0) * 14 + 1, 1)}
+              {effectivePost.viewCount || 0}
             </span>
           </motion.button>
 

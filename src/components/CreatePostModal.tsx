@@ -339,16 +339,19 @@ export default function CreatePostModal({
             className={`fixed inset-0 z-[70] bg-white sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col sm:h-[80vh] sm:max-h-[600px] sm:max-w-2xl sm:mx-auto sm:my-auto ${isKeyboardVisible ? 'sm:top-0' : ''}`}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white/80 backdrop-blur-md z-10 pt-[env(safe-area-inset-top)]">
-              <button 
-                onClick={onClose} 
-                className="text-blue-500 hover:text-blue-600 font-bold text-base"
-              >
-                Cancelar
-              </button>
-              <h2 className="font-black italic tracking-tighter text-lg text-gray-900 absolute left-1/2 -translate-x-1/2 whitespace-nowrap">
-                {replyTo ? 'Responder' : 'Novo post'}
-              </h2>
+            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100 bg-white/80 backdrop-blur-md z-10 pt-[env(safe-area-inset-top)]">
+              <div className="flex items-center space-x-3">
+                <button 
+                  onClick={onClose} 
+                  className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                  aria-label="Fechar"
+                >
+                  <X className="w-5 h-5 text-black" />
+                </button>
+                <h2 className="font-black italic tracking-tighter text-lg text-gray-900">
+                  {replyTo ? 'Responder' : 'Novo post'}
+                </h2>
+              </div>
               <div className="flex items-center space-x-2">
                 {userProfile && !replyTo && (
                   <button 

@@ -964,12 +964,14 @@ export default function PostDetail() {
                       <div className="grid grid-cols-2 gap-4">
                         <div className="bg-gray-50 p-4 rounded-xl">
                           <p className="text-xs text-gray-500 mb-1">Visualizações</p>
-                          <p className="text-xl font-bold">{(livePost.likesCount || 0) * 12 + (livePost.repostsCount || 0) * 25 + 142}</p>
+                          <p className="text-xl font-bold">{livePost.viewCount || 0}</p>
                         </div>
                         <div className="bg-gray-50 p-4 rounded-xl">
                           <p className="text-xs text-gray-500 mb-1">Engajamento</p>
                           <p className="text-xl font-bold text-blue-600">
-                            {(((livePost.likesCount || 0) + (livePost.repostsCount || 0) + (livePost.repliesCount || 0)) / 10 + 2.4).toFixed(1)}%
+                            {livePost.viewCount > 0 
+                              ? (((livePost.likesCount || 0) + (livePost.repostsCount || 0) + (livePost.repliesCount || 0)) / livePost.viewCount * 100).toFixed(1)
+                              : '0.0'}%
                           </p>
                         </div>
                       </div>
@@ -980,9 +982,9 @@ export default function PostDetail() {
                             <div className="bg-white p-2 rounded-lg shadow-sm">
                               <UserIcon className="w-4 h-4 text-gray-600" />
                             </div>
-                            <span className="text-sm font-medium">Cliques no perfil</span>
+                            <span className="text-sm font-medium">Interações</span>
                           </div>
-                          <span className="font-bold">{(livePost.likesCount || 0) * 2 + 3}</span>
+                          <span className="font-bold">{(livePost.likesCount || 0) + (livePost.repostsCount || 0) + (livePost.repliesCount || 0)}</span>
                         </div>
 
                         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
@@ -990,15 +992,15 @@ export default function PostDetail() {
                             <div className="bg-white p-2 rounded-lg shadow-sm">
                               <BarChart2 className="w-4 h-4 text-gray-600" />
                             </div>
-                            <span className="text-sm font-medium">Alcance orgânico</span>
+                            <span className="text-sm font-medium">Alcance</span>
                           </div>
-                          <span className="font-bold">94%</span>
+                          <span className="font-bold">{livePost.viewCount || 0}</span>
                         </div>
                       </div>
 
                       <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
                         <p className="text-xs text-blue-700 leading-relaxed">
-                          Este post está performando <span className="font-bold">15% melhor</span> que a média dos seus posts recentes.
+                          As estatísticas são atualizadas em tempo real com base na atividade dos usuários.
                         </p>
                       </div>
                     </div>
