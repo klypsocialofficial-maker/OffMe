@@ -191,6 +191,7 @@ export default function CreatePostModal({
       const authorPhoto = isAnonymous ? '' : (userProfile.photoURL || '');
       const authorVerified = isAnonymous ? false : (userProfile.isVerified || userProfile.username === 'Rulio' || false);
       const authorPremiumTier = isAnonymous ? null : (userProfile.premiumTier || null);
+      const authorPrivate = isAnonymous ? false : (userProfile.privateProfile || false);
 
       // Collect all posts in the thread
       const allPostsToPublish = [...threadPosts];
@@ -239,6 +240,7 @@ export default function CreatePostModal({
           authorPhoto,
           authorVerified,
           authorPremiumTier,
+          authorPrivate,
           ownerId: userProfile?.uid || null,
           isAnonymous,
           privacy: postAudience,

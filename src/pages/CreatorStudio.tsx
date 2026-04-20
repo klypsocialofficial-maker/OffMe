@@ -1,375 +1,300 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
-import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Star, TrendingUp, DollarSign, Users, Award, ShieldCheck, ChevronRight, Activity, BarChart2 as BarChartIcon } from 'lucide-react';
-import VerifiedBadge from '../components/VerifiedBadge';
-import { collection, query, where, getDocs, orderBy, limit as firestoreLimit } from 'firebase/firestore';
+import { 
+  BarChart3, 
+  TrendingUp, 
+  Users, 
+  MessageSquare, 
+  ArrowUpRight, 
+  ArrowDownRight, 
+  Calendar,
+  Filter,
+  Download,
+  LayoutDashboard,
+  Eye,
+  Heart,
+  Repeat,
+  ArrowLeft
+} from 'lucide-react';
+import { motion } from 'motion/react';
+import { 
+  AreaChart, 
+  Area, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer,
+  BarChart,
+  Bar
+} from 'recharts';
 import { db } from '../firebase';
-import VerificationModal from '../components/VerificationModal';
+import { collection, query, where, getDocs, orderBy, limit, Timestamp } from 'firebase/firestore';
+import { useAuth } from '../contexts/AuthContext';
+import LazyImage from '../components/LazyImage';
+
+const MOCK_GROWTH_DATA = [
+  { name: 'Seg', followers: 400, points: 2400 },
+  { name: 'Ter', followers: 300, points: 1398 },
+  { name: 'Qua', followers: 200, points: 9800 },
+  { name: 'Qui', followers: 278, points: 3908 },
+  { name: 'Sex', followers: 189, points: 4800 },
+  { name: 'Sáb', followers: 239, points: 3800 },
+  { name: 'Dom', followers: 349, points: 4300 },
+];
 
 export default function CreatorStudio() {
-  const { userProfile, enableCreatorMode } = useAuth();
   const navigate = useNavigate();
-  const [isJoining, setIsJoining] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState('Tech');
-  const [totalEngagement, setTotalEngagement] = useState(0);
-  const [totalPosts, setTotalPosts] = useState(0);
-  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'posts' | 'followers' | 'analytics'>('overview');
-  const [creatorPosts, setCreatorPosts] = useState<any[]>([]);
-  const [followers, setFollowers] = useState<any[]>([]);
-  const [loadingMetrics, setLoadingMetrics] = useState(false);
-  const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
-  const [analyticsData, setAnalyticsData] = useState<any[]>([]);
+  const { userProfile } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [topPosts, setTopPosts] = useState<any[]>([]);
+  const [stats, setStats] = useState({
+    totalImpressions: 0,
+    totalEngagement: 0,
+    followerGrowth: 0,
+    pointsEarned: 0
+  });
 
-  const categories = [
-    'Tech', 'Gaming', 'Arte', 'Música', 'Educação', 'Cripto', 'Lifestyle', 'Comédia', 'Notícias', 'Esportes'
-  ];
-
-  // ... rest of the code ...
   useEffect(() => {
-    async function fetchCreatorData() {
-      if (!userProfile?.uid || !db || !userProfile.isCreator) return;
-      setLoadingMetrics(true);
+    const fetchAnalytics = async () => {
+      if (!userProfile?.uid) return;
+      setLoading(true);
+      
       try {
-        // Fetch posts
-        const postsQ = query(collection(db, 'posts'), where('authorId', '==', userProfile.uid));
-        const postsSnap = await getDocs(postsQ);
-        const postsList = postsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setCreatorPosts(postsList);
-        setTotalPosts(postsList.length);
-
-        let engagement = 0;
-        postsList.forEach((post: any) => {
-          engagement += (post.likesCount || 0);
-          engagement += (post.repliesCount || 0);
-          engagement += (post.repostsCount || 0);
-        });
-        setTotalEngagement(engagement);
-
-        // Fetch followers
-        if (userProfile.followers && userProfile.followers.length > 0) {
-          const followersQ = query(collection(db, 'users'), where('__name__', 'in', userProfile.followers.slice(0, 30)));
-          const followersSnap = await getDocs(followersQ);
-          setFollowers(followersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-        } else {
-            setFollowers([]);
-        }
-
-        // Fetch Analytics
-        const analyticsQ = query(
-          collection(db, 'users', userProfile.uid, 'analytics'),
-          orderBy('date', 'desc'),
-          firestoreLimit(7)
+        // Fetch top posts by engagement (likes + reposts)
+        const q = query(
+          collection(db, 'posts'),
+          where('authorId', '==', userProfile.uid),
+          orderBy('likesCount', 'desc'),
+          limit(5)
         );
-        const analyticsSnap = await getDocs(analyticsQ);
-        setAnalyticsData(analyticsSnap.docs.map(doc => doc.data()).reverse());
+        const snap = await getDocs(q);
+        const posts = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setTopPosts(posts);
 
-      } catch(err) {
-        console.error("Error fetching creator data", err);
+        // Aggregate stats
+        const totalLikes = posts.reduce((acc, p: any) => acc + (p.likesCount || 0), 0);
+        const totalReposts = posts.reduce((acc, p: any) => acc + (p.repostsCount || 0), 0);
+        
+        setStats({
+          totalImpressions: totalLikes * 15, // Simplified mock
+          totalEngagement: totalLikes + totalReposts,
+          followerGrowth: 12, // Mock
+          pointsEarned: userProfile.points || 0
+        });
+      } catch (error) {
+        console.error("Error fetching studio data:", error);
       } finally {
-        setLoadingMetrics(false);
+        setLoading(false);
       }
-    }
-    
-    fetchCreatorData();
-  }, [userProfile?.uid, userProfile?.isCreator]);
+    };
 
-
-  const handleJoin = async () => {
-    setIsJoining(true);
-    try {
-      await enableCreatorMode(selectedCategory);
-      // Wait a moment for firestore to sync mostly
-      setTimeout(() => setIsJoining(false), 800);
-    } catch (err) {
-      console.error(err);
-      setIsJoining(false);
-    }
-  };
+    fetchAnalytics();
+  }, [userProfile?.uid]);
 
   if (!userProfile?.isCreator) {
     return (
-      <div className="min-h-[100dvh] bg-white flex flex-col pt-safe">
-        {/* Header - Fixed to match app standard */}
-        <div className="w-full bg-white/70 backdrop-blur-md border-b border-gray-100 px-4 py-3 pt-[calc(env(safe-area-inset-top)+12px)] sticky top-0 z-20 flex items-center shadow-sm">
-          <button onClick={() => navigate(-1)} className="p-2 mr-2 rounded-full hover:bg-gray-100 transition-colors">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <h1 className="text-2xl font-black italic tracking-tighter">Estúdio de Criação</h1>
-        </div>
-
-        <div className="flex-1 flex flex-col items-center px-6 py-8 overflow-y-auto">
-          <motion.div 
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="w-24 h-24 bg-gradient-to-tr from-amber-400 to-orange-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-orange-500/20 mb-6 rotate-3"
-          >
-            <Star className="w-12 h-12 text-white fill-current" />
-          </motion.div>
-
-          <h2 className="text-3xl font-black text-center mb-4">Ganhe com o que você ama criar</h2>
-          <p className="text-gray-500 text-center text-lg mb-8 max-w-sm leading-relaxed">
-            Faça parte do programa oficial de criadores. Receba gorjetas dos seus fãs, desbloqueie conteúdo exclusivo para inscritos e tenha acesso a métricas aprofundadas.
-          </p>
-
-          <div className="w-full max-w-sm space-y-4 mb-8">
-            <div className="flex items-start space-x-4 bg-gray-50 p-4 rounded-2xl border border-gray-100">
-              <div className="p-3 bg-green-100 text-green-600 rounded-xl">
-                <DollarSign className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="font-bold text-gray-900">Monetização Direta</h3>
-                <p className="text-sm text-gray-500 mt-1">Ative gorjetas no seu perfil.</p>
-              </div>
-            </div>
-
-            <div className="flex items-start space-x-4 bg-gray-50 p-4 rounded-2xl border border-gray-100">
-              <div className="p-3 bg-blue-100 text-blue-600 rounded-xl">
-                <TrendingUp className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="font-bold text-gray-900">Métricas Detalhadas</h3>
-                <p className="text-sm text-gray-500 mt-1">Saiba como seu público interage.</p>
-              </div>
-            </div>
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 text-center">
+        <div className="max-w-md space-y-6">
+          <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
+            <LayoutDashboard className="w-10 h-10 text-blue-600" />
           </div>
-
-          <div className="w-full max-w-sm bg-white p-5 rounded-3xl border border-gray-200 shadow-sm mb-8">
-            <label className="block font-bold text-gray-800 mb-3">Qual seu nicho principal?</label>
-            <div className="flex flex-wrap gap-2">
-              {categories.map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                    selectedCategory === cat 
-                      ? 'bg-black text-white shadow-md' 
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <button
-            onClick={handleJoin}
-            disabled={isJoining}
-            className="w-full max-w-sm bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-lg py-4 rounded-full shadow-xl shadow-orange-500/20 active:scale-95 transition-all disabled:opacity-70 disabled:active:scale-100 flex justify-center items-center"
+          <h1 className="text-3xl font-black italic tracking-tighter">Creator Studio</h1>
+          <p className="text-gray-500 font-medium">Torne-se um criador para acessar analytics avançados, ferramentas de monetização e mais!</p>
+          <button 
+            onClick={() => navigate('/settings')}
+            className="w-full bg-black text-white py-4 rounded-2xl font-bold hover:scale-[1.02] transition-all shadow-xl shadow-black/10"
           >
-            {isJoining ? 'Ativando Conta...' : 'Me tornar Criador'}
+            Ativar Modo Criador
           </button>
         </div>
       </div>
     );
   }
 
-  // Creator Dashboard State
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="w-full bg-white border-b border-gray-100 px-4 py-3 pt-[calc(env(safe-area-inset-top)+12px)] sticky top-0 z-20 flex items-center shadow-sm">
-        <button onClick={() => navigate(-1)} className="p-2 mr-2 rounded-full hover:bg-gray-100 transition-colors">
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <h1 className="text-2xl font-black italic tracking-tighter flex items-center gap-2">
-          Meu Estúdio
-          <VerifiedBadge tier="gold" className="w-5 h-5" />
-        </h1>
+    <div className="w-full min-h-screen bg-[#F5F5F3] pb-24">
+      {/* Header */}
+      <div className="sticky top-0 z-40 bg-white/70 backdrop-blur-xl border-b border-black/5 pt-[env(safe-area-inset-top)]">
+        <div className="px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+             <button onClick={() => navigate(-1)} className="p-2 hover:bg-gray-100 rounded-full transition-colors mr-2">
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <BarChart3 className="w-6 h-6 text-blue-600" />
+            <h1 className="text-xl font-black italic tracking-tighter">Studio</h1>
+          </div>
+          <div className="flex items-center space-x-2">
+            <button className="p-2 border border-black/5 rounded-xl bg-white hover:bg-gray-50 transition-colors">
+              <Download className="w-4 h-4" />
+            </button>
+            <button className="p-2 border border-black/5 rounded-xl bg-white hover:bg-gray-50 transition-colors">
+              <Calendar className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div className="p-2 sm:p-4 max-w-3xl mx-auto space-y-4 sm:space-y-6 pb-20">
-        
-        {/* Tab Switcher */}
-        <div className="flex bg-white/70 backdrop-blur-md rounded-full p-1 border border-white/20 shadow-sm text-sm overflow-x-auto no-scrollbar">
-          {(['overview', 'posts', 'followers', 'analytics'] as const).map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveSubTab(tab)}
-              className={`flex-1 min-w-[80px] py-2 rounded-full font-bold capitalize transition-all ${
-                activeSubTab === tab ? 'bg-black text-white' : 'text-gray-500 hover:text-black'
-              }`}
+      <div className="p-6 max-w-7xl mx-auto space-y-6">
+        {/* Quick Stats Grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { label: 'Impressões', value: stats.totalImpressions, trend: '+12.5%', up: true, icon: Eye },
+            { label: 'Engajamento', value: stats.totalEngagement, trend: '+3.2%', up: true, icon: Heart },
+            { label: 'Seguidores', value: stats.followerGrowth, trend: '+0.5%', up: true, icon: Users },
+            { label: 'Pontos Totais', value: stats.pointsEarned, trend: '-2.1%', up: false, icon: TrendingUp },
+          ].map((item, i) => (
+            <motion.div 
+              key={item.label}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+              className="bg-white p-5 rounded-[2rem] border border-black/5 shadow-sm"
             >
-              {tab === 'overview' ? 'Geral' : tab === 'posts' ? 'Posts' : tab === 'followers' ? 'Fãs' : 'Gráficos'}
-            </button>
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2.5 bg-slate-50 rounded-2xl">
+                  <item.icon className="w-5 h-5 text-gray-500" />
+                </div>
+                <div className={`flex items-center space-x-1 text-[10px] font-black italic ${item.up ? 'text-green-500' : 'text-red-500'}`}>
+                  {item.up ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                  <span>{item.trend}</span>
+                </div>
+              </div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{item.label}</p>
+              <p className="text-2xl font-black italic tracking-tighter mt-1">{item.value.toLocaleString()}</p>
+            </motion.div>
           ))}
         </div>
 
-        {activeSubTab === 'overview' && (
-          <>
-            {/* Welcome Block */}
-            <div className="bg-gradient-to-br from-indigo-900 via-purple-900 to-black rounded-3xl p-5 sm:p-6 text-white shadow-xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-8 opacity-10">
-                <Star className="w-48 h-48" />
-              </div>
-              <div className="relative z-10 flex flex-col justify-between h-full min-h-[120px] sm:min-h-[140px]">
-                <div>
-                  <span className="bg-white/20 text-xs font-bold uppercase tracking-wider px-2 py-1 rounded border border-white/10 backdrop-blur-sm">Nível Criador: {userProfile.level || 1}</span>
-                  <h2 className="text-xl sm:text-2xl font-bold mt-3">Olá, {userProfile.displayName}!</h2>
-                  <p className="text-indigo-200 mt-1 text-sm sm:text-base">Nicho: <span className="font-bold text-white">{userProfile.creatorCategory || 'Geral'}</span></p>
-                </div>
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white p-6 rounded-[2.5rem] border border-black/5 shadow-sm"
+          >
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="text-sm font-black uppercase tracking-widest text-gray-400">Crescimento de Alcance</h3>
+              <select className="bg-gray-50 text-[10px] font-black border-none rounded-xl px-3 py-1.5 focus:ring-0">
+                <option>Últimos 7 dias</option>
+                <option>Últimos 30 dias</option>
+              </select>
+            </div>
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={MOCK_GROWTH_DATA}>
+                  <defs>
+                    <linearGradient id="colorPoints" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.1}/>
+                      <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', fontWeight: 'bold' }}
+                  />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold', fill: '#94a3b8' }} />
+                  <YAxis hide />
+                  <Area type="monotone" dataKey="points" stroke="#3B82F6" strokeWidth={3} fillOpacity={1} fill="url(#colorPoints)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </motion.div>
+
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2 }}
+            className="bg-white p-6 rounded-[2.5rem] border border-black/5 shadow-sm"
+          >
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="text-sm font-black uppercase tracking-widest text-gray-400">Engajamento Diário</h3>
+              <div className="flex space-x-1">
+                <button className="w-6 h-6 rounded-full bg-blue-500" />
+                <button className="w-6 h-6 rounded-full bg-slate-100" />
               </div>
             </div>
-
-            <h3 className="font-bold text-gray-900 text-lg px-1">Visão Geral (28 dias)</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <div className="bg-white p-4 sm:p-5 rounded-3xl shadow-sm border border-gray-100">
-                <div className="flex justify-between items-start mb-2">
-                  <span className="text-gray-500 font-medium text-sm">Ganhos (Tips)</span>
-                  <div className="p-2 bg-green-50 text-green-600 rounded-full">
-                    <DollarSign className="w-4 h-4" />
-                  </div>
-                </div>
-                <div className="text-xl sm:text-2xl font-black text-gray-900">{userProfile.points || 0} pts</div>
-              </div>
-              
-              <div className="bg-white p-4 sm:p-5 rounded-3xl shadow-sm border border-gray-100">
-                <div className="flex justify-between items-start mb-2">
-                  <span className="text-gray-500 font-medium text-sm">Seguidores</span>
-                  <div className="p-2 bg-blue-50 text-blue-600 rounded-full">
-                    <Users className="w-4 h-4" />
-                  </div>
-                </div>
-                <div className="text-xl sm:text-2xl font-black text-gray-900">{userProfile.followers?.length || 0} fãs</div>
-              </div>
-
-              <div className="bg-white p-4 sm:p-5 rounded-3xl shadow-sm border border-gray-100 sm:col-span-2">
-                <div className="flex justify-between items-start mb-2">
-                  <span className="text-gray-500 font-medium text-sm">Engajamento Global</span>
-                  <div className="p-2 bg-purple-50 text-purple-600 rounded-full">
-                    <Activity className="w-4 h-4" />
-                  </div>
-                </div>
-                <div className="text-xl sm:text-2xl font-black text-gray-900">{totalEngagement} interações</div>
-                <p className="text-xs text-gray-400 mt-1">{totalPosts} posts na plataforma</p>
-              </div>
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={MOCK_GROWTH_DATA}>
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold', fill: '#94a3b8' }} />
+                  <Tooltip 
+                    cursor={{ fill: '#f8fafc' }}
+                    contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', fontWeight: 'bold' }}
+                  />
+                  <Bar dataKey="followers" fill="#141414" radius={[10, 10, 0, 0]} barSize={24} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
-          </>
-        )}
-
-        
-        {activeSubTab === 'posts' && (
-            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-4">
-                <h3 className="font-bold text-lg mb-4">Engajamento por Post</h3>
-                {loadingMetrics ? <p>Carregando...</p> : (
-                    <div className="space-y-3">
-                        {creatorPosts.map(post => (
-                            <div key={post.id} className="p-4 rounded-2xl bg-gray-50 border border-gray-100 flex justify-between items-center">
-                                <p className="text-sm font-medium truncate w-1/2">{post.content?.substring(0, 50)}...</p>
-                                <div className="flex gap-4 text-xs font-bold text-gray-500">
-                                    <span>❤️ {post.likesCount || 0}</span>
-                                    <span>💬 {post.repliesCount || 0}</span>
-                                    <span>🔁 {post.repostsCount || 0}</span>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-        )}
-
-        {activeSubTab === 'followers' && (
-            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-4">
-                <h3 className="font-bold text-lg mb-4">Seus Seguidores ({followers.length})</h3>
-                {loadingMetrics ? <p>Carregando...</p> : (
-                    <div className="space-y-3">
-                        {followers.map(f => (
-                            <div key={f.id} className="flex justify-between items-center p-3 rounded-2xl hover:bg-gray-50">
-                                <div className="flex items-center gap-3">
-                                    <img src={f.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(f.displayName)}`} alt={f.displayName} className="w-10 h-10 rounded-full object-cover" />
-                                    <div>
-                                        <p className="font-bold">{f.displayName}</p>
-                                        <p className="text-xs text-gray-500">@{f.username}</p>
-                                    </div>
-                                </div>
-                                <button className="px-4 py-2 bg-black text-white text-xs font-bold rounded-full">Mensagem</button>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-        )}
-        
-        {activeSubTab === 'analytics' && (
-          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
-            <h3 className="font-bold text-lg mb-6 flex items-center gap-2">
-              <Activity className="w-5 h-5 text-blue-500" />
-              Visitas ao Perfil (Últimos 7 dias)
-            </h3>
-            
-            {analyticsData.length === 0 ? (
-              <div className="py-20 text-center text-gray-500">
-                 <BarChartIcon className="w-12 h-12 mx-auto mb-4 opacity-10" />
-                 <p>Dados insuficientes para gerar gráficos.</p>
-                 <p className="text-xs">As métricas começam a aparecer 24h após o primeiro acesso.</p>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                <div className="flex items-end justify-between h-40 gap-2 px-2">
-                   {analyticsData.map((day, idx) => (
-                     <div key={idx} className="flex-1 flex flex-col items-center gap-2 group">
-                        <div className="w-full bg-blue-100 rounded-t-lg transition-all group-hover:bg-blue-500 relative" style={{ height: `${Math.min(100, (day.views / (Math.max(...analyticsData.map(d => d.views)) || 1)) * 100)}%` }}>
-                           <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                              {day.views}
-                           </div>
-                        </div>
-                        <span className="text-[10px] text-gray-400 font-bold uppercase truncate w-full text-center">{day.date.split('-').slice(1).join('/')}</span>
-                     </div>
-                   ))}
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-50">
-                   <div className="p-4 bg-gray-50 rounded-2xl">
-                      <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Média Diária</p>
-                      <p className="text-xl font-black">{Math.round(analyticsData.reduce((acc, d) => acc + d.views, 0) / analyticsData.length)}</p>
-                   </div>
-                   <div className="p-4 bg-gray-50 rounded-2xl">
-                      <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Total da Semana</p>
-                      <p className="text-xl font-black">{analyticsData.reduce((acc, d) => acc + d.views, 0)}</p>
-                   </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-        
-        {/* Creator Tools */}
-        <h3 className="font-bold text-gray-900 text-lg px-1 mt-6">Ferramentas</h3>
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-            <button 
-              onClick={() => setIsVerificationModalOpen(true)}
-              className="w-full flex items-center justify-between p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors"
-            >
-                <div className="flex items-center space-x-3">
-                <div className="p-2 bg-purple-50 text-purple-600 rounded-xl">
-                    <ShieldCheck className="w-5 h-5" />
-                </div>
-                <div className="text-left">
-                    <p className="font-bold text-gray-900">Programa de Verificação</p>
-                    <p className="text-xs text-gray-500">Aumente sua credibilidade com o selo dourado</p>
-                </div>
-                </div>
-                <ChevronRight className="w-5 h-5 text-gray-400" />
-            </button>
-            <button className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
-                <div className="flex items-center space-x-3">
-                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
-                    <Award className="w-5 h-5" />
-                </div>
-                <div className="text-left">
-                    <p className="font-bold text-gray-900">Configurar Recompensas</p>
-                    <p className="text-xs text-gray-500">Defina o que apoiadores recebem por doar</p>
-                </div>
-                </div>
-                <ChevronRight className="w-5 h-5 text-gray-400" />
-            </button>
+          </motion.div>
         </div>
 
-        <VerificationModal 
-          isOpen={isVerificationModalOpen}
-          onClose={() => setIsVerificationModalOpen(false)}
-        />
+        {/* Top Posts Table */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-[2.5rem] border border-black/5 shadow-sm overflow-hidden"
+        >
+          <div className="p-6 border-b border-black/5 flex items-center justify-between">
+            <h3 className="text-sm font-black uppercase tracking-widest text-gray-400">Posts de Melhor Performance</h3>
+            <button className="text-[10px] font-black bg-slate-50 px-4 py-2 rounded-xl text-gray-500 hover:text-black transition-colors uppercase tracking-widest">Ver Todos</button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-slate-50/50">
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Conteúdo</th>
+                  <th className="px-4 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Likes</th>
+                  <th className="px-4 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Reposts</th>
+                  <th className="px-4 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-black/5">
+                {topPosts.length > 0 ? topPosts.map((post) => (
+                  <tr key={post.id} className="hover:bg-slate-50 transition-colors group cursor-pointer" onClick={() => navigate(`/post/${post.id}`)}>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-12 h-12 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0">
+                          {post.imageUrls?.[0] ? (
+                            <LazyImage src={post.imageUrls[0]} className="w-full h-full" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center lowercase font-mono text-[10px] text-gray-400 p-2">
+                              {post.content?.substring(0, 20)}...
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0 max-w-[200px]">
+                          <p className="text-sm font-bold truncate lowercase">{post.content}</p>
+                          <p className="text-[10px] text-gray-400 font-mono italic">
+                            {post.createdAt?.toDate?.().toLocaleDateString('pt-BR')}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center space-x-1 text-sm font-black italic">
+                        <Heart className="w-3 h-3 text-red-500 fill-current" />
+                        <span>{post.likesCount || 0}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center space-x-1 text-sm font-black italic">
+                        <Repeat className="w-3 h-3 text-green-500" />
+                        <span>{post.repostsCount || 0}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-black rounded-lg uppercase tracking-widest">Viral</span>
+                    </td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan={4} className="p-12 text-center text-gray-400 text-sm italic font-medium">Nenhum dado disponível ainda</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </motion.div>
       </div>
     </div>
   );

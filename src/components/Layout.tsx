@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Home as HomeIcon, Search, Bell, Mail, User as UserIcon, Bookmark, List, Zap as ZapIcon, Settings, Plus, Users, Star } from 'lucide-react';
+import { LogOut, Home as HomeIcon, Search, Bell, Mail, User as UserIcon, Bookmark, List, Zap as ZapIcon, Settings, Plus, Users, Star, ShoppingBag } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import VerifiedBadge from './VerifiedBadge';
 import CreatePostModal from './CreatePostModal';
@@ -55,7 +55,9 @@ export default function Layout() {
     { path: '/messages', icon: Mail, label: 'Mensagens' },
     { path: `/${userProfile?.username || 'profile'}`, icon: UserIcon, label: 'Perfil' },
     { path: '/creator-studio', icon: Star, label: 'Criação' },
-    { path: '/premium', icon: ZapIcon, label: 'Premium' },
+    { path: '/missions', icon: ZapIcon, label: 'Missões' },
+    { path: '/shop', icon: ShoppingBag, label: 'Loja' },
+    { path: '/premium', icon: Star, label: 'Premium' },
     { path: '/bookmarks', icon: Bookmark, label: 'Itens salvos' },
     { path: '/settings', icon: Settings, label: 'Configurações' },
   ];

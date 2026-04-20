@@ -28,6 +28,7 @@ import AccountSettings from './pages/AccountSettings';
 import DisplaySettings from './pages/DisplaySettings';
 import PrivacySettings from './pages/PrivacySettings';
 import CreatorStudio from './pages/CreatorStudio';
+import Shop from './pages/Shop';
 import PWABadge from './components/PWABadge';
 import SplashScreen from './components/SplashScreen';
 import AnonymousFeed from './pages/AnonymousFeed';
@@ -83,6 +84,7 @@ export default function App() {
             <Route path="profile" element={<Profile />} />
             <Route path=":username" element={<Profile />} />
             <Route path="creator-studio" element={<CreatorStudio />} />
+            <Route path="shop" element={<Shop />} />
             <Route path="post/:postId" element={<PostDetail />} />
             <Route path="trending" element={<Trending />} />
             <Route path="premium" element={<Premium />} />

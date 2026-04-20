@@ -763,6 +763,9 @@ export default function Profile() {
   };
 
   const theme = getThemeStyles();
+  const isOwnProfile = profileUser?.uid === userProfile?.uid;
+  const isFollower = userProfile?.following?.includes(profileUser?.uid);
+  const canSeeContent = isOwnProfile || isFollower || !profileUser.privateProfile;
 
   return (
     <div className={`w-full min-h-full transition-colors duration-500 ${theme.header}`}>
@@ -838,6 +841,9 @@ export default function Profile() {
               <h2 className={`text-xl sm:text-2xl font-black italic tracking-tighter truncate ${theme.text}`}>
                 {profileUser.displayName}
               </h2>
+              {profileUser.privateProfile && (
+                <Lock className="w-4 h-4 opacity-60" />
+              )}
               {(profileUser.isVerified || profileUser.username === 'Rulio') && (
                 <VerifiedBadge className={`w-5 h-5 flex-shrink-0 ${theme.accent}`} tier={profileUser.premiumTier} />
               )}
@@ -932,19 +938,6 @@ export default function Profile() {
             </div>
           )}
         </div>
-
-        {/* Private Account Message */}
-        {profileUser.uid !== userProfile?.uid && profileUser.privateProfile && !userProfile?.following?.includes(profileUser.uid) && (
-          <div className="mt-8 flex flex-col items-center justify-center p-8 text-center bg-gray-50 rounded-3xl border border-gray-100">
-             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                <Lock className="w-8 h-8 text-gray-400" />
-             </div>
-             <h3 className="text-xl font-black italic tracking-tighter mb-2">Esta conta é privada</h3>
-             <p className="text-gray-500 text-sm max-w-xs">
-                Siga @{profileUser.username} para ver seus posts e mídia.
-             </p>
-          </div>
-        )}
 
         {/* Blocked Overlay Message */}
         {userProfile?.blockedUsers?.includes(profileUser.uid) && (
@@ -1042,116 +1035,125 @@ export default function Profile() {
       </div>
 
       {/* Tabs Switcher */}
-      <div className={`sticky top-0 z-20 flex justify-center py-2 sm:py-3 transition-all duration-300 ${isScrolled ? 'bg-white/90 backdrop-blur-2xl border-b border-black/5 shadow-sm pt-[calc(env(safe-area-inset-top)+8px)]' : 'bg-white/80 backdrop-blur-xl border-b border-gray-100'}`}>
-        <div className="w-full max-w-[280px] overflow-hidden relative">
-          {/* Fading edges for scroll indication */}
-          <div className="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-white/80 to-transparent z-10 pointer-events-none"></div>
-          <div className="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-white/80 to-transparent z-10 pointer-events-none"></div>
-          
-          <nav className="liquid-glass-pill p-1 rounded-full flex items-center relative border border-white/40 shadow-sm overflow-x-auto hide-scrollbar snap-x snap-mandatory">
-            <button 
-              onClick={() => setActiveTab('posts')}
-              className={`relative w-1/2 flex-shrink-0 px-4 py-2 text-sm font-bold transition-colors duration-300 z-10 snap-center ${activeTab === 'posts' ? 'text-black' : 'text-gray-500 hover:text-black'}`}
-            >
-              {activeTab === 'posts' && (
-                <motion.div
-                  layoutId="profile-tab-blob"
-                  className="absolute inset-0 bg-white/90 rounded-full -z-10 shadow-sm"
-                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                />
-              )}
-              Posts
-            </button>
-            <button 
-              onClick={() => setActiveTab('replies')}
-              className={`relative w-1/2 flex-shrink-0 px-4 py-2 text-sm font-bold transition-colors duration-300 z-10 snap-center ${activeTab === 'replies' ? 'text-black' : 'text-gray-500 hover:text-black'}`}
-            >
-              {activeTab === 'replies' && (
-                <motion.div
-                  layoutId="profile-tab-blob"
-                  className="absolute inset-0 bg-white/90 rounded-full -z-10 shadow-sm"
-                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                />
-              )}
-              Respostas
-            </button>
-            <button 
-              onClick={() => setActiveTab('media')}
-              className={`relative w-1/2 flex-shrink-0 px-4 py-2 text-sm font-bold transition-colors duration-300 z-10 snap-center ${activeTab === 'media' ? 'text-black' : 'text-gray-500 hover:text-black'}`}
-            >
-              {activeTab === 'media' && (
-                <motion.div
-                  layoutId="profile-tab-blob"
-                  className="absolute inset-0 bg-white/90 rounded-full -z-10 shadow-sm"
-                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                />
-              )}
-              Mídia
-            </button>
-            <button 
-              onClick={() => setActiveTab('likes')}
-              className={`relative w-1/2 flex-shrink-0 px-4 py-2 text-sm font-bold transition-colors duration-300 z-10 snap-center ${activeTab === 'likes' ? 'text-black' : 'text-gray-500 hover:text-black'}`}
-            >
-              {activeTab === 'likes' && (
-                <motion.div
-                  layoutId="profile-tab-blob"
-                  className="absolute inset-0 bg-white/90 rounded-full -z-10 shadow-sm"
-                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                />
-              )}
-              Curtidas
-            </button>
-            {profileUser.uid === userProfile?.uid && (
+      {canSeeContent && (
+        <div className={`sticky top-0 z-20 flex justify-center py-2 sm:py-3 transition-all duration-300 ${isScrolled ? 'bg-white/90 backdrop-blur-2xl border-b border-black/5 shadow-sm pt-[calc(env(safe-area-inset-top)+8px)]' : 'bg-white/80 backdrop-blur-xl border-b border-gray-100'}`}>
+          <div className="w-full max-w-[280px] overflow-hidden relative">
+            {/* Fading edges for scroll indication */}
+            <div className="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-white/80 to-transparent z-10 pointer-events-none"></div>
+            <div className="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-white/80 to-transparent z-10 pointer-events-none"></div>
+            
+            <nav className="liquid-glass-pill p-1 rounded-full flex items-center relative border border-white/40 shadow-sm overflow-x-auto hide-scrollbar snap-x snap-mandatory">
               <button 
-                onClick={() => setActiveTab('bookmarks')}
-                className={`relative w-1/2 flex-shrink-0 px-4 py-2 text-sm font-bold transition-colors duration-300 z-10 snap-center ${activeTab === 'bookmarks' ? 'text-black' : 'text-gray-500 hover:text-black'}`}
+                onClick={() => setActiveTab('posts')}
+                className={`relative w-1/2 flex-shrink-0 px-4 py-2 text-sm font-bold transition-colors duration-300 z-10 snap-center ${activeTab === 'posts' ? 'text-black' : 'text-gray-500 hover:text-black'}`}
               >
-                {activeTab === 'bookmarks' && (
+                {activeTab === 'posts' && (
                   <motion.div
                     layoutId="profile-tab-blob"
                     className="absolute inset-0 bg-white/90 rounded-full -z-10 shadow-sm"
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}
-                Salvos
+                Posts
               </button>
-            )}
-            {profileUser.uid === userProfile?.uid && (
               <button 
-                onClick={() => setActiveTab('anonymous')}
-                className={`relative w-1/3 flex-shrink-0 px-4 py-2 text-sm font-bold transition-colors duration-300 z-10 snap-center ${activeTab === 'anonymous' ? 'text-black' : 'text-gray-500 hover:text-black'}`}
+                onClick={() => setActiveTab('replies')}
+                className={`relative w-1/2 flex-shrink-0 px-4 py-2 text-sm font-bold transition-colors duration-300 z-10 snap-center ${activeTab === 'replies' ? 'text-black' : 'text-gray-500 hover:text-black'}`}
               >
-                {activeTab === 'anonymous' && (
+                {activeTab === 'replies' && (
                   <motion.div
                     layoutId="profile-tab-blob"
                     className="absolute inset-0 bg-white/90 rounded-full -z-10 shadow-sm"
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}
-                Anônimos
+                Respostas
               </button>
-            )}
-            {profileUser.uid === userProfile?.uid && (
               <button 
-                onClick={() => setActiveTab('circle')}
-                className={`relative w-1/3 flex-shrink-0 px-4 py-2 text-sm font-bold transition-colors duration-300 z-10 snap-center ${activeTab === 'circle' ? 'text-black' : 'text-gray-500 hover:text-black'}`}
+                onClick={() => setActiveTab('media')}
+                className={`relative w-1/2 flex-shrink-0 px-4 py-2 text-sm font-bold transition-colors duration-300 z-10 snap-center ${activeTab === 'media' ? 'text-black' : 'text-gray-500 hover:text-black'}`}
               >
-                {activeTab === 'circle' && (
+                {activeTab === 'media' && (
                   <motion.div
                     layoutId="profile-tab-blob"
                     className="absolute inset-0 bg-white/90 rounded-full -z-10 shadow-sm"
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}
-                Círculo
+                Mídia
               </button>
-            )}
-          </nav>
+              <button 
+                onClick={() => setActiveTab('likes')}
+                className={`relative w-1/2 flex-shrink-0 px-4 py-2 text-sm font-bold transition-colors duration-300 z-10 snap-center ${activeTab === 'likes' ? 'text-black' : 'text-gray-500 hover:text-black'}`}
+              >
+                {activeTab === 'likes' && (
+                  <motion.div
+                    layoutId="profile-tab-blob"
+                    className="absolute inset-0 bg-white/90 rounded-full -z-10 shadow-sm"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                )}
+                Curtidas
+              </button>
+              {profileUser.uid === userProfile?.uid && (
+                <button 
+                  onClick={() => setActiveTab('bookmarks')}
+                  className={`relative w-1/2 flex-shrink-0 px-4 py-2 text-sm font-bold transition-colors duration-300 z-10 snap-center ${activeTab === 'bookmarks' ? 'text-black' : 'text-gray-500 hover:text-black'}`}
+                >
+                  {activeTab === 'bookmarks' && (
+                    <motion.div
+                      layoutId="profile-tab-blob"
+                      className="absolute inset-0 bg-white/90 rounded-full -z-10 shadow-sm"
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    />
+                  )}
+                  Salvos
+                </button>
+              )}
+              {profileUser.uid === userProfile?.uid && (
+                <button 
+                  onClick={() => setActiveTab('anonymous')}
+                  className={`relative w-1/3 flex-shrink-0 px-4 py-2 text-sm font-bold transition-colors duration-300 z-10 snap-center ${activeTab === 'anonymous' ? 'text-black' : 'text-gray-500 hover:text-black'}`}
+                >
+                  {activeTab === 'anonymous' && (
+                    <motion.div
+                      layoutId="profile-tab-blob"
+                      className="absolute inset-0 bg-white/90 rounded-full -z-10 shadow-sm"
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    />
+                  )}
+                  Anônimos
+                </button>
+              )}
+              {profileUser.uid === userProfile?.uid && (
+                <button 
+                  onClick={() => setActiveTab('circle')}
+                  className={`relative w-1/3 flex-shrink-0 px-4 py-2 text-sm font-bold transition-colors duration-300 z-10 snap-center ${activeTab === 'circle' ? 'text-black' : 'text-gray-500 hover:text-black'}`}
+                >
+                  {activeTab === 'circle' && (
+                    <motion.div
+                      layoutId="profile-tab-blob"
+                      className="absolute inset-0 bg-white/90 rounded-full -z-10 shadow-sm"
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    />
+                  )}
+                  Círculo
+                </button>
+              )}
+            </nav>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="pb-20">
-        {loading && activeTab !== 'circle' ? (
+        {!canSeeContent ? (
+          <div className="max-w-sm mx-auto mt-20 px-6 text-center">
+            <h2 className="text-xl font-black italic tracking-tighter mb-2">Estes posts estão protegidos</h2>
+            <p className="text-gray-500 text-sm">
+              Somente seguidores confirmados podem ver os posts de @{profileUser.username}. Clique em Seguir para enviar uma solicitação.
+            </p>
+          </div>
+        ) : loading && activeTab !== 'circle' ? (
           <div className="p-12 text-center text-gray-400 font-medium">Carregando conteúdo...</div>
         ) : activeTab === 'circle' ? (
           <div className="p-4 space-y-4">

@@ -10,6 +10,7 @@ import CreatePostModal from '../components/CreatePostModal';
 import LazyImage from '../components/LazyImage';
 import Toast from '../components/Toast';
 import ConfirmModal from '../components/ConfirmModal';
+import CommunityChat from '../components/CommunityChat';
 
 export default function CommunityDetail() {
   const { slug } = useParams();
@@ -21,7 +22,7 @@ export default function CommunityDetail() {
   const [loading, setLoading] = useState(true);
   const [isJoining, setIsJoining] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'posts' | 'about'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'chat' | 'about'>('posts');
   
   const [toast, setToast] = useState<{ message: string; type: 'info' | 'success' | 'error'; isOpen: boolean }>({
     message: '',
@@ -262,6 +263,13 @@ export default function CommunityDetail() {
           {activeTab === 'posts' && <motion.div layoutId="detail-tab-indicator" className="absolute bottom-0 left-0 right-0 h-0.5 bg-black rounded-full" />}
         </button>
         <button 
+          onClick={() => setActiveTab('chat')}
+          className={`py-4 text-sm font-bold transition-all relative mr-8 ${activeTab === 'chat' ? 'text-black' : 'text-gray-500'}`}
+        >
+          Chat
+          {activeTab === 'chat' && <motion.div layoutId="detail-tab-indicator" className="absolute bottom-0 left-0 right-0 h-0.5 bg-black rounded-full" />}
+        </button>
+        <button 
           onClick={() => setActiveTab('about')}
           className={`py-4 text-sm font-bold transition-all relative ${activeTab === 'about' ? 'text-black' : 'text-gray-500'}`}
         >
@@ -360,6 +368,8 @@ export default function CommunityDetail() {
               </div>
             )}
           </div>
+        ) : activeTab === 'chat' ? (
+          <CommunityChat communityId={community.id} />
         ) : (
           <div className="p-8 space-y-8">
             <section>

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { doc, onSnapshot, collection, query, where, orderBy, serverTimestamp, addDoc, deleteDoc, updateDoc, arrayRemove, arrayUnion, getDocs, limit } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { User as UserIcon, ArrowLeft, MoreHorizontal, Trash2, Edit2, BarChart2, Heart, Repeat, MessageCircle, Send, Bookmark, BookmarkCheck, Ghost } from 'lucide-react';
+import { User as UserIcon, ArrowLeft, MoreHorizontal, Trash2, Edit2, BarChart2, Heart, Repeat, MessageCircle, Send, Bookmark, BookmarkCheck, Ghost, Lock } from 'lucide-react';
 import VerifiedBadge from '../components/VerifiedBadge';
 import PostContent from '../components/PostContent';
 import QuotedPost from '../components/QuotedPost';
@@ -534,6 +534,7 @@ export default function PostDetail() {
                     else navigate(`/${post.authorUsername}`);
                   }}>
                     <div className={`font-bold text-lg leading-tight truncate max-w-[150px] sm:max-w-[250px] cursor-pointer ${post.authorId === 'anonymous' ? 'text-indigo-600 italic hover:underline' : 'hover:underline'}`}>{post.authorName}</div>
+                    {post.authorId !== 'anonymous' && post.authorPrivate && <Lock className="w-3.5 h-3.5 text-gray-400" />}
                     {(post.authorVerified || post.authorUsername === 'Rulio') && <VerifiedBadge tier={post.authorPremiumTier} />}
                     <span className="text-gray-500 text-sm">·</span>
                     <span className="text-gray-500 text-sm">

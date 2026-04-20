@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
-import { User as UserIcon, MoreHorizontal, Trash2, Edit2, Send, MessageCircle, Repeat, Heart, Ghost, VolumeX, UserX, ShieldAlert, Bookmark, BookmarkCheck, Pin, PinOff, Users, BarChart2, Gift } from 'lucide-react';
+import { User as UserIcon, MoreHorizontal, Trash2, Edit2, Send, MessageCircle, Repeat, Heart, Ghost, VolumeX, UserX, ShieldAlert, Bookmark, BookmarkCheck, Pin, PinOff, Users, BarChart2, Gift, Lock } from 'lucide-react';
 import { formatRelativeTime } from '../lib/dateUtils';
 import { doc, updateDoc, increment } from 'firebase/firestore';
 import VerifiedBadge from './VerifiedBadge';
@@ -272,6 +272,9 @@ export default function PostCard({
               <span className={`font-bold truncate ${post.authorId !== 'anonymous' ? 'hover:underline' : 'hover:underline'} ${post.authorId === 'anonymous' ? 'text-indigo-600 italic' : ''}`}>
                 {post.type === 'repost' ? post.originalPostAuthorName : post.authorName}
               </span>
+              {post.authorId !== 'anonymous' && (post.type === 'repost' ? post.originalPostAuthorPrivate : post.authorPrivate) && (
+                <Lock className="w-3.5 h-3.5 text-gray-400" />
+              )}
               {post.authorId !== 'anonymous' && (( (post.type === 'repost' ? post.originalPostAuthorVerified : post.authorVerified) || 
                  (post.type === 'repost' ? post.originalPostAuthorUsername : post.authorUsername) === 'Rulio') && (
                 <VerifiedBadge className="w-4 h-4 flex-shrink-0" tier={post.type === 'repost' ? post.originalPostAuthorPremiumTier : post.authorPremiumTier} />

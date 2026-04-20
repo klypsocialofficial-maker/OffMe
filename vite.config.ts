@@ -86,6 +86,9 @@ export default defineConfig(({mode}) => {
         srcDir: 'src',
         filename: 'sw.ts',
         registerType: 'prompt',
+        injectManifest: {
+          maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+        },
         manifest: {
           name: 'OffMe',
           short_name: 'OffMe',

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, UserPlus, CheckCircle2 } from 'lucide-react';
+import { X, UserPlus, CheckCircle2, Lock } from 'lucide-react';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -157,6 +157,7 @@ export default function UserListModal({ isOpen, onClose, title, uids, isBlockedL
                         <div className="min-w-0">
                           <div className="flex items-center space-x-1">
                             <p className="font-bold text-gray-900 truncate group-hover:underline">{user.displayName}</p>
+                            {user.privateProfile && <Lock className="w-3 h-3 text-gray-400" />}
                             {(user.isVerified || user.username === 'Rulio') && <VerifiedBadge className="w-4 h-4" tier={user.premiumTier} />}
                           </div>
                           <p className="text-gray-500 text-sm truncate">@{user.username}</p>

@@ -7,6 +7,7 @@ import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import LazyImage from '../components/LazyImage';
 import Toast from '../components/Toast';
+import CreateCommunityModal from '../components/CreateCommunityModal';
 
 export default function Communities() {
   const { userProfile } = useAuth();
@@ -16,6 +17,7 @@ export default function Communities() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'discover' | 'my-communities'>('discover');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   
   const [toast, setToast] = useState<{ message: string; type: 'info' | 'success' | 'error'; isOpen: boolean }>({
     message: '',
@@ -67,7 +69,7 @@ export default function Communities() {
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-black italic tracking-tighter">Comunidades</h1>
             <button 
-              onClick={() => showToast('Criação de comunidades disponível em breve para Premium!', 'info')}
+              onClick={() => setIsCreateModalOpen(true)}
               className="p-2 transition-all active:scale-95 bg-black text-white rounded-full h-10 w-10 flex items-center justify-center shadow-lg shadow-black/10"
             >
               <Plus className="w-6 h-6" />
@@ -232,6 +234,15 @@ export default function Communities() {
         type={toast.type}
         isOpen={toast.isOpen}
         onClose={() => setToast(prev => ({ ...prev, isOpen: false }))}
+      />
+
+      <CreateCommunityModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={(community) => {
+          showToast(`Comunidade "${community.name}" criada!`, 'success');
+          navigate(`/communities/${community.slug}`);
+        }}
       />
     </div>
   );

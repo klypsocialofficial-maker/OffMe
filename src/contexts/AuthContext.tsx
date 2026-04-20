@@ -104,6 +104,9 @@ interface UserProfile {
   sensitiveContent?: boolean;
   discoverability?: boolean;
   directMessages?: 'everyone' | 'following' | 'none';
+  streakCount?: number;
+  lastLoginAt?: any;
+  inventory?: string[];
 }
 
 interface AuthContextType {
@@ -147,6 +150,7 @@ interface AuthContextType {
   trackProfileView: (targetUid: string) => Promise<void>;
   sendChatMessage: (conversationId: string, text: string, imageUrl?: string) => Promise<void>;
   setTypingStatus: (conversationId: string, isTyping: boolean) => Promise<void>;
+  purchaseItem: (itemId: string, cost: number) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -194,9 +198,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setupForegroundMessaging();
 
         const docRef = doc(db, 'users', user.uid);
-        unsubscribeProfile = onSnapshot(docRef, (docSnap) => {
+        unsubscribeProfile = onSnapshot(docRef, async (docSnap) => {
           if (docSnap.exists()) {
             const profileData = docSnap.data() as UserProfile;
+            
+            // Handle Streak Tracking
+            const now = new Date();
+            const lastLogin = profileData.lastLoginAt?.toDate();
+            
+            if (!lastLogin) {
+              await updateDoc(docRef, { 
+                lastLoginAt: serverTimestamp(),
+                streakCount: 1 
+              });
+            } else {
+              const diffTime = Math.abs(now.getTime() - lastLogin.getTime());
+              const diffDays = diffTime / (1000 * 60 * 60 * 24);
+              
+              if (diffDays >= 1 && diffDays < 2) {
+                // Consecutive day
+                await updateDoc(docRef, { 
+                  lastLoginAt: serverTimestamp(),
+                  streakCount: (profileData.streakCount || 0) + 1 
+                });
+                await awardPoints(user.uid, 50 * ((profileData.streakCount || 1)));
+              } else if (diffDays >= 2) {
+                // Streak broken
+                await updateDoc(docRef, { 
+                  lastLoginAt: serverTimestamp(),
+                  streakCount: 1 
+                });
+              } else if (diffDays < 1 && now.getDate() !== lastLogin.getDate()) {
+                // Same day but different calendar day (e.g. 11pm and 1am)
+                // This counts as consecutive if within reasonable window, but let's keep it simple
+                await updateDoc(docRef, { 
+                  lastLoginAt: serverTimestamp(),
+                  streakCount: (profileData.streakCount || 0) + 1 
+                });
+                await awardPoints(user.uid, 50);
+              }
+            }
+
             setUserProfile(profileData);
 
               // Migration for legacy posts - run once per user session
@@ -1075,6 +1117,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const purchaseItem = async (itemId: string, cost: number) => {
+    if (!userProfile || !currentUser) throw new Error("Não autenticado");
+    if ((userProfile.points || 0) < cost) throw new Error("Pontos insuficientes");
+
+    const userRef = doc(db, 'users', currentUser.uid);
+    try {
+      await updateDoc(userRef, {
+        points: (userProfile.points || 0) - cost,
+        inventory: arrayUnion(itemId)
+      });
+      
+      // Special logic for badges
+      if (itemId.startsWith('badge_')) {
+        await updateDoc(userRef, {
+          badges: arrayUnion(itemId.replace('badge_', ''))
+        });
+      }
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `users/${currentUser.uid}`);
+    }
+  };
+
   const value = {
     currentUser,
     userProfile,
@@ -1105,7 +1169,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     addMutedWord,
     removeMutedWord,
     requestNotificationPermission,
-    enableCreatorMode
+    enableCreatorMode,
+    sendFollowRequest,
+    cancelFollowRequest,
+    acceptFollowRequest,
+    declineFollowRequest,
+    reportContent,
+    requestVerification,
+    trackImpression,
+    trackProfileView,
+    sendChatMessage,
+    setTypingStatus,
+    purchaseItem
   };
 
   return (
