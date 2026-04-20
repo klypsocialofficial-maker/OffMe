@@ -245,6 +245,65 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // Administrative moderation cleanup logic
+  useEffect(() => {
+    if (currentUser?.email === 'klypsocialofficial@gmail.com') {
+      const runModerationCleanup = async () => {
+        const cleanupKey = 'moderation_cleanup_executed_20260420_v2';
+        if (localStorage.getItem(cleanupKey)) return;
+
+        console.log("Running administrative moderation cleanup...");
+        try {
+          // 1. Remove @Alissom
+          const findAlissom = async (uname: string) => {
+            const q = query(collection(db, 'users'), where('username', '==', uname), limit(1));
+            return await getDocs(q);
+          };
+
+          let userSnap = await findAlissom('Alissom');
+          if (userSnap.empty) {
+            userSnap = await findAlissom('@Alissom');
+          }
+          
+          if (!userSnap.empty) {
+            const alissomDoc = userSnap.docs[0];
+            const alissomUid = alissomDoc.id;
+            console.log(`Found Alissom (${alissomUid}). Deleting user and posts...`);
+
+            // Delete Alissom's posts
+            const postsQ = query(collection(db, 'posts'), where('authorId', '==', alissomUid));
+            const postsSnap = await getDocs(postsQ);
+            const postBatch = writeBatch(db);
+            postsSnap.forEach(d => postBatch.delete(d.ref));
+            if (!postsSnap.empty) await postBatch.commit();
+
+            // Delete Alissom's user profile
+            await deleteDoc(alissomDoc.ref);
+            console.log("Alissom profile and posts deleted.");
+          }
+
+          // 2. Delete anonymous posts
+          const anonQ = query(collection(db, 'posts'), where('authorId', '==', 'anonymous'), limit(500));
+          const anonSnap = await getDocs(anonQ);
+          if (!anonSnap.empty) {
+            console.log(`Found ${anonSnap.size} anonymous posts. Deleting...`);
+            const anonBatch = writeBatch(db);
+            anonSnap.forEach(d => anonBatch.delete(d.ref));
+            await anonBatch.commit();
+            console.log("Anonymous posts deleted.");
+          }
+
+          localStorage.setItem(cleanupKey, 'true');
+          console.log("Moderation cleanup complete.");
+        } catch (error) {
+          console.error("Moderation cleanup failed:", error);
+        }
+      };
+
+      runModerationCleanup();
+    }
+  }, [currentUser]);
+
   const loginWithPhone = async (phoneNumber: string, appVerifier: any) => {
     if (!auth) throw new Error("Firebase not initialized");
     return await signInWithPhoneNumber(auth, phoneNumber, appVerifier);

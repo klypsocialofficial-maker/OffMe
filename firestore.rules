@@ -3,75 +3,12 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ===============================================================
-    // Assumed Data Model
-    // ===============================================================
-    //
-    // Collection: users
-    // Document ID: {userId}
-    // Fields:
-    //   - uid: string (required, immutable) - User's unique ID
-    //   - email: string (required) - User's email address
-    //   - username: string (required) - User's chosen username
-    //   - displayName: string (required) - User's display name
-    //   - photoURL: string (optional) - URL of the user's profile photo
-    //   - bannerURL: string (optional) - URL of the user's banner photo
-    //   - bio: string (optional) - User's bio
-    //   - location: string (optional) - User's location
-    //   - website: string (optional) - User's website link
-    //   - following: list (optional) - List of UIDs this user follows
-    //   - followers: list (optional) - List of UIDs following this user
-    //   - isVerified: boolean (optional) - Whether the user is verified
-    //
-    // Collection: posts
-    // Document ID: {postId}
-    // Fields:
-    //   - content: string (required) - Text content of the post
-    //   - imageUrl: string (optional) - URL of the attached image
-    //   - authorId: string (required, immutable) - UID of the author
-    //   - authorName: string (required) - Display name of the author
-    //   - authorUsername: string (required) - Username of the author
-    //   - authorPhoto: string (optional) - Photo URL of the author
-    //   - authorVerified: boolean (optional) - Whether the author is verified
-    //   - createdAt: timestamp (required, immutable) - Time the post was created
-    //   - updatedAt: timestamp (optional) - Time the post was updated
-    //   - isEdited: boolean (optional) - Whether the post was edited
-    //   - likesCount: number (required) - Number of likes
-    //   - repliesCount: number (required) - Number of replies
-    //   - replyToId: string (optional) - ID of the post being replied to
-    //   - replyToUsername: string (optional) - Username of the author being replied to
-    //   - replyToVerified: boolean (optional) - Whether the author being replied to is verified
-    //
-    // Collection: notifications
-    // Document ID: {notificationId}
-    // Fields:
-    //   - recipientId: string (required) - UID of the recipient
-    //   - senderId: string (required) - UID of the sender
-    //   - senderName: string (required) - Name of the sender
-    //   - senderUsername: string (required) - Username of the sender
-    //   - senderPhoto: string (optional) - Photo of the sender
-    //   - senderVerified: boolean (optional) - Whether the sender is verified
-    //   - type: string (required) - Type of notification (like, follow, reply)
-    //   - content: string (optional) - Content related to the notification
-    //   - createdAt: timestamp (required) - Time created
-    //   - read: boolean (required) - Whether it was read
-    //
-    // Collection: conversations
-    // Document ID: {conversationId}
-    // Fields:
-    //   - participants: list (required) - List of UIDs
-    //   - participantInfo: map (required) - Map of UID to user info
-    //   - lastMessage: string (optional) - Last message content
-    //   - updatedAt: timestamp (required) - Last update time
-    //
-    // ===============================================================
-
-    // ===============================================================
-    // Helper Functions
-    // ===============================================================
-    
     function isAuthenticated() {
       return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.email == 'klypsocialofficial@gmail.com';
     }
     
     function isOwner(userId) {
@@ -85,264 +22,53 @@ service cloud.firestore {
       );
     }
     
-    function uidUnchanged() {
-      return !('uid' in request.resource.data) || request.resource.data.uid == request.auth.uid;
-    }
-    
-    function uidNotModified() {
-      return !('uid' in request.resource.data) || request.resource.data.uid == resource.data.uid;
-    }
-    
-    function hasRequiredFields(fields) {
-      return request.resource.data.keys().hasAll(fields);
-    }
-    
     function hasOnlyAllowedFields(fields) {
       return request.resource.data.keys().hasOnly(fields);
     }
-    
-    function isValidEmail(email) {
-      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
-    }
-
-    // ===============================================================
-    // Domain Validators
-    // ===============================================================
-
-    function isValidUser(data) {
-      return hasOnlyAllowedFields(['uid', 'email', 'username', 'displayName', 'photoURL', 'bannerURL', 'bio', 'location', 'website', 'following', 'followers', 'isVerified', 'isPremium', 'premiumTier', 'category', 'creatorCategory', 'isCreator', 'monetizationEnabled', 'createdAt', 'updatedAt', 'fcmTokens', 'points', 'level', 'badges', 'mutedUsers', 'circleMembers']) &&
-             data.uid is string && data.uid == request.auth.uid &&
-             data.email is string && isValidEmail(data.email) &&
-             data.username is string && data.username.size() > 0 && data.username.size() <= 50 &&
-             data.displayName is string && data.displayName.size() >= 0 && data.displayName.size() <= 100 &&
-             (!('photoURL' in data) || data.photoURL == '' || (data.photoURL is string && data.photoURL.size() <= 2000)) &&
-             (!('bannerURL' in data) || data.bannerURL == '' || (data.bannerURL is string && data.bannerURL.size() <= 2000)) &&
-             (!('bio' in data) || data.bio == '' || (data.bio is string && data.bio.size() <= 160)) &&
-             (!('location' in data) || data.location == '' || (data.location is string && data.location.size() <= 30)) &&
-             (!('website' in data) || data.website == '' || (data.website is string && data.website.size() <= 100)) &&
-             (!('category' in data) || data.category == '' || (data.category is string && data.category.size() <= 50)) &&
-             (!('creatorCategory' in data) || data.creatorCategory == '' || (data.creatorCategory is string && data.creatorCategory.size() <= 50)) &&
-             (!('isCreator' in data) || data.isCreator is bool) &&
-             (!('monetizationEnabled' in data) || data.monetizationEnabled is bool) &&
-             (!('following' in data) || data.following is list) &&
-             (!('followers' in data) || data.followers is list) &&
-             (!('mutedUsers' in data) || data.mutedUsers is list) &&
-             (!('circleMembers' in data) || data.circleMembers is list) &&
-             (!('isVerified' in data) || data.isVerified is bool) &&
-             (!('isPremium' in data) || data.isPremium is bool) &&
-             (!('premiumTier' in data) || data.premiumTier == null || data.premiumTier in ['silver', 'gold', 'black']) &&
-             (!('points' in data) || data.points is number) &&
-             (!('level' in data) || data.level is number) &&
-             (!('badges' in data) || data.badges is list) &&
-             (!('createdAt' in data) || data.createdAt is timestamp) &&
-             (!('updatedAt' in data) || data.updatedAt is timestamp);
-    }
-
-    function isValidPost(data) {
-      let allowedFields = ['content', 'imageUrls', 'imageUrl', 'authorId', 'authorName', 'authorUsername', 'authorPhoto', 'authorVerified', 'authorPremiumTier', 'createdAt', 'updatedAt', 'isEdited', 'likesCount', 'repliesCount', 'replyToId', 'replyToUsername', 'replyToVerified', 'likes', 'repostsCount', 'reposts', 'threadId', 'quotedPostId', 'quotedPostContent', 'quotedPostAuthor', 'poll', 'isAnonymous', 'type', 'repostedPostId', 'originalPostAuthorId', 'originalPostAuthorName', 'originalPostAuthorUsername', 'originalPostAuthorPhoto', 'originalPostAuthorVerified', 'originalPostAuthorPremiumTier', 'ownerId', 'privacy', 'audience', 'viewCount', 'expiresAt', 'communityId', 'communityName', 'hashtags', 'id', 'pinned'];
-      let isUpdate = request.method == 'update';
-      
-      return (isUpdate || hasOnlyAllowedFields(allowedFields)) &&
-             (!('content' in data) || (data.content is string && data.content.size() <= 2000)) &&
-             (!('imageUrls' in data) || data.imageUrls is list && data.imageUrls.size() <= 10) &&
-             (!('authorId' in data) || data.authorId is string) &&
-             (!('authorName' in data) || (data.authorName is string && data.authorName.size() <= 100)) &&
-             (!('authorUsername' in data) || (data.authorUsername is string && data.authorUsername.size() <= 100)) &&
-             (!('authorPhoto' in data) || data.authorPhoto == null || data.authorPhoto == '' || (data.authorPhoto is string && data.authorPhoto.size() <= 2000)) &&
-             (!('authorVerified' in data) || data.authorVerified is bool) &&
-             (!('authorPremiumTier' in data) || data.authorPremiumTier == null || data.authorPremiumTier in ['silver', 'gold', 'black']) &&
-             (!('createdAt' in data) || data.createdAt is timestamp) &&
-             (!('updatedAt' in data) || data.updatedAt is timestamp) &&
-             (!('isEdited' in data) || data.isEdited is bool) &&
-             (!('isAnonymous' in data) || data.isAnonymous is bool) &&
-             (!('privacy' in data) || data.privacy in ['public', 'circle']) &&
-             (!('audience' in data) || data.audience is list) &&
-             (!('type' in data) || data.type in ['post', 'repost']) &&
-             (!('repostedPostId' in data) || (data.repostedPostId is string)) &&
-             (!('expiresAt' in data) || data.expiresAt == null || data.expiresAt is timestamp) &&
-             (!('communityId' in data) || data.communityId == null || data.communityId is string) &&
-             (!('communityName' in data) || data.communityName == null || data.communityName is string) &&
-             (!('likesCount' in data) || data.likesCount is number) &&
-             (!('repliesCount' in data) || data.repliesCount is number) &&
-             (!('repostsCount' in data) || data.repostsCount is number) &&
-             (!('likes' in data) || data.likes is list) &&
-             (!('reposts' in data) || data.reposts is list) &&
-             (!('ownerId' in data) || data.ownerId == null || data.ownerId is string);
-    }
-
-    function isValidList(data) {
-      return hasOnlyAllowedFields(['name', 'description', 'ownerId', 'memberIds', 'isPrivate', 'createdAt']) &&
-             data.name is string && data.name.size() > 0 && data.name.size() <= 50 &&
-             (!('description' in data) || data.description is string && data.description.size() <= 160) &&
-             data.ownerId is string && data.ownerId == request.auth.uid &&
-             data.memberIds is list && data.memberIds.size() <= 200 &&
-             (!('isPrivate' in data) || data.isPrivate is bool) &&
-             data.createdAt is timestamp;
-    }
-
-    function isValidAd(data) {
-      return hasOnlyAllowedFields(['authorName', 'authorUsername', 'authorPhotoURL', 'content', 'imageUrl', 'link', 'ctaText', 'active', 'createdAt']) &&
-             data.authorName is string && data.authorName.size() > 0 && data.authorName.size() <= 50 &&
-             data.authorUsername is string && data.authorUsername.size() > 0 && data.authorUsername.size() <= 30 &&
-             (!('authorPhotoURL' in data) || data.authorPhotoURL == null || data.authorPhotoURL == '' || (data.authorPhotoURL is string && data.authorPhotoURL.size() <= 2000)) &&
-             data.content is string && data.content.size() > 0 && data.content.size() <= 1000 &&
-             (!('imageUrl' in data) || data.imageUrl == null || data.imageUrl == '' || (data.imageUrl is string && data.imageUrl.size() <= 2000)) &&
-             data.link is string && data.link.size() > 0 && data.link.size() <= 2000 &&
-             (!('ctaText' in data) || data.ctaText == null || data.ctaText == '' || (data.ctaText is string && data.ctaText.size() <= 50)) &&
-             data.active is bool &&
-             data.createdAt is timestamp;
-    }
-
-    // ===============================================================
-    // Rules
-    // ===============================================================
 
     match /users/{userId} {
-      // Anyone can read basic user info for search/profiles and login resolution
       allow read: if true;
-      allow create: if isOwner(userId) && isValidUser(request.resource.data) && (!('isPremium' in request.resource.data) || request.resource.data.isPremium == false) && (!('isVerified' in request.resource.data) || request.resource.data.isVerified == false);
-      allow update: if (isOwner(userId) && isValidUser(request.resource.data) && uidNotModified() && 
-                        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['isPremium', 'isVerified', 'premiumTier']))) ||
-                    (isAuthenticated() && 
-                     request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followers']) &&
-                     (
-                       (request.resource.data.get('followers', []).size() == resource.data.get('followers', []).size() + 1 &&
-                        request.resource.data.get('followers', []).hasAll(resource.data.get('followers', [])) &&
-                        request.resource.data.get('followers', []).hasAll([request.auth.uid])) ||
-                       (request.resource.data.get('followers', []).size() == resource.data.get('followers', []).size() - 1 &&
-                        resource.data.get('followers', []).hasAll(request.resource.data.get('followers', [])) &&
-                        !request.resource.data.get('followers', []).hasAny([request.auth.uid]))
-                     )
-                    );
-      allow delete: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isOwner(userId) || isAdmin();
     }
 
     match /posts/{postId} {
-      // Allow reading posts if they are public or if user is the author or in the circle audience
       allow read: if (resource.data.get('privacy', 'public') == 'public') || 
                    (isAuthenticated() && (
                      resource.data.authorId == request.auth.uid || 
                      request.auth.uid in resource.data.get('audience', []) ||
-                     resource.data.get('ownerId', '') == request.auth.uid
+                     resource.data.get('ownerId', '') == request.auth.uid ||
+                     isAdmin()
                    ));
       
-      // Allow creation of posts
-      allow create: if (
-                      // 1. Regular authenticated post
-                      (isAuthenticated() && request.resource.data.authorId == request.auth.uid) || 
-                      // 2. Anonymous post (can be from guest or logged in user)
-                      (request.resource.data.authorId == 'anonymous' && request.resource.data.isAnonymous == true)
-                    ) && isValidPost(request.resource.data);
-                    
-      // Only the author can update their post
-      allow update: if (isDocOwner() && 
-                    isValidPost(request.resource.data) &&
-                    request.resource.data.authorId == resource.data.authorId &&
-                    request.resource.data.createdAt == resource.data.createdAt &&
-                    (
-                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['authorName', 'authorPhoto', 'authorUsername', 'authorVerified', 'authorPremiumTier', 'privacy']) ||
-                      request.time.toMillis() <= resource.data.createdAt.toMillis() + (60 * 60 * 1000) || // 1 hour for all users
-                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('premiumTier', 'none') in ['gold', 'black']
-                    )) ||
-                    (isAuthenticated() && 
-                     request.resource.data.diff(resource.data).affectedKeys().hasAny(['likes', 'likesCount', 'repliesCount', 'reposts', 'repostsCount']) &&
-                     (
-                       (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'likesCount']) &&
-                        ((request.resource.data.get('likes', []).size() == resource.data.get('likes', []).size() + 1 &&
-                          request.resource.data.get('likes', []).hasAll(resource.data.get('likes', [])) &&
-                          request.resource.data.get('likes', []).hasAll([request.auth.uid]) &&
-                          request.resource.data.likesCount == resource.data.likesCount + 1) ||
-                         (request.resource.data.get('likes', []).size() == resource.data.get('likes', []).size() - 1 &&
-                          resource.data.get('likes', []).hasAll(request.resource.data.get('likes', [])) &&
-                          !request.resource.data.get('likes', []).hasAny([request.auth.uid]) &&
-                          request.resource.data.likesCount == resource.data.likesCount - 1))
-                       ) ||
-                       (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['repliesCount']) &&
-                        request.resource.data.repliesCount == resource.data.repliesCount + 1) ||
-                       (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reposts', 'repostsCount']) &&
-                        ((request.resource.data.get('reposts', []).size() == resource.data.get('reposts', []).size() + 1 &&
-                          request.resource.data.get('reposts', []).hasAll(resource.data.get('reposts', [])) &&
-                          request.resource.data.get('reposts', []).hasAll([request.auth.uid]) &&
-                          request.resource.data.repostsCount == resource.data.repostsCount + 1) ||
-                         (request.resource.data.get('reposts', []).size() == resource.data.get('reposts', []).size() - 1 &&
-                          resource.data.get('reposts', []).hasAll(request.resource.data.get('reposts', [])) &&
-                          !request.resource.data.get('reposts', []).hasAny([request.auth.uid]) &&
-                          request.resource.data.repostsCount == resource.data.repostsCount - 1))
-                       )
-                     )
-                    ) ||
-                    (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount']) &&
-                     request.resource.data.viewCount == resource.data.get('viewCount', 0) + 1);
-                     
-      allow delete: if isDocOwner();
+      allow create: if isAuthenticated() || (request.resource.data.authorId == 'anonymous');
+      
+      allow update: if isAdmin() || 
+                    (isDocOwner() && request.resource.data.authorId == resource.data.authorId) ||
+                    (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasAny(['likes', 'likesCount', 'repliesCount', 'reposts', 'repostsCount', 'viewCount']));
+      
+      allow delete: if isDocOwner() || isAdmin();
     }
 
     match /lists/{listId} {
-      allow read: if (resource.data.get('isPrivate', false) == false) || (isAuthenticated() && resource.data.ownerId == request.auth.uid);
-      allow create: if isAuthenticated() && isValidList(request.resource.data);
-      allow update: if isAuthenticated() && resource.data.ownerId == request.auth.uid && isValidList(request.resource.data);
-      allow delete: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
+      allow read, write: if isAuthenticated();
     }
     
     match /notifications/{notificationId} {
-      allow read: if isAuthenticated() && resource.data.recipientId == request.auth.uid;
-      // For now, allow any authenticated user to create a notification (e.g. when they like/follow)
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && (
-                      resource.data.recipientId == request.auth.uid ||
-                      (resource.data.senderId == request.auth.uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['senderName', 'senderPhoto', 'senderUsername', 'senderVerified']))
-                    );
-      allow delete: if isAuthenticated() && resource.data.recipientId == request.auth.uid;
+      allow read, write: if isAuthenticated();
     }
     
     match /conversations/{conversationId} {
-      allow read: if isAuthenticated() && request.auth.uid in resource.data.participants;
-      allow create: if isAuthenticated() && request.auth.uid in request.resource.data.participants;
-      allow update: if isAuthenticated() && request.auth.uid in resource.data.participants;
-      
-      match /messages/{messageId} {
-        allow read: if isAuthenticated() && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
-        allow create: if isAuthenticated() && 
-                      request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants &&
-                      request.resource.data.senderId == request.auth.uid;
-        allow update: if isAuthenticated() && 
-                      request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants &&
-                      (
-                        (resource.data.senderId == request.auth.uid) || 
-                        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']))
-                      );
-        allow delete: if isAuthenticated() && resource.data.senderId == request.auth.uid;
+      allow read, write: if isAuthenticated();
+      match /{allSegments=**} {
+        allow read, write: if isAuthenticated();
       }
-
-      match /calls/{callId} {
-        allow read: if isAuthenticated() && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
-        allow create: if isAuthenticated() && 
-                      request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants &&
-                      request.resource.data.callerId == request.auth.uid;
-        allow update: if isAuthenticated() && 
-                      request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
-        allow delete: if isAuthenticated() && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
-
-        match /offerCandidates/{candidateId} {
-          allow read, create, update, delete: if isAuthenticated() && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
-        }
-
-        match /answerCandidates/{candidateId} {
-          allow read, create, update, delete: if isAuthenticated() && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
-        }
-      }
-      
-      // Allow participants to update conversation metadata (like unreadCount, archived)
-      allow update: if isAuthenticated() && request.auth.uid in resource.data.participants &&
-                    request.resource.data.diff(resource.data).affectedKeys().hasAny(['unreadCount', 'lastMessage', 'lastMessageSenderId', 'updatedAt', 'typing', 'archived']);
-      
-      // Allow participants to delete conversations
-      allow delete: if isAuthenticated() && request.auth.uid in resource.data.participants;
     }
+    
     match /ads/{adId} {
-      allow read: if isAuthenticated();
-      // Only admins can create/update/delete ads. For now, we restrict write access to a specific admin email or manual console entry.
-      allow create, update, delete: if isAuthenticated() && request.auth.token.email == "klypsocialofficial@gmail.com";
+      allow read: if true;
+      allow write: if isAdmin();
     }
   }
 }
