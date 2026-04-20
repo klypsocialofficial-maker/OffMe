@@ -65,7 +65,7 @@ if (firebase) {
     const notificationTitle = payload.notification?.title || 'Nova Notificação';
     const notificationOptions: any = {
       body: payload.notification?.body || payload.data?.body || 'Você tem uma nova mensagem.',
-      icon: '/ghost.svg',
+      icon: '/logo.svg',
       data: payload.data,
       tag: payload.data?.conversationId || 'general',
       renotify: true,

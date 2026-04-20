@@ -38,8 +38,8 @@ export default function DesktopLayout({
       <header className="hidden sm:flex flex-col w-20 xl:w-64 border-r border-gray-100/50 px-2 xl:px-4 py-6 sticky top-0 h-screen z-20 bg-white/70 backdrop-blur-md">
         <div className="flex items-center mb-8 px-4">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center shadow-lg shadow-black/10 rotate-3">
-              <img src="/ghost.svg" alt="OffMe" className="w-7 h-7 invert" />
+            <div className="w-10 h-10 rotate-3 cursor-pointer">
+              <img src="/logo.svg" alt="OffMe" className="w-full h-full drop-shadow-md" />
             </div>
             <div className="flex flex-col hidden xl:block">
               <span className="text-2xl font-black tracking-tighter">OffMe</span>

@@ -20,6 +20,7 @@ export default function AnonymousFeed() {
     const q = query(
       collection(db, 'posts'),
       where('authorId', '==', 'anonymous'),
+      where('privacy', '==', 'public'),
       orderBy('createdAt', 'desc')
     );
     

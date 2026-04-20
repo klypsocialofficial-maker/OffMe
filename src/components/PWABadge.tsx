@@ -77,8 +77,8 @@ export default function PWABadge() {
                       <div className="absolute inset-0 bg-white/10 rounded-full animate-pulse" />
                       
                       {/* Logo */}
-                      <div className="relative z-10 w-full h-full bg-black rounded-full flex items-center justify-center border-4 border-white/20 overflow-hidden p-6">
-                        <img src="/ghost.svg" alt="OffMe" className="w-full h-full invert" />
+                      <div className="relative z-10 w-full h-full rotate-3 p-4">
+                        <img src="/logo.svg" alt="OffMe" className="w-full h-full drop-shadow-2xl" />
                       </div>
                       
                       {/* Circular Progress */}
@@ -137,8 +137,8 @@ export default function PWABadge() {
               <div className="absolute bottom-0 left-0 w-40 h-40 bg-purple-50 rounded-full -ml-20 -mb-20 blur-3xl opacity-60" />
               
               <div className="relative z-10 p-8 flex flex-col items-center text-center">
-                <div className="w-20 h-20 bg-black rounded-2xl flex items-center justify-center shadow-xl mb-6 p-4 rotate-3">
-                  <img src="/ghost.svg" alt="OffMe" className="w-full h-full invert" />
+                <div className="w-20 h-20 rotate-3 p-2">
+                  <img src="/logo.svg" alt="OffMe" className="w-full h-full drop-shadow-2xl" />
                 </div>
                 
                 <h3 className="font-black text-2xl text-gray-900 mb-3 leading-tight">

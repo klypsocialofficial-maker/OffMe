@@ -89,15 +89,15 @@ export default defineConfig(({mode}) => {
         manifest: {
           name: 'OffMe',
           short_name: 'OffMe',
-          description: 'Um app social responsivo como Twitter/Threads',
+          description: 'Rede social minimalista e fluida.',
           theme_color: '#ffffff',
           background_color: '#ffffff',
-          display: 'fullscreen',
+          display: 'standalone',
           orientation: 'portrait',
           start_url: '/',
           icons: [
             {
-              src: '/ghost.svg',
+              src: '/logo.svg',
               sizes: '192x192 512x512',
               type: 'image/svg+xml',
               purpose: 'any maskable'

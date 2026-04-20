@@ -51,9 +51,9 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
               <motion.div 
                 animate={{ y: [0, -8, 0] }}
                 transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                className="w-16 h-16 bg-black rounded-3xl flex items-center justify-center text-white shadow-2xl shadow-black/20"
+                className="w-16 h-16 rotate-3 p-1"
               >
-                <Ghost className="w-8 h-8" />
+                <img src="/logo.svg" alt="OffMe" className="w-full h-full drop-shadow-2xl" />
               </motion.div>
               <motion.span 
                 initial={{ x: -10, opacity: 0 }}

@@ -114,7 +114,12 @@ export default function Explore() {
     if (!db) return;
     
     // Fetch recent posts to extract real trending hashtags
-    const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(100));
+    const q = query(
+      collection(db, 'posts'), 
+      where('privacy', '==', 'public'),
+      orderBy('createdAt', 'desc'), 
+      limit(100)
+    );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const hashtagCounts: Record<string, number> = {};
       

@@ -249,65 +249,76 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (currentUser?.email === 'klypsocialofficial@gmail.com') {
       const runModerationCleanup = async () => {
-        const cleanupKey = 'moderation_cleanup_executed_20260420_v3';
+        const cleanupKey = 'moderation_cleanup_executed_20260420_v4';
         if (localStorage.getItem(cleanupKey)) return;
 
-        console.log("Running administrative moderation cleanup...");
+        console.log("Iniciando limpeza administrativa de moderação...");
         try {
-          // 1. Remove target users (@Alissom, Alisson do rúlio, etc)
-          const targetUserIdentifiers = ['Alissom', '@Alissom', 'Alisson do rúlio', 'Alisson do rulio'];
+          // 1. Remover perfis específicos (Alisson Wachholz, Alisson do rúlio, etc)
+          const targetIdentifiers = [
+            'Alissom', 
+            '@Alissom', 
+            'Alisson do rúlio', 
+            'Alisson do rulio', 
+            '@Alisson do rúlio', 
+            '@Alisson do rulio',
+            'Alisson Wachholz',
+            'AlissonWachholz'
+          ];
           
-          for (const ident of targetUserIdentifiers) {
-            // Search by username
+          for (const ident of targetIdentifiers) {
+            // Busca por username
             const qUname = query(collection(db, 'users'), where('username', '==', ident), limit(5));
             const snapUname = await getDocs(qUname);
             
-            // Search by display name
+            // Busca por display name
             const qDisplay = query(collection(db, 'users'), where('displayName', '==', ident), limit(5));
-            const snapDisplay = await getDocs(snapUname.empty ? qDisplay : query(collection(db, 'users'), where('displayName', '==', '___none___'))); // skip if already found by uname to simplify
+            const snapDisplay = await getDocs(qDisplay);
 
             const allDocs = [...snapUname.docs, ...snapDisplay.docs];
             
-            for (const userDoc of allDocs) {
-              const uid = userDoc.id;
-              console.log(`Found target user ${ident} (${uid}). Deleting user and posts...`);
+            if (allDocs.length > 0) {
+              console.log(`Alvo encontrado: ${ident}. Processando exclusão...`);
+              
+              for (const userDoc of allDocs) {
+                const uid = userDoc.id;
+                
+                // Deletar posts do usuário
+                const postsQ = query(collection(db, 'posts'), where('authorId', '==', uid));
+                const postsSnap = await getDocs(postsQ);
+                if (!postsSnap.empty) {
+                  const chunks = [];
+                  for (let i = 0; i < postsSnap.docs.length; i += 500) {
+                    chunks.push(postsSnap.docs.slice(i, i + 500));
+                  }
+                  for (const chunk of chunks) {
+                    const batch = writeBatch(db);
+                    chunk.forEach(d => batch.delete(d.ref));
+                    await batch.commit();
+                  }
+                }
 
-              // Delete their posts
-              const postsQ = query(collection(db, 'posts'), where('authorId', '==', uid));
-              const postsSnap = await getDocs(postsQ);
-              if (!postsSnap.empty) {
-                const chunks = [];
-                for (let i = 0; i < postsSnap.docs.length; i += 500) {
-                  chunks.push(postsSnap.docs.slice(i, i + 500));
-                }
-                for (const chunk of chunks) {
-                  const batch = writeBatch(db);
-                  chunk.forEach(d => batch.delete(d.ref));
-                  await batch.commit();
-                }
+                // Deletar perfil
+                await deleteDoc(userDoc.ref);
+                console.log(`Perfil e posts de ${ident} (${uid}) foram removidos com sucesso.`);
               }
-
-              // Delete user profile
-              await deleteDoc(userDoc.ref);
-              console.log(`Profile and posts for ${ident} deleted.`);
             }
           }
 
-          // 2. Delete anonymous posts
+          // 2. Limpar qualquer post anônimo remanescente ou configurado incorretamente
           const anonQ = query(collection(db, 'posts'), where('authorId', '==', 'anonymous'), limit(500));
           const anonSnap = await getDocs(anonQ);
           if (!anonSnap.empty) {
-            console.log(`Found ${anonSnap.size} anonymous posts. Deleting...`);
             const anonBatch = writeBatch(db);
             anonSnap.forEach(d => anonBatch.delete(d.ref));
             await anonBatch.commit();
-            console.log("Anonymous posts deleted.");
+            console.log("Posts anônimos limpos.");
           }
 
           localStorage.setItem(cleanupKey, 'true');
-          console.log("Moderation cleanup complete.");
+          console.log("Processo de moderação concluído.");
         } catch (error) {
-          console.error("Moderation cleanup failed:", error);
+          console.error("Erro na limpeza de moderação:", error);
         }
       };
 
