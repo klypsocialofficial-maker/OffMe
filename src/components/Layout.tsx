@@ -57,7 +57,6 @@ export default function Layout() {
     { path: '/creator-studio', icon: Star, label: 'Criação' },
     { path: '/premium', icon: ZapIcon, label: 'Premium' },
     { path: '/bookmarks', icon: Bookmark, label: 'Itens salvos' },
-    { path: '/lists', icon: List, label: 'Listas' },
     { path: '/settings', icon: Settings, label: 'Configurações' },
   ];
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);

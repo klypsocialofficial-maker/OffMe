@@ -22,8 +22,6 @@ import Premium from './pages/Premium';
 import Bookmarks from './pages/Bookmarks';
 import Communities from './pages/Communities';
 import CommunityDetail from './pages/CommunityDetail';
-import Lists from './pages/Lists';
-import ListDetail from './pages/ListDetail';
 import Missions from './pages/Missions';
 import Settings from './pages/Settings';
 import AccountSettings from './pages/AccountSettings';
@@ -87,8 +85,6 @@ export default function App() {
             <Route path="trending" element={<Trending />} />
             <Route path="premium" element={<Premium />} />
             <Route path="bookmarks" element={<Bookmarks />} />
-            <Route path="lists" element={<Lists />} />
-            <Route path="lists/:listId" element={<ListDetail />} />
             <Route path="communities" element={<Communities />} />
             <Route path="communities/:slug" element={<CommunityDetail />} />
             <Route path="missions" element={<Missions />} />
