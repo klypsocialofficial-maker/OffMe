@@ -689,6 +689,15 @@ export default function Profile() {
               )}
             </div>
             <p className="text-gray-500 text-sm sm:text-base">@{profileUser.username}</p>
+            {currentUser && profileUser.uid === currentUser.uid && !currentUser.emailVerified && (
+              <button 
+                onClick={handleSendVerification}
+                disabled={verificationSent}
+                className="mt-2 text-xs font-bold text-blue-500 hover:text-blue-700 bg-blue-50 px-2 py-1 rounded"
+              >
+                {verificationSent ? 'Email enviado!' : 'Enviar verificação de email'}
+              </button>
+            )}
           </div>
           
           {profileUser.uid !== userProfile?.uid && (
