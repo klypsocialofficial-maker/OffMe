@@ -144,30 +144,30 @@ export default function BetaLayout({
               {/* Header with Profile Info */}
               <div className="relative pt-[max(env(safe-area-inset-top),20px)] border-b border-black/5 z-10">
                 {/* Beta Badge */}
-                <div className="absolute top-[max(env(safe-area-inset-top),20px)] right-6">
+                <div className="absolute top-[max(env(safe-area-inset-top),20px)] right-6 z-20">
                   <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest bg-blue-100/50 px-2 py-1 rounded-lg border border-blue-200/50 shadow-sm backdrop-blur-sm">BETA</span>
                 </div>
                 
-                <div className="p-6">
-                  <div className="relative mb-4">
-                    {/* Banner area */}
-                    <div className="h-16 w-full bg-gray-200 rounded-2xl overflow-hidden">
-                        {userProfile?.bannerURL && <LazyImage src={userProfile.bannerURL} alt="Banner" className="w-full h-full object-cover" />}
-                    </div>
-                    {/* Avatar overlaying banner */}
-                    <div 
-                      className="absolute -bottom-8 left-4 w-16 h-16 rounded-2xl bg-gray-100 overflow-hidden shadow-xl cursor-zoom-in transform transition-transform active:scale-95 border-2 border-white"
-                      onClick={() => userProfile?.photoURL && openImageViewer(userProfile.photoURL, `Avatar de ${userProfile.displayName}`)}
-                    >
-                      {userProfile?.photoURL ? (
-                        <LazyImage src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full" />
-                      ) : (
-                        <LazyImage src={getDefaultAvatar(userProfile?.displayName || '', userProfile?.username || '')} alt={userProfile?.displayName} className="w-full h-full" />
-                      )}
-                    </div>
+                {/* Full-width Banner area */}
+                <div className="relative h-28 w-full bg-gray-200 overflow-hidden">
+                    {userProfile?.bannerURL && <LazyImage src={userProfile.bannerURL} alt="Banner" className="w-full h-full object-cover" />}
+                    <div className="absolute inset-0 bg-gradient-to-t from-white/60 via-transparent to-transparent" />
+                </div>
+
+                <div className="px-6 pb-6 -mt-10 relative">
+                  {/* Avatar overlaying */}
+                  <div 
+                    className="w-20 h-20 rounded-2xl bg-gray-100 overflow-hidden shadow-xl cursor-zoom-in transform transition-transform active:scale-95 border-[3px] border-white relative z-20"
+                    onClick={() => userProfile?.photoURL && openImageViewer(userProfile.photoURL, `Avatar de ${userProfile.displayName}`)}
+                  >
+                    {userProfile?.photoURL ? (
+                      <LazyImage src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full" />
+                    ) : (
+                      <LazyImage src={getDefaultAvatar(userProfile?.displayName || '', userProfile?.username || '')} alt={userProfile?.displayName} className="w-full h-full" />
+                    )}
                   </div>
                   
-                  <div className="mt-10">
+                  <div className="mt-3">
                       <div className="flex items-center space-x-1.5">
                         <h2 className="font-black text-xl leading-tight text-gray-900 tracking-tight truncate">{userProfile?.displayName}</h2>
                         {(userProfile?.isVerified || userProfile?.username === 'Rulio') && <VerifiedBadge className="w-4 h-4 flex-shrink-0" tier={userProfile?.premiumTier} />}
