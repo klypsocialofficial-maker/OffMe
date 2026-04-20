@@ -33,7 +33,7 @@ export default function DesktopLayout({
   const navigate = useNavigate();
 
   return (
-    <div className="flex w-full max-w-[1300px] mx-auto justify-center lg:justify-start">
+    <div className="flex w-full justify-center lg:justify-start">
       {/* Sidebar Navigation (Desktop) */}
       <header className="hidden sm:flex flex-col w-20 xl:w-64 border-r border-gray-100/50 px-2 xl:px-4 py-6 sticky top-0 h-screen z-20 bg-white/70 backdrop-blur-md">
         <div className="flex items-center mb-8 px-4">
@@ -146,7 +146,7 @@ export default function DesktopLayout({
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-[600px] min-h-screen z-10 relative border-r border-gray-100 bg-white pb-24 sm:pb-0">
+      <main className="flex-1 min-h-screen z-10 relative border-r border-gray-100 bg-white pb-24 sm:pb-0">
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
