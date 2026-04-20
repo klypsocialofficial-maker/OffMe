@@ -31,7 +31,7 @@ export default function Settings() {
             <ArrowLeft className="w-6 h-6" />
           </button>
           <SettingsIcon className="w-6 h-6" />
-          <h1 className="text-xl font-black tracking-tight">Configurações</h1>
+          <h1 className="text-xl font-black italic tracking-tighter">Configurações</h1>
         </div>
       </div>
       <div className="p-4 space-y-4">
@@ -39,7 +39,7 @@ export default function Settings() {
           <div className="flex items-center space-x-3">
             <Bell className="w-5 h-5 text-gray-500" />
             <div>
-              <h3 className="font-bold">Notificações Push</h3>
+              <h3 className="font-black italic tracking-tighter">Notificações Push</h3>
               <p className="text-sm text-gray-500">Receba alertas de novas atividades.</p>
             </div>
           </div>
@@ -56,21 +56,21 @@ export default function Settings() {
           onClick={() => navigate('/settings/account')}
           className="p-4 bg-white rounded-xl shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors"
         >
-          <h3 className="font-bold">Sua conta</h3>
+          <h3 className="font-black italic tracking-tighter">Sua conta</h3>
           <p className="text-sm text-gray-500">Veja informações sobre sua conta, altere seu e-mail, senha ou nome de usuário.</p>
         </div>
         <div 
           onClick={() => navigate('/settings/privacy')}
           className="p-4 bg-white rounded-xl shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors"
         >
-          <h3 className="font-bold">Privacidade e segurança</h3>
+          <h3 className="font-black italic tracking-tighter">Privacidade e segurança</h3>
           <p className="text-sm text-gray-500">Gerencie as informações que você vê e compartilha no OffMe.</p>
         </div>
         <div 
           onClick={() => navigate('/settings/display')}
           className="p-4 bg-white rounded-xl shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors"
         >
-          <h3 className="font-bold">Acessibilidade, exibição e idiomas</h3>
+          <h3 className="font-black italic tracking-tighter">Acessibilidade, exibição e idiomas</h3>
           <p className="text-sm text-gray-500">Gerencie como o conteúdo do OffMe é exibido para você.</p>
         </div>
       </div>

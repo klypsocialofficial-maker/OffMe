@@ -156,7 +156,7 @@ export default function Communities() {
                     <LazyImage src={community.iconUrl || `https://picsum.photos/seed/${community.slug}-icon/100/100`} className="w-full h-full" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-black truncate group-hover:text-blue-600 transition-colors">{community.name}</h3>
+                    <h3 className="font-black italic tracking-tighter text-black truncate group-hover:text-blue-600 transition-colors">{community.name}</h3>
                     <p className="text-gray-500 text-xs truncate line-clamp-1">{community.description}</p>
                     <div className="flex items-center space-x-2 mt-1 text-[10px] font-black uppercase tracking-widest text-gray-400">
                       <span className="flex items-center space-x-1">

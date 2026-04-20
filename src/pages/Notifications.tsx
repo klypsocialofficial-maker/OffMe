@@ -125,7 +125,7 @@ export default function Notifications() {
               )}
             </button>
             <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 z-10">
-              <h1 className="text-lg font-black tracking-tight">Notificações</h1>
+              <h1 className="text-lg font-black italic tracking-tighter">Notificações</h1>
             </div>
             <div className="w-10 h-10 sm:hidden z-10" /> {/* Spacer */}
           </div>

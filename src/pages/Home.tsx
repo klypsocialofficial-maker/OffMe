@@ -752,7 +752,7 @@ export default function Home() {
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <MessageCircle className="w-8 h-8 text-gray-300" />
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-1">Nenhum post ainda</h3>
+                  <h3 className="text-lg font-black italic tracking-tighter text-gray-900 mb-1">Nenhum post ainda</h3>
                   <p className="text-sm text-gray-500 max-w-[200px] mx-auto">
                     Seja o primeiro a compartilhar algo com o mundo!
                   </p>

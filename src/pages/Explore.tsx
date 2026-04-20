@@ -686,7 +686,7 @@ export default function Explore() {
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                         <div className="absolute bottom-6 left-6 right-6">
                           <span className="bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md mb-2 inline-block">Destaque</span>
-                          <h2 className="text-2xl font-black text-white mb-1 leading-tight">O futuro das redes sociais</h2>
+                          <h2 className="text-2xl font-black italic tracking-tighter text-white mb-1 leading-tight">O futuro das redes sociais</h2>
                           <p className="text-white/80 text-sm font-medium">Veja o que está acontecendo no Offme hoje.</p>
                         </div>
                       </div>
@@ -703,7 +703,7 @@ export default function Explore() {
                       {activeTab === 'foryou' && (
                         <div className="px-4 mt-8">
                           <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-xl font-black tracking-tight">O que está acontecendo</h2>
+                            <h2 className="text-xl font-black italic tracking-tighter">O que está acontecendo</h2>
                           </div>
                           <div className="bg-white rounded-3xl border border-black/5 divide-y divide-black/5 overflow-hidden shadow-sm">
                             {trendingHashtags.length > 0 ? trendingHashtags.map((trend) => (
@@ -751,7 +751,7 @@ export default function Explore() {
                     <>
                       <div className="mt-8 px-4">
                         <div className="flex items-center justify-between mb-4">
-                          <h2 className="text-xl font-black tracking-tight">Pessoas que você pode conhecer</h2>
+                          <h2 className="text-xl font-black italic tracking-tighter">Pessoas que você pode conhecer</h2>
                         </div>
                         
                         {loadingSuggestions ? (

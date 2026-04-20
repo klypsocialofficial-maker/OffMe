@@ -84,7 +84,7 @@ export default function CreatorStudio() {
           <button onClick={() => navigate(-1)} className="p-2 mr-2 rounded-full hover:bg-gray-100 transition-colors">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-lg font-bold">Estúdio de Criação</h1>
+          <h1 className="text-2xl font-black italic tracking-tighter">Estúdio de Criação</h1>
         </div>
 
         <div className="flex-1 flex flex-col items-center px-6 py-8 overflow-y-auto">
@@ -161,7 +161,7 @@ export default function CreatorStudio() {
         <button onClick={() => navigate(-1)} className="p-2 mr-2 rounded-full hover:bg-gray-100 transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <h1 className="text-xl font-bold flex items-center gap-2">
+        <h1 className="text-2xl font-black italic tracking-tighter flex items-center gap-2">
           Meu Estúdio
           <VerifiedBadge tier="gold" className="w-5 h-5" />
         </h1>

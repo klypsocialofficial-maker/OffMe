@@ -680,7 +680,7 @@ export default function Profile() {
         <div className="flex justify-between items-start">
           <div className="flex-1 min-w-0">
             <div className="flex items-center space-x-1">
-              <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-black truncate">
+              <h2 className="text-xl sm:text-2xl font-black italic tracking-tighter text-black truncate">
                 {profileUser.displayName}
               </h2>
               {(profileUser.isVerified || profileUser.username === 'Rulio') && (
