@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { User as UserIcon, Calendar, MapPin, Link as LinkIcon, Edit2, Trash2, BarChart2, MessageCircle, Heart, Repeat, Send, MoreHorizontal, ArrowLeft, Search, Share, Briefcase, Plus, AlertCircle, Star, VolumeX, Volume2, UserX, Bookmark, Users } from 'lucide-react';
+import { User as UserIcon, Calendar, MapPin, Link as LinkIcon, Edit2, Trash2, BarChart2, MessageCircle, Heart, Repeat, Send, MoreHorizontal, ArrowLeft, Search, Share, Briefcase, Plus, AlertCircle, Star, VolumeX, Volume2, UserX, Bookmark, Users, Lock } from 'lucide-react';
 import EditProfileModal from '../components/EditProfileModal';
 import CreatePostModal from '../components/CreatePostModal';
 import Toast from '../components/Toast';
@@ -78,10 +78,12 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 
 export default function Profile() {
   const [verificationSent, setVerificationSent] = useState(false);
-  const { userProfile, currentUser, sendVerificationEmail, followUser, unfollowUser, muteUser, unmuteUser, blockUser, unblockUser, addToCircle, removeFromCircle } = useAuth();
+  const { userProfile, currentUser, sendVerificationEmail, followUser, unfollowUser, muteUser, unmuteUser, blockUser, unblockUser, addToCircle, removeFromCircle, sendFollowRequest, cancelFollowRequest } = useAuth();
   const { username } = useParams();
   const navigate = useNavigate();
   const [profileUser, setProfileUser] = useState<any>(null);
+  const [isPending, setIsPending] = useState(false);
+  const [followRequestId, setFollowRequestId] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'posts' | 'replies' | 'media' | 'likes' | 'anonymous' | 'bookmarks' | 'circle'>('posts');
   const [posts, setPosts] = useState<any[]>([]);
@@ -159,12 +161,42 @@ export default function Profile() {
   }, [username, userProfile, db]);
 
   useEffect(() => {
+    if (!profileUser?.uid || !currentUser?.uid || !db) return;
+
+    const q = query(
+      collection(db, 'followRequests'),
+      where('senderId', '==', currentUser.uid),
+      where('receiverId', '==', profileUser.uid),
+      where('status', '==', 'pending')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setIsPending(!snapshot.empty);
+      if (!snapshot.empty) {
+        setFollowRequestId(snapshot.docs[0].id);
+      } else {
+        setFollowRequestId(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [profileUser?.uid, currentUser?.uid, db]);
+
+  useEffect(() => {
     if (!profileUser?.uid || !db) return;
 
     setLoading(true);
     let unsubscribe: () => void;
 
     const isOwnProfile = profileUser?.uid === userProfile?.uid;
+    const isFollower = userProfile?.following?.includes(profileUser?.uid);
+    const canSeeContent = isOwnProfile || isFollower || !profileUser.privateProfile;
+
+    if (!canSeeContent) {
+      setPosts([]);
+      setLoading(false);
+      return;
+    }
 
     if (activeTab === 'posts') {
       // Fetch user's posts and reposted posts
@@ -532,7 +564,16 @@ export default function Profile() {
     if (!userProfile?.uid || !profileUser?.uid || !db || profileUser.uid === userProfile.uid) return;
     
     const isFollowing = userProfile.following?.includes(profileUser.uid);
-    const isPending = false; // Need to implement checking for pending requests in AuthContext or here!
+    
+    if (isPending) {
+      try {
+        await cancelFollowRequest(profileUser.uid);
+        showToast(`Solicitação cancelada`, 'info');
+      } catch (error) {
+        handleFirestoreError(error, OperationType.DELETE, 'followRequests');
+      }
+      return;
+    }
     
     if (isFollowing) {
       setConfirmModal({
@@ -874,11 +915,24 @@ export default function Profile() {
                     : `shadow-sm ${theme.button}`
                 }`}
               >
-                {userProfile?.following?.includes(profileUser.uid) ? 'Seguindo' : 'Seguir'}
+                {userProfile?.following?.includes(profileUser.uid) ? 'Seguindo' : isPending ? 'Solicitado' : 'Seguir'}
               </button>
             </div>
           )}
         </div>
+
+        {/* Private Account Message */}
+        {profileUser.uid !== userProfile?.uid && profileUser.privateProfile && !userProfile?.following?.includes(profileUser.uid) && (
+          <div className="mt-8 flex flex-col items-center justify-center p-8 text-center bg-gray-50 rounded-3xl border border-gray-100">
+             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                <Lock className="w-8 h-8 text-gray-400" />
+             </div>
+             <h3 className="text-xl font-black italic tracking-tighter mb-2">Esta conta é privada</h3>
+             <p className="text-gray-500 text-sm max-w-xs">
+                Siga @{profileUser.username} para ver seus posts e mídia.
+             </p>
+          </div>
+        )}
 
         {/* Blocked Overlay Message */}
         {userProfile?.blockedUsers?.includes(profileUser.uid) && (

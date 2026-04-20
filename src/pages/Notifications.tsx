@@ -61,13 +61,40 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 }
 
 export default function Notifications() {
-  const { userProfile } = useAuth();
+  const { userProfile, acceptFollowRequest, declineFollowRequest } = useAuth();
   const navigate = useNavigate();
   const { openDrawer } = useOutletContext<{ openDrawer: () => void }>();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [processingId, setProcessingId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'verified'>('all');
   const [activeType, setActiveType] = useState<'all' | 'like' | 'reply' | 'mention' | 'follow'>('all');
+
+  const handleAcceptRequest = async (e: React.MouseEvent, notification: any) => {
+    e.stopPropagation();
+    if (!notification.followRequestId || processingId) return;
+    setProcessingId(notification.id);
+    try {
+      await acceptFollowRequest(notification.followRequestId);
+    } catch (error) {
+      console.error("Error accepting request:", error);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleDeclineRequest = async (e: React.MouseEvent, notification: any) => {
+    e.stopPropagation();
+    if (!notification.followRequestId || processingId) return;
+    setProcessingId(notification.id);
+    try {
+      await declineFollowRequest(notification.followRequestId);
+    } catch (error) {
+      console.error("Error declining request:", error);
+    } finally {
+      setProcessingId(null);
+    }
+  };
 
   const typeFilters = [
     { id: 'all', label: 'Tudo' },
@@ -222,6 +249,7 @@ export default function Notifications() {
                       <div className="flex-shrink-0 pt-1">
                         {notification.type === 'like' && <Heart className="w-6 h-6 text-red-500 fill-current" />}
                         {notification.type === 'follow' && <UserPlus className="w-6 h-6 text-blue-500" />}
+                        {notification.type === 'follow_request' && <UserPlus className="w-6 h-6 text-amber-500" />}
                         {notification.type === 'reply' && <MessageCircle className="w-6 h-6 text-green-500" />}
                         {notification.type === 'repost' && <Repeat className="w-6 h-6 text-green-600" />}
                         {notification.type === 'mention' && <AtSign className="w-6 h-6 text-purple-500" />}
@@ -264,12 +292,31 @@ export default function Notifications() {
                             <span className="text-gray-600 font-medium">
                               {notification.type === 'like' && 'curtiu seu post'}
                               {notification.type === 'follow' && 'começou a seguir você'}
+                              {notification.type === 'follow_request' && 'quer seguir você'}
                               {notification.type === 'reply' && 'respondeu ao seu post'}
                               {notification.type === 'repost' && 'repostou seu post'}
                               {notification.type === 'mention' && 'mencionou você'}
                             </span>
                           </span>
                         </p>
+                        {notification.type === 'follow_request' && (
+                          <div className="flex items-center space-x-2 mt-3">
+                            <button
+                              onClick={(e) => handleAcceptRequest(e, notification)}
+                              disabled={!!processingId}
+                              className="px-4 py-1.5 bg-blue-500 text-white rounded-full text-xs font-bold hover:bg-blue-600 transition-colors disabled:opacity-50"
+                            >
+                              Aceitar
+                            </button>
+                            <button
+                              onClick={(e) => handleDeclineRequest(e, notification)}
+                              disabled={!!processingId}
+                              className="px-4 py-1.5 bg-gray-200 text-gray-700 rounded-full text-xs font-bold hover:bg-gray-300 transition-colors disabled:opacity-50"
+                            >
+                              Recusar
+                            </button>
+                          </div>
+                        )}
                         {notification.content && (
                           <div className="mt-2 p-3 bg-black/5 rounded-xl border border-black/5 italic text-gray-600 text-[14px] line-clamp-2">
                             {notification.content}

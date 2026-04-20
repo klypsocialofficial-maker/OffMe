@@ -32,6 +32,7 @@ import PWABadge from './components/PWABadge';
 import SplashScreen from './components/SplashScreen';
 import AnonymousFeed from './pages/AnonymousFeed';
 import InstallPrompt from './components/InstallPrompt';
+import AdminPanel from './pages/AdminPanel';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { currentUser, loading } = useAuth();
@@ -94,6 +95,7 @@ export default function App() {
             <Route path="settings/privacy" element={<PrivacySettings />} />
             <Route path="settings/display" element={<DisplaySettings />} />
             <Route path="anonymous-feed" element={<AnonymousFeed />} />
+            <Route path="admin" element={<AdminPanel />} />
           </Route>
         </Routes>
         <InstallPrompt />

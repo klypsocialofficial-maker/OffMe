@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Star, TrendingUp, DollarSign, Users, Award, ShieldCheck, ChevronRight, Activity } from 'lucide-react';
+import { ArrowLeft, Star, TrendingUp, DollarSign, Users, Award, ShieldCheck, ChevronRight, Activity, BarChart2 as BarChartIcon } from 'lucide-react';
 import VerifiedBadge from '../components/VerifiedBadge';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, limit as firestoreLimit } from 'firebase/firestore';
 import { db } from '../firebase';
+import VerificationModal from '../components/VerificationModal';
 
 export default function CreatorStudio() {
   const { userProfile, enableCreatorMode } = useAuth();
@@ -14,10 +15,12 @@ export default function CreatorStudio() {
   const [selectedCategory, setSelectedCategory] = useState('Tech');
   const [totalEngagement, setTotalEngagement] = useState(0);
   const [totalPosts, setTotalPosts] = useState(0);
-  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'posts' | 'followers'>('overview');
+  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'posts' | 'followers' | 'analytics'>('overview');
   const [creatorPosts, setCreatorPosts] = useState<any[]>([]);
   const [followers, setFollowers] = useState<any[]>([]);
   const [loadingMetrics, setLoadingMetrics] = useState(false);
+  const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
+  const [analyticsData, setAnalyticsData] = useState<any[]>([]);
 
   const categories = [
     'Tech', 'Gaming', 'Arte', 'Música', 'Educação', 'Cripto', 'Lifestyle', 'Comédia', 'Notícias', 'Esportes'
@@ -52,6 +55,15 @@ export default function CreatorStudio() {
         } else {
             setFollowers([]);
         }
+
+        // Fetch Analytics
+        const analyticsQ = query(
+          collection(db, 'users', userProfile.uid, 'analytics'),
+          orderBy('date', 'desc'),
+          firestoreLimit(7)
+        );
+        const analyticsSnap = await getDocs(analyticsQ);
+        setAnalyticsData(analyticsSnap.docs.map(doc => doc.data()).reverse());
 
       } catch(err) {
         console.error("Error fetching creator data", err);
@@ -170,16 +182,16 @@ export default function CreatorStudio() {
       <div className="p-2 sm:p-4 max-w-3xl mx-auto space-y-4 sm:space-y-6 pb-20">
         
         {/* Tab Switcher */}
-        <div className="flex bg-white/70 backdrop-blur-md rounded-full p-1 border border-white/20 shadow-sm text-sm">
-          {(['overview', 'posts', 'followers'] as const).map(tab => (
+        <div className="flex bg-white/70 backdrop-blur-md rounded-full p-1 border border-white/20 shadow-sm text-sm overflow-x-auto no-scrollbar">
+          {(['overview', 'posts', 'followers', 'analytics'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveSubTab(tab)}
-              className={`flex-1 py-2 rounded-full font-bold capitalize transition-all ${
+              className={`flex-1 min-w-[80px] py-2 rounded-full font-bold capitalize transition-all ${
                 activeSubTab === tab ? 'bg-black text-white' : 'text-gray-500 hover:text-black'
               }`}
             >
-              {tab}
+              {tab === 'overview' ? 'Geral' : tab === 'posts' ? 'Posts' : tab === 'followers' ? 'Fãs' : 'Gráficos'}
             </button>
           ))}
         </div>
@@ -279,10 +291,56 @@ export default function CreatorStudio() {
             </div>
         )}
         
+        {activeSubTab === 'analytics' && (
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
+            <h3 className="font-bold text-lg mb-6 flex items-center gap-2">
+              <Activity className="w-5 h-5 text-blue-500" />
+              Visitas ao Perfil (Últimos 7 dias)
+            </h3>
+            
+            {analyticsData.length === 0 ? (
+              <div className="py-20 text-center text-gray-500">
+                 <BarChartIcon className="w-12 h-12 mx-auto mb-4 opacity-10" />
+                 <p>Dados insuficientes para gerar gráficos.</p>
+                 <p className="text-xs">As métricas começam a aparecer 24h após o primeiro acesso.</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="flex items-end justify-between h-40 gap-2 px-2">
+                   {analyticsData.map((day, idx) => (
+                     <div key={idx} className="flex-1 flex flex-col items-center gap-2 group">
+                        <div className="w-full bg-blue-100 rounded-t-lg transition-all group-hover:bg-blue-500 relative" style={{ height: `${Math.min(100, (day.views / (Math.max(...analyticsData.map(d => d.views)) || 1)) * 100)}%` }}>
+                           <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                              {day.views}
+                           </div>
+                        </div>
+                        <span className="text-[10px] text-gray-400 font-bold uppercase truncate w-full text-center">{day.date.split('-').slice(1).join('/')}</span>
+                     </div>
+                   ))}
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-50">
+                   <div className="p-4 bg-gray-50 rounded-2xl">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Média Diária</p>
+                      <p className="text-xl font-black">{Math.round(analyticsData.reduce((acc, d) => acc + d.views, 0) / analyticsData.length)}</p>
+                   </div>
+                   <div className="p-4 bg-gray-50 rounded-2xl">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Total da Semana</p>
+                      <p className="text-xl font-black">{analyticsData.reduce((acc, d) => acc + d.views, 0)}</p>
+                   </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        
         {/* Creator Tools */}
         <h3 className="font-bold text-gray-900 text-lg px-1 mt-6">Ferramentas</h3>
         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-            <button className="w-full flex items-center justify-between p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors">
+            <button 
+              onClick={() => setIsVerificationModalOpen(true)}
+              className="w-full flex items-center justify-between p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors"
+            >
                 <div className="flex items-center space-x-3">
                 <div className="p-2 bg-purple-50 text-purple-600 rounded-xl">
                     <ShieldCheck className="w-5 h-5" />
@@ -307,6 +365,11 @@ export default function CreatorStudio() {
                 <ChevronRight className="w-5 h-5 text-gray-400" />
             </button>
         </div>
+
+        <VerificationModal 
+          isOpen={isVerificationModalOpen}
+          onClose={() => setIsVerificationModalOpen(false)}
+        />
       </div>
     </div>
   );

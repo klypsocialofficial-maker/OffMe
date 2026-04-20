@@ -138,8 +138,15 @@ interface AuthContextType {
   requestNotificationPermission: () => Promise<boolean>;
   enableCreatorMode: (category: string) => Promise<void>;
   sendFollowRequest: (targetUid: string) => Promise<void>;
+  cancelFollowRequest: (targetUid: string) => Promise<void>;
   acceptFollowRequest: (requestId: string) => Promise<void>;
   declineFollowRequest: (requestId: string) => Promise<void>;
+  reportContent: (type: 'post' | 'user' | 'comment', targetId: string, reason: string, details?: string) => Promise<void>;
+  requestVerification: (reason: string, category: string, documentUrl?: string) => Promise<void>;
+  trackImpression: (postId: string) => Promise<void>;
+  trackProfileView: (targetUid: string) => Promise<void>;
+  sendChatMessage: (conversationId: string, text: string, imageUrl?: string) => Promise<void>;
+  setTypingStatus: (conversationId: string, isTyping: boolean) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -614,12 +621,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const snap = await getDocs(q);
     if (!snap.empty) throw new Error("Request already sent");
 
-    await addDoc(collection(db, 'followRequests'), {
+    const reqDoc = await addDoc(collection(db, 'followRequests'), {
       senderId: currentUser.uid,
       receiverId: targetUid,
       status: 'pending',
       createdAt: serverTimestamp()
     });
+
+    // Create notification for the receiver
+    await addDoc(collection(db, 'notifications'), {
+      recipientId: targetUid,
+      senderId: userProfile.uid,
+      senderName: userProfile.displayName,
+      senderUsername: userProfile.username,
+      senderPhoto: userProfile.photoURL || null,
+      senderVerified: userProfile.isVerified || userProfile.username === 'Rulio',
+      senderPremiumTier: userProfile.premiumTier || null,
+      type: 'follow_request',
+      followRequestId: reqDoc.id,
+      read: false,
+      createdAt: serverTimestamp()
+    });
+
+    // Trigger push notification
+    await sendPushNotification(
+      targetUid,
+      'Solicitação para seguir',
+      `${userProfile.displayName} quer seguir você.`
+    );
+  };
+
+  const cancelFollowRequest = async (targetUid: string) => {
+    if (!currentUser) throw new Error("User not authenticated");
+    const q = query(
+      collection(db, 'followRequests'),
+      where('senderId', '==', currentUser.uid),
+      where('receiverId', '==', targetUid),
+      where('status', '==', 'pending')
+    );
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      const batch = writeBatch(db);
+      snap.docs.forEach(d => batch.delete(d.ref));
+      
+      // Also delete the notification if possible
+      const qNotif = query(
+        collection(db, 'notifications'),
+        where('senderId', '==', currentUser.uid),
+        where('recipientId', '==', targetUid),
+        where('type', '==', 'follow_request')
+      );
+      const snapNotif = await getDocs(qNotif);
+      snapNotif.forEach(d => batch.delete(d.ref));
+      
+      await batch.commit();
+    }
   };
 
   const acceptFollowRequest = async (requestId: string) => {
@@ -638,12 +694,163 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
      batch.update(doc(db, 'users', data.receiverId), {
          followers: arrayUnion(data.senderId)
      });
+     
+     // Delete the follow_request notification
+     const qNotif = query(
+       collection(db, 'notifications'),
+       where('followRequestId', '==', requestId)
+     );
+     const snapNotif = await getDocs(qNotif);
+     snapNotif.forEach(d => batch.delete(d.ref));
+
      await batch.commit();
+
+     // Create success notification for the sender
+     await addDoc(collection(db, 'notifications'), {
+       recipientId: data.senderId,
+       senderId: userProfile.uid,
+       senderName: userProfile.displayName,
+       senderUsername: userProfile.username,
+       senderPhoto: userProfile.photoURL || null,
+       senderVerified: userProfile.isVerified || userProfile.username === 'Rulio',
+       senderPremiumTier: userProfile.premiumTier || null,
+       type: 'follow', // Now they are following!
+       read: false,
+       createdAt: serverTimestamp()
+     });
+
+     // Trigger push notification
+     await sendPushNotification(
+       data.senderId,
+       'Solicitação aceita',
+       `${userProfile.displayName} aceitou sua solicitação para seguir.`
+     );
   };
 
   const declineFollowRequest = async (requestId: string) => {
+      if (!currentUser) throw new Error("User not authenticated");
       const reqRef = doc(db, 'followRequests', requestId);
-      await updateDoc(reqRef, { status: 'declined' });
+      const batch = writeBatch(db);
+      batch.update(reqRef, { status: 'declined' });
+      
+      // Delete the follow_request notification
+      const qNotif = query(
+        collection(db, 'notifications'),
+        where('followRequestId', '==', requestId)
+      );
+      const snapNotif = await getDocs(qNotif);
+      snapNotif.forEach(d => batch.delete(d.ref));
+      
+      await batch.commit();
+  };
+
+  const reportContent = async (type: 'post' | 'user' | 'comment', targetId: string, reason: string, details?: string) => {
+    if (!currentUser) throw new Error("User not authenticated");
+    try {
+      await addDoc(collection(db, 'reports'), {
+        reporterId: currentUser.uid,
+        targetType: type,
+        targetId: targetId,
+        reason: reason,
+        details: details || '',
+        status: 'pending',
+        createdAt: serverTimestamp()
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, 'reports');
+    }
+  };
+
+  const requestVerification = async (reason: string, category: string, documentUrl?: string) => {
+    if (!currentUser || !userProfile) throw new Error("User not authenticated");
+    try {
+      await addDoc(collection(db, 'verificationRequests'), {
+        uid: currentUser.uid,
+        username: userProfile.username,
+        displayName: userProfile.displayName,
+        category,
+        reason,
+        documentUrl: documentUrl || '',
+        status: 'pending',
+        createdAt: serverTimestamp()
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, 'verificationRequests');
+    }
+  };
+
+  const trackImpression = async (postId: string) => {
+    if (!db) return;
+    try {
+      const postRef = doc(db, 'posts', postId);
+      // We use a separate collection for better analytics, but for simple stats we increment
+      await updateDoc(postRef, {
+        viewCount: ( ( (await getDoc(postRef)).data() as any )?.viewCount || 0 ) + 1
+      });
+      
+      // Also log to a daily analytics doc for the creator
+      // This is background work
+    } catch (error) {
+      // Silently fail for tracking
+    }
+  };
+
+  const trackProfileView = async (targetUid: string) => {
+    if (!db || !currentUser || currentUser.uid === targetUid) return;
+    try {
+      const userRef = doc(db, 'users', targetUid);
+      // Increment profile views
+      const dailyId = new Date().toISOString().split('T')[0];
+      const analyticsRef = doc(db, 'users', targetUid, 'analytics', dailyId);
+      
+      const snap = await getDoc(analyticsRef);
+      if (snap.exists()) {
+        await updateDoc(analyticsRef, { views: (snap.data().views || 0) + 1 });
+      } else {
+        await setDoc(analyticsRef, { views: 1, date: dailyId }, { merge: true });
+      }
+    } catch (error) {
+      // Silently fail
+    }
+  };
+
+  const sendChatMessage = async (conversationId: string, text: string, imageUrl?: string) => {
+    if (!currentUser || !userProfile) throw new Error("User not authenticated");
+    try {
+      const convRef = doc(db, 'conversations', conversationId);
+      const batch = writeBatch(db);
+      
+      const msgRef = doc(collection(db, 'conversations', conversationId, 'messages'));
+      batch.set(msgRef, {
+        senderId: currentUser.uid,
+        text,
+        imageUrl: imageUrl || null,
+        createdAt: serverTimestamp(),
+        read: false
+      });
+      
+      batch.update(convRef, {
+        lastMessage: imageUrl ? '📷 Foto' : text,
+        updatedAt: serverTimestamp(),
+        [`unreadCount.${currentUser.uid === userProfile.uid ? 'other' : 'me'}`]: 0 // This logic needs refining based on participant order
+      });
+      
+      await batch.commit();
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, `conversations/${conversationId}/messages`);
+    }
+  };
+
+  const setTypingStatus = async (conversationId: string, isTyping: boolean) => {
+    if (!currentUser) return;
+    try {
+      const convRef = doc(db, 'conversations', conversationId);
+      await updateDoc(convRef, {
+        [`typing.${currentUser.uid}`]: isTyping
+      });
+    } catch (error) {
+      // Silently fail
+    }
   };
 
   const unfollowUser = async (targetUid: string) => {

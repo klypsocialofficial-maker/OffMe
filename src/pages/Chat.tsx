@@ -66,7 +66,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 export default function Chat() {
   const { conversationId } = useParams();
   const navigate = useNavigate();
-  const { userProfile, blockUser, unblockUser } = useAuth();
+  const { userProfile, blockUser, unblockUser, sendChatMessage, setTypingStatus } = useAuth();
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
@@ -202,68 +202,31 @@ export default function Chat() {
 
     if (!isTyping) {
       setIsTyping(true);
-      updateDoc(doc(db, 'conversations', conversationId), {
-        [`typing.${userProfile.uid}`]: true
-      }).catch(() => {});
+      setTypingStatus(conversationId, true).catch(() => {});
     }
 
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     typingTimeoutRef.current = setTimeout(() => {
       setIsTyping(false);
-      updateDoc(doc(db, 'conversations', conversationId), {
-        [`typing.${userProfile.uid}`]: false
-      }).catch(() => {});
+      setTypingStatus(conversationId, false).catch(() => {});
     }, 3000);
   };
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMessage.trim() || !userProfile?.uid || !conversationId || !db) return;
+  const handleSendMessage = async (e: React.FormEvent, imageUrl?: string) => {
+    if (e) e.preventDefault();
+    if ((!newMessage.trim() && !imageUrl) || !userProfile?.uid || !conversationId || !db) return;
 
     const messageText = newMessage.trim();
+    const otherId = conversation.participants.find((id: string) => id !== userProfile.uid);
+    
     setNewMessage(''); // Optimistic clear
     
-    // Clear typing status immediately on send
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     setIsTyping(false);
-    updateDoc(doc(db, 'conversations', conversationId), {
-      [`typing.${userProfile.uid}`]: false
-    }).catch(() => {});
+    setTypingStatus(conversationId, false).catch(() => {});
 
     try {
-      // Add message to subcollection
-      await addDoc(collection(db, 'conversations', conversationId, 'messages'), {
-        text: messageText,
-        senderId: userProfile.uid,
-        createdAt: serverTimestamp(),
-        read: false
-      });
-
-      // Update conversation metadata
-      const otherId = conversation.participants.find((id: string) => id !== userProfile.uid);
-      await updateDoc(doc(db, 'conversations', conversationId), {
-        lastMessage: messageText,
-        lastMessageSenderId: userProfile.uid,
-        updatedAt: serverTimestamp(),
-        [`unreadCount.${otherId}`]: increment(1)
-      });
-
-      // Send push notification to other participant
-      if (otherId) {
-        await sendPushNotification(
-          otherId,
-          `Mensagem de ${userProfile.displayName}`,
-          messageText,
-          {
-            type: 'chat',
-            conversationId: conversationId,
-            senderId: userProfile.uid,
-            senderName: userProfile.displayName,
-            recipientId: otherId
-          }
-        );
-      }
-      
+      await sendChatMessage(conversationId, otherId, messageText, imageUrl);
       scrollToBottom();
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, `conversations/${conversationId}/messages`);
@@ -382,6 +345,11 @@ export default function Chat() {
                         : 'bg-gray-100 text-black rounded-bl-sm'
                   } ${isSelected ? 'ring-2 ring-blue-300 ring-offset-2' : ''}`}
                 >
+                  {msg.imageUrl && (
+                    <div className="mb-2 max-w-full">
+                       <LazyImage src={msg.imageUrl} alt="Mensagem com imagem" className="rounded-xl w-full object-cover max-h-64" />
+                    </div>
+                  )}
                   {msg.postId ? (
                       <div className="space-y-2 cursor-pointer" onClick={() => navigate(`/post/${msg.postId}`)}>
                           <p className="text-xs font-bold opacity-80 underline">Post compartilhado</p>

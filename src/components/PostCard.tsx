@@ -627,7 +627,7 @@ export default function PostCard({
         onClose={() => setIsReportModalOpen(false)}
         targetId={effectivePost.id}
         targetType="post"
-        targetData={{ authorId: effectivePost.authorId, content: effectivePost.content }}
+        targetName={effectivePost.authorName}
       />
       <ConfirmModal
         isOpen={isDeleteModalOpen}
