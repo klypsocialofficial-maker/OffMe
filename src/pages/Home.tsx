@@ -84,7 +84,6 @@ export default function Home() {
     openCreateModal: (replyTo?: any, quotePost?: any, isAnonymous?: boolean) => void 
   }>();
   const [activeTab, setActiveTab] = useState<'foryou' | 'following'>('foryou');
-  const [fetchedPosts, setFetchedPosts] = useState<any[]>([]);
   const [displayedPosts, setDisplayedPosts] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -98,7 +97,6 @@ export default function Home() {
   useEffect(() => {
     isInitialLoadRef.current = true;
     setDisplayedPosts([]);
-    setFetchedPosts([]);
   }, [activeTab]);
 
   const [loading, setLoading] = useState(false);
@@ -153,38 +151,35 @@ export default function Home() {
     setIsViewerOpen(true);
   };
 
+  const [postsLimit, setPostsLimit] = useState(15);
   const POSTS_PER_PAGE = 15;
 
   useEffect(() => {
     if (!db) return;
     
     setIsFetching(true);
-    setHasMore(true);
-    setLastDoc(null);
     
     let q = query(
       collection(db, 'posts'),
       where('privacy', '==', 'public'),
       orderBy('createdAt', 'desc'),
-      limit(POSTS_PER_PAGE)
+      limit(postsLimit)
     );
 
     // If Following tab and user is following people
     if (activeTab === 'following') {
       if (userProfile?.following && userProfile.following.length > 0) {
-        // When following, we might want to see private posts too if allowed, 
-        // but for safety and simplicity in global feed, we filter for public.
         const followingIds = userProfile.following.slice(0, 30);
         q = query(
           collection(db, 'posts'),
           where('authorId', 'in', followingIds),
           where('privacy', '==', 'public'),
           orderBy('createdAt', 'desc'),
-          limit(POSTS_PER_PAGE)
+          limit(postsLimit)
         );
       } else {
         // Not following anyone
-        setFetchedPosts([]);
+        setDisplayedPosts([]);
         setIsFetching(false);
         setHasMore(false);
         return;
@@ -197,72 +192,24 @@ export default function Home() {
         ...doc.data()
       }));
       
-      setFetchedPosts(newPosts);
-      
-      // Update lastDoc and hasMore only on the very first snapshot of a new session
-      if (isInitialLoadRef.current && snapshot.docs.length > 0) {
-        setLastDoc(snapshot.docs[snapshot.docs.length - 1]);
-        setHasMore(snapshot.docs.length === POSTS_PER_PAGE);
-      }
-      
+      setDisplayedPosts(newPosts);
+      setHasMore(snapshot.docs.length === postsLimit);
       setIsFetching(false);
+      setIsLoadingMore(false);
     }, (error) => {
       console.error("Feed error:", error);
       setIsFetching(false);
+      setIsLoadingMore(false);
     });
 
     return () => unsubscribe();
-  }, [activeTab, db, userProfile?.following]);
+  }, [activeTab, db, userProfile?.following, postsLimit]);
 
-  const loadMorePosts = useCallback(async () => {
-    if (isLoadingMore || !hasMore || !lastDoc || !db) return;
-
+  const loadMorePosts = useCallback(() => {
+    if (isLoadingMore || !hasMore || !db) return;
     setIsLoadingMore(true);
-    try {
-      let q = query(
-        collection(db, 'posts'),
-        where('privacy', '==', 'public'),
-        orderBy('createdAt', 'desc'),
-        startAfter(lastDoc),
-        limit(POSTS_PER_PAGE)
-      );
-
-      if (activeTab === 'following' && userProfile?.following && userProfile.following.length > 0) {
-        const followingIds = userProfile.following.slice(0, 30);
-        q = query(
-          collection(db, 'posts'),
-          where('authorId', 'in', followingIds),
-          where('privacy', '==', 'public'),
-          orderBy('createdAt', 'desc'),
-          startAfter(lastDoc),
-          limit(POSTS_PER_PAGE)
-        );
-      }
-
-      const snapshot = await getDocs(q);
-      if (snapshot.empty) {
-        setHasMore(false);
-      } else {
-        const morePosts = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        
-        setDisplayedPosts(prev => {
-          const existingIds = new Set(prev.map(p => p.id));
-          const uniqueMorePosts = morePosts.filter(p => !existingIds.has(p.id));
-          return [...prev, ...uniqueMorePosts];
-        });
-        
-        setLastDoc(snapshot.docs[snapshot.docs.length - 1]);
-        setHasMore(snapshot.docs.length === POSTS_PER_PAGE);
-      }
-    } catch (error) {
-      console.error("Error loading more posts:", error);
-    } finally {
-      setIsLoadingMore(false);
-    }
-  }, [isLoadingMore, hasMore, lastDoc, activeTab, userProfile?.following]);
+    setPostsLimit(prev => prev + POSTS_PER_PAGE);
+  }, [isLoadingMore, hasMore, db]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -282,52 +229,14 @@ export default function Home() {
   }, [loadMorePosts, hasMore, isLoadingMore, isFetching]);
 
   useEffect(() => {
-    if (isInitialLoadRef.current) {
-      if (fetchedPosts.length > 0) {
-        setDisplayedPosts(fetchedPosts);
-        isInitialLoadRef.current = false;
-      } else if (!isFetching) {
-        setDisplayedPosts([]);
-        isInitialLoadRef.current = false;
-      }
-      return;
-    }
-
-    const current = [...displayedPostsRef.current];
-    if (current.length === 0) {
-      setDisplayedPosts(fetchedPosts);
-      return;
-    }
-
-    // 1. Identify new posts at the very top
-    const currentIds = new Set(current.map(p => p.id));
-    const newPostsAtTop = [];
-    for (const p of fetchedPosts) {
-      if (!currentIds.has(p.id)) {
-        newPostsAtTop.push(p);
-      } else {
-        break;
-      }
-    }
-
-    // 2. Update existing posts in displayedPosts with fresh data from fetchedPosts
-    const fetchedMap = new Map(fetchedPosts.map(p => [p.id, p]));
-    const updatedCurrent = current.map(p => fetchedMap.has(p.id) ? fetchedMap.get(p.id) : p);
-
-    // Automatically prepend new posts to the current list without notification
-    if (newPostsAtTop.length > 0) {
-      setDisplayedPosts([...newPostsAtTop, ...updatedCurrent]);
-    } else {
-      setDisplayedPosts(updatedCurrent);
-    }
-  }, [fetchedPosts, userProfile?.uid, isFetching]);
+    // We can remove the old complex prepending logic since onSnapshot handles it perfectly
+  }, []);
 
   const handleDeletePost = async (postId: string) => {
     if (!db || !userProfile) return;
     try {
       await deleteDoc(doc(db, 'posts', postId));
-      setDisplayedPosts(prev => prev.filter(p => p.id !== postId));
-      setFetchedPosts(prev => prev.filter(p => p.id !== postId));
+      // Displayed posts will automatically update from onSnapshot
       setActiveMenuPostId(null);
       showToast('Post apagado com sucesso', 'success');
     } catch (error) {
@@ -712,7 +621,6 @@ export default function Home() {
         <PullToRefresh onRefresh={async () => {
           isInitialLoadRef.current = true;
           setDisplayedPosts([]);
-          setFetchedPosts([]);
           // Effect will re-trigger and fetch fresh
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}>

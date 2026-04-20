@@ -352,6 +352,20 @@ export default function PostCard({
                       <span>Ver perfil @{post.authorUsername}</span>
                     </button>
 
+                    {userProfile && userProfile.uid !== effectivePost.authorId && (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsMenuOpen(false);
+                          setIsTipModalOpen(true);
+                        }}
+                        className="w-full text-left px-4 py-2 text-yellow-600 hover:bg-yellow-50 flex items-center space-x-2"
+                      >
+                        <Gift className="w-4 h-4" />
+                        <span>Dar gorjeta</span>
+                      </button>
+                    )}
+
                     <button 
                       onClick={async () => {
                         try {
@@ -557,22 +571,6 @@ export default function PostCard({
               <Send className="w-4.5 h-4.5" />
             </div>
           </motion.button>
-
-          {userProfile && userProfile.uid !== effectivePost.authorId && effectivePost.authorId !== 'anonymous' && (
-            <motion.button 
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={(e) => {
-                stopPropagation(e);
-                setIsTipModalOpen(true);
-              }}
-              className="flex items-center space-x-2 group/action hover:text-yellow-500 transition-colors"
-            >
-              <div className="p-2 group-hover/action:bg-yellow-50 rounded-full transition-colors">
-                <Gift className="w-4.5 h-4.5" />
-              </div>
-            </motion.button>
-          )}
         </div>
         </div>
       </div>
