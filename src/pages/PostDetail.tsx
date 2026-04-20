@@ -489,8 +489,16 @@ export default function PostDetail() {
         {/* Main Post */}
         <article className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
           <div className="flex space-x-4">
-            <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
-              {post.authorPhoto ? (
+            <div 
+              className={`w-12 h-12 rounded-full overflow-hidden flex-shrink-0 cursor-pointer ${post.authorId === 'anonymous' ? 'bg-gradient-to-br from-indigo-50 to-purple-100 border border-purple-200 flex items-center justify-center' : 'bg-gray-200'}`}
+              onClick={() => {
+                if (post.authorId === 'anonymous') navigate('/anonymous-feed');
+                else navigate(`/${post.authorUsername}`);
+              }}
+            >
+              {post.authorId === 'anonymous' ? (
+                <Ghost className="w-6 h-6 text-indigo-400" />
+              ) : post.authorPhoto ? (
                 <LazyImage src={post.authorPhoto} alt={post.authorName} className="w-full h-full" />
               ) : (
                 <LazyImage src={getDefaultAvatar(post.authorName, post.authorUsername)} alt={post.authorName} className="w-full h-full" />
@@ -499,8 +507,11 @@ export default function PostDetail() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center space-x-1">
-                    <div className="font-bold text-lg leading-tight truncate max-w-[150px] sm:max-w-[250px]">{post.authorName}</div>
+                  <div className="flex items-center space-x-1" onClick={() => {
+                    if (post.authorId === 'anonymous') navigate('/anonymous-feed');
+                    else navigate(`/${post.authorUsername}`);
+                  }}>
+                    <div className={`font-bold text-lg leading-tight truncate max-w-[150px] sm:max-w-[250px] cursor-pointer ${post.authorId === 'anonymous' ? 'text-indigo-600 italic hover:underline' : 'hover:underline'}`}>{post.authorName}</div>
                     {(post.authorVerified || post.authorUsername === 'Rulio') && <VerifiedBadge tier={post.authorPremiumTier} />}
                     <span className="text-gray-500 text-sm">·</span>
                     <span className="text-gray-500 text-sm">

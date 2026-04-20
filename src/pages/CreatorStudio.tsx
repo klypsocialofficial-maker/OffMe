@@ -265,7 +265,7 @@ export default function CreatorStudio() {
                         {followers.map(f => (
                             <div key={f.id} className="flex justify-between items-center p-3 rounded-2xl hover:bg-gray-50">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-gray-200" />
+                                    <img src={f.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(f.displayName)}`} alt={f.displayName} className="w-10 h-10 rounded-full object-cover" />
                                     <div>
                                         <p className="font-bold">{f.displayName}</p>
                                         <p className="text-xs text-gray-500">@{f.username}</p>

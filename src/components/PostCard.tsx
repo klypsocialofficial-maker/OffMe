@@ -177,14 +177,16 @@ export default function PostCard({
       <div className="flex space-x-3">
         {/* Avatar */}
         <div 
-          className={`w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 ${post.authorId !== 'anonymous' ? 'cursor-pointer' : ''} ${post.authorId === 'anonymous' ? 'bg-gradient-to-br from-indigo-50 to-purple-100 border border-purple-200 flex items-center justify-center' : ''}`}
+          className={`w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 cursor-pointer ${post.authorId === 'anonymous' ? 'bg-gradient-to-br from-indigo-50 to-purple-100 border border-purple-200 flex items-center justify-center' : ''}`}
           onClick={(e) => {
             const authorId = post.type === 'repost' ? post.originalPostAuthorId : post.authorId;
-            const authorUsername = post.type === 'repost' ? post.originalPostAuthorUsername : post.authorUsername;
             
-            if (authorId === 'anonymous') return;
+            if (authorId === 'anonymous') {
+              navigate('/anonymous-feed');
+              return;
+            }
             stopPropagation(e);
-            navigate(`/${authorUsername}`);
+            navigate(`/${post.type === 'repost' ? post.originalPostAuthorUsername : post.authorUsername}`);
           }}
         >
           {post.authorId === 'anonymous' ? (
@@ -206,17 +208,20 @@ export default function PostCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
             <div 
-              className={`flex items-center space-x-1 min-w-0 ${post.authorId !== 'anonymous' ? 'cursor-pointer' : ''}`}
+              className={`flex items-center space-x-1 min-w-0 ${post.authorId !== 'anonymous' ? 'cursor-pointer' : 'cursor-pointer'}`}
               onClick={(e) => {
                 const authorId = post.type === 'repost' ? post.originalPostAuthorId : post.authorId;
                 const authorUsername = post.type === 'repost' ? post.originalPostAuthorUsername : post.authorUsername;
                 
-                if (authorId === 'anonymous') return;
+                if (authorId === 'anonymous') {
+                  navigate(`/anonymous-feed`);
+                  return;
+                }
                 stopPropagation(e);
                 navigate(`/${authorUsername}`);
               }}
             >
-              <span className={`font-bold truncate ${post.authorId !== 'anonymous' ? 'hover:underline' : ''} ${post.authorId === 'anonymous' ? 'text-indigo-600 italic' : ''}`}>
+              <span className={`font-bold truncate ${post.authorId !== 'anonymous' ? 'hover:underline' : 'hover:underline'} ${post.authorId === 'anonymous' ? 'text-indigo-600 italic' : ''}`}>
                 {post.type === 'repost' ? post.originalPostAuthorName : post.authorName}
               </span>
               {post.authorId !== 'anonymous' && (( (post.type === 'repost' ? post.originalPostAuthorVerified : post.authorVerified) || 
