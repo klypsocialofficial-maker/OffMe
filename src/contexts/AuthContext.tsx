@@ -185,36 +185,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const profileData = docSnap.data() as UserProfile;
             setUserProfile(profileData);
 
-            // Migration for legacy posts - run once per user session
-            if (migrationDoneRef.current !== user.uid) {
-              migrationDoneRef.current = user.uid;
-              const migrateLegacyPosts = async () => {
-                try {
-                  const q = query(
-                    collection(db, 'posts'),
-                    where('authorId', '==', user.uid),
-                    limit(50)
-                  );
-                  const snapshot = await getDocs(q);
-                  const legacyDocs = snapshot.docs.filter(d => !d.data().privacy);
-                  
-                  if (legacyDocs.length === 0) return;
+              // Migration for legacy posts - run once per user session
+              if (migrationDoneRef.current !== user.uid && !(profileData as any).migrationDone) {
+                migrationDoneRef.current = user.uid;
+                const migrateLegacyPosts = async () => {
+                  try {
+                    const q = query(
+                      collection(db, 'posts'),
+                      where('authorId', '==', user.uid),
+                      limit(50)
+                    );
+                    const snapshot = await getDocs(q);
+                    const legacyDocs = snapshot.docs.filter(d => !d.data().privacy);
+                    
+                    if (legacyDocs.length === 0) {
+                      await updateDoc(docRef, { migrationDone: true });
+                      return;
+                    }
 
-                  const batch = writeBatch(db);
-                  legacyDocs.forEach(postDoc => {
-                    batch.update(postDoc.ref, { privacy: 'public' });
-                  });
-                  
-                  await batch.commit();
-                  console.log(`Migrated ${legacyDocs.length} legacy posts for user ${user.uid}`);
-                } catch (migrateError) {
-                  console.error("Migration error:", migrateError);
-                  // Allow retry on next profile update if it was a permission error we just fixed
-                  migrationDoneRef.current = null;
-                }
-              };
-              migrateLegacyPosts();
-            }
+                    const batch = writeBatch(db);
+                    legacyDocs.forEach(postDoc => {
+                      batch.update(postDoc.ref, { privacy: 'public' });
+                    });
+                    
+                    batch.update(docRef, { migrationDone: true });
+                    await batch.commit();
+                    console.log(`Migrated ${legacyDocs.length} legacy posts and set migration flag for user ${user.uid}`);
+                  } catch (migrateError) {
+                    console.error("Migration error:", migrateError);
+                    migrationDoneRef.current = null;
+                  }
+                };
+                migrateLegacyPosts();
+              }
           } else {
             // Fallback if profile doesn't exist yet
             setUserProfile({

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { User as UserIcon, Send, MoreHorizontal, Trash2, Edit2, BarChart2, Plus, Heart, Repeat, MessageCircle, ArrowUp, Search, X, Image as ImageIcon, Zap as ZapIcon, Ghost } from 'lucide-react';
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, where, deleteDoc, doc, updateDoc, limit, arrayUnion, arrayRemove, startAfter, getDocs, QueryDocumentSnapshot } from 'firebase/firestore';
@@ -199,7 +199,7 @@ export default function Home() {
       
       setFetchedPosts(newPosts);
       
-      // Only set lastDoc on initial load or if we haven't loaded more yet
+      // Update lastDoc and hasMore only on the very first snapshot of a new session
       if (isInitialLoadRef.current && snapshot.docs.length > 0) {
         setLastDoc(snapshot.docs[snapshot.docs.length - 1]);
         setHasMore(snapshot.docs.length === POSTS_PER_PAGE);
@@ -209,7 +209,6 @@ export default function Home() {
     }, (error) => {
       console.error("Feed error:", error);
       setIsFetching(false);
-      setFetchedPosts([]);
     });
 
     return () => unsubscribe();
@@ -575,6 +574,21 @@ export default function Home() {
     return diffMinutes <= editLimitMinutes;
   };
 
+  const filteredPosts = useMemo(() => {
+    return displayedPosts.filter(post => {
+      const isMuted = userProfile?.mutedUsers?.includes(post.authorId);
+      const isBlocked = userProfile?.blockedUsers?.includes(post.authorId);
+      if (isMuted || isBlocked) return false;
+
+      if (!searchQuery.trim()) return true;
+
+      const searchLower = searchQuery.toLowerCase();
+      return (post.content?.toLowerCase().includes(searchLower)) ||
+             (post.authorName?.toLowerCase().includes(searchLower)) ||
+             (post.authorUsername?.toLowerCase().includes(searchLower));
+    });
+  }, [displayedPosts, userProfile?.mutedUsers, userProfile?.blockedUsers, searchQuery]);
+
   return (
     <div className="w-full min-h-full bg-transparent relative">
       {/* Sticky Header with Liquid Glass & Tabs */}
@@ -616,7 +630,7 @@ export default function Home() {
                       transition={{ type: "spring", stiffness: 400, damping: 30 }}
                     />
                   )}
-                  For you
+                  Para Você
                 </button>
                 <button
                   onClick={() => setActiveTab('following')}
@@ -631,7 +645,7 @@ export default function Home() {
                       transition={{ type: "spring", stiffness: 400, damping: 30 }}
                     />
                   )}
-                  Following
+                  Seguindo
                 </button>
               </nav>
             </div>
@@ -685,28 +699,27 @@ export default function Home() {
         </div>
       </div>
 
-        {/* Posts List */}
-        <div 
-          role="tabpanel" 
-          id="feed-panel" 
-          aria-labelledby={`tab-${activeTab}`}
-          tabIndex={0}
-          className="focus-visible:outline-none"
-        >
-          <PullToRefresh onRefresh={async () => {
-            const current = displayedPostsRef.current;
-            const currentIds = new Set(current.map(p => p.id));
-            const newPosts = fetchedPosts.filter(p => !currentIds.has(p.id));
-            setDisplayedPosts([...newPosts, ...current]);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}>
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeTab}
+      {/* Posts List */}
+      <div 
+        role="tabpanel" 
+        id="feed-panel" 
+        className="focus-visible:outline-none w-full max-w-2xl mx-auto"
+      >
+        <PullToRefresh onRefresh={async () => {
+          isInitialLoadRef.current = true;
+          setDisplayedPosts([]);
+          setFetchedPosts([]);
+          // Effect will re-trigger and fetch fresh
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
+              className="px-4 py-4 space-y-4 pb-24"
             >
               {isFetching ? (
                 <div className="space-y-4">
@@ -714,101 +727,62 @@ export default function Home() {
                     <PostSkeleton key={i} />
                   ))}
                 </div>
-              ) : displayedPosts.length === 0 ? (
+              ) : filteredPosts.length === 0 ? (
                 <div className="p-12 text-center">
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <MessageCircle className="w-8 h-8 text-gray-300" />
+                    {searchQuery ? <Search className="w-8 h-8 text-gray-300" /> : <MessageCircle className="w-8 h-8 text-gray-300" />}
                   </div>
-                  <h3 className="text-lg font-black italic tracking-tighter text-gray-900 mb-1">Nenhum post ainda</h3>
+                  <h3 className="text-lg font-black italic tracking-tighter text-gray-900 mb-1">
+                    {searchQuery ? 'Nenhum resultado' : 'Nenhum post ainda'}
+                  </h3>
                   <p className="text-sm text-gray-500 max-w-[200px] mx-auto">
-                    Seja o primeiro a compartilhar algo com o mundo!
+                    {searchQuery ? `Não encontramos nada para "${searchQuery}"` : 'Seja o primeiro a compartilhar algo com o mundo!'}
                   </p>
                 </div>
               ) : (
-                <div className="px-4 space-y-4 pb-20">
-                  {(() => {
-                    const filtered = displayedPosts.filter(post => {
-                      const isMuted = userProfile?.mutedUsers?.includes(post.authorId);
-                      const isBlocked = userProfile?.blockedUsers?.includes(post.authorId);
-                      if (isMuted || isBlocked) return false;
-
-                      return post.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        post.authorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        post.authorUsername.toLowerCase().includes(searchQuery.toLowerCase());
-                    });
-                    
-                    if (filtered.length === 0 && searchQuery) {
-                      return (
-                        <div className="p-12 text-center">
-                          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Search className="w-8 h-8 text-gray-300" />
-                          </div>
-                          <h3 className="text-lg font-bold text-gray-900 mb-1">Nenhum resultado</h3>
-                          <p className="text-sm text-gray-500 max-w-[200px] mx-auto">
-                            Não encontramos nenhum post com "{searchQuery}"
-                          </p>
-                        </div>
-                      );
-                    }
-                    
-                    const elements = [];
-                    let adIndex = 0;
-
-                    filtered.forEach((post, index) => {
-                      elements.push(
-                        <PostCard
-                          key={post.id}
-                          post={post}
-                          onLike={handleLikePost}
-                          onRepost={handleRepost}
-                          onDelete={handleDeletePost}
-                          onEdit={(p) => {
-                            setEditingPost(p);
-                            setEditContent(p.content);
-                          }}
-                          onShare={(p) => {
-                            setSelectedSharePost(p);
-                            setIsShareModalOpen(true);
-                          }}
-                          onReply={(p) => openCreateModal(p)}
-                          onQuote={(p) => openCreateModal(null, p)}
-                          onImageClick={openImageViewer}
-                          canEdit={canEditPost}
-                        />
-                      );
-
-                      // Insert a Google Ad every 2 posts
-                      // if ((index + 1) % 2 === 0) {
-                      //   elements.push(<GoogleAd key={`google-ad-${index}`} slotId="9395334432" />);
-                      // }
-                    });
-
-                    return (
-                      <>
-                        {elements}
-                        {/* Intersection Observer Sentinel */}
-                        <div ref={loaderRef} className="h-10 flex items-center justify-center">
-                          {isLoadingMore && (
-                            <div className="flex space-x-1">
-                              {[0, 1, 2].map((i) => (
-                                <div
-                                  key={i}
-                                  className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce"
-                                  style={{ animationDelay: `${i * 0.1}s` }}
-                                />
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </>
-                    );
-                  })()}
-                </div>
+                <>
+                  {filteredPosts.map((post) => (
+                    <PostCard
+                      key={post.id}
+                      post={post}
+                      onLike={handleLikePost}
+                      onRepost={handleRepost}
+                      onDelete={handleDeletePost}
+                      onEdit={(p) => {
+                        setEditingPost(p);
+                        setEditContent(p.content);
+                      }}
+                      onShare={(p) => {
+                        setSelectedSharePost(p);
+                        setIsShareModalOpen(true);
+                      }}
+                      onReply={(p) => openCreateModal(p)}
+                      onQuote={(p) => openCreateModal(null, p)}
+                      onImageClick={openImageViewer}
+                      canEdit={canEditPost}
+                    />
+                  ))}
+                  
+                  {/* Intersection Observer Sentinel */}
+                  <div ref={loaderRef} className="h-10 flex items-center justify-center">
+                    {isLoadingMore && (
+                      <div className="flex space-x-1">
+                        {[0, 1, 2].map((i) => (
+                          <div
+                            key={i}
+                            className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce"
+                            style={{ animationDelay: `${i * 0.1}s` }}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
             </motion.div>
           </AnimatePresence>
-          </PullToRefresh>
-        </div>
+        </PullToRefresh>
+      </div>
 
 
         <SharePostModal 
