@@ -101,11 +101,46 @@ export default function Home() {
 
   const [loading, setLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot | null>(null);
   const [activeMenuPostId, setActiveMenuPostId] = useState<string | null>(null);
   const loaderRef = useRef<HTMLDivElement>(null);
+
+  const refreshFeed = useCallback(async () => {
+    setIsRefreshing(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Artificial delay for the ghost animation effect
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    isInitialLoadRef.current = true;
+    setPostsLimit(POSTS_PER_PAGE);
+    setRefreshKey(prev => prev + 1);
+    setIsFetching(true);
+    // The useEffect will pick up the changes and re-run onSnapshot
+    setIsRefreshing(false);
+  }, []);
+
+  useEffect(() => {
+    const handleScrollToTop = () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleRefresh = () => {
+      refreshFeed();
+    };
+
+    window.addEventListener('applet:scroll-to-top', handleScrollToTop);
+    window.addEventListener('applet:refresh-feed', handleRefresh);
+
+    return () => {
+      window.removeEventListener('applet:scroll-to-top', handleScrollToTop);
+      window.removeEventListener('applet:refresh-feed', handleRefresh);
+    };
+  }, [refreshFeed]);
 
   useEffect(() => {
     const handleClickOutside = () => {
@@ -205,7 +240,7 @@ export default function Home() {
     });
 
     return () => unsubscribe();
-  }, [activeTab, db, userProfile?.following, postsLimit]);
+  }, [activeTab, db, userProfile?.following, postsLimit, refreshKey]);
 
   const loadMorePosts = useCallback(() => {
     if (isLoadingMore || !hasMore || !db) return;
@@ -514,6 +549,47 @@ export default function Home() {
 
   return (
     <div className="w-full min-h-full bg-transparent relative">
+      {/* Ghost Loading Overlay */}
+      <AnimatePresence>
+        {isRefreshing && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/80 backdrop-blur-md"
+          >
+            <motion.div
+              animate={{ 
+                y: [0, -20, 0],
+                rotate: [0, -5, 5, 0]
+              }}
+              transition={{ 
+                duration: 2, 
+                repeat: Infinity,
+                ease: "easeInOut" 
+              }}
+              className="bg-black p-8 rounded-[40px] shadow-2xl relative"
+            >
+              <Ghost className="w-16 h-16 text-white" />
+              <motion.div 
+                animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
+                transition={{ duration: 1, repeat: Infinity }}
+                className="absolute inset-0 bg-white/20 rounded-[40px] -z-10 blur-xl"
+              />
+            </motion.div>
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="mt-6 flex flex-col items-center"
+            >
+              <h3 className="text-xl font-black italic tracking-tighter">Invocando novos posts...</h3>
+              <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mt-2 px-8 text-center">Espere um pouco, as almas digitais estão chegando</p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Sticky Header with Liquid Glass & Tabs */}
       <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-2xl border-b border-black/5 shadow-sm pt-[env(safe-area-inset-top)]">
         <div className="w-full px-4 py-2">
@@ -628,12 +704,7 @@ export default function Home() {
         id="feed-panel" 
         className="focus-visible:outline-none w-full max-w-2xl mx-auto"
       >
-        <PullToRefresh onRefresh={async () => {
-          isInitialLoadRef.current = true;
-          setDisplayedPosts([]);
-          // Effect will re-trigger and fetch fresh
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}>
+        <PullToRefresh onRefresh={refreshFeed}>
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}

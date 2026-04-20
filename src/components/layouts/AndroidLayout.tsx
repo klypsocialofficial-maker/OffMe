@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { LogOut, User as UserIcon, Plus } from 'lucide-react';
@@ -36,6 +36,7 @@ export default function AndroidLayout({
   location
 }: AndroidLayoutProps) {
   const navigate = useNavigate();
+  const homeClickTimerRef = useRef<any>(null);
 
   return (
     <div className="flex flex-col w-full min-h-[100dvh] bg-white overflow-x-clip">
@@ -74,10 +75,34 @@ export default function AndroidLayout({
                 );
               }
 
+              // Double click handling for Home
+              const handleHomeClick = (e: React.MouseEvent) => {
+                if (item.path === '/') {
+                  if (homeClickTimerRef.current) {
+                    // Double click
+                    clearTimeout(homeClickTimerRef.current);
+                    homeClickTimerRef.current = null;
+                    window.dispatchEvent(new CustomEvent('applet:refresh-feed'));
+                  } else {
+                    // Single click
+                    if (isActive) {
+                      e.preventDefault();
+                      window.dispatchEvent(new CustomEvent('applet:scroll-to-top'));
+                    }
+                    homeClickTimerRef.current = setTimeout(() => {
+                      homeClickTimerRef.current = null;
+                    }, 300);
+                  }
+                } else if (isActive) {
+                   window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              };
+
               return (
                 <Link
                   key={item.path}
                   to={item.path}
+                  onClick={handleHomeClick}
                   className={`relative p-3 rounded-xl transition-all duration-200 flex flex-col items-center justify-center active:bg-black/5 ${
                     isActive ? 'text-black' : 'text-gray-400'
                   }`}

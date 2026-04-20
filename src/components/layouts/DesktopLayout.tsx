@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { LogOut, Plus } from 'lucide-react';
@@ -31,6 +31,7 @@ export default function DesktopLayout({
   location
 }: DesktopLayoutProps) {
   const navigate = useNavigate();
+  const homeClickTimerRef = useRef<any>(null);
 
   return (
     <div className="flex w-full justify-center lg:justify-start">
@@ -67,10 +68,34 @@ export default function DesktopLayout({
               );
             }
 
+            // Double click handling for Home
+            const handleHomeClick = (e: React.MouseEvent) => {
+              if (item.path === '/') {
+                if (homeClickTimerRef.current) {
+                  // Double click
+                  clearTimeout(homeClickTimerRef.current);
+                  homeClickTimerRef.current = null;
+                  window.dispatchEvent(new CustomEvent('applet:refresh-feed'));
+                } else {
+                  // Single click
+                  if (isActive) {
+                    e.preventDefault();
+                    window.dispatchEvent(new CustomEvent('applet:scroll-to-top'));
+                  }
+                  homeClickTimerRef.current = setTimeout(() => {
+                    homeClickTimerRef.current = null;
+                  }, 300);
+                }
+              } else if (isActive) {
+                 window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+            };
+
             return (
               <Link
                 key={item.path}
                 to={item.path}
+                onClick={handleHomeClick}
                 className={`flex items-center justify-center xl:justify-start space-x-4 px-4 py-3 rounded-full transition-all relative z-10 group ${
                   isActive ? 'text-black' : 'text-gray-900 hover:bg-gray-100'
                 }`}

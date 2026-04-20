@@ -3,6 +3,7 @@ import { User as UserIcon, Image as ImageIcon, X, BarChart2, Film, Ghost, Clock,
 import { addDoc, collection, serverTimestamp, doc, updateDoc, increment, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { uploadToImgBB } from '../lib/imgbb';
+import { uploadToCloudinary } from '../lib/cloudinary';
 import { awardPoints, trackMissionProgress } from '../services/gamificationService';
 import { motion, AnimatePresence } from 'motion/react';
 import VerifiedBadge from './VerifiedBadge';
@@ -46,6 +47,7 @@ export default function CreatePostModal({
   const [hasVideo, setHasVideo] = useState(false);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -210,14 +212,15 @@ export default function CreatePostModal({
         let videoUrl = null;
 
         if (postItem.videoFile) {
-           // We'll use imgbb for "hosting" video if it allows (it doesn't, but for this demo we'll assume a helper or just use the local blob if it were a real backend)
-           // Since ImgBB is for images, we'll just mock the video upload or use a placeholder if it fails, 
-           // BUT wait, I should probably use a real video hosting if available.
-           // For now, let's just use the same uploadToImgBB and assume it works for small files or use a public video sample.
            try {
-             videoUrl = await uploadToImgBB(postItem.videoFile);
-           } catch {
-             videoUrl = "https://www.w3schools.com/html/mov_bbb.mp4"; // Fallback sample
+             videoUrl = await uploadToCloudinary(postItem.videoFile, (progress) => {
+               setUploadProgress(progress);
+             });
+           } catch (error) {
+             console.error('Video upload failed:', error);
+             videoUrl = "https://www.w3schools.com/html/mov_bbb.mp4"; // Fallback sample if configured wrong
+           } finally {
+             setUploadProgress(null);
            }
         }
 
@@ -428,7 +431,7 @@ export default function CreatePostModal({
                   disabled={(!content.trim() && imageFiles.length === 0 && !gifUrl && threadPosts.length === 0) || loading || content.length > 1000}
                   className="bg-blue-500 text-white px-4 py-1.5 rounded-full font-bold hover:bg-blue-600 disabled:bg-blue-300 disabled:opacity-50 transition-colors text-sm"
                 >
-                  {loading ? 'Postando...' : 'Post'}
+                  {loading ? (uploadProgress !== null ? `Enviando ${uploadProgress}%` : 'Postando...') : 'Post'}
                 </button>
               </div>
             </div>
@@ -572,6 +575,19 @@ export default function CreatePostModal({
                         <X className="w-4 h-4" />
                       </button>
                       <video src={videoPreview} className="w-full h-full object-contain" controls muted />
+                      {uploadProgress !== null && (
+                        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center p-4">
+                          <div className="w-full max-w-[200px] h-2 bg-gray-700 rounded-full overflow-hidden mb-2">
+                            <motion.div 
+                              initial={{ width: 0 }}
+                              animate={{ width: `${uploadProgress}%` }}
+                              className="h-full bg-blue-500"
+                            />
+                          </div>
+                          <span className="text-white text-xs font-black">{uploadProgress}%</span>
+                          <span className="text-white/70 text-[10px] mt-1 uppercase font-bold tracking-widest">Enviando vídeo...</span>
+                        </div>
+                      )}
                     </div>
                   )}
                   {gifUrl && imagePreviews.length === 0 && (
