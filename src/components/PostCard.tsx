@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
-import { User as UserIcon, MoreHorizontal, Trash2, Edit2, Send, MessageCircle, Repeat, Heart, Ghost, VolumeX, UserX, ShieldAlert, Bookmark, BookmarkCheck, Pin, PinOff, Users } from 'lucide-react';
+import { User as UserIcon, MoreHorizontal, Trash2, Edit2, Send, MessageCircle, Repeat, Heart, Ghost, VolumeX, UserX, ShieldAlert, Bookmark, BookmarkCheck, Pin, PinOff, Users, BarChart2, Gift } from 'lucide-react';
 import { formatRelativeTime } from '../lib/dateUtils';
 import VerifiedBadge from './VerifiedBadge';
 import PostContent from './PostContent';
@@ -11,6 +11,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { getDefaultAvatar } from '../lib/avatar';
 import ReportModal from './ReportModal';
 import ConfirmModal from './ConfirmModal';
+import TipModal from './TipModal';
 
 import PostImageGrid from './PostImageGrid';
 import LazyImage from './LazyImage';
@@ -48,6 +49,7 @@ export default function PostCard({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isTipModalOpen, setIsTipModalOpen] = useState(false);
   const repostTimerRef = React.useRef<any>(null);
 
   const stopPropagation = (e: React.MouseEvent | React.PointerEvent) => e.stopPropagation();
@@ -465,6 +467,23 @@ export default function PostCard({
           <motion.button 
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
+            onClick={(e) => {
+              stopPropagation(e);
+              // Future: show full post analytics here
+            }}
+            className="flex items-center space-x-2 group/action hover:text-blue-500 transition-colors"
+          >
+            <div className="p-2 group-hover/action:bg-blue-50 rounded-full transition-colors">
+              <BarChart2 className="w-4.5 h-4.5" />
+            </div>
+            <span className="text-sm">
+              {effectivePost.viewCount || Math.max((effectivePost.likesCount || 0) * 11 + (effectivePost.repostsCount || 0) * 23 + (effectivePost.repliesCount || 0) * 14 + 1, 1)}
+            </span>
+          </motion.button>
+
+          <motion.button 
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
             onClick={handleBookmark}
             className={`flex items-center space-x-2 group/action transition-colors ${userProfile?.bookmarks?.includes(effectivePost.id) ? 'text-blue-500' : 'hover:text-blue-500'}`}
           >
@@ -487,9 +506,35 @@ export default function PostCard({
               <Send className="w-4.5 h-4.5" />
             </div>
           </motion.button>
+
+          {userProfile && userProfile.uid !== effectivePost.authorId && effectivePost.authorId !== 'anonymous' && (
+            <motion.button 
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={(e) => {
+                stopPropagation(e);
+                setIsTipModalOpen(true);
+              }}
+              className="flex items-center space-x-2 group/action hover:text-yellow-500 transition-colors"
+            >
+              <div className="p-2 group-hover/action:bg-yellow-50 rounded-full transition-colors">
+                <Gift className="w-4.5 h-4.5" />
+              </div>
+            </motion.button>
+          )}
         </div>
         </div>
       </div>
+      
+      <TipModal
+        isOpen={isTipModalOpen}
+        onClose={() => setIsTipModalOpen(false)}
+        senderId={userProfile?.uid}
+        senderPoints={userProfile?.points || 0}
+        receiverId={effectivePost.authorId}
+        receiverName={effectivePost.authorName}
+      />
+
       <ReportModal 
         isOpen={isReportModalOpen}
         onClose={() => setIsReportModalOpen(false)}

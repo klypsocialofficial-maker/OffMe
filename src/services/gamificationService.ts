@@ -36,6 +36,35 @@ export const awardPoints = async (userId: string, points: number) => {
   }
 };
 
+export const sendTip = async (senderId: string, receiverId: string, amount: number) => {
+  if (!db || amount <= 0 || senderId === receiverId) throw new Error("Invalid tip operation");
+  const senderRef = doc(db, 'users', senderId);
+  const receiverRef = doc(db, 'users', receiverId);
+  
+  try {
+    const senderSnap = await getDoc(senderRef);
+    if (!senderSnap.exists()) throw new Error("Sender not found");
+    const senderData = senderSnap.data();
+    
+    if ((senderData.points || 0) < amount) {
+      throw new Error("Saldo de pontos insuficiente para dar essa gorjeta.");
+    }
+
+    // Deduct from sender
+    await updateDoc(senderRef, {
+      points: (senderData.points || 0) - amount
+    });
+
+    // Add to receiver using existing awardPoints logic to handle leveling up
+    await awardPoints(receiverId, amount);
+
+    return true;
+  } catch (error) {
+    console.error('Error sending tip:', error);
+    throw error;
+  }
+};
+
 export const checkBadges = async (userId: string, userData: any) => {
   if (!db) return;
   const userRef = doc(db, 'users', userId);

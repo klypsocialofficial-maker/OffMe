@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User as UserIcon, Image as ImageIcon, X, BarChart2, Film, Ghost, Clock, Users } from 'lucide-react';
+import { User as UserIcon, Image as ImageIcon, X, BarChart2, Film, Ghost, Clock, Users, Plus } from 'lucide-react';
 import { addDoc, collection, serverTimestamp, doc, updateDoc, increment, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { uploadToImgBB } from '../lib/imgbb';
@@ -46,6 +46,9 @@ export default function CreatePostModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isAnonymous, setIsAnonymous] = useState(isAnonymousDefault);
   const [postAudience, setPostAudience] = useState<'public' | 'circle'>('public');
+  
+  // Threads state
+  const [threadPosts, setThreadPosts] = useState<{content: string, imageFiles: File[], imagePreviews: string[], gifUrl: string | null}[]>([]);
 
   useEffect(() => {
     setIsAnonymous(isAnonymousDefault || !userProfile);
@@ -137,24 +140,30 @@ export default function CreatePostModal({
     return gf.trending({ offset, limit: 10 });
   };
 
+  const handleAddThreadPost = () => {
+    if (!content.trim() && imageFiles.length === 0 && !gifUrl) return;
+    setThreadPosts(prev => [...prev, { content, imageFiles, imagePreviews, gifUrl }]);
+    setContent('');
+    setImageFiles([]);
+    setImagePreviews([]);
+    setGifUrl(null);
+  };
+
   const handlePost = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check if we have anything to post
+    const hasCurrentContent = content.trim() || imageFiles.length > 0 || gifUrl;
+    if (!hasCurrentContent && threadPosts.length === 0) return;
     
     const validPollOptions = pollOptions.filter(opt => opt.trim() !== '');
     const hasValidPoll = showPoll && validPollOptions.length >= 2;
     
     const canPostAnonymously = isAnonymous;
-    if (!content.trim() || (!userProfile && !canPostAnonymously) || !db || content.length > 1000) return;
+    if ((!userProfile && !canPostAnonymously) || !db) return;
 
     try {
       setLoading(true);
-      let imageUrls = gifUrl ? [gifUrl] : []; // Use GIF URL if available
-      if (imageFiles.length > 0) {
-        const uploadedUrls = await Promise.all(imageFiles.map(file => uploadToImgBB(file)));
-        imageUrls = uploadedUrls;
-      }
-
-      const postContent = content.trim();
       
       const authorId = isAnonymous ? 'anonymous' : userProfile.uid;
       const authorName = isAnonymous ? 'Anônimo' : (userProfile.displayName || '');
@@ -163,103 +172,129 @@ export default function CreatePostModal({
       const authorVerified = isAnonymous ? false : (userProfile.isVerified || userProfile.username === 'Rulio' || false);
       const authorPremiumTier = isAnonymous ? null : (userProfile.premiumTier || null);
 
-      const postData: any = {
-        content: postContent,
-        imageUrls,
-        authorId,
-        authorName,
-        authorUsername,
-        authorPhoto,
-        authorVerified,
-        authorPremiumTier,
-        ownerId: userProfile?.uid || null,
-        isAnonymous,
-        privacy: postAudience,
-        audience: postAudience === 'circle' ? (userProfile?.circleMembers || []) : [],
-        expiresAt: null,
-        createdAt: serverTimestamp(),
-        likesCount: 0,
-        repliesCount: 0,
-        repostsCount: 0,
-        likes: [],
-        reposts: [],
-        replyToId: replyTo?.id || null,
-        replyToUsername: replyTo?.authorUsername || null,
-        replyToVerified: replyTo?.authorVerified || replyTo?.authorUsername === 'Rulio' || false,
-        threadId: replyTo?.threadId || replyTo?.id || null,
-        quotedPostId: quotePost?.id || null,
-        quotedPostContent: quotePost?.content || null,
-        quotedPostAuthor: quotePost?.authorName || null
-      };
-
-      if (communityId) {
-        postData.communityId = communityId;
-        postData.communityName = communityName;
+      // Collect all posts in the thread
+      const allPostsToPublish = [...threadPosts];
+      if (hasCurrentContent) {
+        allPostsToPublish.push({ content, imageFiles, imagePreviews, gifUrl });
       }
 
-      if (hasValidPoll) {
-        postData.poll = {
-          options: validPollOptions.map(opt => ({ text: opt, votes: 0 })),
-          totalVotes: 0,
-          voters: []
+      let currentReplyToId = replyTo?.id || null;
+      let currentReplyToUsername = replyTo?.authorUsername || null;
+      let currentReplyToVerified = replyTo?.authorVerified || replyTo?.authorUsername === 'Rulio' || false;
+      const mainThreadId = replyTo?.threadId || replyTo?.id || null;
+      
+      // Process sequentially
+      for (const [index, postItem] of allPostsToPublish.entries()) {
+        let imageUrls = postItem.gifUrl ? [postItem.gifUrl] : [];
+        if (postItem.imageFiles.length > 0) {
+          const uploadedUrls = await Promise.all(postItem.imageFiles.map(file => uploadToImgBB(file)));
+          imageUrls = uploadedUrls;
+        }
+
+        const postContent = postItem.content.trim();
+
+        const postData: any = {
+          content: postContent,
+          imageUrls,
+          authorId,
+          authorName,
+          authorUsername,
+          authorPhoto,
+          authorVerified,
+          authorPremiumTier,
+          ownerId: userProfile?.uid || null,
+          isAnonymous,
+          privacy: postAudience,
+          audience: postAudience === 'circle' ? (userProfile?.circleMembers || []) : [],
+          expiresAt: null,
+          createdAt: serverTimestamp(),
+          likesCount: 0,
+          repliesCount: 0,
+          repostsCount: 0,
+          likes: [],
+          reposts: [],
+          replyToId: currentReplyToId,
+          replyToUsername: currentReplyToUsername,
+          replyToVerified: currentReplyToVerified,
+          threadId: mainThreadId,
+          // Only the first post in the thread can have the quote or poll logic (to avoid duplicating it)
+          quotedPostId: index === 0 ? (quotePost?.id || null) : null,
+          quotedPostContent: index === 0 ? (quotePost?.content || null) : null,
+          quotedPostAuthor: index === 0 ? (quotePost?.authorName || null) : null
         };
-      }
 
-      const newPostRef = await addDoc(collection(db, 'posts'), postData);
+        if (communityId) {
+          postData.communityId = communityId;
+          postData.communityName = communityName;
+        }
 
-      // Award points for posting (only if not anonymous)
-      if (!replyTo && !isAnonymous && userProfile) {
-        await awardPoints(userProfile.uid, 20);
-      }
+        if (index === 0 && hasValidPoll) {
+          postData.poll = {
+            options: validPollOptions.map(opt => ({ text: opt, votes: 0 })),
+            totalVotes: 0,
+            voters: []
+          };
+        }
 
-      // Handle mentions
-      if (!isAnonymous && userProfile) {
-        await handleMentions(postContent, newPostRef.id, userProfile, imageUrls[0] || null);
-      }
+        const newPostRef = await addDoc(collection(db, 'posts'), postData);
 
-      // Notify followers about new post (if not a reply and not anonymous)
-      if (!replyTo && !isAnonymous && userProfile) {
-        await notifyFollowers(userProfile, postContent, imageUrls[0] || null);
-      }
-
-      if (replyTo) {
-        await updateDoc(doc(db, 'posts', replyTo.id), {
-          repliesCount: increment(1)
-        });
-        
-        // Award points for replying (only if not anonymous)
-        if (!isAnonymous && userProfile) {
-          await awardPoints(userProfile.uid, 10);
+        // Handle points, mentions, and notifications only for the first post to avoid spam
+        if (index === 0) {
+          if (!replyTo && !isAnonymous && userProfile) {
+            await awardPoints(userProfile.uid, 20);
+          }
+          if (!isAnonymous && userProfile) {
+            await handleMentions(postContent, newPostRef.id, userProfile, imageUrls[0] || null);
+          }
+          if (!replyTo && !isAnonymous && userProfile) {
+            await notifyFollowers(userProfile, postContent, imageUrls[0] || null);
+          }
         }
         
-        if (replyTo.authorId !== authorId && replyTo.authorId !== 'anonymous') {
-          await addDoc(collection(db, 'notifications'), {
-            recipientId: replyTo.authorId,
-            senderId: authorId,
-            senderName: authorName,
-            senderUsername: authorUsername,
-            senderPhoto: authorPhoto || null,
-            senderVerified: authorVerified,
-            type: 'reply',
-            postId: newPostRef.id,
-            content: postContent,
-            read: false,
-            createdAt: serverTimestamp()
+        // If this post replies to an existing external post, increment its repliesCount
+        if (index === 0 && replyTo) {
+          await updateDoc(doc(db, 'posts', replyTo.id), {
+            repliesCount: increment(1)
           });
+          
+          if (!isAnonymous && userProfile) {
+            await awardPoints(userProfile.uid, 10);
+          }
+          
+          if (replyTo.authorId !== authorId && replyTo.authorId !== 'anonymous') {
+            await addDoc(collection(db, 'notifications'), {
+              recipientId: replyTo.authorId,
+              senderId: authorId,
+              senderName: authorName,
+              senderUsername: authorUsername,
+              senderPhoto: authorPhoto || null,
+              senderVerified: authorVerified,
+              type: 'reply',
+              postId: newPostRef.id,
+              content: postContent,
+              read: false,
+              createdAt: serverTimestamp()
+            });
 
-          // Trigger push notification for reply
-          await sendPushNotification(
-            replyTo.authorId,
-            'Nova Resposta',
-            `@${authorUsername} respondeu ao seu post.`
-          );
+            await sendPushNotification(
+              replyTo.authorId,
+              'Nova Resposta',
+              `@${authorUsername} respondeu ao seu post.`
+            );
+          }
         }
+
+        // For the next post in the thread, make it reply to *this* newly created post
+        currentReplyToId = newPostRef.id;
+        currentReplyToUsername = authorUsername;
+        currentReplyToVerified = authorVerified;
       }
 
       setContent('');
       setImageFiles([]);
       setImagePreviews([]);
-      removeGif();
+      setGifUrl(null);
+      setThreadPosts([]);
       setShowPoll(false);
       setPollOptions(['', '']);
       onClose();
@@ -374,6 +409,44 @@ export default function CreatePostModal({
                   </div>
                 </div>
               )}
+
+              {/* Render thread previous posts */}
+              {threadPosts.map((tp, idx) => (
+                <div key={idx} className="flex space-x-3 mb-2">
+                  <div className="flex flex-col items-center">
+                    <div className={`w-10 h-10 rounded-full flex-shrink-0 overflow-hidden ${isAnonymous ? 'bg-gradient-to-br from-indigo-50 to-purple-100 border border-purple-200 flex items-center justify-center' : 'bg-gray-200'}`}>
+                      {isAnonymous ? (
+                        <Ghost className="w-5 h-5 text-indigo-400" />
+                      ) : userProfile?.photoURL ? (
+                        <LazyImage src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full" />
+                      ) : (
+                        <LazyImage src={getDefaultAvatar(userProfile?.displayName || '', userProfile?.username || '')} alt={userProfile?.displayName} className="w-full h-full" />
+                      )}
+                    </div>
+                    <div className="w-0.5 flex-1 bg-gray-300 my-1 min-h-[20px]" />
+                  </div>
+                  <div className="flex-1 pb-4 pt-1">
+                    <p className="text-gray-900 text-lg whitespace-pre-wrap leading-tight">{tp.content}</p>
+                    
+                    {tp.imagePreviews.length > 0 && (
+                      <div className={`grid gap-2 mt-2 ${tp.imagePreviews.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                        {tp.imagePreviews.map((preview, imgIdx) => (
+                           <div key={imgIdx} className="relative rounded-2xl overflow-hidden border border-gray-100 shadow-sm aspect-square">
+                             <img src={preview} alt="Preview" className="w-full h-full object-cover opacity-80" />
+                           </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {tp.gifUrl && tp.imagePreviews.length === 0 && (
+                      <div className="relative mt-2 rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
+                        <img src={tp.gifUrl} alt="GIF" className="w-full h-auto max-h-64 object-cover opacity-80" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+
               <div className="flex space-x-3">
                 {/* Avatar */}
                 <div className={`w-10 h-10 rounded-full flex-shrink-0 overflow-hidden ${isAnonymous ? 'bg-gradient-to-br from-indigo-50 to-purple-100 border border-purple-200 flex items-center justify-center' : 'bg-gray-200'}`}>
@@ -535,6 +608,15 @@ export default function CreatePostModal({
               </div>
               
               <div className="flex items-center space-x-4">
+                <button
+                  type="button"
+                  onClick={handleAddThreadPost}
+                  disabled={!content.trim() && imageFiles.length === 0 && !gifUrl}
+                  className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-blue-500 hover:bg-blue-50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                  title="Adicionar ao fio"
+                >
+                  <Plus className="w-5 h-5" />
+                </button>
                 <div className={`text-xs font-medium ${content.length > 1000 ? 'text-red-500' : 'text-gray-400'}`}>
                   {content.length} / 1000
                 </div>
