@@ -647,7 +647,14 @@ export default function Profile() {
   });
 
   const getThemeStyles = () => {
-    switch (profileUser?.profileTheme) {
+    let themeId = profileUser?.profileTheme;
+    const isPremium = profileUser?.premiumTier === 'gold';
+    
+    if ((themeId === 'vibrant' || themeId === 'neon') && !isPremium) {
+      themeId = 'default';
+    }
+
+    switch (themeId) {
       case 'minimal': // Nuvem
         return {
           header: 'bg-gradient-to-b from-blue-50 to-white',
@@ -950,52 +957,7 @@ export default function Profile() {
           </button>
         </div>
 
-        {/* Suggested Users Section */}
-        {profileUser.uid === userProfile?.uid && suggestedUsers.length > 0 && (
-          <div className="mt-8 mb-4">
-            <h3 className="text-lg font-black italic tracking-tight text-black mb-4">Você também pode gostar</h3>
-            <div className="flex flex-col space-y-4">
-              {suggestedUsers.map((user) => (
-                <div key={user.uid} className="flex items-center justify-between group">
-                  <div 
-                    className="flex items-center space-x-3 cursor-pointer"
-                    onClick={() => navigate(`/${user.username}`)}
-                  >
-                    <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden ring-2 ring-transparent group-hover:ring-black transition-all">
-                      <LazyImage 
-                        src={user.photoURL || getDefaultAvatar(user.displayName, user.username)} 
-                        alt={user.displayName} 
-                        className="w-full h-full object-cover" 
-                      />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center space-x-1">
-                        <p className="font-bold text-sm text-black truncate group-hover:underline">{user.displayName}</p>
-                        {user.isVerified && <VerifiedBadge className="w-3 h-3" tier={user.premiumTier} />}
-                      </div>
-                      <p className="text-xs text-gray-500 truncate">@{user.username}</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      try {
-                        await followUser(user.uid);
-                        setSuggestedUsers(prev => prev.filter(u => u.uid !== user.uid));
-                        showToast(`Seguindo @${user.username}`, 'success');
-                      } catch (err) {
-                        console.error('Error following suggested user:', err);
-                      }
-                    }}
-                    className="px-4 py-1.5 bg-black text-white rounded-full text-xs font-bold hover:bg-gray-800 transition-all active:scale-95"
-                  >
-                    Seguir
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Suggested Users Section removed */}
       </div>
 
       {/* Tabs Switcher */}

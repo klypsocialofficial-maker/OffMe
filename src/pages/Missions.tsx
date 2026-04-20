@@ -192,15 +192,16 @@ export default function Missions() {
 
                   {!mission.isCompleted && (
                     <div className="space-y-2">
-                      <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-wider">
-                        <span className="text-gray-400">Progresso</span>
-                        <span className="text-black">{mission.progress} / {mission.requirement}</span>
+                      <div className="flex justify-between items-center text-[11px] font-black uppercase tracking-wider">
+                        <span className="text-gray-500">Progresso: {Math.floor((mission.progress / mission.requirement) * 100)}%</span>
+                        <span className="text-black bg-gray-100 px-2 py-0.5 rounded-full">{mission.progress} / {mission.requirement}</span>
                       </div>
-                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden border border-black/5">
+                      <div className="h-3 bg-gray-100 rounded-full overflow-hidden border border-black/5 p-0.5">
                         <motion.div 
                           initial={{ width: 0 }}
-                          animate={{ width: `${(mission.progress / mission.requirement) * 100}%` }}
-                          className="h-full bg-black rounded-full"
+                          animate={{ width: `${Math.min((mission.progress / mission.requirement) * 100, 100)}%` }}
+                          transition={{ type: 'spring', stiffness: 50, damping: 20 }}
+                          className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full shadow-sm"
                         />
                       </div>
                     </div>

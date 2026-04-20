@@ -187,12 +187,16 @@ export default function Home() {
     }
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const newPosts = snapshot.docs.map(doc => ({
+      const allPosts = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
       
-      setDisplayedPosts(newPosts);
+      const filteredPosts = allPosts.filter((post: any) => 
+        !userProfile?.mutedUsers?.includes(post.authorId)
+      );
+      
+      setDisplayedPosts(filteredPosts);
       setHasMore(snapshot.docs.length === postsLimit);
       setIsFetching(false);
       setIsLoadingMore(false);

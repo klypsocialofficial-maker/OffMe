@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { X, Camera, Check, Loader2, MapPin, Link as LinkIcon, Info, Palette } from 'lucide-react';
+import { X, Camera, Check, Loader2, MapPin, Link as LinkIcon, Info, Palette, Star } from 'lucide-react';
 import Cropper from 'react-easy-crop';
 import { doc, updateDoc, serverTimestamp, writeBatch, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -432,30 +432,37 @@ export default function EditProfileModal({ isOpen, onClose, userProfile, handleF
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { id: 'default', name: 'Original', class: 'bg-white border-black/5' },
-                    { id: 'minimal', name: 'Nuvem', class: 'bg-blue-50/50 border-blue-100' },
-                    { id: 'vibrant', name: 'Crepúsculo', class: 'bg-gradient-to-br from-indigo-500 to-purple-400' },
-                    { id: 'neon', name: 'Cyber', class: 'bg-stone-900 border-stone-800' }
-                  ].map((theme) => (
-                    <button
-                      key={theme.id}
-                      onClick={() => setProfileTheme(theme.id)}
-                      className={`p-4 rounded-[2rem] border-2 transition-all flex flex-col items-center space-y-3 relative group overflow-hidden ${
-                        profileTheme === theme.id 
-                          ? 'border-black bg-slate-50 shadow-xl shadow-black/5' 
-                          : 'border-transparent bg-slate-50/50 hover:bg-slate-100'
-                      }`}
-                    >
-                      <div className={`w-10 h-10 rounded-2xl border-2 border-white shadow-sm flex-shrink-0 ${theme.class}`} />
-                      <span className="text-[10px] font-black uppercase tracking-widest leading-none">{theme.name}</span>
-                      {profileTheme === theme.id && (
-                        <motion.div 
-                          layoutId="active-theme"
-                          className="absolute bottom-0 left-0 right-0 h-1 bg-black"
-                        />
-                      )}
-                    </button>
-                  ))}
+                    { id: 'default', name: 'Original', class: 'bg-white border-black/5', isPremium: false },
+                    { id: 'minimal', name: 'Nuvem', class: 'bg-blue-50/50 border-blue-100', isPremium: false },
+                    { id: 'vibrant', name: 'Crepúsculo', class: 'bg-gradient-to-br from-indigo-500 to-purple-400', isPremium: true },
+                    { id: 'neon', name: 'Cyber', class: 'bg-stone-900 border-stone-800', isPremium: true }
+                  ].map((theme) => {
+                    const isLocked = theme.isPremium && userProfile?.premiumTier !== 'gold';
+                    return (
+                      <button
+                        key={theme.id}
+                        disabled={isLocked}
+                        onClick={() => setProfileTheme(theme.id)}
+                        className={`p-4 rounded-[2rem] border-2 transition-all flex flex-col items-center space-y-3 relative group overflow-hidden ${
+                          profileTheme === theme.id 
+                            ? 'border-black bg-slate-50 shadow-xl shadow-black/5' 
+                            : 'border-transparent bg-slate-50/50 hover:bg-slate-100'
+                        } ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        <div className={`w-10 h-10 rounded-2xl border-2 border-white shadow-sm flex-shrink-0 ${theme.class}`} />
+                        <span className="text-[10px] font-black uppercase tracking-widest leading-none flex items-center gap-1">
+                          {theme.name}
+                          {isLocked && <Star className="w-2.5 h-2.5 fill-yellow-400 text-yellow-400" />}
+                        </span>
+                        {profileTheme === theme.id && (
+                          <motion.div 
+                            layoutId="active-theme"
+                            className="absolute bottom-0 left-0 right-0 h-1 bg-black"
+                          />
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>

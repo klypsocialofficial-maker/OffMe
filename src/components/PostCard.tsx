@@ -96,7 +96,24 @@ export default function PostCard({
   const handleShare = async (e: React.MouseEvent) => {
     stopPropagation(e);
     setIsMenuOpen(false);
-    onShare(post);
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Post de ${post.authorName} no Offme`,
+          text: post.content,
+          url: `${window.location.origin}/post/${post.id}`
+        });
+        return;
+      } catch (error) {
+        if ((error as Error).name !== 'AbortError') {
+          console.error("Error sharing:", error);
+          onShare(post); // Fallback to modal
+        }
+      }
+    } else {
+      onShare(post); // Fallback to modal
+    }
   };
 
   const effectivePost = post.type === 'repost' ? { ...post, id: post.repostedPostId } : post;

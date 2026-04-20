@@ -131,6 +131,7 @@ export default function PostDetail() {
     }
   };
   const [replies, setReplies] = useState<any[]>([]);
+  const [quotes, setQuotes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [replyToPost, setReplyToPost] = useState<any>(null);
@@ -213,9 +214,26 @@ export default function PostDetail() {
       setReplies(filteredReplies);
     });
 
+    const quotesQuery = query(
+      collection(db, 'posts'),
+      where('quotedPostId', '==', postId),
+      where('privacy', '==', 'public'),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribeQuotes = onSnapshot(quotesQuery, (snapshot) => {
+      const quotesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }) as any);
+      
+      setQuotes(quotesData);
+    });
+
     return () => {
       unsubscribePost();
       unsubscribeReplies();
+      unsubscribeQuotes();
     };
   }, [postId, userProfile?.mutedUsers]);
 
@@ -709,6 +727,19 @@ export default function PostDetail() {
 
         {/* Conversation / Replies */}
         <div className="space-y-3">
+          {quotes.length > 0 && (
+            <div className="space-y-3 mb-6">
+               <h2 className="px-2 font-bold text-gray-700">Citações</h2>
+               <div className="space-y-2">
+                 {quotes.map(quote => (
+                   <div key={quote.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => navigate(`/post/${quote.id}`)}>
+                      <p className="text-gray-900 font-bold">@{quote.authorUsername}</p>
+                      <p className="text-gray-600 text-sm">{quote.content}</p>
+                   </div>
+                 ))}
+               </div>
+            </div>
+          )}
           <h2 className="px-2 font-bold text-gray-700">Respostas</h2>
           {replies.length === 0 ? (
             <div className="bg-white p-8 rounded-2xl text-center shadow-sm border border-gray-100">

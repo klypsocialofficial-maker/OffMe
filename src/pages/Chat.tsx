@@ -382,7 +382,14 @@ export default function Chat() {
                         : 'bg-gray-100 text-black rounded-bl-sm'
                   } ${isSelected ? 'ring-2 ring-blue-300 ring-offset-2' : ''}`}
                 >
-                  <p className="break-words text-sm">{msg.text}</p>
+                  {msg.postId ? (
+                      <div className="space-y-2 cursor-pointer" onClick={() => navigate(`/post/${msg.postId}`)}>
+                          <p className="text-xs font-bold opacity-80 underline">Post compartilhado</p>
+                          <p className="break-words text-sm font-medium">{msg.text || 'Clique para ver o post'}</p>
+                      </div>
+                  ) : (
+                      <p className="break-words text-sm">{msg.text}</p>
+                  )}
                   {isMine && !msg.isDeleted && (
                     <div className="flex justify-end mt-1 items-center space-x-1">
                       <span className="text-[10px] opacity-70">
