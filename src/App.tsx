@@ -58,16 +58,23 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
   return currentUser ? <>{children}</> : <Navigate to="/login" />;
 }
 
+function MissionSeeder() {
+  const { currentUser } = useAuth();
+  useEffect(() => {
+    if (currentUser?.email === 'klypsocialofficial@gmail.com') {
+      seedMissions();
+    }
+  }, [currentUser]);
+  return null;
+}
+
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
-
-  useEffect(() => {
-    seedMissions();
-  }, []);
 
   return (
     <ThemeProvider>
       <AuthProvider>
+        <MissionSeeder />
         {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
         <Router>
           <Routes>

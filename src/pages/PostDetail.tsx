@@ -642,8 +642,22 @@ export default function PostDetail() {
             {post.poll && (
               <Poll post={post} handleFirestoreError={handleFirestoreError} OperationType={OperationType} />
             )}
-            
-            <PostImageGrid imageUrls={post.imageUrls} onImageClick={openImageViewer} />
+
+            {post.hasVideo && post.videoUrl ? (
+              <div className="mt-4 rounded-2xl overflow-hidden bg-black aspect-video relative group border border-black/5 shadow-2xl">
+                <video 
+                  src={post.videoUrl} 
+                  className="w-full h-full object-contain"
+                  controls
+                  playsInline
+                  loop
+                  autoPlay
+                  muted
+                />
+              </div>
+            ) : (
+              <PostImageGrid imageUrls={post.imageUrls} onImageClick={openImageViewer} />
+            )}
 
             <div className="flex justify-around mt-4 py-3 border-t border-gray-50 text-gray-500">
               <button 

@@ -218,7 +218,7 @@ export default function CreatePostModal({
              });
            } catch (error) {
              console.error('Video upload failed:', error);
-             videoUrl = "https://www.w3schools.com/html/mov_bbb.mp4"; // Fallback sample if configured wrong
+             throw new Error('Falha no upload do vídeo');
            } finally {
              setUploadProgress(null);
            }
