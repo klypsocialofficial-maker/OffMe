@@ -378,7 +378,7 @@ export default function CreatePostModal({
                 )}
                 <button
                   onClick={handlePost}
-                  disabled={!content.trim() || loading || content.length > 1000}
+                  disabled={(!content.trim() && imageFiles.length === 0 && !gifUrl && threadPosts.length === 0) || loading || content.length > 1000}
                   className="bg-blue-500 text-white px-4 py-1.5 rounded-full font-bold hover:bg-blue-600 disabled:bg-blue-300 disabled:opacity-50 transition-colors text-sm"
                 >
                   {loading ? 'Postando...' : 'Post'}

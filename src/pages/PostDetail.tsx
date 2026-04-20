@@ -220,6 +220,7 @@ export default function PostDetail() {
 
   const handleDeleteReply = async (replyId: string) => {
     if (!db || !userProfile) return;
+    setActiveMenuReplyId(null);
     setConfirmModal({
       isOpen: true,
       title: 'Excluir resposta',
@@ -237,6 +238,7 @@ export default function PostDetail() {
 
   const handleDeletePost = async (id: string) => {
     if (!db || !userProfile) return;
+    setActiveMenuPostId(null);
     setConfirmModal({
       isOpen: true,
       title: 'Apagar post',
