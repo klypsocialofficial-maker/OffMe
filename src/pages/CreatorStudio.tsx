@@ -78,15 +78,16 @@ export default function CreatorStudio() {
 
   if (!userProfile?.isCreator) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center">
-        <div className="w-full bg-white border-b border-gray-100 px-4 py-3 sticky top-0 z-20 flex items-center shadow-sm">
+      <div className="min-h-[100dvh] bg-white flex flex-col pt-safe">
+        {/* Header - Fixed to match app standard */}
+        <div className="w-full bg-white/70 backdrop-blur-md border-b border-gray-100 px-4 py-3 sticky top-0 z-20 flex items-center shadow-sm">
           <button onClick={() => navigate(-1)} className="p-2 mr-2 rounded-full hover:bg-gray-100 transition-colors">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-xl font-bold">Estúdio de Criação</h1>
+          <h1 className="text-lg font-bold">Estúdio de Criação</h1>
         </div>
 
-        <div className="max-w-xl w-full p-6 pt-12 flex flex-col items-center">
+        <div className="flex-1 flex flex-col items-center px-6 py-8 overflow-y-auto">
           <motion.div 
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -96,44 +97,34 @@ export default function CreatorStudio() {
           </motion.div>
 
           <h2 className="text-3xl font-black text-center mb-4">Ganhe com o que você ama criar</h2>
-          <p className="text-gray-500 text-center text-lg mb-10 leading-relaxed">
+          <p className="text-gray-500 text-center text-lg mb-8 max-w-sm leading-relaxed">
             Faça parte do programa oficial de criadores. Receba gorjetas dos seus fãs, desbloqueie conteúdo exclusivo para inscritos e tenha acesso a métricas aprofundadas.
           </p>
 
-          <div className="w-full space-y-4 mb-10">
-            <div className="flex items-start space-x-4 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-              <div className="p-3 bg-green-50 text-green-600 rounded-xl">
+          <div className="w-full max-w-sm space-y-4 mb-8">
+            <div className="flex items-start space-x-4 bg-gray-50 p-4 rounded-2xl border border-gray-100">
+              <div className="p-3 bg-green-100 text-green-600 rounded-xl">
                 <DollarSign className="w-6 h-6" />
               </div>
               <div>
                 <h3 className="font-bold text-gray-900">Monetização Direta</h3>
-                <p className="text-sm text-gray-500 mt-1">Ative gorjetas no seu perfil e permita que as pessoas te paguem por DM ou em posts virais.</p>
+                <p className="text-sm text-gray-500 mt-1">Ative gorjetas no seu perfil.</p>
               </div>
             </div>
 
-            <div className="flex items-start space-x-4 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-              <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+            <div className="flex items-start space-x-4 bg-gray-50 p-4 rounded-2xl border border-gray-100">
+              <div className="p-3 bg-blue-100 text-blue-600 rounded-xl">
                 <TrendingUp className="w-6 h-6" />
               </div>
               <div>
                 <h3 className="font-bold text-gray-900">Métricas Detalhadas</h3>
-                <p className="text-sm text-gray-500 mt-1">Saiba exatamente de onde estão vindo os seus acessos, taxa de engajamento e retenção do público.</p>
-              </div>
-            </div>
-
-            <div className="flex items-start space-x-4 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-              <div className="p-3 bg-purple-50 text-purple-600 rounded-xl">
-                <Users className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="font-bold text-gray-900">Comunidade Premium</h3>
-                <p className="text-sm text-gray-500 mt-1">Crie um Círculo exclusivo e interaja de forma mais próxima com assinantes que te apoiam.</p>
+                <p className="text-sm text-gray-500 mt-1">Saiba como seu público interage.</p>
               </div>
             </div>
           </div>
 
-          <div className="w-full bg-white p-5 text-left rounded-3xl border border-gray-200 shadow-sm mb-8">
-            <label className="block font-bold text-gray-800 mb-2">Qual seu nicho principal?</label>
+          <div className="w-full max-w-sm bg-white p-5 rounded-3xl border border-gray-200 shadow-sm mb-8">
+            <label className="block font-bold text-gray-800 mb-3">Qual seu nicho principal?</label>
             <div className="flex flex-wrap gap-2">
               {categories.map(cat => (
                 <button
@@ -154,13 +145,10 @@ export default function CreatorStudio() {
           <button
             onClick={handleJoin}
             disabled={isJoining}
-            className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-xl py-4 rounded-full shadow-xl shadow-orange-500/20 active:scale-95 transition-all disabled:opacity-70 disabled:active:scale-100 flex justify-center items-center"
+            className="w-full max-w-sm bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-lg py-4 rounded-full shadow-xl shadow-orange-500/20 active:scale-95 transition-all disabled:opacity-70 disabled:active:scale-100 flex justify-center items-center"
           >
             {isJoining ? 'Ativando Conta...' : 'Me tornar Criador'}
           </button>
-          <p className="text-xs text-gray-400 mt-4 text-center">
-            Ao se tornar um criador, você concorda com nossos Termos de Monetização.
-          </p>
         </div>
       </div>
     );
