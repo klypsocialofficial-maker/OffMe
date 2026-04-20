@@ -86,7 +86,6 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<'foryou' | 'following'>('foryou');
   const [fetchedPosts, setFetchedPosts] = useState<any[]>([]);
   const [displayedPosts, setDisplayedPosts] = useState<any[]>([]);
-  const [pendingPostsCount, setPendingPostsCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const isInitialLoadRef = useRef(true);
@@ -100,7 +99,6 @@ export default function Home() {
     isInitialLoadRef.current = true;
     setDisplayedPosts([]);
     setFetchedPosts([]);
-    setPendingPostsCount(0);
   }, [activeTab]);
 
   const [loading, setLoading] = useState(false);
@@ -283,7 +281,6 @@ export default function Home() {
     if (isInitialLoadRef.current) {
       if (fetchedPosts.length > 0) {
         setDisplayedPosts(fetchedPosts);
-        setPendingPostsCount(0);
         isInitialLoadRef.current = false;
       } else if (!isFetching) {
         setDisplayedPosts([]);
@@ -295,7 +292,6 @@ export default function Home() {
     const current = [...displayedPostsRef.current];
     if (current.length === 0) {
       setDisplayedPosts(fetchedPosts);
-      setPendingPostsCount(0);
       return;
     }
 
@@ -314,16 +310,11 @@ export default function Home() {
     const fetchedMap = new Map(fetchedPosts.map(p => [p.id, p]));
     const updatedCurrent = current.map(p => fetchedMap.has(p.id) ? fetchedMap.get(p.id) : p);
 
-    const hasMyPost = newPostsAtTop.some(p => p.authorId === userProfile?.uid);
-
-    if (hasMyPost) {
-      // Prepend new posts to the current list
+    // Automatically prepend new posts to the current list without notification
+    if (newPostsAtTop.length > 0) {
       setDisplayedPosts([...newPostsAtTop, ...updatedCurrent]);
-      setPendingPostsCount(0);
     } else {
-      // Just update existing posts and set pending count
       setDisplayedPosts(updatedCurrent);
-      setPendingPostsCount(newPostsAtTop.length);
     }
   }, [fetchedPosts, userProfile?.uid, isFetching]);
 
@@ -688,35 +679,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* New Posts Banner */}
-      <div className="sticky top-[110px] sm:top-[90px] z-20 flex justify-center pointer-events-none w-full">
-        <AnimatePresence>
-          {pendingPostsCount > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: -20, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -20, scale: 0.9 }}
-              className="absolute"
-            >
-              <button
-                onClick={() => {
-                  const current = displayedPostsRef.current;
-                  const currentIds = new Set(current.map(p => p.id));
-                  const newPosts = fetchedPosts.filter(p => !currentIds.has(p.id));
-                  setDisplayedPosts([...newPosts, ...current]);
-                  setPendingPostsCount(0);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className="bg-black text-white px-5 py-2 rounded-full shadow-lg font-bold text-sm pointer-events-auto hover:bg-gray-800 transition-transform active:scale-95 flex items-center space-x-2"
-              >
-                <ArrowUp className="w-4 h-4" />
-                <span>Mostrar {pendingPostsCount} {pendingPostsCount === 1 ? 'novo post' : 'novos posts'}</span>
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
         {/* Posts List */}
         <div 
           role="tabpanel" 
@@ -730,7 +692,6 @@ export default function Home() {
             const currentIds = new Set(current.map(p => p.id));
             const newPosts = fetchedPosts.filter(p => !currentIds.has(p.id));
             setDisplayedPosts([...newPosts, ...current]);
-            setPendingPostsCount(0);
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}>
             <AnimatePresence mode="wait">

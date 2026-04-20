@@ -249,37 +249,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (currentUser?.email === 'klypsocialofficial@gmail.com') {
       const runModerationCleanup = async () => {
-        const cleanupKey = 'moderation_cleanup_executed_20260420_v2';
+        const cleanupKey = 'moderation_cleanup_executed_20260420_v3';
         if (localStorage.getItem(cleanupKey)) return;
 
         console.log("Running administrative moderation cleanup...");
         try {
-          // 1. Remove @Alissom
-          const findAlissom = async (uname: string) => {
-            const q = query(collection(db, 'users'), where('username', '==', uname), limit(1));
-            return await getDocs(q);
-          };
-
-          let userSnap = await findAlissom('Alissom');
-          if (userSnap.empty) {
-            userSnap = await findAlissom('@Alissom');
-          }
+          // 1. Remove target users (@Alissom, Alisson do rúlio, etc)
+          const targetUserIdentifiers = ['Alissom', '@Alissom', 'Alisson do rúlio', 'Alisson do rulio'];
           
-          if (!userSnap.empty) {
-            const alissomDoc = userSnap.docs[0];
-            const alissomUid = alissomDoc.id;
-            console.log(`Found Alissom (${alissomUid}). Deleting user and posts...`);
+          for (const ident of targetUserIdentifiers) {
+            // Search by username
+            const qUname = query(collection(db, 'users'), where('username', '==', ident), limit(5));
+            const snapUname = await getDocs(qUname);
+            
+            // Search by display name
+            const qDisplay = query(collection(db, 'users'), where('displayName', '==', ident), limit(5));
+            const snapDisplay = await getDocs(snapUname.empty ? qDisplay : query(collection(db, 'users'), where('displayName', '==', '___none___'))); // skip if already found by uname to simplify
 
-            // Delete Alissom's posts
-            const postsQ = query(collection(db, 'posts'), where('authorId', '==', alissomUid));
-            const postsSnap = await getDocs(postsQ);
-            const postBatch = writeBatch(db);
-            postsSnap.forEach(d => postBatch.delete(d.ref));
-            if (!postsSnap.empty) await postBatch.commit();
+            const allDocs = [...snapUname.docs, ...snapDisplay.docs];
+            
+            for (const userDoc of allDocs) {
+              const uid = userDoc.id;
+              console.log(`Found target user ${ident} (${uid}). Deleting user and posts...`);
 
-            // Delete Alissom's user profile
-            await deleteDoc(alissomDoc.ref);
-            console.log("Alissom profile and posts deleted.");
+              // Delete their posts
+              const postsQ = query(collection(db, 'posts'), where('authorId', '==', uid));
+              const postsSnap = await getDocs(postsQ);
+              if (!postsSnap.empty) {
+                const chunks = [];
+                for (let i = 0; i < postsSnap.docs.length; i += 500) {
+                  chunks.push(postsSnap.docs.slice(i, i + 500));
+                }
+                for (const chunk of chunks) {
+                  const batch = writeBatch(db);
+                  chunk.forEach(d => batch.delete(d.ref));
+                  await batch.commit();
+                }
+              }
+
+              // Delete user profile
+              await deleteDoc(userDoc.ref);
+              console.log(`Profile and posts for ${ident} deleted.`);
+            }
           }
 
           // 2. Delete anonymous posts
