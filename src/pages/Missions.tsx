@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Target, Trophy, Star, ChevronRight, Zap, CheckCircle2, Flame, Award, Swords, UserPlus, Send, Repeat, MessageCircle, Heart } from 'lucide-react';
+import { Target, Trophy, Star, ChevronRight, Zap, CheckCircle2, Flame, Award, Swords, UserPlus, Send, Repeat, MessageCircle, Heart, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { collection, query, orderBy, onSnapshot, getDocs, doc, updateDoc, increment, arrayUnion } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import LazyImage from '../components/LazyImage';
 import Toast from '../components/Toast';
+import { useNavigate } from 'react-router-dom';
 
 export default function Missions() {
   const { userProfile } = useAuth();
+  const navigate = useNavigate();
   const [missions, setMissions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [completedToday, setCompletedToday] = useState(0);
@@ -74,9 +76,17 @@ export default function Missions() {
   return (
     <div className="w-full min-h-screen bg-slate-50">
       <div className="sticky top-0 z-40 bg-white/70 backdrop-blur-2xl border-b border-black/5 pt-[env(safe-area-inset-top)]">
-        <div className="w-full px-6 py-4">
-          <h1 className="text-2xl font-black mb-1 italic tracking-tighter">Missões Diárias</h1>
-          <p className="text-gray-500 text-xs font-bold uppercase tracking-widest">Complete desafios e suba de nível</p>
+        <div className="w-full px-4 py-4 flex items-center space-x-2">
+          <button 
+            onClick={() => navigate(-1)}
+            className="p-2 hover:bg-black/5 rounded-full transition-colors mr-1"
+          >
+            <ArrowLeft className="w-6 h-6" />
+          </button>
+          <div>
+            <h1 className="text-xl font-black italic tracking-tighter leading-tight">Missões Diárias</h1>
+            <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest leading-none mt-0.5">Complete desafios e suba de nível</p>
+          </div>
         </div>
       </div>
 
