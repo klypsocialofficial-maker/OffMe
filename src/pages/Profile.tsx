@@ -682,6 +682,15 @@ export default function Profile() {
           button: 'bg-amber-400 hover:bg-amber-500 text-black font-black',
           tabs: 'bg-stone-800'
         };
+      case 'criador': // Criador
+        return {
+          header: 'bg-gradient-to-tr from-emerald-500/20 via-yellow-500/10 to-emerald-500/20',
+          card: 'bg-white/90 backdrop-blur-xl border border-yellow-200 shadow-xl shadow-yellow-500/10',
+          text: 'text-emerald-950',
+          accent: 'text-yellow-600',
+          button: 'bg-gradient-to-r from-emerald-600 to-yellow-600 hover:shadow-lg hover:shadow-yellow-200 text-white',
+          tabs: 'bg-emerald-50/50'
+        };
       default:
         return {
           header: 'bg-white',

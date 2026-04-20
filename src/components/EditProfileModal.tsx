@@ -435,7 +435,8 @@ export default function EditProfileModal({ isOpen, onClose, userProfile, handleF
                     { id: 'default', name: 'Original', class: 'bg-white border-black/5', isPremium: false },
                     { id: 'minimal', name: 'Nuvem', class: 'bg-blue-50/50 border-blue-100', isPremium: false },
                     { id: 'vibrant', name: 'Crepúsculo', class: 'bg-gradient-to-br from-indigo-500 to-purple-400', isPremium: true },
-                    { id: 'neon', name: 'Cyber', class: 'bg-stone-900 border-stone-800', isPremium: true }
+                    { id: 'neon', name: 'Cyber', class: 'bg-stone-900 border-stone-800', isPremium: true },
+                    { id: 'criador', name: 'Criador', class: 'bg-gradient-to-r from-emerald-500 to-yellow-500', isPremium: true }
                   ].map((theme) => {
                     const isLocked = theme.isPremium && userProfile?.premiumTier !== 'gold';
                     return (

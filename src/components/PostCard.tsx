@@ -218,7 +218,7 @@ export default function PostCard({
         </div>
       )}
 
-      <div className="flex space-x-3">
+      <div className="flex flex-row space-x-3">
         {/* Avatar */}
         <div 
           className={`w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 cursor-pointer ${post.authorId === 'anonymous' ? 'bg-gradient-to-br from-indigo-50 to-purple-100 border border-purple-200 flex items-center justify-center' : ''}`}
