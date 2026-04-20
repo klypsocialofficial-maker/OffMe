@@ -211,6 +211,7 @@ export default function CreatePostModal({
           likesCount: 0,
           repliesCount: 0,
           repostsCount: 0,
+          viewCount: 0,
           likes: [],
           reposts: [],
           replyToId: currentReplyToId,

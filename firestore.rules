@@ -139,7 +139,7 @@ service cloud.firestore {
     }
 
     function isValidPost(data) {
-      return hasOnlyAllowedFields(['content', 'imageUrls', 'authorId', 'authorName', 'authorUsername', 'authorPhoto', 'authorVerified', 'authorPremiumTier', 'createdAt', 'updatedAt', 'isEdited', 'likesCount', 'repliesCount', 'replyToId', 'replyToUsername', 'replyToVerified', 'likes', 'repostsCount', 'reposts', 'threadId', 'quotedPostId', 'quotedPostContent', 'quotedPostAuthor', 'poll', 'isAnonymous', 'type', 'repostedPostId', 'originalPostAuthorId', 'originalPostAuthorName', 'originalPostAuthorUsername', 'originalPostAuthorPhoto', 'originalPostAuthorVerified', 'originalPostAuthorPremiumTier', 'ownerId', 'privacy', 'audience']) &&
+      return hasOnlyAllowedFields(['content', 'imageUrls', 'authorId', 'authorName', 'authorUsername', 'authorPhoto', 'authorVerified', 'authorPremiumTier', 'createdAt', 'updatedAt', 'isEdited', 'likesCount', 'repliesCount', 'replyToId', 'replyToUsername', 'replyToVerified', 'likes', 'repostsCount', 'reposts', 'threadId', 'quotedPostId', 'quotedPostContent', 'quotedPostAuthor', 'poll', 'isAnonymous', 'type', 'repostedPostId', 'originalPostAuthorId', 'originalPostAuthorName', 'originalPostAuthorUsername', 'originalPostAuthorPhoto', 'originalPostAuthorVerified', 'originalPostAuthorPremiumTier', 'ownerId', 'privacy', 'audience', 'viewCount']) &&
              data.content is string && data.content.size() >= 0 && data.content.size() <= 1000 &&
              (!('imageUrls' in data) || data.imageUrls is list && data.imageUrls.size() <= 4) &&
              data.authorId is string && (data.authorId == request.auth.uid || data.authorId == 'anonymous') &&
@@ -182,6 +182,7 @@ service cloud.firestore {
                data.poll.totalVotes is number &&
                data.poll.voters is list
              )) &&
+             (!('viewCount' in data) || (data.viewCount is number && data.viewCount >= 0)) &&
              (!('ownerId' in data) || data.ownerId == null || (data.ownerId is string && data.ownerId.size() <= 128));
     }
 
@@ -285,8 +286,10 @@ service cloud.firestore {
                           request.resource.data.repostsCount == resource.data.repostsCount - 1))
                        )
                      )
-                    );
-                    
+                    ) ||
+                    (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount']) &&
+                     request.resource.data.viewCount == resource.data.get('viewCount', 0) + 1);
+                     
       allow delete: if isDocOwner();
     }
 

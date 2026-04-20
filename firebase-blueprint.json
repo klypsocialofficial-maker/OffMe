@@ -50,6 +50,7 @@
         "replyToVerified": { "type": "boolean", "description": "Whether the author being replied to is verified." },
         "likes": { "type": "array", "items": { "type": "string" }, "description": "Array of UIDs who liked the post." },
         "reposts": { "type": "array", "items": { "type": "string" }, "description": "Array of UIDs who reposted the post." },
+        "viewCount": { "type": "number", "description": "The number of times the post has been viewed." },
         "hashtags": { "type": "array", "items": { "type": "string" }, "description": "List of hashtags extracted from content." },
         "privacy": { "type": "string", "description": "The privacy level of the post ('public' or 'circle')." },
         "audience": { "type": "array", "items": { "type": "string" }, "description": "Array of UIDs allowed to see the post if privacy is 'circle'." },
