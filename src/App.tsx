@@ -31,6 +31,7 @@ import CreatorStudio from './pages/CreatorStudio';
 import PWABadge from './components/PWABadge';
 import SplashScreen from './components/SplashScreen';
 import AnonymousFeed from './pages/AnonymousFeed';
+import InstallPrompt from './components/InstallPrompt';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { currentUser, loading } = useAuth();
@@ -95,6 +96,7 @@ export default function App() {
             <Route path="anonymous-feed" element={<AnonymousFeed />} />
           </Route>
         </Routes>
+        <InstallPrompt />
         <PWABadge />
       </Router>
     </AuthProvider>
