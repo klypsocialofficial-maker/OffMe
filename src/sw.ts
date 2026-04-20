@@ -61,10 +61,17 @@ if (firebase) {
 
   messaging.onBackgroundMessage((payload: any) => {
     console.log('[sw.ts] Received background message ', payload);
+
+    // If Firebase already showed a notification because 'notification' payload exists,
+    // do not show it again manually to avoid duplicates.
+    if (payload.notification) {
+      return;
+    }
     
-    const notificationTitle = payload.notification?.title || 'Nova Notificação';
+    // Otherwise, we manually show the notification for data-only messages
+    const notificationTitle = payload.data?.title || 'Nova Notificação';
     const notificationOptions: any = {
-      body: payload.notification?.body || payload.data?.body || 'Você tem uma nova mensagem.',
+      body: payload.data?.body || 'Você tem uma nova mensagem.',
       icon: '/logo.svg',
       data: payload.data,
       tag: payload.data?.conversationId || 'general',

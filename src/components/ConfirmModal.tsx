@@ -26,18 +26,25 @@ export default function ConfirmModal({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+        <div 
+          className="fixed inset-0 z-[300] flex items-center justify-center p-4"
+          onClick={(e) => e.stopPropagation()}
+        >
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
+            onClick={(e) => {
+              e.stopPropagation();
+              onClose();
+            }}
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
           />
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            onClick={(e) => e.stopPropagation()}
             className="relative bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-gray-100"
           >
             <div className="flex flex-col items-center text-center">
@@ -49,7 +56,8 @@ export default function ConfirmModal({
               
               <div className="flex flex-col w-full space-y-3">
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     onConfirm();
                     onClose();
                   }}
@@ -62,7 +70,10 @@ export default function ConfirmModal({
                   {confirmText}
                 </button>
                 <button
-                  onClick={onClose}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onClose();
+                  }}
                   className="w-full py-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition-all active:scale-95"
                 >
                   {cancelText}

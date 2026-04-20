@@ -386,7 +386,9 @@ export default function Profile() {
         );
         const snapshot = await getDocs(q);
         if (!snapshot.empty) {
-          await deleteDoc(doc(db, 'posts', snapshot.docs[0].id));
+          const repostDocId = snapshot.docs[0].id;
+          await deleteDoc(doc(db, 'posts', repostDocId));
+          setPosts(prev => prev.filter(p => p.id !== repostDocId));
         }
 
         showToast('Repost removido', 'info');
@@ -560,6 +562,7 @@ export default function Profile() {
     if (!db || !userProfile?.uid) return;
     try {
       await deleteDoc(doc(db, 'posts', postId));
+      setPosts(prev => prev.filter(p => p.id !== postId));
       setActiveMenuPostId(null);
       showToast('Post apagado com sucesso', 'success');
     } catch (error) {

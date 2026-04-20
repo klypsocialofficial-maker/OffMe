@@ -57,6 +57,8 @@ export default function RightSidebar() {
       } else {
         setTrendingTopics(sortedTags);
       }
+    }, (error) => {
+      console.error("Error fetching trending hashtags:", error);
     });
     
     return () => unsubscribe();

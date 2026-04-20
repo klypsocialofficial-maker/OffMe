@@ -89,6 +89,10 @@ export default function Layout() {
 
     const unsubscribeNotifications = onSnapshot(notificationsQuery, (snapshot) => {
       setUnreadNotificationsCount(snapshot.size);
+    }, (error) => {
+      if (error.code !== 'permission-denied') {
+        handleFirestoreError(error, OperationType.LIST, 'notifications');
+      }
     });
 
     // Listen for unread messages in conversations
@@ -106,6 +110,10 @@ export default function Layout() {
         }
       });
       setUnreadMessagesCount(totalUnread);
+    }, (error) => {
+      if (error.code !== 'permission-denied') {
+        handleFirestoreError(error, OperationType.LIST, 'conversations');
+      }
     });
 
     return () => {
@@ -113,6 +121,18 @@ export default function Layout() {
       unsubscribeMessages();
     };
   }, [userProfile?.uid]);
+
+  // Update PWA App Badge
+  useEffect(() => {
+    const totalUnread = unreadNotificationsCount + unreadMessagesCount;
+    if (typeof navigator !== 'undefined' && 'setAppBadge' in navigator) {
+      if (totalUnread > 0) {
+        (navigator as any).setAppBadge(totalUnread).catch((err: any) => console.error('Error setting app badge:', err));
+      } else if ('clearAppBadge' in navigator) {
+        (navigator as any).clearAppBadge().catch((err: any) => console.error('Error clearing app badge:', err));
+      }
+    }
+  }, [unreadNotificationsCount, unreadMessagesCount]);
 
   const openDrawer = () => setIsDrawerOpen(true);
   const closeDrawer = () => setIsDrawerOpen(false);

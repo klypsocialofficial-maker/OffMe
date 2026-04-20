@@ -139,6 +139,8 @@ export default function CallOverlay({
       if (data?.status === 'ended') {
         handleEndCall();
       }
+    }, (error) => {
+      console.error("Error listening to call status:", error);
     });
 
     onSnapshot(answerCandidates, (snapshot) => {
@@ -148,6 +150,8 @@ export default function CallOverlay({
           pc.addIceCandidate(candidate);
         }
       });
+    }, (error) => {
+      console.error("Error listening to answer candidates:", error);
     });
   };
 
@@ -189,6 +193,8 @@ export default function CallOverlay({
           pc.addIceCandidate(new RTCIceCandidate(data));
         }
       });
+    }, (error) => {
+      console.error("Error listening to offer candidates:", error);
     });
 
     onSnapshot(callDoc, (snapshot) => {
@@ -196,6 +202,8 @@ export default function CallOverlay({
       if (data?.status === 'ended') {
         handleEndCall();
       }
+    }, (error) => {
+      console.error("Error listening to call end:", error);
     });
   };
 

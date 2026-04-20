@@ -229,6 +229,7 @@ export default function PostDetail() {
       onConfirm: async () => {
         try {
           await deleteDoc(doc(db, 'posts', replyId));
+          setReplies(prev => prev.filter(r => r.id !== replyId));
           showToast('Resposta excluída com sucesso', 'success');
         } catch (error) {
           handleFirestoreError(error, OperationType.DELETE, `posts/${replyId}`);
@@ -248,7 +249,7 @@ export default function PostDetail() {
         try {
           await deleteDoc(doc(db, 'posts', id));
           if (id === postId) {
-            navigate(-1);
+            navigate('/', { replace: true });
           }
           showToast('Post apagado com sucesso', 'success');
         } catch (error) {
@@ -454,8 +455,10 @@ export default function PostDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      <div className="min-h-screen bg-transparent flex items-center justify-center p-4">
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <div className="w-10 h-10 border-2 border-black/10 border-t-black rounded-full animate-spin" />
+        </div>
       </div>
     );
   }

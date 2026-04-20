@@ -34,6 +34,8 @@ interface PostCardProps {
   canEdit: (post: any) => boolean;
 }
 
+const viewedPostsInSession = new Set<string>();
+
 export default function PostCard({
   post,
   isProfilePinned,
@@ -114,21 +116,25 @@ export default function PostCard({
     }
   };
 
-  // Increment view count on mount
+  // Increment view count on mount with debounce/session tracking
   useEffect(() => {
     if (!db || !effectivePost.id || post.type === 'repost') return;
 
-    const incrementView = async () => {
+    if (viewedPostsInSession.has(effectivePost.id)) return;
+
+    const timer = setTimeout(async () => {
       try {
+        viewedPostsInSession.add(effectivePost.id);
         await updateDoc(doc(db, 'posts', effectivePost.id), {
           viewCount: increment(1)
         });
       } catch (error) {
+        viewedPostsInSession.delete(effectivePost.id);
         console.error('Error incrementing view count:', error);
       }
-    };
+    }, 1500);
 
-    incrementView();
+    return () => clearTimeout(timer);
   }, [effectivePost.id, post.type, db]);
 
   const isPinned = isProfilePinned === true;
