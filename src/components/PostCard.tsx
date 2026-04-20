@@ -18,6 +18,7 @@ import LazyImage from './LazyImage';
 interface PostCardProps {
   key?: any;
   post: any;
+  isProfilePinned?: boolean;
   onLike: (post: any) => void;
   onRepost: (post: any) => void;
   onDelete: (postId: string) => void;
@@ -31,6 +32,7 @@ interface PostCardProps {
 
 export default function PostCard({
   post,
+  isProfilePinned,
   onLike,
   onRepost,
   onDelete,
@@ -125,13 +127,13 @@ export default function PostCard({
     }
   };
 
-  const isPinned = userProfile?.pinnedPostIds?.includes(effectivePost.id);
+  const isPinned = isProfilePinned !== undefined ? isProfilePinned : userProfile?.pinnedPostIds?.includes(effectivePost.id);
 
   const handlePin = async (e: React.MouseEvent) => {
     stopPropagation(e);
     if (!userProfile?.uid) return;
     try {
-      if (isPinned) {
+      if (userProfile?.pinnedPostIds?.includes(effectivePost.id)) {
         await unpinPost(effectivePost.id);
       } else {
         await pinPost(effectivePost.id);
@@ -282,7 +284,7 @@ export default function PostCard({
                       onClick={handlePin}
                       className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
                     >
-                      {isPinned ? (
+                      {userProfile?.pinnedPostIds?.includes(effectivePost.id) ? (
                         <>
                           <PinOff className="w-4 h-4" />
                           <span>Desafixar do perfil</span>

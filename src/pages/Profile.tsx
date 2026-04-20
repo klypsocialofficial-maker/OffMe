@@ -185,21 +185,6 @@ export default function Profile() {
         // Filter out replies for the main "Posts" tab
         const filtered = unique.filter((post: any) => !post.replyToId && !post.isAnonymous);
         
-        // Sort by pinned status (profile owner's choice) and then createdAt
-        const pinnedIds = profileUser?.pinnedPostIds || [];
-        
-        filtered.sort((a: any, b: any) => {
-          const aIsPinned = pinnedIds.includes(a.id) && !a.type;
-          const bIsPinned = pinnedIds.includes(b.id) && !b.type;
-          
-          if (aIsPinned && !bIsPinned) return -1;
-          if (!aIsPinned && bIsPinned) return 1;
-          
-          const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date();
-          const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date();
-          return dateB.getTime() - dateA.getTime();
-        });
-
         setPosts(filtered);
         setLoading(false);
       };
@@ -610,6 +595,20 @@ export default function Profile() {
     <div className="p-8 text-center text-gray-500">Usuário não encontrado</div>
   );
 
+  // Dynamically sort posts based on current pinned status
+  const pinnedIds = profileUser?.pinnedPostIds || [];
+  const displayPosts = [...posts].sort((a: any, b: any) => {
+    if (activeTab === 'posts') {
+      const aIsPinned = pinnedIds.includes(a.id) && !a.type;
+      const bIsPinned = pinnedIds.includes(b.id) && !b.type;
+      if (aIsPinned && !bIsPinned) return -1;
+      if (!aIsPinned && bIsPinned) return 1;
+    }
+    const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date();
+    const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date();
+    return dateB.getTime() - dateA.getTime();
+  });
+
   return (
     <div className="w-full min-h-full bg-white">
       {/* Profile Header with Cover Photo and Action Buttons */}
@@ -1000,12 +999,13 @@ export default function Profile() {
               </div>
             )}
           </div>
-        ) : posts.length > 0 ? (
+        ) : displayPosts.length > 0 ? (
           <div className="px-4 space-y-4">
-            {posts.map((post) => (
+            {displayPosts.map((post) => (
               <PostCard
                 key={post.id}
                 post={post}
+                isProfilePinned={activeTab === 'posts' && pinnedIds.includes(post.id) && !post.type}
                 onLike={handleLikePost}
                 onRepost={handleRepost}
                 onDelete={handleDeletePost}
