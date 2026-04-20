@@ -100,6 +100,10 @@ interface UserProfile {
   badges?: string[];
   circleMembers?: string[];
   createdAt?: any;
+  privateProfile?: boolean;
+  sensitiveContent?: boolean;
+  discoverability?: boolean;
+  directMessages?: 'everyone' | 'following' | 'none';
 }
 
 interface AuthContextType {
@@ -133,6 +137,9 @@ interface AuthContextType {
   removeMutedWord: (word: string) => Promise<void>;
   requestNotificationPermission: () => Promise<boolean>;
   enableCreatorMode: (category: string) => Promise<void>;
+  sendFollowRequest: (targetUid: string) => Promise<void>;
+  acceptFollowRequest: (requestId: string) => Promise<void>;
+  declineFollowRequest: (requestId: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -544,10 +551,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const followUser = async (targetUid: string) => {
     if (!userProfile || !currentUser) throw new Error("User not authenticated");
+    
+    // Check private status
+    const targetUserRef = doc(db, 'users', targetUid);
+    const targetSnap = await getDoc(targetUserRef);
+    if (!targetSnap.exists()) throw new Error("User not found");
+    const targetProfile = targetSnap.data() as UserProfile;
+
+    if (targetProfile.privateProfile) {
+        await sendFollowRequest(targetUid);
+        return;
+    }
+
     if (userProfile.uid === targetUid) throw new Error("You cannot follow yourself");
 
     const currentUserRef = doc(db, 'users', currentUser.uid);
-    const targetUserRef = doc(db, 'users', targetUid);
 
     try {
       await updateDoc(currentUserRef, {
@@ -556,7 +574,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await updateDoc(targetUserRef, {
         followers: arrayUnion(currentUser.uid)
       });
-
       // Award points for following
       await awardPoints(currentUser.uid, 5);
 
@@ -583,6 +600,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `users/${targetUid}`);
     }
+  };
+
+  const sendFollowRequest = async (targetUid: string) => {
+    if (!userProfile || !currentUser) throw new Error("User not authenticated");
+    
+    const q = query(
+      collection(db, 'followRequests'),
+      where('senderId', '==', currentUser.uid),
+      where('receiverId', '==', targetUid),
+      where('status', '==', 'pending')
+    );
+    const snap = await getDocs(q);
+    if (!snap.empty) throw new Error("Request already sent");
+
+    await addDoc(collection(db, 'followRequests'), {
+      senderId: currentUser.uid,
+      receiverId: targetUid,
+      status: 'pending',
+      createdAt: serverTimestamp()
+    });
+  };
+
+  const acceptFollowRequest = async (requestId: string) => {
+     if (!userProfile || !currentUser) throw new Error("User not authenticated");
+     const reqRef = doc(db, 'followRequests', requestId);
+     const reqSnap = await getDoc(reqRef);
+     if (!reqSnap.exists()) throw new Error("Request not found");
+     const data = reqSnap.data();
+
+     // Atomic update: accept request, add follower
+     const batch = writeBatch(db);
+     batch.update(reqRef, { status: 'accepted' });
+     batch.update(doc(db, 'users', data.senderId), {
+         following: arrayUnion(data.receiverId)
+     });
+     batch.update(doc(db, 'users', data.receiverId), {
+         followers: arrayUnion(data.senderId)
+     });
+     await batch.commit();
+  };
+
+  const declineFollowRequest = async (requestId: string) => {
+      const reqRef = doc(db, 'followRequests', requestId);
+      await updateDoc(reqRef, { status: 'declined' });
   };
 
   const unfollowUser = async (targetUid: string) => {

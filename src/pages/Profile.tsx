@@ -532,6 +532,7 @@ export default function Profile() {
     if (!userProfile?.uid || !profileUser?.uid || !db || profileUser.uid === userProfile.uid) return;
     
     const isFollowing = userProfile.following?.includes(profileUser.uid);
+    const isPending = false; // Need to implement checking for pending requests in AuthContext or here!
     
     if (isFollowing) {
       setConfirmModal({
@@ -551,8 +552,13 @@ export default function Profile() {
     }
 
     try {
-      await followUser(profileUser.uid);
-      showToast(`Agora você segue @${profileUser.username}`, 'success');
+      if (profileUser.privateProfile) {
+        await sendFollowRequest(profileUser.uid);
+        showToast(`Solicitação de seguir enviada para @${profileUser.username}`, 'success');
+      } else {
+        await followUser(profileUser.uid);
+        showToast(`Agora você segue @${profileUser.username}`, 'success');
+      }
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'users');
     }
