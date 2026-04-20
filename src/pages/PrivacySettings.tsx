@@ -79,17 +79,17 @@ export default function PrivacySettings() {
   };
 
   return (
-    <div className="w-full h-full bg-white/50 dark:bg-black/50 flex flex-col overflow-hidden">
-      <div className="flex-shrink-0 z-30 bg-white/80 dark:bg-black/80 backdrop-blur-2xl border-b border-black/5 shadow-sm pt-[env(safe-area-inset-top)]">
+    <div className="w-full h-full bg-white/50 dark:bg-black/50 flex flex-col relative overflow-hidden">
+      <div className="fixed top-0 left-0 right-0 z-[60] bg-white/80 dark:bg-black/80 backdrop-blur-2xl border-b border-black/5 shadow-sm pt-[env(safe-area-inset-top)]">
         <div className="px-4 py-3 flex items-center space-x-3">
           <button onClick={() => navigate(-1)} className="p-2 -ml-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors">
             <ArrowLeft className="w-6 h-6" />
           </button>
-          <h1 className="text-xl font-display font-black italic tracking-tighter">Privacidade e segurança</h1>
+          <h1 className="text-xl font-display font-black italic tracking-tighter text-black">Privacidade e segurança</h1>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-8 pb-20">
+      <div className="flex-1 overflow-y-auto p-4 space-y-8 pb-20 pt-[calc(60px+env(safe-area-inset-top))]">
         <section>
           <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4 px-1">Sua atividade no OffMe</h2>
           <div className="space-y-4">

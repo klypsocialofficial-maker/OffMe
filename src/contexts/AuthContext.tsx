@@ -592,19 +592,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const targetUserRef = doc(db, 'users', targetUid);
 
     try {
-      const newFollowing = (userProfile.following || []).filter(id => id !== targetUid);
       await updateDoc(currentUserRef, {
-        following: newFollowing
+        following: arrayRemove(targetUid)
       });
-
-      const targetSnap = await getDoc(targetUserRef);
-      if (targetSnap.exists()) {
-        const targetData = targetSnap.data();
-        const newFollowers = (targetData.followers || []).filter((id: string) => id !== currentUser.uid);
-        await updateDoc(targetUserRef, {
-          followers: newFollowers
-        });
-      }
+      await updateDoc(targetUserRef, {
+        followers: arrayRemove(currentUser.uid)
+      });
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `users/${targetUid}`);
     }
