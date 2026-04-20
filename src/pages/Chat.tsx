@@ -12,7 +12,7 @@ import { db, auth } from '../firebase';
 import CallOverlay from '../components/CallOverlay';
 import ConfirmModal from '../components/ConfirmModal';
 import { uploadToImgBB } from '../lib/imgbb';
-import { uploadToCloudinary } from '../lib/cloudinary';
+import { uploadToStorage } from '../lib/firebaseStorage';
 import { GiphyFetch } from '@giphy/js-fetch-api';
 import { Grid } from '@giphy/react-components';
 
@@ -288,7 +288,8 @@ export default function Chat() {
       if (selectedImage && !finalMediaUrl) {
          finalMediaUrl = await uploadToImgBB(selectedImage);
       } else if (selectedVideo && !finalMediaUrl) {
-         finalMediaUrl = await uploadToCloudinary(selectedVideo, (progress) => {
+         const videoPath = `chats/${conversationId}/videos/${Date.now()}-${selectedVideo.name}`;
+         finalMediaUrl = await uploadToStorage(selectedVideo, videoPath, (progress) => {
            setUploadProgress(progress);
          });
          hasVideo = true;

@@ -77,7 +77,11 @@ async function startServer() {
         },
         (error, result) => {
           if (error) {
-            console.error('Cloudinary upload error:', error);
+            console.error('SERVER SIDE Cloudinary upload error:', {
+              message: error.message,
+              http_code: error.http_code,
+              error: error
+            });
             return res.status(500).json({ 
               error: 'Falha no Cloudinary', 
               details: error.message 

@@ -6,7 +6,7 @@ import { Send, Smile, Image as ImageIcon, Film, X } from 'lucide-react';
 import LazyImage from './LazyImage';
 import { formatRelativeTime } from '../lib/dateUtils';
 import { uploadToImgBB } from '../lib/imgbb';
-import { uploadToCloudinary } from '../lib/cloudinary';
+import { uploadToStorage } from '../lib/firebaseStorage';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface CommunityChatProps {
@@ -69,7 +69,8 @@ export default function CommunityChat({ communityId }: CommunityChatProps) {
       if (selectedImage) {
         mediaUrl = await uploadToImgBB(selectedImage);
       } else if (selectedVideo) {
-        mediaUrl = await uploadToCloudinary(selectedVideo, (progress) => {
+        const videoPath = `communities/${communityId}/videos/${Date.now()}-${selectedVideo.name}`;
+        mediaUrl = await uploadToStorage(selectedVideo, videoPath, (progress) => {
           setUploadProgress(progress);
         });
         hasVideo = true;

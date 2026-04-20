@@ -3,7 +3,7 @@ import { User as UserIcon, Image as ImageIcon, X, BarChart2, Film, Ghost, Clock,
 import { addDoc, collection, serverTimestamp, doc, updateDoc, increment, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { uploadToImgBB } from '../lib/imgbb';
-import { uploadToCloudinary } from '../lib/cloudinary';
+import { uploadToStorage } from '../lib/firebaseStorage';
 import { awardPoints, trackMissionProgress } from '../services/gamificationService';
 import { motion, AnimatePresence } from 'motion/react';
 import VerifiedBadge from './VerifiedBadge';
@@ -213,12 +213,13 @@ export default function CreatePostModal({
 
         if (postItem.videoFile) {
            try {
-             videoUrl = await uploadToCloudinary(postItem.videoFile, (progress) => {
+             const videoPath = `posts/videos/${Date.now()}-${postItem.videoFile.name}`;
+             videoUrl = await uploadToStorage(postItem.videoFile, videoPath, (progress) => {
                setUploadProgress(progress);
              });
            } catch (error) {
              console.error('Video upload failed:', error);
-             throw new Error('Falha no upload do vídeo');
+             throw new Error('Falha no upload do vídeo no Firebase Storage');
            } finally {
              setUploadProgress(null);
            }
@@ -234,7 +235,7 @@ export default function CreatePostModal({
         const postData: any = {
           content: postContent,
           imageUrls,
-          videoUrl,
+          videoUrl: videoUrl || null,
           hasVideo: !!videoUrl,
           altText: postItem.altText || '',
           authorId,
