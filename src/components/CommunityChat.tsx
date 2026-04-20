@@ -91,8 +91,9 @@ export default function CommunityChat({ communityId }: CommunityChatProps) {
       setSelectedVideo(null);
       setVideoPreview(null);
       setUploadProgress(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error sending message:", error);
+      alert(`Erro ao enviar mensagem na comunidade: ${error.message || 'Erro desconhecido'}`);
     } finally {
       setUploading(false);
       setUploadProgress(null);

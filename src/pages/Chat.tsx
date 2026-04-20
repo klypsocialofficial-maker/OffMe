@@ -305,7 +305,9 @@ export default function Chat() {
       setGifSearch('');
       
       setTimeout(scrollToBottom, 100);
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error in handleSendMessage:', error);
+      alert(`Erro ao enviar mensagem: ${error.message || 'Erro desconhecido'}`);
       handleFirestoreError(error, OperationType.CREATE, `conversations/${conversationId}/messages`);
     } finally {
       setUploadingMedia(false);

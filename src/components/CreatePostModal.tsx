@@ -345,10 +345,22 @@ export default function CreatePostModal({
       setShowPoll(false);
       setPollOptions(['', '']);
       onClose();
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error in handlePost:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      // If it's a JSON string from handleFirestoreError, parse it for a better message
+      try {
+        const parsed = JSON.parse(errorMessage);
+        alert(`Erro: ${parsed.error}`);
+      } catch {
+        alert(`Erro ao postar: ${errorMessage}`);
+      }
+      
       handleFirestoreError(error, OperationType.CREATE, 'posts');
     } finally {
       setLoading(false);
+      setUploadProgress(null);
     }
   };
 
@@ -431,7 +443,11 @@ export default function CreatePostModal({
                   disabled={(!content.trim() && imageFiles.length === 0 && !gifUrl && threadPosts.length === 0) || loading || content.length > 1000}
                   className="bg-blue-500 text-white px-4 py-1.5 rounded-full font-bold hover:bg-blue-600 disabled:bg-blue-300 disabled:opacity-50 transition-colors text-sm"
                 >
-                  {loading ? (uploadProgress !== null ? `Enviando ${uploadProgress}%` : 'Postando...') : 'Post'}
+                  {loading ? (
+                    uploadProgress !== null 
+                      ? (uploadProgress < 100 ? `Enviando ${uploadProgress}%` : 'Finalizando...') 
+                      : 'Postando...'
+                  ) : 'Post'}
                 </button>
               </div>
             </div>

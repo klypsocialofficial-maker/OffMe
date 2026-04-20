@@ -14,11 +14,15 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
+if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+  console.warn('WARNING: Cloudinary credentials are not fully configured in environment variables.');
+}
+
 const storage = multer.memoryStorage();
 const upload = multer({ 
   storage,
   limits: {
-    fileSize: 50 * 1024 * 1024, // 50MB limit
+    fileSize: 100 * 1024 * 1024, // 100MB limit
   }
 });
 
@@ -34,29 +38,64 @@ async function startServer() {
     res.json({ status: "ok" });
   });
 
-  app.post('/api/upload-video', upload.single('video'), async (req, res) => {
+  app.post('/api/upload-video', (req, res, next) => {
+    upload.single('video')(req, res, (err) => {
+      if (err instanceof multer.MulterError) {
+        console.error('Multer error:', err);
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(400).json({ error: 'O vídeo é muito grande (máximo 100MB)' });
+        }
+        return res.status(400).json({ error: `Erro no upload: ${err.message}` });
+      } else if (err) {
+        console.error('Unknown upload error:', err);
+        return res.status(500).json({ error: 'Erro interno no processamento do arquivo' });
+      }
+      next();
+    });
+  }, (req, res) => {
     try {
       if (!req.file) {
-        return res.status(400).json({ error: 'No video file provided' });
+        return res.status(400).json({ error: 'Nenhum arquivo de vídeo enviado' });
       }
 
-      // Convert buffer to base64
-      const b64 = Buffer.from(req.file.buffer).toString('base64');
-      const dataURI = "data:" + req.file.mimetype + ";base64," + b64;
-      
-      const result = await cloudinary.uploader.upload(dataURI, {
-        resource_type: 'video',
-        folder: 'offme/videos',
-        eager: [
-          { width: 720, height: 1280, crop: "fill", gravity: "center" }
-        ],
-        eager_async: true
+      console.log('Starting video upload to Cloudinary...', { 
+        filename: req.file.originalname, 
+        size: req.file.size,
+        mimetype: req.file.mimetype 
       });
 
-      res.json({ url: result.secure_url });
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          resource_type: 'video',
+          folder: 'offme/videos',
+          timeout: 600000, // 10 minutes timeout for server-side upload
+          chunk_size: 6000000, 
+          eager: [
+            { width: 720, height: 1280, crop: "fill", gravity: "center" }
+          ],
+          eager_async: true
+        },
+        (error, result) => {
+          if (error) {
+            console.error('Cloudinary upload error:', error);
+            return res.status(500).json({ 
+              error: 'Falha no Cloudinary', 
+              details: error.message 
+            });
+          }
+          if (!result) {
+            return res.status(500).json({ error: 'Nenhum resultado retornado do Cloudinary' });
+          }
+          
+          console.log('Video upload successful:', result.secure_url);
+          res.json({ url: result.secure_url });
+        }
+      );
+
+      uploadStream.end(req.file.buffer);
     } catch (error) {
-      console.error('Cloudinary upload error:', error);
-      res.status(500).json({ error: 'Upload failed' });
+      console.error('Express route error:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
     }
   });
 

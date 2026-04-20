@@ -21,7 +21,8 @@ export const uploadToCloudinary = async (
   } catch (error) {
     console.error('Cloudinary client upload error:', error);
     if (axios.isAxiosError(error)) {
-      throw new Error(error.response?.data?.error || 'Failed to upload video');
+      const serverMessage = error.response?.data?.error || error.response?.data?.details;
+      throw new Error(serverMessage || `Erro de rede no upload (Status: ${error.response?.status || 'desconhecido'})`);
     }
     throw error;
   }
