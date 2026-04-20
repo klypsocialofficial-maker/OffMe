@@ -16,7 +16,7 @@ import {
   ConfirmationResult,
   sendEmailVerification
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, onSnapshot, serverTimestamp, collection, query, where, getDocs, updateDoc, arrayUnion, arrayRemove, deleteDoc, addDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot, serverTimestamp, collection, query, where, getDocs, updateDoc, arrayUnion, arrayRemove, deleteDoc, addDoc, writeBatch } from 'firebase/firestore';
 import { sendPushNotification } from '../lib/notifications';
 import { awardPoints } from '../services/gamificationService';
 
@@ -378,13 +378,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const uid = user.uid;
 
     try {
+      const batch = writeBatch(db);
+
       // 1. Delete user document from Firestore
-      await deleteDoc(doc(db, 'users', uid));
+      batch.delete(doc(db, 'users', uid));
+
+      // 2. Delete posts by user
+      const postsQuery = query(collection(db, 'posts'), where('authorId', '==', uid));
+      const postsSnapshot = await getDocs(postsQuery);
+      postsSnapshot.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+
+      // 3. Delete notifications
+      const notifsQueryRecipient = query(collection(db, 'notifications'), where('recipientId', '==', uid));
+      const notifsSnapshotRecipient = await getDocs(notifsQueryRecipient);
+      notifsSnapshotRecipient.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+
+      const notifsQuerySender = query(collection(db, 'notifications'), where('senderId', '==', uid));
+      const notifsSnapshotSender = await getDocs(notifsQuerySender);
+      notifsSnapshotSender.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+
+      // Commit batch
+      await batch.commit();
       
-      // 2. Delete user from Firebase Auth
+      // 4. Delete user from Firebase Auth
       await deleteUser(user);
       
-      // 3. Clear local state
+      // 5. Clear local state
       setCurrentUser(null);
       setUserProfile(null);
     } catch (error: any) {
