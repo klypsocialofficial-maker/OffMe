@@ -322,8 +322,8 @@ export default function PostDetail() {
       });
       
       if (!isLiked) {
-        // Award points for liking
-        await awardPoints(userProfile.uid, 5);
+        // Award points for liking and track mission
+        await awardPoints(userProfile.uid, 5, 'like');
       }
       
       if (!isLiked && postToLike.authorId !== userProfile.uid) {

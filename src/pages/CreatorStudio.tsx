@@ -33,16 +33,6 @@ import { collection, query, where, getDocs, orderBy, limit, Timestamp } from 'fi
 import { useAuth } from '../contexts/AuthContext';
 import LazyImage from '../components/LazyImage';
 
-const MOCK_GROWTH_DATA = [
-  { name: 'Seg', followers: 400, points: 2400 },
-  { name: 'Ter', followers: 300, points: 1398 },
-  { name: 'Qua', followers: 200, points: 9800 },
-  { name: 'Qui', followers: 278, points: 3908 },
-  { name: 'Sex', followers: 189, points: 4800 },
-  { name: 'Sáb', followers: 239, points: 3800 },
-  { name: 'Dom', followers: 349, points: 4300 },
-];
-
 export default function CreatorStudio() {
   const navigate = useNavigate();
   const { userProfile } = useAuth();
@@ -54,6 +44,7 @@ export default function CreatorStudio() {
     followerGrowth: 0,
     pointsEarned: 0
   });
+  const [chartData, setChartData] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -61,27 +52,70 @@ export default function CreatorStudio() {
       setLoading(true);
       
       try {
-        // Fetch top posts by engagement (likes + reposts)
-        const q = query(
+        // Fetch all user posts to aggregate data
+        const allPostsQuery = query(
           collection(db, 'posts'),
           where('authorId', '==', userProfile.uid),
-          orderBy('likesCount', 'desc'),
-          limit(5)
+          orderBy('createdAt', 'desc')
         );
-        const snap = await getDocs(q);
-        const posts = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setTopPosts(posts);
+        const allPostsSnap = await getDocs(allPostsQuery);
+        const allPosts = allPostsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // Top posts for display
+        const top = [...allPosts]
+          .sort((a: any, b: any) => ((b.likesCount || 0) + (b.repostsCount || 0)) - ((a.likesCount || 0) + (a.repostsCount || 0)))
+          .slice(0, 5);
+        setTopPosts(top);
 
         // Aggregate stats
-        const totalLikes = posts.reduce((acc, p: any) => acc + (p.likesCount || 0), 0);
-        const totalReposts = posts.reduce((acc, p: any) => acc + (p.repostsCount || 0), 0);
+        let impressions = 0;
+        let engagement = 0;
         
+        // Prepare chart data (last 7 days)
+        const last7Days: any[] = [];
+        const now = new Date();
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date();
+          d.setDate(now.getDate() - i);
+          const dayName = d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
+          last7Days.push({ 
+            name: dayName.charAt(0).toUpperCase() + dayName.slice(1), 
+            date: d.toDateString(),
+            followers: 0, // We don't have historical follower data, so we'll use post count or engagement as proxy
+            engagement: 0,
+            views: 0
+          });
+        }
+
+        allPosts.forEach((p: any) => {
+          impressions += (p.viewCount || 0);
+          engagement += (p.likesCount || 0) + (p.repostsCount || 0) + (p.repliesCount || 0);
+
+          if (p.createdAt) {
+            const postDate = p.createdAt.toDate();
+            const dayIndex = last7Days.findIndex(day => day.date === postDate.toDateString());
+            if (dayIndex !== -1) {
+              last7Days[dayIndex].engagement += (p.likesCount || 0) + (p.repostsCount || 0);
+              last7Days[dayIndex].views += (p.viewCount || 0);
+            }
+          }
+        });
+
         setStats({
-          totalImpressions: totalLikes * 15, // Simplified mock
-          totalEngagement: totalLikes + totalReposts,
-          followerGrowth: 12, // Mock
+          totalImpressions: impressions,
+          totalEngagement: engagement,
+          followerGrowth: userProfile.followers?.length || 0,
           pointsEarned: userProfile.points || 0
         });
+
+        // Map to chart format
+        const finalChartData = last7Days.map(day => ({
+          name: day.name,
+          views: day.views,
+          engagement: day.engagement
+        }));
+        setChartData(finalChartData);
+
       } catch (error) {
         console.error("Error fetching studio data:", error);
       } finally {
@@ -182,9 +216,9 @@ export default function CreatorStudio() {
             </div>
             <div className="h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={MOCK_GROWTH_DATA}>
+                <AreaChart data={chartData}>
                   <defs>
-                    <linearGradient id="colorPoints" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.1}/>
                       <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
                     </linearGradient>
@@ -194,7 +228,7 @@ export default function CreatorStudio() {
                   />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold', fill: '#94a3b8' }} />
                   <YAxis hide />
-                  <Area type="monotone" dataKey="points" stroke="#3B82F6" strokeWidth={3} fillOpacity={1} fill="url(#colorPoints)" />
+                  <Area type="monotone" dataKey="views" stroke="#3B82F6" strokeWidth={3} fillOpacity={1} fill="url(#colorViews)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -215,13 +249,13 @@ export default function CreatorStudio() {
             </div>
             <div className="h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={MOCK_GROWTH_DATA}>
+                <BarChart data={chartData}>
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold', fill: '#94a3b8' }} />
                   <Tooltip 
                     cursor={{ fill: '#f8fafc' }}
                     contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', fontWeight: 'bold' }}
                   />
-                  <Bar dataKey="followers" fill="#141414" radius={[10, 10, 0, 0]} barSize={24} />
+                  <Bar dataKey="engagement" fill="#141414" radius={[10, 10, 0, 0]} barSize={24} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

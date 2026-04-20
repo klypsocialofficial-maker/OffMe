@@ -219,21 +219,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 // Consecutive day
                 await updateDoc(docRef, { 
                   lastLoginAt: serverTimestamp(),
-                  streakCount: (profileData.streakCount || 0) + 1 
+                  streakCount: (profileData.streakCount || 0) + 1,
+                  completedMissionIds: [], // Reset missions for new day
+                  missionProgress: {}       // Reset progress for new day
                 });
                 await awardPoints(user.uid, 50 * ((profileData.streakCount || 1)));
               } else if (diffDays >= 2) {
                 // Streak broken
                 await updateDoc(docRef, { 
                   lastLoginAt: serverTimestamp(),
-                  streakCount: 1 
+                  streakCount: 1,
+                  completedMissionIds: [], // Reset missions for new day
+                  missionProgress: {}       // Reset progress for new day
                 });
               } else if (diffDays < 1 && now.getDate() !== lastLogin.getDate()) {
                 // Same day but different calendar day (e.g. 11pm and 1am)
-                // This counts as consecutive if within reasonable window, but let's keep it simple
                 await updateDoc(docRef, { 
                   lastLoginAt: serverTimestamp(),
-                  streakCount: (profileData.streakCount || 0) + 1 
+                  streakCount: (profileData.streakCount || 0) + 1,
+                  completedMissionIds: [], // Reset missions for new day
+                  missionProgress: {}       // Reset progress for new day
                 });
                 await awardPoints(user.uid, 50);
               }
@@ -623,8 +628,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await updateDoc(targetUserRef, {
         followers: arrayUnion(currentUser.uid)
       });
-      // Award points for following
-      await awardPoints(currentUser.uid, 5);
+      // Award points for following and track mission
+      await awardPoints(currentUser.uid, 5, 'follow');
 
       // Create notification
       await addDoc(collection(db, 'notifications'), {
@@ -860,8 +865,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!currentUser || !userProfile) throw new Error("User not authenticated");
     try {
       const convRef = doc(db, 'conversations', conversationId);
+      const convSnap = await getDoc(convRef);
+      if (!convSnap.exists()) return;
+      
+      const convData = convSnap.data();
       const batch = writeBatch(db);
       
+      // Streak Logic
+      const now = new Date();
+      const lastStreakAt = convData.lastStreakAt?.toDate();
+      let newStreakCount = convData.streakCount || 0;
+      let shouldUpdateStreak = false;
+
+      if (!lastStreakAt) {
+        newStreakCount = 1;
+        shouldUpdateStreak = true;
+      } else {
+        const diffTime = Math.abs(now.getTime() - lastStreakAt.getTime());
+        const diffDays = diffTime / (1000 * 60 * 60 * 24);
+
+        if (diffDays >= 1 && diffDays < 2) {
+          // Consecutive day
+          newStreakCount += 1;
+          shouldUpdateStreak = true;
+        } else if (diffDays >= 2) {
+          // Streak broken
+          newStreakCount = 1;
+          shouldUpdateStreak = true;
+        }
+        // If diffDays < 1, it's the same day, no change to streak count but we can keep the timestamp
+      }
+
       const msgRef = doc(collection(db, 'conversations', conversationId, 'messages'));
       batch.set(msgRef, {
         senderId: currentUser.uid,
@@ -871,13 +905,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         read: false
       });
       
-      batch.update(convRef, {
+      const updateData: any = {
         lastMessage: imageUrl ? '📷 Foto' : text,
         updatedAt: serverTimestamp(),
-        [`unreadCount.${currentUser.uid === userProfile.uid ? 'other' : 'me'}`]: 0 // This logic needs refining based on participant order
-      });
+        [`unreadCount.${currentUser.uid === userProfile.uid ? 'other' : 'me'}`]: 0 
+      };
+
+      if (shouldUpdateStreak) {
+        updateData.streakCount = newStreakCount;
+        updateData.lastStreakAt = serverTimestamp();
+      } else if (!lastStreakAt) {
+        updateData.streakCount = 1;
+        updateData.lastStreakAt = serverTimestamp();
+      }
+
+      batch.update(convRef, updateData);
       
       await batch.commit();
+      
+      // Award points for chatting and track mission
+      await awardPoints(currentUser.uid, 5, 'dm');
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, `conversations/${conversationId}/messages`);
     }

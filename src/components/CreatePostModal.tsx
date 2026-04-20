@@ -3,7 +3,7 @@ import { User as UserIcon, Image as ImageIcon, X, BarChart2, Film, Ghost, Clock,
 import { addDoc, collection, serverTimestamp, doc, updateDoc, increment, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { uploadToImgBB } from '../lib/imgbb';
-import { awardPoints } from '../services/gamificationService';
+import { awardPoints, trackMissionProgress } from '../services/gamificationService';
 import { motion, AnimatePresence } from 'motion/react';
 import VerifiedBadge from './VerifiedBadge';
 import LazyImage from './LazyImage';
@@ -277,6 +277,10 @@ export default function CreatePostModal({
         }
 
         const newPostRef = await addDoc(collection(db, 'posts'), postData);
+        
+        if (!isAnonymous && userProfile) {
+          await awardPoints(userProfile.uid, 10, 'post');
+        }
 
         // Handle points, mentions, and notifications only for the first post to avoid spam
         if (index === 0) {

@@ -2,7 +2,7 @@ import { doc, updateDoc, increment, arrayUnion, getDoc, collection, query, where
 import { db } from '../firebase';
 import { BADGES } from '../constants/badges';
 
-export const awardPoints = async (userId: string, points: number) => {
+export const awardPoints = async (userId: string, points: number, missionType: string = 'engage') => {
   if (!db) return;
   const userRef = doc(db, 'users', userId);
   
@@ -30,8 +30,8 @@ export const awardPoints = async (userId: string, points: number) => {
     // Check for badges based on points/level
     await checkBadges(userId, { ...userData, points: currentPoints, level: newLevel });
     
-    // Automatically track points-related mission progress
-    await trackMissionProgress(userId, 'engage', points);
+    // Automatically track mission progress
+    await trackMissionProgress(userId, missionType, missionType === 'engage' ? points : 1);
     
     return { points: currentPoints, level: newLevel };
   } catch (error) {

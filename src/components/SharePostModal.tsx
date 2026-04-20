@@ -5,6 +5,9 @@ import { toPng } from 'html-to-image';
 import VerifiedBadge from './VerifiedBadge';
 import ShareViaDMModal from './ShareViaDMModal';
 
+import { awardPoints } from '../services/gamificationService';
+import { useAuth } from '../contexts/AuthContext';
+
 interface SharePostModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -12,6 +15,7 @@ interface SharePostModalProps {
 }
 
 export default function SharePostModal({ isOpen, onClose, post }: SharePostModalProps) {
+  const { userProfile } = useAuth();
   const cardRef = useRef<HTMLDivElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isDMModalOpen, setIsDMModalOpen] = useState(false);
@@ -48,12 +52,14 @@ export default function SharePostModal({ isOpen, onClose, post }: SharePostModal
           title: 'Compartilhar Post',
           text: 'Confira este post no Offme!',
         });
+        if (userProfile?.uid) await awardPoints(userProfile.uid, 20, 'share');
       } else {
         // Fallback: Download the image
         const link = document.createElement('a');
         link.download = `offme-post-${post.id}.png`;
         link.href = dataUrl;
         link.click();
+        if (userProfile?.uid) await awardPoints(userProfile.uid, 10, 'share');
       }
     } catch (error) {
       console.error('Error generating image:', error);

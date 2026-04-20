@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Target, Trophy, Star, ChevronRight, Zap, CheckCircle2, Flame, Award, Swords } from 'lucide-react';
+import { Target, Trophy, Star, ChevronRight, Zap, CheckCircle2, Flame, Award, Swords, UserPlus, Send, Repeat, MessageCircle, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { collection, query, orderBy, onSnapshot, getDocs, doc, updateDoc, increment, arrayUnion } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -167,10 +167,13 @@ export default function Missions() {
                       <div className={`p-2.5 rounded-2xl ${
                         mission.isCompleted ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-500'
                       }`}>
-                        {mission.type === 'post' && <Zap className="w-5 h-5 flex-shrink-0" />}
-                        {mission.type === 'like' && <Heart className="w-5 h-5 flex-shrink-0" />}
-                        {mission.type === 'reply' && <MessageCircle className="w-5 h-5 flex-shrink-0" />}
-                        {!['post', 'like', 'reply'].includes(mission.type) && <Target className="w-5 h-5 flex-shrink-0" />}
+                        {mission.type === 'post' && <Zap className="w-5 h-5" />}
+                        {mission.type === 'like' && <Heart className="w-5 h-5" />}
+                        {mission.type === 'reply' && <MessageCircle className="w-5 h-5" />}
+                        {mission.type === 'follow' && <UserPlus className="w-5 h-5" />}
+                        {mission.type === 'dm' && <Send className="w-5 h-5" />}
+                        {mission.type === 'share' && <Repeat className="w-5 h-5" />}
+                        {!['post', 'like', 'reply', 'follow', 'dm', 'share'].includes(mission.type) && <Target className="w-5 h-5" />}
                       </div>
                       <div>
                         <h4 className={`font-bold transition-colors ${mission.isCompleted ? 'text-green-700' : 'text-gray-900'}`}>
@@ -249,6 +252,3 @@ export default function Missions() {
     </div>
   );
 }
-
-// Icons needed but not imported
-import { MessageCircle, Heart } from 'lucide-react';

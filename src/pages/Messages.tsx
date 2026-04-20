@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, User as UserIcon, Send, MoreHorizontal, Trash2, Archive } from 'lucide-react';
+import { Mail, User as UserIcon, Send, MoreHorizontal, Trash2, Archive, Flame } from 'lucide-react';
 import VerifiedBadge from '../components/VerifiedBadge';
 import LazyImage from '../components/LazyImage';
 import ConfirmModal from '../components/ConfirmModal';
@@ -201,6 +201,14 @@ export default function Messages() {
                               {otherParticipantInfo?.displayName || 'Usuário'}
                             </p>
                             {(otherParticipantInfo?.isVerified || otherParticipantInfo?.username === 'Rulio') && <VerifiedBadge tier={otherParticipantInfo?.premiumTier} />}
+                            {conversation.streakCount > 0 && (
+                              <div className="flex items-center space-x-0.5 ml-1 bg-gradient-to-r from-orange-50 to-amber-50 px-1.5 py-0.5 rounded-full border border-orange-100 shadow-sm animate-pulse-slow">
+                                <Flame className="w-3 h-3 text-orange-500 fill-current" />
+                                <span className={`text-[10px] font-black italic tracking-tighter ${conversation.streakCount >= 10 ? 'text-orange-600' : 'text-orange-500'}`}>
+                                  {conversation.streakCount}
+                                </span>
+                              </div>
+                            )}
                           </div>
                           <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
                             {conversation.updatedAt?.toDate ? new Date(conversation.updatedAt.toDate()).toLocaleDateString() : ''}

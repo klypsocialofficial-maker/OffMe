@@ -34,6 +34,7 @@ import SplashScreen from './components/SplashScreen';
 import AnonymousFeed from './pages/AnonymousFeed';
 import InstallPrompt from './components/InstallPrompt';
 import AdminPanel from './pages/AdminPanel';
+import { seedMissions } from './services/missionsService';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { currentUser, loading } = useAuth();
@@ -59,6 +60,10 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    seedMissions();
+  }, []);
 
   return (
     <ThemeProvider>

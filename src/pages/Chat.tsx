@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, Image as ImageIcon, User as UserIcon, Trash2, Check, CheckCheck, Phone, Video, PhoneIncoming, Mic } from 'lucide-react';
+import { ArrowLeft, Send, Image as ImageIcon, User as UserIcon, Trash2, Check, CheckCheck, Phone, Video, PhoneIncoming, Mic, Flame, X, Smile, Sticker as StickerIcon } from 'lucide-react';
 import { sendPushNotification } from '../lib/notifications';
 import VerifiedBadge from '../components/VerifiedBadge';
 import LazyImage from '../components/LazyImage';
@@ -11,6 +11,11 @@ import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, g
 import { db, auth } from '../firebase';
 import CallOverlay from '../components/CallOverlay';
 import ConfirmModal from '../components/ConfirmModal';
+import { uploadToImgBB } from '../lib/imgbb';
+import { GiphyFetch } from '@giphy/js-fetch-api';
+import { Grid } from '@giphy/react-components';
+
+const gf = new GiphyFetch('rJC35Qp0ILjTI6mBlDGRcKCNnCucBBYn');
 
 enum OperationType {
   CREATE = 'create',
@@ -81,6 +86,16 @@ export default function Chat() {
     isIncoming: boolean;
     callerId: string;
   } | null>(null);
+  
+  // Media states
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [showGifPicker, setShowGifPicker] = useState(false);
+  const [pickerType, setPickerType] = useState<'gifs' | 'stickers'>('gifs');
+  const [gifSearch, setGifSearch] = useState('');
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -212,9 +227,31 @@ export default function Chat() {
     }, 3000);
   };
 
-  const handleSendMessage = async (e: React.FormEvent, imageUrl?: string) => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.[0]) {
+      const file = e.target.files[0];
+      setSelectedImage(file);
+      setImagePreview(URL.createObjectURL(file));
+      setShowGifPicker(false);
+    }
+  };
+
+  const fetchGifs = (offset: number) => {
+    if (gifSearch) {
+      if (pickerType === 'stickers') {
+        return gf.search(gifSearch, { offset, limit: 10, type: 'stickers' });
+      }
+      return gf.search(gifSearch, { offset, limit: 10 });
+    }
+    if (pickerType === 'stickers') {
+        return gf.trending({ offset, limit: 10, type: 'stickers' });
+    }
+    return gf.trending({ offset, limit: 10 });
+  };
+
+  const handleSendMessage = async (e?: React.FormEvent, mediaUrl?: string) => {
     if (e) e.preventDefault();
-    if ((!newMessage.trim() && !imageUrl) || !userProfile?.uid || !conversationId || !db) return;
+    if ((!newMessage.trim() && !mediaUrl && !selectedImage) || !userProfile?.uid || !conversationId || !db || uploadingMedia) return;
 
     const messageText = newMessage.trim();
     const otherId = conversation.participants.find((id: string) => id !== userProfile.uid);
@@ -226,10 +263,25 @@ export default function Chat() {
     setTypingStatus(conversationId, false).catch(() => {});
 
     try {
-      await sendChatMessage(conversationId, otherId, messageText, imageUrl);
-      scrollToBottom();
+      setUploadingMedia(true);
+      let finalMediaUrl = mediaUrl || null;
+      
+      if (selectedImage && !finalMediaUrl) {
+         finalMediaUrl = await uploadToImgBB(selectedImage);
+      }
+      
+      await sendChatMessage(conversationId, otherId, messageText, finalMediaUrl || undefined);
+      
+      setSelectedImage(null);
+      setImagePreview(null);
+      setShowGifPicker(false);
+      setGifSearch('');
+      
+      setTimeout(scrollToBottom, 100);
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, `conversations/${conversationId}/messages`);
+    } finally {
+      setUploadingMedia(false);
     }
   };
 
@@ -280,6 +332,12 @@ export default function Chat() {
                 <div className="flex items-center space-x-1">
                   <h2 className="font-bold leading-tight">{otherParticipantInfo?.displayName || 'Usuário'}</h2>
                   {(otherParticipantInfo?.isVerified || otherParticipantInfo?.username === 'Rulio') && <VerifiedBadge tier={otherParticipantInfo?.premiumTier} />}
+                  {conversation?.streakCount > 0 && (
+                    <div className="flex items-center space-x-0.5 ml-1 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100">
+                      <Flame className="w-3 h-3 text-orange-500 fill-current" />
+                      <span className="text-[10px] font-black italic text-orange-500">{conversation.streakCount}</span>
+                    </div>
+                  )}
                 </div>
                 <p className="text-xs text-gray-500">@{otherParticipantInfo?.username || 'usuario'}</p>
               </div>
@@ -335,38 +393,44 @@ export default function Chat() {
                       setSelectedMessageId(isSelected ? null : msg.id);
                     }
                   }}
-                  className={`max-w-[75%] rounded-2xl px-4 py-2 cursor-pointer transition-all ${
-                    isMine 
-                      ? msg.isDeleted 
-                        ? 'bg-gray-100 text-gray-400 italic rounded-br-sm border border-gray-200'
-                        : 'bg-blue-500 text-white rounded-br-sm hover:bg-blue-600' 
-                      : msg.isDeleted
-                        ? 'bg-gray-50 text-gray-400 italic rounded-bl-sm border border-gray-100'
-                        : 'bg-gray-100 text-black rounded-bl-sm'
+                  className={`max-w-[75%] rounded-2xl cursor-pointer transition-all ${
+                    msg.imageUrl && !msg.text 
+                      ? 'p-0 bg-transparent' // Media only: no bubble
+                      : 'px-4 py-2 ' + (
+                          isMine 
+                            ? msg.isDeleted 
+                              ? 'bg-gray-100 text-gray-400 italic rounded-br-sm border border-gray-200'
+                              : 'bg-blue-500 text-white rounded-br-sm hover:bg-blue-600' 
+                            : msg.isDeleted
+                              ? 'bg-gray-50 text-gray-400 italic rounded-bl-sm border border-gray-100'
+                              : 'bg-gray-100 text-black rounded-bl-sm'
+                        )
                   } ${isSelected ? 'ring-2 ring-blue-300 ring-offset-2' : ''}`}
                 >
                   {msg.imageUrl && (
-                    <div className="mb-2 max-w-full">
-                       <LazyImage src={msg.imageUrl} alt="Mensagem com imagem" className="rounded-xl w-full object-cover max-h-64" />
+                    <div className={`${msg.text ? 'mb-2' : ''} max-w-full overflow-hidden rounded-2xl`}>
+                       <LazyImage src={msg.imageUrl} alt="Mídia" className={`w-full object-cover max-h-80 ${msg.text ? 'rounded-xl' : 'rounded-2xl shadow-sm'}`} />
                     </div>
                   )}
-                  {msg.postId ? (
+                  {msg.text && (
+                    msg.postId ? (
                       <div className="space-y-2 cursor-pointer" onClick={() => navigate(`/post/${msg.postId}`)}>
                           <p className="text-xs font-bold opacity-80 underline">Post compartilhado</p>
                           <p className="break-words text-sm font-medium">{msg.text || 'Clique para ver o post'}</p>
                       </div>
-                  ) : (
+                    ) : (
                       <p className="break-words text-sm">{msg.text}</p>
+                    )
                   )}
                   {isMine && !msg.isDeleted && (
-                    <div className="flex justify-end mt-1 items-center space-x-1">
+                    <div className={`flex justify-end mt-1 items-center space-x-1 ${msg.imageUrl && !msg.text ? 'bg-black/20 backdrop-blur-md px-2 py-0.5 rounded-full absolute bottom-2 right-2' : ''}`}>
                       <span className="text-[10px] opacity-70">
                         {msg.createdAt?.toDate ? new Date(msg.createdAt.toDate()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                       </span>
                       {msg.read ? (
-                        <CheckCheck className="w-3 h-3 text-blue-200" />
+                        <CheckCheck className={`w-3 h-3 ${msg.imageUrl && !msg.text ? 'text-white' : 'text-blue-200'}`} />
                       ) : (
-                        <Check className="w-3 h-3 text-blue-100" />
+                        <Check className={`w-3 h-3 ${msg.imageUrl && !msg.text ? 'text-white' : 'text-blue-100'}`} />
                       )}
                     </div>
                   )}
@@ -415,7 +479,96 @@ export default function Chat() {
         </div>
 
       {/* Input Area */}
-      <div className="p-3 border-t border-gray-100 bg-white pb-[calc(env(safe-area-inset-bottom)+12px)] shrink-0 mt-auto">
+      <div className="p-3 border-t border-gray-100 bg-white pb-[calc(env(safe-area-inset-bottom)+12px)] shrink-0 mt-auto relative">
+        <input 
+          type="file" 
+          ref={fileInputRef} 
+          className="hidden" 
+          accept="image/*" 
+          onChange={handleImageChange}
+        />
+
+        <AnimatePresence>
+          {imagePreview && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="bg-gray-50 p-3 mb-2 rounded-2xl relative overflow-hidden flex justify-center"
+            >
+              <div className="relative group">
+                <img src={imagePreview} alt="Preview" className="h-32 rounded-xl object-cover" />
+                <button 
+                  onClick={() => { setSelectedImage(null); setImagePreview(null); }}
+                  className="absolute -top-2 -right-2 bg-black text-white p-1 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {showGifPicker && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 350, opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="bg-white border border-gray-100 rounded-t-3xl shadow-2xl absolute bottom-full left-0 right-0 z-50 flex flex-col overflow-hidden"
+            >
+              <div className="p-4 border-b border-gray-50">
+                <div className="flex bg-gray-100 rounded-full p-1 mb-3">
+                  <button 
+                    onClick={() => setPickerType('gifs')}
+                    className={`flex-1 py-1.5 rounded-full text-xs font-bold transition-all ${pickerType === 'gifs' ? 'bg-white shadow-sm text-black' : 'text-gray-500'}`}
+                  >
+                    GIFs
+                  </button>
+                  <button 
+                    onClick={() => setPickerType('stickers')}
+                    className={`flex-1 py-1.5 rounded-full text-xs font-bold transition-all ${pickerType === 'stickers' ? 'bg-white shadow-sm text-black' : 'text-gray-500'}`}
+                  >
+                    Figurinhas
+                  </button>
+                </div>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={gifSearch}
+                    onChange={(e) => setGifSearch(e.target.value)}
+                    placeholder={pickerType === 'gifs' ? "Buscar GIFs..." : "Buscar figurinhas..."}
+                    className="w-full bg-gray-100 rounded-full px-4 py-2 text-sm outline-none focus:ring-2 ring-blue-500/20"
+                  />
+                  {gifSearch && (
+                    <button onClick={() => setGifSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 p-1">
+                      <X className="w-4 h-4 text-gray-400" />
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
+                <Grid
+                  width={window.innerWidth > 500 ? 460 : window.innerWidth - 32}
+                  columns={2}
+                  fetchGifs={fetchGifs}
+                  key={`${pickerType}-${gifSearch}`}
+                  onGifClick={(gif, e) => {
+                    e.preventDefault();
+                    handleSendMessage(undefined, gif.images.original.url);
+                  }}
+                  noResultsMessage="Nenhum resultado encontrado"
+                />
+              </div>
+              <div className="p-2 border-t border-gray-50 flex justify-center">
+                 <button onClick={() => setShowGifPicker(false)} className="text-sm font-bold text-gray-400 hover:text-black transition-colors py-2 px-4">
+                    Fechar
+                 </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {isBlocked ? (
           <div className="flex flex-col items-center justify-center space-y-2 py-4">
             <p className="text-sm text-gray-500">Você bloqueou este usuário.</p>
@@ -427,28 +580,57 @@ export default function Chat() {
             </button>
           </div>
         ) : (
-          <form onSubmit={handleSendMessage} className="flex items-center space-x-2 bg-gray-100 rounded-full px-4 py-2 w-full">
-            <button type="button" className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition-colors flex-shrink-0">
-              <ImageIcon className="w-5 h-5" />
+          <div className="flex items-center space-x-2">
+            <div className="flex items-center bg-gray-100 rounded-full px-4 py-1.5 flex-1">
+              <button 
+                type="button" 
+                onClick={() => fileInputRef.current?.click()}
+                className="p-2 text-gray-500 hover:text-blue-500 rounded-full transition-colors flex-shrink-0"
+              >
+                <ImageIcon className="w-5 h-5" />
+              </button>
+              <button 
+                type="button" 
+                onClick={() => { setShowGifPicker(!showGifPicker); setPickerType('stickers'); }}
+                className={`p-2 rounded-full transition-colors flex-shrink-0 ${showGifPicker && pickerType === 'stickers' ? 'text-blue-500 bg-blue-50' : 'text-gray-500 hover:text-blue-500'}`}
+              >
+                <StickerIcon className="w-5 h-5" />
+              </button>
+              <button 
+                type="button" 
+                onClick={() => { setShowGifPicker(!showGifPicker); setPickerType('gifs'); }}
+                className={`p-2 rounded-full transition-colors flex-shrink-0 ${showGifPicker && pickerType === 'gifs' ? 'text-blue-500 bg-blue-50' : 'text-gray-500 hover:text-blue-500'}`}
+              >
+                <Smile className="w-5 h-5" />
+              </button>
+              <form onSubmit={handleSendMessage} className="flex-1 flex items-center">
+                <input
+                  type="text"
+                  value={newMessage}
+                  onChange={(e) => {
+                    setNewMessage(e.target.value);
+                    handleTyping();
+                  }}
+                  placeholder="Mensagem..."
+                  className="flex-1 bg-transparent outline-none py-2 text-sm ml-2"
+                />
+                <button 
+                  type="submit" 
+                  disabled={(!newMessage.trim() && !selectedImage) || uploadingMedia}
+                  className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition-colors disabled:opacity-30 flex-shrink-0 relative"
+                >
+                  {uploadingMedia ? (
+                    <div className="w-5 h-5 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+                  ) : (
+                    <Send className="w-5 h-5" />
+                  )}
+                </button>
+              </form>
+            </div>
+            <button className="p-3 bg-gray-100 text-gray-500 rounded-full hover:bg-gray-200 transition-colors">
+              <Mic className="w-5 h-5" />
             </button>
-            <input
-              type="text"
-              value={newMessage}
-              onChange={(e) => {
-                setNewMessage(e.target.value);
-                handleTyping();
-              }}
-              placeholder="Comece uma mensagem"
-              className="flex-1 bg-transparent outline-none py-2"
-            />
-            <button 
-              type="submit" 
-              disabled={!newMessage.trim()}
-              className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition-colors disabled:opacity-50 flex-shrink-0"
-            >
-              <Send className="w-5 h-5" />
-            </button>
-          </form>
+          </div>
         )}
       </div>
 
