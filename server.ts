@@ -2,29 +2,7 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import cors from "cors";
-import { v2 as cloudinary } from 'cloudinary';
-import multer from 'multer';
-import dotenv from 'dotenv';
-
-dotenv.config();
-
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
-});
-
-if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
-  console.warn('WARNING: Cloudinary credentials are not fully configured in environment variables.');
-}
-
-const storage = multer.memoryStorage();
-const upload = multer({ 
-  storage,
-  limits: {
-    fileSize: 100 * 1024 * 1024, // 100MB limit
-  }
-});
+import fs from "fs";
 
 async function startServer() {
   const app = express();
@@ -33,74 +11,33 @@ async function startServer() {
   app.use(cors());
   app.use(express.json());
 
-  // API routes FIRST
+  // Check for api directory and statically load handlers if possible
+  const apiDir = path.join(process.cwd(), 'api');
+  if (fs.existsSync(apiDir)) {
+    const files = fs.readdirSync(apiDir).filter((f) => f.endsWith('.ts') || f.endsWith('.js'));
+    for (const file of files) {
+      const routePath = `/api/${file.replace(/\.(ts|js)$/, '')}`;
+      app.all(routePath, async (req, res) => {
+        try {
+          const module = await import(`./api/${file}`);
+          const handler = module.default;
+          if (typeof handler === 'function') {
+            await handler(req, res);
+          } else {
+            res.status(500).json({ error: 'Invalid API handler' });
+          }
+        } catch (e) {
+          console.error(`Error executing API route ${routePath}:`, e);
+          res.status(500).json({ error: 'Internal Server Error' });
+        }
+      });
+      console.log(`Registered API Route: ${routePath}`);
+    }
+  }
+
+  // Fallback API route
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });
-  });
-
-  app.post('/api/upload-video', (req, res, next) => {
-    upload.single('video')(req, res, (err) => {
-      if (err instanceof multer.MulterError) {
-        console.error('Multer error:', err);
-        if (err.code === 'LIMIT_FILE_SIZE') {
-          return res.status(400).json({ error: 'O vídeo é muito grande (máximo 100MB)' });
-        }
-        return res.status(400).json({ error: `Erro no upload: ${err.message}` });
-      } else if (err) {
-        console.error('Unknown upload error:', err);
-        return res.status(500).json({ error: 'Erro interno no processamento do arquivo' });
-      }
-      next();
-    });
-  }, (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({ error: 'Nenhum arquivo de vídeo enviado' });
-      }
-
-      console.log('Starting video upload to Cloudinary...', { 
-        filename: req.file.originalname, 
-        size: req.file.size,
-        mimetype: req.file.mimetype 
-      });
-
-      const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          resource_type: 'video',
-          folder: 'offme/videos',
-          timeout: 600000, // 10 minutes timeout for server-side upload
-          chunk_size: 6000000, 
-          eager: [
-            { width: 720, height: 1280, crop: "fill", gravity: "center" }
-          ],
-          eager_async: true
-        },
-        (error, result) => {
-          if (error) {
-            console.error('SERVER SIDE Cloudinary upload error:', {
-              message: error.message,
-              http_code: error.http_code,
-              error: error
-            });
-            return res.status(500).json({ 
-              error: 'Falha no Cloudinary', 
-              details: error.message 
-            });
-          }
-          if (!result) {
-            return res.status(500).json({ error: 'Nenhum resultado retornado do Cloudinary' });
-          }
-          
-          console.log('Video upload successful:', result.secure_url);
-          res.json({ url: result.secure_url });
-        }
-      );
-
-      uploadStream.end(req.file.buffer);
-    } catch (error) {
-      console.error('Express route error:', error);
-      res.status(500).json({ error: 'Erro interno do servidor' });
-    }
   });
 
   // Vite middleware for development

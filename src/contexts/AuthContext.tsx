@@ -107,6 +107,8 @@ interface UserProfile {
   streakCount?: number;
   lastLoginAt?: any;
   inventory?: string[];
+  completedMissionIds?: string[];
+  missionProgress?: Record<string, number>;
 }
 
 interface AuthContextType {
@@ -293,8 +295,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
           setLoading(false);
         }, (error) => {
-          handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
           setLoading(false);
+          handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
         });
       } else {
         setUserProfile(null);

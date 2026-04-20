@@ -35,24 +35,6 @@ import AnonymousFeed from './pages/AnonymousFeed';
 import InstallPrompt from './components/InstallPrompt';
 import AdminPanel from './pages/AdminPanel';
 import { seedMissions } from './services/missionsService';
-import { db } from './firebase';
-import { doc, getDocFromServer } from 'firebase/firestore';
-
-async function testConnection() {
-  try {
-    // Attempting to read a potentially non-existent path just to test network connectivity
-    await getDocFromServer(doc(db, 'test', 'connection'));
-  } catch (error: any) {
-    // Permission errors are expected if rules aren't set up, ignore them
-    if(error.code === 'permission-denied') {
-      console.log("Firestore connection test: permission-denied (expected)");
-    } else {
-      console.error("Firestore connection test failed:", error);
-    }
-  }
-}
-
-testConnection();
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { currentUser, loading } = useAuth();
@@ -76,23 +58,16 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
   return currentUser ? <>{children}</> : <Navigate to="/login" />;
 }
 
-function MissionSeeder() {
-  const { currentUser } = useAuth();
-  useEffect(() => {
-    if (currentUser?.email === 'klypsocialofficial@gmail.com') {
-      seedMissions();
-    }
-  }, [currentUser]);
-  return null;
-}
-
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    seedMissions();
+  }, []);
 
   return (
     <ThemeProvider>
       <AuthProvider>
-        <MissionSeeder />
         {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
         <Router>
           <Routes>

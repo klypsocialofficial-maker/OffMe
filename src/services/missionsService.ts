@@ -1,5 +1,5 @@
 import { collection, doc, getDocs, setDoc, serverTimestamp, query, where } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, auth } from '../firebase';
 
 export interface Mission {
   id: string;
@@ -55,7 +55,7 @@ const DEFAULT_MISSIONS: Omit<Mission, 'id'>[] = [
 ];
 
 export const seedMissions = async () => {
-  if (!db) return;
+  if (!db || !auth?.currentUser || auth.currentUser.email !== 'klypsocialofficial@gmail.com') return;
 
   try {
     const missionsCol = collection(db, 'missions');

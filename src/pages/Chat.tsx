@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, Image as ImageIcon, User as UserIcon, Trash2, Check, CheckCheck, Phone, Video, PhoneIncoming, Mic, Flame, X, Smile, Sticker as StickerIcon, Film } from 'lucide-react';
+import { ArrowLeft, Send, Image as ImageIcon, User as UserIcon, Trash2, Check, CheckCheck, Phone, Video, PhoneIncoming, Mic, Flame, X, Smile, Sticker as StickerIcon } from 'lucide-react';
 import { sendPushNotification } from '../lib/notifications';
 import VerifiedBadge from '../components/VerifiedBadge';
 import LazyImage from '../components/LazyImage';
@@ -12,7 +12,6 @@ import { db, auth } from '../firebase';
 import CallOverlay from '../components/CallOverlay';
 import ConfirmModal from '../components/ConfirmModal';
 import { uploadToImgBB } from '../lib/imgbb';
-import { uploadToStorage } from '../lib/firebaseStorage';
 import { GiphyFetch } from '@giphy/js-fetch-api';
 import { Grid } from '@giphy/react-components';
 
@@ -91,16 +90,12 @@ export default function Chat() {
   // Media states
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
-  const [videoPreview, setVideoPreview] = useState<string | null>(null);
-  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [showGifPicker, setShowGifPicker] = useState(false);
   const [pickerType, setPickerType] = useState<'gifs' | 'stickers'>('gifs');
   const [gifSearch, setGifSearch] = useState('');
   const [uploadingMedia, setUploadingMedia] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const videoInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -237,19 +232,6 @@ export default function Chat() {
       const file = e.target.files[0];
       setSelectedImage(file);
       setImagePreview(URL.createObjectURL(file));
-      setSelectedVideo(null);
-      setVideoPreview(null);
-      setShowGifPicker(false);
-    }
-  };
-
-  const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) {
-      const file = e.target.files[0];
-      setSelectedVideo(file);
-      setVideoPreview(URL.createObjectURL(file));
-      setSelectedImage(null);
-      setImagePreview(null);
       setShowGifPicker(false);
     }
   };
@@ -269,7 +251,7 @@ export default function Chat() {
 
   const handleSendMessage = async (e?: React.FormEvent, mediaUrl?: string) => {
     if (e) e.preventDefault();
-    if ((!newMessage.trim() && !mediaUrl && !selectedImage && !selectedVideo) || !userProfile?.uid || !conversationId || !db || uploadingMedia) return;
+    if ((!newMessage.trim() && !mediaUrl && !selectedImage) || !userProfile?.uid || !conversationId || !db || uploadingMedia) return;
 
     const messageText = newMessage.trim();
     const otherId = conversation.participants.find((id: string) => id !== userProfile.uid);
@@ -283,36 +265,23 @@ export default function Chat() {
     try {
       setUploadingMedia(true);
       let finalMediaUrl = mediaUrl || null;
-      let hasVideo = false;
       
       if (selectedImage && !finalMediaUrl) {
          finalMediaUrl = await uploadToImgBB(selectedImage);
-      } else if (selectedVideo && !finalMediaUrl) {
-         const videoPath = `chats/${conversationId}/videos/${Date.now()}-${selectedVideo.name}`;
-         finalMediaUrl = await uploadToStorage(selectedVideo, videoPath, (progress) => {
-           setUploadProgress(progress);
-         });
-         hasVideo = true;
       }
       
-      await sendChatMessage(conversationId, otherId, messageText, finalMediaUrl || undefined, hasVideo);
+      await sendChatMessage(conversationId, messageText, finalMediaUrl || undefined);
       
       setSelectedImage(null);
       setImagePreview(null);
-      setSelectedVideo(null);
-      setVideoPreview(null);
-      setUploadProgress(null);
       setShowGifPicker(false);
       setGifSearch('');
       
       setTimeout(scrollToBottom, 100);
-    } catch (error: any) {
-      console.error('Error in handleSendMessage:', error);
-      alert(`Erro ao enviar mensagem: ${error.message || 'Erro desconhecido'}`);
+    } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, `conversations/${conversationId}/messages`);
     } finally {
       setUploadingMedia(false);
-      setUploadProgress(null);
     }
   };
 
@@ -425,7 +394,7 @@ export default function Chat() {
                     }
                   }}
                   className={`max-w-[75%] rounded-2xl cursor-pointer transition-all ${
-                    (msg.imageUrl || msg.hasVideo) && !msg.text 
+                    msg.imageUrl && !msg.text 
                       ? 'p-0 bg-transparent' // Media only: no bubble
                       : 'px-4 py-2 ' + (
                           isMine 
@@ -438,12 +407,7 @@ export default function Chat() {
                         )
                   } ${isSelected ? 'ring-2 ring-blue-300 ring-offset-2' : ''}`}
                 >
-                  {msg.hasVideo && msg.imageUrl && (
-                    <div className={`${msg.text ? 'mb-2' : ''} max-w-full overflow-hidden rounded-2xl bg-black aspect-video`}>
-                       <video src={msg.imageUrl} className="w-full h-full object-contain" controls playsInline muted />
-                    </div>
-                  )}
-                  {!msg.hasVideo && msg.imageUrl && (
+                  {msg.imageUrl && (
                     <div className={`${msg.text ? 'mb-2' : ''} max-w-full overflow-hidden rounded-2xl`}>
                        <LazyImage src={msg.imageUrl} alt="Mídia" className={`w-full object-cover max-h-80 ${msg.text ? 'rounded-xl' : 'rounded-2xl shadow-sm'}`} />
                     </div>
@@ -459,14 +423,14 @@ export default function Chat() {
                     )
                   )}
                   {isMine && !msg.isDeleted && (
-                    <div className={`flex justify-end mt-1 items-center space-x-1 ${(msg.imageUrl || msg.hasVideo) && !msg.text ? 'bg-black/20 backdrop-blur-md px-2 py-0.5 rounded-full absolute bottom-2 right-2' : ''}`}>
+                    <div className={`flex justify-end mt-1 items-center space-x-1 ${msg.imageUrl && !msg.text ? 'bg-black/20 backdrop-blur-md px-2 py-0.5 rounded-full absolute bottom-2 right-2' : ''}`}>
                       <span className="text-[10px] opacity-70">
                         {msg.createdAt?.toDate ? new Date(msg.createdAt.toDate()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                       </span>
                       {msg.read ? (
-                        <CheckCheck className={`w-3 h-3 ${(msg.imageUrl || msg.hasVideo) && !msg.text ? 'text-white' : 'text-blue-200'}`} />
+                        <CheckCheck className={`w-3 h-3 ${msg.imageUrl && !msg.text ? 'text-white' : 'text-blue-200'}`} />
                       ) : (
-                        <Check className={`w-3 h-3 ${(msg.imageUrl || msg.hasVideo) && !msg.text ? 'text-white' : 'text-blue-100'}`} />
+                        <Check className={`w-3 h-3 ${msg.imageUrl && !msg.text ? 'text-white' : 'text-blue-100'}`} />
                       )}
                     </div>
                   )}
@@ -524,14 +488,6 @@ export default function Chat() {
           onChange={handleImageChange}
         />
 
-         <input 
-          type="file" 
-          ref={videoInputRef} 
-          className="hidden" 
-          accept="video/*" 
-          onChange={handleVideoChange}
-        />
-
         <AnimatePresence>
           {imagePreview && (
             <motion.div 
@@ -548,37 +504,6 @@ export default function Chat() {
                 >
                   <X className="w-4 h-4" />
                 </button>
-              </div>
-            </motion.div>
-          )}
-
-          {videoPreview && (
-            <motion.div 
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="bg-gray-50 p-3 mb-2 rounded-2xl relative overflow-hidden flex justify-center"
-            >
-              <div className="relative group aspect-video h-32 bg-black rounded-xl overflow-hidden">
-                <video src={videoPreview} className="h-full object-contain" muted />
-                <button 
-                  onClick={() => { setSelectedVideo(null); setVideoPreview(null); }}
-                  className="absolute top-1 right-1 bg-black/60 text-white p-1 rounded-full shadow-lg z-10"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-                {uploadProgress !== null && (
-                  <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center">
-                    <span className="text-white text-[10px] font-black">{uploadProgress}%</span>
-                    <div className="w-12 h-1 bg-white/20 rounded-full mt-1 overflow-hidden">
-                      <motion.div 
-                        initial={{ width: 0 }}
-                        animate={{ width: `${uploadProgress}%` }}
-                        className="h-full bg-blue-500"
-                      />
-                    </div>
-                  </div>
-                )}
               </div>
             </motion.div>
           )}
@@ -660,16 +585,9 @@ export default function Chat() {
               <button 
                 type="button" 
                 onClick={() => fileInputRef.current?.click()}
-                className={`p-2 rounded-full transition-colors flex-shrink-0 ${imagePreview ? 'text-blue-500 bg-blue-50' : 'text-gray-500 hover:text-blue-500'}`}
+                className="p-2 text-gray-500 hover:text-blue-500 rounded-full transition-colors flex-shrink-0"
               >
                 <ImageIcon className="w-5 h-5" />
-              </button>
-              <button 
-                type="button" 
-                onClick={() => videoInputRef.current?.click()}
-                className={`p-2 rounded-full transition-colors flex-shrink-0 ${videoPreview ? 'text-blue-500 bg-blue-50' : 'text-gray-500 hover:text-blue-500'}`}
-              >
-                <Film className="w-5 h-5" />
               </button>
               <button 
                 type="button" 
@@ -698,7 +616,7 @@ export default function Chat() {
                 />
                 <button 
                   type="submit" 
-                  disabled={(!newMessage.trim() && !selectedImage && !selectedVideo) || uploadingMedia}
+                  disabled={(!newMessage.trim() && !selectedImage) || uploadingMedia}
                   className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition-colors disabled:opacity-30 flex-shrink-0 relative"
                 >
                   {uploadingMedia ? (
