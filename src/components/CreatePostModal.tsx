@@ -3,6 +3,7 @@ import { User as UserIcon, Image as ImageIcon, X, BarChart2, Film, Ghost, Clock,
 import { addDoc, collection, serverTimestamp, doc, updateDoc, increment, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { uploadToImgBB } from '../lib/imgbb';
+import { uploadToUploadcare } from '../lib/uploadcare';
 import { awardPoints, trackMissionProgress } from '../services/gamificationService';
 import { motion, AnimatePresence } from 'motion/react';
 import VerifiedBadge from './VerifiedBadge';
@@ -11,7 +12,6 @@ import { GiphyFetch } from '@giphy/js-fetch-api';
 import { getDefaultAvatar } from '../lib/avatar';
 import { Grid } from '@giphy/react-components';
 import { handleMentions, sendPushNotification, notifyFollowers } from '../lib/notifications';
-import { UploadcareWidget } from './UploadcareWidget';
 
 const gf = new GiphyFetch('rJC35Qp0ILjTI6mBlDGRcKCNnCucBBYn');
 
@@ -46,7 +46,7 @@ export default function CreatePostModal({
   const [altText, setAltText] = useState('');
   const [hasVideo, setHasVideo] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
-  const [showVideoUploader, setShowVideoUploader] = useState(false);
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -98,17 +98,39 @@ export default function CreatePostModal({
       setGifUrl(null); // Clear GIF if image is uploaded
       setVideoUrl(null);
       setHasVideo(false);
-      setShowVideoUploader(false);
     }
   };
 
-  const handleVideoUploadComplete = (url: string) => {
-    setVideoUrl(url);
-    setHasVideo(true);
-    setShowVideoUploader(false);
-    setImageFiles([]); // Clear images
-    setImagePreviews([]);
-    setGifUrl(null);
+  const handleVideoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 100 * 1024 * 1024) {
+      alert('O vídeo deve ter no máximo 100MB.');
+      return;
+    }
+
+    try {
+      setIsUploadingVideo(true);
+      setGifUrl(null);
+      setImageFiles([]);
+      setImagePreviews([]);
+      
+      const url = await uploadToUploadcare(file);
+      setVideoUrl(url);
+      setHasVideo(true);
+    } catch (error) {
+      console.error('Video upload failed:', error);
+      alert('Falha ao carregar o vídeo. Tente novamente.');
+    } finally {
+      setIsUploadingVideo(false);
+      if (videoInputRef.current) videoInputRef.current.value = '';
+    }
+  };
+
+  const removeVideo = () => {
+    setVideoUrl(null);
+    setHasVideo(false);
   };
 
   const removeImage = (index: number) => {
@@ -511,7 +533,8 @@ export default function CreatePostModal({
                     className="w-full bg-transparent text-xl outline-none resize-none min-h-[120px] placeholder-gray-500"
                     autoFocus
                   />
-                               {/* Hidden file input */}
+                  
+                  {/* Hidden file inputs */}
                   <input
                     type="file"
                     ref={fileInputRef}
@@ -520,36 +543,18 @@ export default function CreatePostModal({
                     multiple
                     className="hidden"
                   />
+                  <input
+                    type="file"
+                    ref={videoInputRef}
+                    onChange={handleVideoChange}
+                    accept="video/*"
+                    className="hidden"
+                  />
                   
-                  {/* Uploadcare Widget Layer */}
-                  {showVideoUploader && !videoUrl && (
-                    <div className="mt-4 p-5 bg-blue-50/30 border border-blue-100 rounded-3xl relative overflow-hidden group">
-                      <div className="flex justify-between items-center mb-3">
-                        <div className="flex items-center space-x-2">
-                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                             <Film className="w-4 h-4 text-blue-600" />
-                          </div>
-                          <span className="text-sm font-black text-blue-900 uppercase tracking-wider">Upload de Vídeo</span>
-                        </div>
-                        <button 
-                          onClick={() => setShowVideoUploader(false)} 
-                          className="p-1.5 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                      <div className="bg-white/60 p-4 rounded-2xl border border-blue-50 backdrop-blur-sm">
-                        <UploadcareWidget 
-                          onUploadComplete={handleVideoUploadComplete} 
-                          onUploadError={(err) => {
-                            alert("Erro no upload do vídeo. Verifique se o arquivo é válido ou tente novamente.");
-                            console.error("Upload error:", err);
-                          }}
-                        />
-                      </div>
-                      <p className="mt-3 text-[10px] text-blue-500/70 font-medium px-1">
-                        Formatos aceitos: MP4, MOV, WebM. Limite sugerido: 50MB.
-                      </p>
+                  {isUploadingVideo && (
+                    <div className="mt-4 p-8 bg-blue-50/50 border border-blue-100 rounded-3xl flex flex-col items-center justify-center space-y-3 animate-pulse">
+                      <div className="w-12 h-12 rounded-full border-4 border-blue-200 border-t-blue-500 animate-spin" />
+                      <span className="text-sm font-black text-blue-600 uppercase tracking-widest text-[10px]">Carregando vídeo...</span>
                     </div>
                   )}
 
@@ -691,8 +696,8 @@ export default function CreatePostModal({
                 </button>
                 <button 
                   type="button"
-                  onClick={() => setShowVideoUploader(!showVideoUploader)} 
-                  className={`p-2 rounded-full transition-colors ${hasVideo || showVideoUploader ? 'bg-blue-50 text-blue-500' : 'text-blue-500 hover:bg-blue-50'}`}
+                  onClick={() => videoInputRef.current?.click()} 
+                  className={`p-2 rounded-full transition-colors ${hasVideo || isUploadingVideo ? 'bg-blue-50 text-blue-500' : 'text-blue-500 hover:bg-blue-50'}`}
                 >
                   <Film className="w-5 h-5" />
                 </button>
