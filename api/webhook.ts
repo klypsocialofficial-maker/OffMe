@@ -51,12 +51,8 @@ export default async function handler(req: any, res: any) {
     apiVersion: '2024-12-18.acacia',
   });
 
-  // Read raw body
-  const chunks = [];
-  for await (const chunk of req) {
-    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
-  }
-  const rawBody = Buffer.concat(chunks);
+  // Read raw body properly from Express
+  const rawBody = req.rawBody || JSON.stringify(req.body);
 
   const sig = req.headers['stripe-signature'];
   let event;

@@ -9,7 +9,11 @@ async function startServer() {
   const PORT = 3000;
 
   app.use(cors());
-  app.use(express.json());
+  app.use(express.json({
+    verify: (req: any, res: any, buf: Buffer) => {
+      req.rawBody = buf;
+    }
+  }));
 
   // Check for api directory and statically load handlers if possible
   const apiDir = path.join(process.cwd(), 'api');

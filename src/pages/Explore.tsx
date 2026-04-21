@@ -68,7 +68,6 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 const CATEGORIES = [
   { id: 'foryou', label: 'Para você', icon: UserIcon },
   { id: 'trending', label: 'Em alta', icon: TrendingUp },
-  { id: 'videos', label: 'Vídeos', icon: Tv },
   { id: 'news', label: 'Notícias', icon: Hash },
   { id: 'sports', label: 'Esportes', icon: Trophy },
   { id: 'tech', label: 'Tecnologia', icon: Cpu },
@@ -99,8 +98,6 @@ export default function Explore() {
   const [searchTab, setSearchTab] = useState<'users' | 'posts'>('users');
   const [loading, setLoading] = useState(false);
   const [postsResults, setPostsResults] = useState<any[]>([]);
-  const [videoPosts, setVideoPosts] = useState<any[]>([]);
-  const [loadingVideos, setLoadingVideos] = useState(false);
 
   const handleDeletePost = async (postId: string) => {
     if (!db || !userProfile) return;
@@ -467,37 +464,6 @@ export default function Explore() {
   }, [userProfile?.uid, userProfile?.following]);
 
   useEffect(() => {
-    if (!db || activeTab !== 'videos') return;
-    
-    setLoadingVideos(true);
-    const q = query(
-      collection(db, 'posts'),
-      where('hasVideo', '==', true),
-      orderBy('createdAt', 'desc'),
-      limit(20)
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const allVideoPosts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
-      // Manual Privacy Filter
-      const publicVideos = allVideoPosts.filter(post => {
-        if (post.privacy === 'circle') {
-          const circleMembers = post.audience || [];
-          return post.authorId === userProfile?.uid || circleMembers.includes(userProfile?.uid);
-        }
-        return true; // Default to public if privacy field is missing or set to 'public'
-      });
-      setVideoPosts(publicVideos);
-      setLoadingVideos(false);
-    }, (error) => {
-      console.error("Error fetching videos:", error);
-      setLoadingVideos(false);
-    });
-
-    return () => unsubscribe();
-  }, [activeTab, db, userProfile?.uid]);
-
-  useEffect(() => {
     const cleanQuery = searchQuery.trim().replace(/^@/, '');
     
     if (!cleanQuery || !db) {
@@ -815,39 +781,7 @@ export default function Explore() {
                     </div>
                   )}
 
-                  {/* Sections based on tab */}
-                  {activeTab === 'videos' ? (
-                    <div className="space-y-0">
-                      {loadingVideos ? (
-                        <div className="flex flex-col items-center justify-center p-12 space-y-4">
-                          <div className="w-8 h-8 border-2 border-black/10 border-t-black rounded-full animate-spin" />
-                          <p className="text-gray-500 text-sm font-medium">Buscando vídeos...</p>
-                        </div>
-                      ) : videoPosts.length > 0 ? (
-                        videoPosts.map((post) => (
-                          <PostCard 
-                            key={`video-tab-${post.id}`}
-                            post={post}
-                            onLike={() => handleLikePost(post)}
-                            onRepost={() => handleRepost(post)}
-                            onDelete={() => handleDeletePost(post.id)}
-                            onEdit={(p) => navigate(`/post/${p.id}`)}
-                            onShare={() => {}}
-                            onReply={(p) => navigate(`/post/${p.id}`)}
-                            onQuote={(p) => navigate(`/post/${p.id}`)}
-                            onImageClick={(src, alt) => {}}
-                            canEdit={() => false}
-                          />
-                        ))
-                      ) : (
-                        <div className="flex flex-col items-center justify-center p-12 text-center">
-                          <Tv className="w-16 h-16 text-gray-200 mb-4" />
-                          <h3 className="font-bold text-gray-900">Ainda não há vídeos aqui</h3>
-                          <p className="text-gray-500 text-sm mt-1">Seja o primeiro a postar um vídeo!</p>
-                        </div>
-                      )}
-                    </div>
-                  ) : activeTab === 'foryou' || activeTab === 'trending' ? (
+                  {activeTab === 'foryou' || activeTab === 'trending' ? (
                     <>
                       <div className="mb-0">
                         <TrendingPosts isFullList={activeTab === 'trending'} />

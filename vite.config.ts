@@ -45,6 +45,21 @@ export default defineConfig(({mode}) => {
     define: {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
     },
+    build: {
+      outDir: 'dist',
+      emptyOutDir: true,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+            'vendor-firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore'],
+            'vendor-utils': ['lucide-react', 'motion', 'recharts'],
+            'vendor-giphy': ['@giphy/js-fetch-api', '@giphy/react-components'],
+            'vendor-form': ['react-easy-crop']
+          }
+        }
+      }
+    },
     resolve: {
       alias: {
         '@': path.resolve(process.cwd(), './src'),

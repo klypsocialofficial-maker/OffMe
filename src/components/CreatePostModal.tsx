@@ -3,7 +3,6 @@ import { User as UserIcon, Image as ImageIcon, X, BarChart2, Film, Ghost, Clock,
 import { addDoc, collection, serverTimestamp, doc, updateDoc, increment, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { uploadToImgBB } from '../lib/imgbb';
-import { uploadToUploadcare } from '../lib/uploadcare';
 import { awardPoints, trackMissionProgress } from '../services/gamificationService';
 import { motion, AnimatePresence } from 'motion/react';
 import VerifiedBadge from './VerifiedBadge';
@@ -44,12 +43,8 @@ export default function CreatePostModal({
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [altText, setAltText] = useState('');
-  const [hasVideo, setHasVideo] = useState(false);
-  const [videoUrl, setVideoUrl] = useState<string | null>(null);
-  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const videoInputRef = useRef<HTMLInputElement>(null);
   const [isAnonymous, setIsAnonymous] = useState(isAnonymousDefault);
   const [postAudience, setPostAudience] = useState<'public' | 'circle'>('public');
   
@@ -59,9 +54,7 @@ export default function CreatePostModal({
     imageFiles: File[], 
     imagePreviews: string[], 
     gifUrl: string | null, 
-    videoUrl: string | null,
-    altText?: string,
-    hasVideo?: boolean
+    altText?: string
   }[]>([]);
 
   useEffect(() => {
@@ -96,41 +89,7 @@ export default function CreatePostModal({
       setImageFiles(prev => [...prev, ...newFiles]);
       setImagePreviews(prev => [...prev, ...newFiles.map(file => URL.createObjectURL(file as Blob))]);
       setGifUrl(null); // Clear GIF if image is uploaded
-      setVideoUrl(null);
-      setHasVideo(false);
     }
-  };
-
-  const handleVideoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 100 * 1024 * 1024) {
-      alert('O vídeo deve ter no máximo 100MB.');
-      return;
-    }
-
-    try {
-      setIsUploadingVideo(true);
-      setGifUrl(null);
-      setImageFiles([]);
-      setImagePreviews([]);
-      
-      const url = await uploadToUploadcare(file);
-      setVideoUrl(url);
-      setHasVideo(true);
-    } catch (error) {
-      console.error('Video upload failed:', error);
-      alert('Falha ao carregar o vídeo. Tente novamente.');
-    } finally {
-      setIsUploadingVideo(false);
-      if (videoInputRef.current) videoInputRef.current.value = '';
-    }
-  };
-
-  const removeVideo = () => {
-    setVideoUrl(null);
-    setHasVideo(false);
   };
 
   const removeImage = (index: number) => {
@@ -189,21 +148,19 @@ export default function CreatePostModal({
   };
 
   const handleAddThreadPost = () => {
-    if (!content.trim() && imageFiles.length === 0 && !gifUrl && !videoUrl) return;
-    setThreadPosts(prev => [...prev, { content, imageFiles, imagePreviews, gifUrl, videoUrl }]);
+    if (!content.trim() && imageFiles.length === 0 && !gifUrl) return;
+    setThreadPosts(prev => [...prev, { content, imageFiles, imagePreviews, gifUrl }]);
     setContent('');
     setImageFiles([]);
     setImagePreviews([]);
     setGifUrl(null);
-    setVideoUrl(null);
-    setHasVideo(false);
   };
 
   const handlePost = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Check if we have anything to post
-    const hasCurrentContent = content.trim() || imageFiles.length > 0 || gifUrl || videoUrl;
+    const hasCurrentContent = content.trim() || imageFiles.length > 0 || gifUrl;
     if (!hasCurrentContent && threadPosts.length === 0) return;
     
     const validPollOptions = pollOptions.filter(opt => opt.trim() !== '');
@@ -226,7 +183,7 @@ export default function CreatePostModal({
       // Collect all posts in the thread
       const allPostsToPublish = [...threadPosts];
       if (hasCurrentContent) {
-        allPostsToPublish.push({ content, imageFiles, imagePreviews, gifUrl, altText, hasVideo, videoUrl });
+        allPostsToPublish.push({ content, imageFiles, imagePreviews, gifUrl, altText });
       }
 
       let currentReplyToId = replyTo?.id || null;
@@ -237,7 +194,6 @@ export default function CreatePostModal({
       // Process sequentially
       for (const [index, postItem] of allPostsToPublish.entries()) {
         let imageUrls = postItem.gifUrl ? [postItem.gifUrl] : [];
-        let finalVideoUrl = postItem.videoUrl || null;
 
         if (postItem.imageFiles.length > 0) {
           const uploadedUrls = await Promise.all(postItem.imageFiles.map(file => uploadToImgBB(file)));
@@ -249,8 +205,6 @@ export default function CreatePostModal({
         const postData: any = {
           content: postContent,
           imageUrls,
-          videoUrl: finalVideoUrl,
-          hasVideo: !!finalVideoUrl,
           altText: postItem.altText || '',
           authorId,
           authorName,
@@ -543,21 +497,7 @@ export default function CreatePostModal({
                     multiple
                     className="hidden"
                   />
-                  <input
-                    type="file"
-                    ref={videoInputRef}
-                    onChange={handleVideoChange}
-                    accept="video/*"
-                    className="hidden"
-                  />
                   
-                  {isUploadingVideo && (
-                    <div className="mt-4 p-8 bg-blue-50/50 border border-blue-100 rounded-3xl flex flex-col items-center justify-center space-y-3 animate-pulse">
-                      <div className="w-12 h-12 rounded-full border-4 border-blue-200 border-t-blue-500 animate-spin" />
-                      <span className="text-sm font-black text-blue-600 uppercase tracking-widest text-[10px]">Carregando vídeo...</span>
-                    </div>
-                  )}
-
                   {imagePreviews.length > 0 && (
                     <div className="space-y-3 mt-2 mb-4">
                       <div className={`grid gap-2 ${imagePreviews.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
@@ -587,17 +527,6 @@ export default function CreatePostModal({
                     </div>
                   )}
 
-                  {videoUrl && (
-                    <div className="relative mt-2 mb-4 rounded-3xl overflow-hidden border border-gray-100 shadow-xl group aspect-video bg-black">
-                      <button
-                        onClick={() => { setVideoUrl(null); setHasVideo(false); }}
-                        className="absolute top-4 right-4 p-2 bg-black/60 hover:bg-red-500 text-white rounded-full backdrop-blur-md transition-all scale-90 group-hover:scale-100 z-10"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                      <video src={videoUrl} className="w-full h-full object-contain" controls />
-                    </div>
-                  )}
                   {gifUrl && imagePreviews.length === 0 && (
                     <div className="relative mt-2 mb-4 rounded-2xl overflow-hidden border border-gray-100 shadow-sm group">
                       <button
@@ -693,13 +622,6 @@ export default function CreatePostModal({
                   className="text-blue-500 hover:bg-blue-50 p-2 rounded-full transition-colors"
                 >
                   <ImageIcon className="w-5 h-5" />
-                </button>
-                <button 
-                  type="button"
-                  onClick={() => videoInputRef.current?.click()} 
-                  className={`p-2 rounded-full transition-colors ${hasVideo || isUploadingVideo ? 'bg-blue-50 text-blue-500' : 'text-blue-500 hover:bg-blue-50'}`}
-                >
-                  <Film className="w-5 h-5" />
                 </button>
                 <button 
                   type="button"
