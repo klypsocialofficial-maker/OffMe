@@ -7,6 +7,8 @@ import VerifiedBadge from './VerifiedBadge';
 import { useNavigate } from 'react-router-dom';
 import LazyImage from './LazyImage';
 import { getDefaultAvatar } from '../lib/avatar';
+import MissionWidget from './MissionWidget';
+import SmartSummary from './SmartSummary';
 
 export default function RightSidebar() {
   const { userProfile, followUser, unfollowUser } = useAuth();
@@ -166,18 +168,22 @@ export default function RightSidebar() {
   return (
     <aside className="hidden lg:flex flex-col w-[350px] sticky top-0 h-screen py-4 px-6 space-y-4 overflow-y-auto">
       {/* Search Bar */}
-      <div className="sticky top-0 bg-white/80 backdrop-blur-md z-10 pb-2">
+      <div className="sticky top-0 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md z-10 pb-2">
         <div className="relative group">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <Search className="w-4 h-4 text-gray-400 group-focus-within:text-black transition-colors" />
+            <Search className="w-4 h-4 text-gray-400 group-focus-within:text-black dark:group-focus-within:text-white transition-colors" />
           </div>
           <input
             type="text"
-            placeholder="Buscar no OffMe"
-            className="block w-full pl-11 pr-4 py-3 bg-gray-100 border-none rounded-full focus:ring-2 focus:ring-black/5 focus:bg-white outline-none transition-all text-sm"
+            placeholder="Buscar no Klyp"
+            className="block w-full pl-11 pr-4 py-3 bg-gray-100 dark:bg-white/5 border-none rounded-full focus:ring-2 focus:ring-black/5 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all text-sm dark:text-white"
           />
         </div>
       </div>
+
+      <SmartSummary />
+
+      {userProfile && <MissionWidget userId={userProfile.uid} />}
 
       {/* Premium Banner */}
       <div className="bg-gray-50 rounded-2xl p-4 space-y-2 border border-gray-100">

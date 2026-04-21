@@ -14,7 +14,8 @@ import {
   Eye,
   Heart,
   Repeat,
-  ArrowLeft
+  ArrowLeft,
+  Gift
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { 
@@ -42,7 +43,8 @@ export default function CreatorStudio() {
     totalImpressions: 0,
     totalEngagement: 0,
     followerGrowth: 0,
-    pointsEarned: 0
+    pointsEarned: 0,
+    totalGifts: 0
   });
   const [chartData, setChartData] = useState<any[]>([]);
 
@@ -52,6 +54,14 @@ export default function CreatorStudio() {
       setLoading(true);
       
       try {
+        // Fetch gifts
+        const giftsQuery = query(
+          collection(db, 'gifts'),
+          where('receiverId', '==', userProfile.uid)
+        );
+        const giftsSnap = await getDocs(giftsQuery);
+        const giftCount = giftsSnap.size;
+
         // Fetch all user posts to aggregate data
         const allPostsQuery = query(
           collection(db, 'posts'),
@@ -105,7 +115,8 @@ export default function CreatorStudio() {
           totalImpressions: impressions,
           totalEngagement: engagement,
           followerGrowth: userProfile.followers?.length || 0,
-          pointsEarned: userProfile.points || 0
+          pointsEarned: userProfile.points || 0,
+          totalGifts: giftCount
         });
 
         // Map to chart format
@@ -175,7 +186,7 @@ export default function CreatorStudio() {
           {[
             { label: 'Impressões', value: stats.totalImpressions, trend: '+12.5%', up: true, icon: Eye },
             { label: 'Engajamento', value: stats.totalEngagement, trend: '+3.2%', up: true, icon: Heart },
-            { label: 'Seguidores', value: stats.followerGrowth, trend: '+0.5%', up: true, icon: Users },
+            { label: 'Mimos', value: stats.totalGifts, trend: '+5.1%', up: true, icon: Gift },
             { label: 'Pontos Totais', value: stats.pointsEarned, trend: '-2.1%', up: false, icon: TrendingUp },
           ].map((item, i) => (
             <motion.div 

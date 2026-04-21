@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { User as UserIcon, Send, MoreHorizontal, Trash2, Edit2, BarChart2, Plus, Heart, Repeat, MessageCircle, ArrowUp, Search, X, Image as ImageIcon, Zap as ZapIcon, Ghost } from 'lucide-react';
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, where, deleteDoc, doc, updateDoc, limit, arrayUnion, arrayRemove, startAfter, getDocs, QueryDocumentSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, where, deleteDoc, doc, updateDoc, limit, arrayUnion, arrayRemove, startAfter, getDocs, QueryDocumentSnapshot, deleteField } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import CreatePostModal from '../components/CreatePostModal';
@@ -23,7 +23,6 @@ import PullToRefresh from '../components/PullToRefresh';
 import { motion, AnimatePresence } from 'motion/react';
 import { formatRelativeTime } from '../lib/dateUtils';
 import { getDefaultAvatar } from '../lib/avatar';
-import StorySection from '../components/StorySection';
 
 enum OperationType {
   CREATE = 'create',
@@ -363,24 +362,34 @@ export default function Home() {
     }
   };
 
-  const handleLikePost = async (post: any) => {
+  const handleLikePost = async (post: any, reactionId: string = 'heart') => {
     if (!userProfile?.uid || !db) return;
     
     // Redirect interaction to the original post if it's a repost
     const targetPost = post.type === 'repost' ? { id: post.repostedPostId, ...post } : post;
-    const isLiked = targetPost.likes?.includes(userProfile.uid);
+    const existingReaction = targetPost.reactions?.[userProfile.uid];
+    const isLiked = !!existingReaction;
     const postRef = doc(db, 'posts', targetPost.id);
     
     try {
-      await updateDoc(postRef, {
-        likes: isLiked ? arrayRemove(userProfile.uid) : arrayUnion(userProfile.uid),
-        likesCount: isLiked ? Math.max(0, (targetPost.likesCount || 0) - 1) : (targetPost.likesCount || 0) + 1
-      });
-      
-      if (!isLiked) {
-        // showToast('Post curtido!', 'success'); // Optional, maybe too noisy
-        // Award points for liking
-        await awardPoints(userProfile.uid, 5);
+      if (isLiked && existingReaction === reactionId) {
+        // Toggle off if clicking the same reaction
+        await updateDoc(postRef, {
+          [`reactions.${userProfile.uid}`]: deleteField(),
+          likesCount: Math.max(0, (targetPost.likesCount || 0) - 1),
+          likes: arrayRemove(userProfile.uid)
+        });
+      } else {
+        // Add or change reaction
+        await updateDoc(postRef, {
+          [`reactions.${userProfile.uid}`]: reactionId,
+          likesCount: isLiked ? (targetPost.likesCount || 0) : (targetPost.likesCount || 0) + 1,
+          likes: arrayUnion(userProfile.uid)
+        });
+        
+        if (!isLiked) {
+          await awardPoints(userProfile.uid, 5);
+        }
       }
       
       if (!isLiked && post.authorId !== userProfile.uid) {
@@ -714,7 +723,6 @@ export default function Home() {
               transition={{ duration: 0.2 }}
               className="px-4 py-4 space-y-4 pb-24"
             >
-              <StorySection onAddStory={() => openCreateModal()} />
               {isFetching ? (
                 <div className="space-y-4">
                   {[...Array(5)].map((_, i) => (

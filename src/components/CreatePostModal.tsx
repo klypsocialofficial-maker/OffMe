@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User as UserIcon, Image as ImageIcon, X, BarChart2, Film, Ghost, Clock, Users, Plus, Calendar, Flame } from 'lucide-react';
+import { User as UserIcon, Image as ImageIcon, X, BarChart2, Film, Ghost, Clock, Users, Plus, Calendar } from 'lucide-react';
 import { addDoc, collection, serverTimestamp, doc, updateDoc, increment, query, where, getDocs, Timestamp, limit } from 'firebase/firestore';
 import { db } from '../firebase';
 import { uploadToImgBB } from '../lib/imgbb';
@@ -69,7 +69,6 @@ export default function CreatePostModal({
   const [showGifPicker, setShowGifPicker] = useState(false);
   const [gifSearch, setGifSearch] = useState('');
   const [gifUrl, setGifUrl] = useState<string | null>(null);
-  const [isStory, setIsStory] = useState(false);
   const [scheduledAt, setScheduledAt] = useState<string>('');
   const [showSchedule, setShowSchedule] = useState(false);
   const [mentionSuggestions, setMentionSuggestions] = useState<any[]>([]);
@@ -285,10 +284,9 @@ export default function CreatePostModal({
           authorPrivate,
           ownerId: userProfile?.uid || null,
           isAnonymous,
-          isStory,
           privacy: postAudience,
           audience: postAudience === 'circle' ? (userProfile?.circleMembers || []) : [],
-          expiresAt: isStory ? Timestamp.fromDate(new Date(Date.now() + 24 * 60 * 60 * 1000)) : null,
+          expiresAt: null,
           scheduledAt: scheduledAt ? Timestamp.fromDate(new Date(scheduledAt)) : null,
           status: scheduledAt ? 'scheduled' : 'published',
           createdAt: serverTimestamp(),
@@ -793,14 +791,6 @@ export default function CreatePostModal({
                   className={`p-2 rounded-full transition-colors ${showSchedule ? 'bg-blue-50 text-blue-500' : 'text-blue-500 hover:bg-blue-50'}`}
                 >
                    <Clock className="w-5 h-5" />
-                </button>
-                <button 
-                  type="button"
-                  onClick={() => setIsStory(!isStory)} 
-                  className={`p-2 rounded-full transition-colors ${isStory ? 'bg-orange-50 text-orange-500' : 'text-orange-500 hover:bg-orange-50'}`}
-                  title="Postar como Off (Story)"
-                >
-                   <Flame className={`w-5 h-5 ${isStory ? 'fill-current' : ''}`} />
                 </button>
               </div>
               

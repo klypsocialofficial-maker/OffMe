@@ -1,4 +1,4 @@
-import { doc, updateDoc, increment, arrayUnion, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, updateDoc, increment, arrayUnion, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { BADGES } from '../constants/badges';
 
@@ -101,6 +101,61 @@ export const sendTip = async (senderId: string, receiverId: string, amount: numb
     return true;
   } catch (error) {
     console.error('Error sending tip:', error);
+    throw error;
+  }
+};
+
+export const sendGift = async (senderId: string, receiverId: string, giftId: string, postId?: string) => {
+  if (!db || senderId === receiverId) throw new Error("Invalid gift operation");
+  
+  const gift = BADGES.find(g => g.id === giftId); // Fallback to badges logic if needed or use GIFTS
+  const senderRef = doc(db, 'users', senderId);
+  const giftData = (await import('../constants/gifts')).GIFTS.find(g => g.id === giftId);
+  
+  if (!giftData) throw new Error("Gift not found");
+
+  try {
+    const senderSnap = await getDoc(senderRef);
+    if (!senderSnap.exists()) throw new Error("Sender not found");
+    const senderData = senderSnap.data();
+    
+    if ((senderData.points || 0) < giftData.price) {
+      throw new Error("Saldo de pontos insuficiente.");
+    }
+
+    // Deduct from sender
+    await updateDoc(senderRef, {
+      points: (senderData.points || 0) - giftData.price
+    });
+
+    // Award half the price as points to receiver (platform fee concept)
+    const rewardPoints = Math.floor(giftData.price / 2);
+    await awardPoints(receiverId, rewardPoints);
+
+    // Record gift
+    await addDoc(collection(db, 'gifts'), {
+      senderId,
+      receiverId,
+      giftId,
+      postId: postId || null,
+      createdAt: serverTimestamp()
+    });
+
+    // Trigger notification
+    await addDoc(collection(db, 'notifications'), {
+      recipientId: receiverId,
+      senderId,
+      senderName: senderData.displayName,
+      type: 'gift',
+      giftName: giftData.name,
+      postId: postId || null,
+      read: false,
+      createdAt: serverTimestamp()
+    });
+
+    return true;
+  } catch (error) {
+    console.error('Error sending gift:', error);
     throw error;
   }
 };

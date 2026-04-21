@@ -10,7 +10,7 @@ import PostCard from '../components/PostCard';
 import { useAuth } from '../contexts/AuthContext';
 import { useOutletContext, Link, useNavigate, useLocation } from 'react-router-dom';
 import { getDefaultAvatar } from '../lib/avatar';
-import { collection, query, where, onSnapshot, limit, addDoc, serverTimestamp, getDocs, doc, updateDoc, arrayUnion, arrayRemove, orderBy, getDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, limit, addDoc, serverTimestamp, getDocs, doc, updateDoc, arrayUnion, arrayRemove, orderBy, getDoc, deleteDoc, deleteField } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { rankSuggestedUsers } from '../lib/gemini';
 
@@ -95,7 +95,8 @@ export default function Explore() {
   }, [location.search]);
 
   const [activeTab, setActiveTab] = useState('foryou');
-  const [searchTab, setSearchTab] = useState<'users' | 'posts'>('users');
+  const [searchTab, setSearchTab] = useState<'users' | 'posts' | 'media'>('users');
+  const [searchFilter, setSearchFilter] = useState<'top' | 'latest'>('top');
   const [loading, setLoading] = useState(false);
   const [postsResults, setPostsResults] = useState<any[]>([]);
 
@@ -111,21 +112,46 @@ export default function Explore() {
     }
   };
 
-  const handleLikePost = async (post: any) => {
+  const handleLikePost = async (post: any, reactionId: string = 'heart') => {
     if (!userProfile?.uid || !db) return;
-    const isLiked = post.likes?.includes(userProfile.uid);
-    const postRef = doc(db, 'posts', post.id);
+    const targetPost = post.type === 'repost' ? { id: post.repostedPostId, ...post } : post;
+    const existingReaction = targetPost.reactions?.[userProfile.uid];
+    const isLiked = !!existingReaction;
+    const postRef = doc(db, 'posts', targetPost.id);
+    
     try {
-      await updateDoc(postRef, {
-        likes: isLiked ? arrayRemove(userProfile.uid) : arrayUnion(userProfile.uid),
-        likesCount: isLiked ? Math.max(0, (post.likesCount || 0) - 1) : (post.likesCount || 0) + 1
-      });
+      if (isLiked && existingReaction === reactionId) {
+        await updateDoc(postRef, {
+          [`reactions.${userProfile.uid}`]: deleteField(),
+          likesCount: Math.max(0, (targetPost.likesCount || 0) - 1),
+          likes: arrayRemove(userProfile.uid)
+        });
+      } else {
+        await updateDoc(postRef, {
+          [`reactions.${userProfile.uid}`]: reactionId,
+          likesCount: isLiked ? (targetPost.likesCount || 0) : (targetPost.likesCount || 0) + 1,
+          likes: arrayUnion(userProfile.uid)
+        });
+      }
+
       setPostsResults(prev => prev.map(p => {
-        if (p.id === post.id) {
-          const newLikes = isLiked 
-            ? p.likes.filter((uid: string) => uid !== userProfile.uid)
-            : [...(p.likes || []), userProfile.uid];
-          return { ...p, likes: newLikes, likesCount: isLiked ? Math.max(0, (p.likesCount || 0) - 1) : (p.likesCount || 0) + 1 };
+        if (p.id === targetPost.id) {
+          const newReactions = { ...(p.reactions || {}) };
+          let newLikesCount = p.likesCount || 0;
+          let newLikes = p.likes || [];
+
+          if (isLiked && existingReaction === reactionId) {
+            delete newReactions[userProfile.uid];
+            newLikesCount = Math.max(0, newLikesCount - 1);
+            newLikes = newLikes.filter((uid: string) => uid !== userProfile.uid);
+          } else {
+            newReactions[userProfile.uid] = reactionId;
+            if (!isLiked) {
+              newLikesCount += 1;
+              newLikes = [...newLikes, userProfile.uid];
+            }
+          }
+          return { ...p, reactions: newReactions, likesCount: newLikesCount, likes: newLikes };
         }
         return p;
       }));
@@ -515,7 +541,7 @@ export default function Explore() {
           const qPosts = query(
             collection(db, 'posts'),
             where('hashtags', 'array-contains', hashtag),
-            orderBy('createdAt', 'desc'),
+            orderBy(searchFilter === 'top' ? 'likesCount' : 'createdAt', 'desc'),
             limit(20)
           );
           const postSnap = await getDocs(qPosts);
@@ -557,10 +583,22 @@ export default function Explore() {
           collection(db, 'posts'),
           where('content', '>=', searchQuery),
           where('content', '<=', searchQuery + '\uf8ff'),
-          limit(20)
+          limit(50)
         );
         const postSnap = await getDocs(qContent);
-        setPostsResults(postSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        let results = postSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        if (searchTab === 'media') {
+          results = results.filter((p: any) => p.imageUrls?.length > 0 || p.audioUrl);
+        }
+
+        if (searchFilter === 'top') {
+          results.sort((a: any, b: any) => (b.likesCount || 0) - (a.likesCount || 0));
+        } else {
+          results.sort((a: any, b: any) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+        }
+
+        setPostsResults(results.slice(0, 20));
       } catch (error) {
         console.error("Error searching users:", error);
       } finally {
@@ -597,21 +635,46 @@ export default function Explore() {
         </div>
 
         {searchQuery.trim() ? (
-          <div className="flex border-b border-black/5">
-            <button 
-              onClick={() => setSearchTab('users')}
-              className={`flex-1 py-3 text-sm font-bold transition-all relative ${searchTab === 'users' ? 'text-black' : 'text-gray-500'}`}
-            >
-              Pessoas
-              {searchTab === 'users' && <motion.div layoutId="search-tab-indicator" className="absolute bottom-0 left-8 right-8 h-0.5 bg-black rounded-full" />}
-            </button>
-            <button 
-              onClick={() => setSearchTab('posts')}
-              className={`flex-1 py-3 text-sm font-bold transition-all relative ${searchTab === 'posts' ? 'text-black' : 'text-gray-500'}`}
-            >
-              Posts
-              {searchTab === 'posts' && <motion.div layoutId="search-tab-indicator" className="absolute bottom-0 left-8 right-8 h-0.5 bg-black rounded-full" />}
-            </button>
+          <div className="flex flex-col border-b border-black/5 bg-white">
+            <div className="flex">
+              <button 
+                onClick={() => setSearchTab('users')}
+                className={`flex-1 py-3 text-sm font-bold transition-all relative ${searchTab === 'users' ? 'text-black' : 'text-gray-500'}`}
+              >
+                Pessoas
+                {searchTab === 'users' && <motion.div layoutId="search-tab-indicator" className="absolute bottom-0 left-8 right-8 h-0.5 bg-black rounded-full" />}
+              </button>
+              <button 
+                onClick={() => setSearchTab('posts')}
+                className={`flex-1 py-3 text-sm font-bold transition-all relative ${searchTab === 'posts' ? 'text-black' : 'text-gray-500'}`}
+              >
+                Posts
+                {searchTab === 'posts' && <motion.div layoutId="search-tab-indicator" className="absolute bottom-0 left-8 right-8 h-0.5 bg-black rounded-full" />}
+              </button>
+              <button 
+                onClick={() => setSearchTab('media')}
+                className={`flex-1 py-3 text-sm font-bold transition-all relative ${searchTab === 'media' ? 'text-black' : 'text-gray-500'}`}
+              >
+                Mídia
+                {searchTab === 'media' && <motion.div layoutId="search-tab-indicator" className="absolute bottom-0 left-8 right-8 h-0.5 bg-black rounded-full" />}
+              </button>
+            </div>
+            {searchTab !== 'users' && (
+              <div className="px-4 py-2 flex items-center space-x-2 border-t border-black/5 overflow-x-auto no-scrollbar">
+                <button 
+                  onClick={() => setSearchFilter('top')}
+                  className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap ${searchFilter === 'top' ? 'bg-black text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                >
+                  Principais
+                </button>
+                <button 
+                  onClick={() => setSearchFilter('latest')}
+                  className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap ${searchFilter === 'latest' ? 'bg-black text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                >
+                  Recentes
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="px-2 pb-1 overflow-x-auto no-scrollbar">
@@ -650,7 +713,7 @@ export default function Explore() {
               exit={{ opacity: 0 }}
               className="px-4 mt-4"
             >
-                {loading ? (
+              {loading ? (
                 <div className="flex flex-col items-center justify-center p-12 space-y-4">
                   <div className="w-8 h-8 border-2 border-black/10 border-t-black rounded-full animate-spin" />
                   <p className="text-gray-500 text-sm font-medium">Buscando...</p>
@@ -714,14 +777,14 @@ export default function Explore() {
                     </p>
                   </div>
                 )
-              ) : (
+              ) : searchTab === 'posts' || searchTab === 'media' ? (
                 postsResults.length > 0 ? (
                   <div className="space-y-0 -mx-4">
                     {postsResults.map((post) => (
                       <PostCard 
                         key={`search-post-${post.id}`}
                         post={post}
-                        onLike={() => handleLikePost(post)}
+                        onLike={(p, rid) => handleLikePost(p, rid)}
                         onRepost={() => handleRepost(post)}
                         onDelete={() => handleDeletePost(post.id)}
                         onEdit={(p) => navigate(`/post/${p.id}`)}
@@ -744,7 +807,7 @@ export default function Explore() {
                     </p>
                   </div>
                 )
-              )}
+              ) : null}
             </motion.div>
           ) : (
             <motion.div 

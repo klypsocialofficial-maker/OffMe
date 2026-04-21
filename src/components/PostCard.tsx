@@ -19,12 +19,16 @@ import Toast from './Toast';
 
 import PostImageGrid from './PostImageGrid';
 import LazyImage from './LazyImage';
+import { getGhostIdentity } from '../lib/ghostUtils';
+import ReactionPicker, { REACTION_TYPES } from './ReactionPicker';
+
+import { db } from '../firebase';
 
 interface PostCardProps {
   key?: any;
   post: any;
   isProfilePinned?: boolean;
-  onLike: (post: any) => void;
+  onLike: (post: any, reactionId?: string) => void;
   onRepost: (post: any) => void;
   onDelete: (postId: string) => void;
   onEdit: (post: any) => void;
@@ -53,6 +57,13 @@ export default function PostCard({
   const navigate = useNavigate();
   const { userProfile, muteUser, unmuteUser, blockUser, unblockUser, bookmarkPost, unbookmarkPost, pinPost, unpinPost } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  
+  const effectivePost = post.type === 'repost' ? { ...post, id: post.repostedPostId } : post;
+
+  const ghostIdentity = post.authorId === 'anonymous' && (post.threadId || post.replyToId) 
+    ? getGhostIdentity(post.ownerId, post.threadId || post.replyToId) 
+    : null;
+
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isTipModalOpen, setIsTipModalOpen] = useState(false);
@@ -60,10 +71,27 @@ export default function PostCard({
   const [isToastOpen, setIsToastOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('info');
+  const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [showLikeAnimation, setShowLikeAnimation] = useState(false);
   const repostTimerRef = React.useRef<any>(null);
 
   const stopPropagation = (e: React.MouseEvent | React.PointerEvent) => e.stopPropagation();
+
+  const handleSelectReaction = (rid: string) => {
+    onLike(effectivePost, rid);
+    setShowReactionPicker(false);
+    setShowLikeAnimation(true);
+    setTimeout(() => setShowLikeAnimation(false), 1000);
+  };
+
+  const currentUserReaction = effectivePost.reactions?.[userProfile?.uid];
+  const ActiveReactionIcon = currentUserReaction 
+    ? (REACTION_TYPES.find(r => r.id === currentUserReaction)?.icon || Heart)
+    : Heart;
+    
+  const reactionColor = currentUserReaction 
+    ? (REACTION_TYPES.find(r => r.id === currentUserReaction)?.color || 'text-red-500')
+    : 'hover:text-red-500';
 
   const handleRepostPointerDown = (e: React.PointerEvent) => {
     stopPropagation(e);
@@ -119,8 +147,6 @@ export default function PostCard({
       onShare(post); // Fallback to modal
     }
   };
-
-  const effectivePost = post.type === 'repost' ? { ...post, id: post.repostedPostId } : post;
 
   const handleBookmark = async (e: React.MouseEvent) => {
     stopPropagation(e);
@@ -238,7 +264,7 @@ export default function PostCard({
           }}
         >
           {post.authorId === 'anonymous' ? (
-            <Ghost className="w-5 h-5 text-indigo-400" />
+            <Ghost className={`w-5 h-5 ${ghostIdentity?.color || 'text-indigo-400'}`} />
           ) : post.type === 'repost' ? (
             post.originalPostAuthorPhoto ? (
               <LazyImage src={post.originalPostAuthorPhoto} alt={post.originalPostAuthorName} className="w-full h-full" />
@@ -269,8 +295,8 @@ export default function PostCard({
                 navigate(`/${authorUsername}`);
               }}
             >
-              <span className={`font-bold truncate ${post.authorId !== 'anonymous' ? 'hover:underline' : 'hover:underline'} ${post.authorId === 'anonymous' ? 'text-indigo-600 italic' : ''}`}>
-                {post.type === 'repost' ? post.originalPostAuthorName : post.authorName}
+              <span className={`font-bold truncate ${post.authorId !== 'anonymous' ? 'hover:underline' : 'hover:underline'} ${post.authorId === 'anonymous' ? (ghostIdentity?.color || 'text-indigo-600') + ' italic' : ''}`}>
+                {post.authorId === 'anonymous' && ghostIdentity ? ghostIdentity.name : (post.type === 'repost' ? post.originalPostAuthorName : post.authorName)}
               </span>
               {post.authorId !== 'anonymous' && (post.type === 'repost' ? post.originalPostAuthorPrivate : post.authorPrivate) && (
                 <Lock className="w-3.5 h-3.5 text-gray-400" />
@@ -528,34 +554,50 @@ export default function PostCard({
             <span className="text-sm">{effectivePost.repostsCount || 0}</span>
           </motion.button>
 
-          <motion.button 
-            whileHover={{ scale: 1.2 }}
-            whileTap={{ scale: 0.8 }}
-            onClick={(e) => {
-              stopPropagation(e);
-              setShowLikeAnimation(true);
-              setTimeout(() => setShowLikeAnimation(false), 1000);
-              onLike(effectivePost);
-            }}
-            className={`flex items-center space-x-2 group/action transition-colors ${effectivePost.likes?.includes(userProfile?.uid) ? 'text-red-500' : 'hover:text-red-500'}`}
-          >
-            <div className="p-2 group-hover/action:bg-red-50 rounded-full transition-colors relative">
-              <Heart className={`w-4.5 h-4.5 ${effectivePost.likes?.includes(userProfile?.uid) ? 'fill-current' : ''}`} />
-              <AnimatePresence>
-                {showLikeAnimation && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 0, scale: 0.5 }}
-                    animate={{ opacity: 1, y: -30, scale: 1.5 }}
-                    exit={{ opacity: 0 }}
-                    className="absolute -top-6 left-0 z-50 text-indigo-500"
-                  >
-                    <Ghost className="w-6 h-6 fill-current" />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-            <span className="text-sm">{effectivePost.likesCount || 0}</span>
-          </motion.button>
+          <div className="relative group/like">
+            <motion.button 
+              whileHover={{ scale: 1.2 }}
+              whileTap={{ scale: 0.8 }}
+              onMouseEnter={() => setShowReactionPicker(true)}
+              onMouseLeave={() => setTimeout(() => setShowReactionPicker(false), 500)}
+              onClick={(e) => {
+                stopPropagation(e);
+                if (!currentUserReaction) {
+                  handleSelectReaction('heart');
+                } else {
+                  onLike(effectivePost, currentUserReaction);
+                }
+              }}
+              className={`flex items-center space-x-2 group/action transition-colors ${reactionColor}`}
+            >
+              <div className="p-2 group-hover/action:bg-red-50 rounded-full transition-colors relative">
+                <ActiveReactionIcon className={`w-4.5 h-4.5 ${currentUserReaction ? 'fill-current' : ''}`} />
+                <AnimatePresence>
+                  {showLikeAnimation && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 0, scale: 0.5 }}
+                      animate={{ opacity: 1, y: -30, scale: 1.5 }}
+                      exit={{ opacity: 0 }}
+                      className="absolute -top-6 left-0 z-50 text-indigo-500"
+                    >
+                      <ActiveReactionIcon className="w-6 h-6 fill-current" />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+              <span className="text-sm">{effectivePost.likesCount || 0}</span>
+            </motion.button>
+            <AnimatePresence>
+              {showReactionPicker && (
+                <div 
+                  onMouseEnter={() => setShowReactionPicker(true)}
+                  onMouseLeave={() => setShowReactionPicker(false)}
+                >
+                  <ReactionPicker onSelect={handleSelectReaction} />
+                </div>
+              )}
+            </AnimatePresence>
+          </div>
 
           <motion.button 
             whileHover={{ scale: 1.1 }}
