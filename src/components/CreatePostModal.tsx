@@ -522,15 +522,34 @@ export default function CreatePostModal({
                   />
                   
                   {/* Uploadcare Widget Layer */}
-                  {showVideoUploader && (
-                    <div className="mt-2 mb-4 p-4 border border-gray-200 rounded-2xl relative">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-bold">Upload de Vídeo</span>
-                        <button onClick={() => setShowVideoUploader(false)} className="text-gray-400 hover:text-gray-900">
+                  {showVideoUploader && !videoUrl && (
+                    <div className="mt-4 p-5 bg-blue-50/30 border border-blue-100 rounded-3xl relative overflow-hidden group">
+                      <div className="flex justify-between items-center mb-3">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                             <Film className="w-4 h-4 text-blue-600" />
+                          </div>
+                          <span className="text-sm font-black text-blue-900 uppercase tracking-wider">Upload de Vídeo</span>
+                        </div>
+                        <button 
+                          onClick={() => setShowVideoUploader(false)} 
+                          className="p-1.5 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all"
+                        >
                           <X className="w-4 h-4" />
                         </button>
                       </div>
-                      <UploadcareWidget onUploadComplete={handleVideoUploadComplete} />
+                      <div className="bg-white/60 p-4 rounded-2xl border border-blue-50 backdrop-blur-sm">
+                        <UploadcareWidget 
+                          onUploadComplete={handleVideoUploadComplete} 
+                          onUploadError={(err) => {
+                            alert("Erro no upload do vídeo. Verifique se o arquivo é válido ou tente novamente.");
+                            console.error("Upload error:", err);
+                          }}
+                        />
+                      </div>
+                      <p className="mt-3 text-[10px] text-blue-500/70 font-medium px-1">
+                        Formatos aceitos: MP4, MOV, WebM. Limite sugerido: 50MB.
+                      </p>
                     </div>
                   )}
 
@@ -564,14 +583,14 @@ export default function CreatePostModal({
                   )}
 
                   {videoUrl && (
-                    <div className="relative mt-2 mb-4 rounded-2xl overflow-hidden border border-gray-100 shadow-sm group aspect-video bg-black">
+                    <div className="relative mt-2 mb-4 rounded-3xl overflow-hidden border border-gray-100 shadow-xl group aspect-video bg-black">
                       <button
                         onClick={() => { setVideoUrl(null); setHasVideo(false); }}
-                        className="absolute top-3 right-3 p-2 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-md transition-all scale-90 group-hover:scale-100 z-10"
+                        className="absolute top-4 right-4 p-2 bg-black/60 hover:bg-red-500 text-white rounded-full backdrop-blur-md transition-all scale-90 group-hover:scale-100 z-10"
                       >
                         <X className="w-4 h-4" />
                       </button>
-                      <video src={videoUrl} className="w-full h-full object-contain" controls muted />
+                      <video src={videoUrl} className="w-full h-full object-contain" controls />
                     </div>
                   )}
                   {gifUrl && imagePreviews.length === 0 && (
