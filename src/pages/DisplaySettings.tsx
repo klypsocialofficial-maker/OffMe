@@ -8,9 +8,10 @@ export default function DisplaySettings() {
   const { theme, setTheme } = useTheme();
 
   const themeOptions = [
-    { id: 'light', label: 'Light', icon: Sun, description: 'Always use light mode' },
-    { id: 'dark', label: 'Dark', icon: Moon, description: 'Always use dark mode' },
-    { id: 'system', label: 'System', icon: Monitor, description: 'Match your device settings' },
+    { id: 'light', label: 'Modo Claro', icon: Sun, description: 'Luz para o dia' },
+    { id: 'dark', label: 'Modo Escuro', icon: Moon, description: 'Conforto visual' },
+    { id: 'amoled', label: 'Amoled Black', icon: Moon, description: 'Preto puro (OLED)' },
+    { id: 'system', label: 'Sistema', icon: Monitor, description: 'Segue o dispositivo' },
   ] as const;
 
   return (

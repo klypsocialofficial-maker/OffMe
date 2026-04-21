@@ -3,6 +3,47 @@ import { createServer as createViteServer } from "vite";
 import path from "path";
 import cors from "cors";
 import fs from "fs";
+import admin from 'firebase-admin';
+
+// Initialize Firebase Admin (Try to find a way to auth)
+try {
+  // If we wanted to perform real backend tasks, we'd need a service account.
+  // In many cases, if running on GCP with a service account attached, it just works.
+  admin.initializeApp();
+} catch (error) {
+  console.warn("Firebase Admin could not be initialized automatically. Scheduled posts might not work.", error);
+}
+
+async function checkScheduledPosts() {
+  if (!admin.apps.length) return;
+  
+  const db = admin.firestore();
+  const now = admin.firestore.Timestamp.now();
+  
+  try {
+    const q = db.collection('posts')
+      .where('status', '==', 'scheduled')
+      .where('scheduledAt', '<=', now);
+    
+    const snap = await q.get();
+    
+    const batch = db.batch();
+    snap.docs.forEach(doc => {
+      batch.update(doc.ref, { 
+        status: 'published',
+        createdAt: now, // Update createdAt to now so it appears at top of feed
+        scheduledAt: null 
+      });
+    });
+    
+    if (!snap.empty) {
+      await batch.commit();
+      console.log(`Published ${snap.size} scheduled posts.`);
+    }
+  } catch (error) {
+    console.error("Error in scheduled posts worker:", error);
+  }
+}
 
 async function startServer() {
   const app = express();
@@ -61,6 +102,8 @@ async function startServer() {
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
+    // Check for scheduled posts every 5 minutes
+    setInterval(checkScheduledPosts, 5 * 60 * 1000);
   });
 }
 

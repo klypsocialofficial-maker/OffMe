@@ -16,7 +16,7 @@ import {
   ConfirmationResult,
   sendEmailVerification
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, onSnapshot, serverTimestamp, collection, query, where, getDocs, updateDoc, arrayUnion, arrayRemove, deleteDoc, addDoc, writeBatch, limit } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot, serverTimestamp, collection, query, where, getDocs, updateDoc, arrayUnion, arrayRemove, deleteDoc, addDoc, writeBatch, limit, increment } from 'firebase/firestore';
 import { sendPushNotification } from '../lib/notifications';
 import { awardPoints } from '../services/gamificationService';
 
@@ -150,7 +150,7 @@ interface AuthContextType {
   requestVerification: (reason: string, category: string, documentUrl?: string) => Promise<void>;
   trackImpression: (postId: string) => Promise<void>;
   trackProfileView: (targetUid: string) => Promise<void>;
-  sendChatMessage: (conversationId: string, text: string, imageUrl?: string) => Promise<void>;
+  sendChatMessage: (conversationId: string, text: string, imageUrl?: string, audioUrl?: string) => Promise<void>;
   setTypingStatus: (conversationId: string, isTyping: boolean) => Promise<void>;
   purchaseItem: (itemId: string, cost: number) => Promise<void>;
 }
@@ -863,7 +863,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const sendChatMessage = async (conversationId: string, text: string, imageUrl?: string) => {
+  const sendChatMessage = async (conversationId: string, text: string, imageUrl?: string, audioUrl?: string) => {
     if (!currentUser || !userProfile) throw new Error("User not authenticated");
     try {
       const convRef = doc(db, 'conversations', conversationId);
@@ -895,7 +895,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           newStreakCount = 1;
           shouldUpdateStreak = true;
         }
-        // If diffDays < 1, it's the same day, no change to streak count but we can keep the timestamp
       }
 
       const msgRef = doc(collection(db, 'conversations', conversationId, 'messages'));
@@ -903,14 +902,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         senderId: currentUser.uid,
         text,
         imageUrl: imageUrl || null,
+        audioUrl: audioUrl || null,
         createdAt: serverTimestamp(),
         read: false
       });
       
+      const otherId = convData.participants.find((id: string) => id !== currentUser.uid);
+      
       const updateData: any = {
-        lastMessage: imageUrl ? '📷 Foto' : text,
+        lastMessage: audioUrl ? '🎤 Áudio' : imageUrl ? '📷 Foto' : text,
         updatedAt: serverTimestamp(),
-        [`unreadCount.${currentUser.uid === userProfile.uid ? 'other' : 'me'}`]: 0 
+        [`unreadCount.${otherId}`]: increment(1)
       };
 
       if (shouldUpdateStreak) {
@@ -1187,6 +1189,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       handleFirestoreError(error, OperationType.UPDATE, `users/${currentUser.uid}`);
     }
   };
+
+  useEffect(() => {
+    if (!currentUser) return;
+    
+    const userRef = doc(db, 'users', currentUser.uid);
+    
+    const updatePresence = async (status: 'online' | 'offline') => {
+      try {
+        await updateDoc(userRef, {
+          onlineStatus: status,
+          lastSeen: serverTimestamp()
+        });
+      } catch (err) {
+        // Silently fail presence updates
+      }
+    };
+
+    updatePresence('online');
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        updatePresence('online');
+      } else {
+        updatePresence('offline');
+      }
+    };
+
+    const handleBeforeUnload = () => {
+      updatePresence('offline');
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    const heartbeat = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        updatePresence('online');
+      }
+    }, 60000); // Every minute
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      clearInterval(heartbeat);
+      updatePresence('offline');
+    };
+  }, [currentUser, db]);
 
   const value = {
     currentUser,

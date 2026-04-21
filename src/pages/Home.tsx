@@ -23,6 +23,7 @@ import PullToRefresh from '../components/PullToRefresh';
 import { motion, AnimatePresence } from 'motion/react';
 import { formatRelativeTime } from '../lib/dateUtils';
 import { getDefaultAvatar } from '../lib/avatar';
+import StorySection from '../components/StorySection';
 
 enum OperationType {
   CREATE = 'create',
@@ -74,7 +75,6 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
   console.error('Firestore Error: ', JSON.stringify(errInfo));
   throw new Error(JSON.stringify(errInfo));
 }
-
 
 export default function Home() {
   const { userProfile, logout } = useAuth();
@@ -714,6 +714,7 @@ export default function Home() {
               transition={{ duration: 0.2 }}
               className="px-4 py-4 space-y-4 pb-24"
             >
+              <StorySection onAddStory={() => openCreateModal()} />
               {isFetching ? (
                 <div className="space-y-4">
                   {[...Array(5)].map((_, i) => (

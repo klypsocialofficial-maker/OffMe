@@ -85,11 +85,63 @@ html, body {
 }
 
 body {
-  @apply bg-white text-gray-900;
+  @apply bg-white text-gray-900 transition-colors duration-300;
   min-height: 100dvh;
   /* Safe area padding for PWA */
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
+}
+
+/* Dark Mode Overrides */
+.dark body {
+  @apply bg-slate-900 text-white;
+}
+
+.dark .bg-white {
+  @apply bg-slate-800;
+}
+
+.dark .border-black\/5 {
+  @apply border-white/10;
+}
+
+.dark .text-gray-900 {
+  @apply text-white;
+}
+
+.dark .text-gray-500 {
+  @apply text-slate-400;
+}
+
+.dark .bg-slate-50 {
+  @apply bg-slate-950;
+}
+
+/* Amoled Mode Overrides */
+.amoled body {
+  @apply bg-black text-white;
+}
+
+.amoled .bg-white,
+.amoled .bg-gray-50 {
+  @apply bg-zinc-900;
+}
+
+.amoled .bg-slate-50,
+.amoled .bg-slate-100 {
+  @apply bg-black;
+}
+
+.amoled .border-black\/5,
+.amoled .border-gray-100 {
+  @apply border-zinc-800;
+}
+
+.amoled .liquid-glass,
+.amoled .liquid-glass-pill,
+.amoled .liquid-glass-card {
+  background: rgba(0, 0, 0, 0.4);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 /* iOS PWA Specific Tweaks */

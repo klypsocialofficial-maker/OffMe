@@ -94,10 +94,86 @@ export default function Chat() {
   const [pickerType, setPickerType] = useState<'gifs' | 'stickers'>('gifs');
   const [gifSearch, setGifSearch] = useState('');
   const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [saveRecording, setSaveRecording] = useState<Blob | null>(null);
+  const [recordingTime, setRecordingTime] = useState(0);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      chunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        setSaveRecording(blob);
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+      timerRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+    } catch (err) {
+      console.error("Error accessing microphone:", err);
+      alert("Não foi possível acessar o microfone.");
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (timerRef.current) clearInterval(timerRef.current);
+    }
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleSendAudio = async () => {
+    if (!saveRecording || !conversationId || !userProfile?.uid) return;
+    
+    try {
+      setUploadingMedia(true);
+      const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
+      const { storage } = await import('../firebase');
+      
+      if (!storage) throw new Error("Storage not initialized");
+
+      const audioName = `audio_${Date.now()}.webm`;
+      const audioRef = ref(storage, `chats/${conversationId}/${userProfile.uid}/${audioName}`);
+      
+      await uploadBytes(audioRef, saveRecording);
+      const audioUrl = await getDownloadURL(audioRef);
+      
+      await sendChatMessage(conversationId, '', undefined, audioUrl);
+      setSaveRecording(null);
+      setRecordingTime(0);
+      setTimeout(scrollToBottom, 500);
+    } catch (error) {
+      console.error("Error uploading audio:", error);
+    } finally {
+      setUploadingMedia(false);
+    }
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -321,11 +397,14 @@ export default function Chat() {
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+              <div className="relative w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
                 {otherParticipantInfo?.photoURL ? (
                   <LazyImage src={otherParticipantInfo.photoURL} alt={otherParticipantInfo.displayName} className="w-full h-full" />
                 ) : (
                   <LazyImage src={getDefaultAvatar(otherParticipantInfo?.displayName || 'Usuário', otherParticipantInfo?.username || '')} alt={otherParticipantInfo?.displayName} className="w-full h-full" />
+                )}
+                {otherParticipantInfo?.onlineStatus === 'online' && (
+                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full z-10" />
                 )}
               </div>
               <div>
@@ -339,7 +418,15 @@ export default function Chat() {
                     </div>
                   )}
                 </div>
-                <p className="text-xs text-gray-500">@{otherParticipantInfo?.username || 'usuario'}</p>
+                <div className="flex items-center space-x-1">
+                   <p className="text-xs text-gray-500">@{otherParticipantInfo?.username || 'usuario'}</p>
+                   {otherParticipantInfo?.onlineStatus === 'online' && (
+                     <>
+                      <span className="text-[10px] text-gray-300">•</span>
+                      <span className="text-[10px] font-black text-green-500 uppercase italic">Online</span>
+                     </>
+                   )}
+                </div>
               </div>
             </div>
           </div>
@@ -410,6 +497,11 @@ export default function Chat() {
                   {msg.imageUrl && (
                     <div className={`${msg.text ? 'mb-2' : ''} max-w-full overflow-hidden rounded-2xl`}>
                        <LazyImage src={msg.imageUrl} alt="Mídia" className={`w-full object-cover max-h-80 ${msg.text ? 'rounded-xl' : 'rounded-2xl shadow-sm'}`} />
+                    </div>
+                  )}
+                  {msg.audioUrl && (
+                    <div className="py-1 min-w-[200px]">
+                      <audio src={msg.audioUrl} controls className={`w-full max-h-10 ${isMine ? 'brightness-125 saturate-150' : ''}`} />
                     </div>
                   )}
                   {msg.text && (
@@ -581,55 +673,97 @@ export default function Chat() {
           </div>
         ) : (
           <div className="flex items-center space-x-2">
-            <div className="flex items-center bg-gray-100 rounded-full px-4 py-1.5 flex-1">
-              <button 
-                type="button" 
-                onClick={() => fileInputRef.current?.click()}
-                className="p-2 text-gray-500 hover:text-blue-500 rounded-full transition-colors flex-shrink-0"
-              >
-                <ImageIcon className="w-5 h-5" />
-              </button>
-              <button 
-                type="button" 
-                onClick={() => { setShowGifPicker(!showGifPicker); setPickerType('stickers'); }}
-                className={`p-2 rounded-full transition-colors flex-shrink-0 ${showGifPicker && pickerType === 'stickers' ? 'text-blue-500 bg-blue-50' : 'text-gray-500 hover:text-blue-500'}`}
-              >
-                <StickerIcon className="w-5 h-5" />
-              </button>
-              <button 
-                type="button" 
-                onClick={() => { setShowGifPicker(!showGifPicker); setPickerType('gifs'); }}
-                className={`p-2 rounded-full transition-colors flex-shrink-0 ${showGifPicker && pickerType === 'gifs' ? 'text-blue-500 bg-blue-50' : 'text-gray-500 hover:text-blue-500'}`}
-              >
-                <Smile className="w-5 h-5" />
-              </button>
-              <form onSubmit={handleSendMessage} className="flex-1 flex items-center">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => {
-                    setNewMessage(e.target.value);
-                    handleTyping();
-                  }}
-                  placeholder="Mensagem..."
-                  className="flex-1 bg-transparent outline-none py-2 text-sm ml-2"
-                />
+            {isRecording ? (
+              <div className="flex-1 flex items-center bg-red-50 dark:bg-red-950/20 rounded-full px-4 py-2 border border-red-100 dark:border-red-900/30">
+                 <div className="w-2 h-2 bg-red-500 rounded-full animate-ping mr-3" />
+                 <span className="flex-grow font-black text-xs text-red-600 dark:text-red-400 tabular-nums">Gravando: {formatTime(recordingTime)}</span>
+                 <button 
+                   onClick={() => { setIsRecording(false); if(timerRef.current) clearInterval(timerRef.current); if(mediaRecorderRef.current) mediaRecorderRef.current.stop(); setSaveRecording(null); }}
+                   className="p-2 text-gray-500 hover:text-red-500 mr-2"
+                 >
+                   <X className="w-4 h-4" />
+                 </button>
+                 <button 
+                   onClick={stopRecording}
+                   className="bg-red-500 text-white p-2 rounded-full shadow-lg"
+                 >
+                   <Check className="w-4 h-4" />
+                 </button>
+              </div>
+            ) : saveRecording ? (
+              <div className="flex-1 flex items-center bg-blue-50 dark:bg-blue-950/20 rounded-full px-4 py-2 border border-blue-100 dark:border-blue-900/30">
+                <Mic className="w-4 h-4 text-blue-500 mr-3" />
+                <span className="flex-grow font-black text-xs text-blue-600 dark:text-blue-400">Áudio pronto para enviar</span>
                 <button 
-                  type="submit" 
-                  disabled={(!newMessage.trim() && !selectedImage) || uploadingMedia}
-                  className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition-colors disabled:opacity-30 flex-shrink-0 relative"
+                  onClick={() => setSaveRecording(null)}
+                  className="p-2 text-gray-500 hover:text-red-500 mr-2"
                 >
-                  {uploadingMedia ? (
-                    <div className="w-5 h-5 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
-                  ) : (
-                    <Send className="w-5 h-5" />
-                  )}
+                  <X className="w-4 h-4" />
                 </button>
-              </form>
-            </div>
-            <button className="p-3 bg-gray-100 text-gray-500 rounded-full hover:bg-gray-200 transition-colors">
-              <Mic className="w-5 h-5" />
-            </button>
+                <button 
+                  onClick={handleSendAudio}
+                  disabled={uploadingMedia}
+                  className="bg-blue-500 text-white p-2 rounded-full shadow-lg disabled:opacity-50"
+                >
+                  {uploadingMedia ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Send className="w-4 h-4" />}
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center bg-gray-100 dark:bg-slate-800 rounded-full px-4 py-1.5 flex-1">
+                  <button 
+                    type="button" 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-2 text-gray-500 hover:text-blue-500 rounded-full transition-colors flex-shrink-0"
+                  >
+                    <ImageIcon className="w-5 h-5" />
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => { setShowGifPicker(!showGifPicker); setPickerType('stickers'); }}
+                    className={`p-2 rounded-full transition-colors flex-shrink-0 ${showGifPicker && pickerType === 'stickers' ? 'text-blue-500 bg-blue-50' : 'text-gray-500 hover:text-blue-500'}`}
+                  >
+                    <StickerIcon className="w-5 h-5" />
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => { setShowGifPicker(!showGifPicker); setPickerType('gifs'); }}
+                    className={`p-2 rounded-full transition-colors flex-shrink-0 ${showGifPicker && pickerType === 'gifs' ? 'text-blue-500 bg-blue-50' : 'text-gray-500 hover:text-blue-500'}`}
+                  >
+                    <Smile className="w-5 h-5" />
+                  </button>
+                  <form onSubmit={handleSendMessage} className="flex-1 flex items-center">
+                    <input
+                      type="text"
+                      value={newMessage}
+                      onChange={(e) => {
+                        setNewMessage(e.target.value);
+                        handleTyping();
+                      }}
+                      placeholder="Mensagem..."
+                      className="flex-1 bg-transparent outline-none py-2 text-sm ml-2"
+                    />
+                    <button 
+                      type="submit" 
+                      disabled={(!newMessage.trim() && !selectedImage) || uploadingMedia}
+                      className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition-colors disabled:opacity-30 flex-shrink-0 relative"
+                    >
+                      {uploadingMedia ? (
+                        <div className="w-5 h-5 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+                      ) : (
+                          <Send className="w-5 h-5" />
+                      )}
+                    </button>
+                  </form>
+                </div>
+                <button 
+                  onClick={startRecording}
+                  className="p-3 bg-gray-100 dark:bg-slate-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-slate-700 rounded-full transition-colors"
+                >
+                  <Mic className="w-5 h-5" />
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>

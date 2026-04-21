@@ -29,6 +29,7 @@ import DisplaySettings from './pages/DisplaySettings';
 import PrivacySettings from './pages/PrivacySettings';
 import CreatorStudio from './pages/CreatorStudio';
 import Shop from './pages/Shop';
+import Leaderboard from './pages/Leaderboard';
 import PWABadge from './components/PWABadge';
 import SplashScreen from './components/SplashScreen';
 import AnonymousFeed from './pages/AnonymousFeed';
@@ -93,6 +94,7 @@ export default function App() {
             <Route path="post/:postId" element={<PostDetail />} />
             <Route path="trending" element={<Trending />} />
             <Route path="premium" element={<Premium />} />
+            <Route path="leaderboard" element={<Leaderboard />} />
             <Route path="bookmarks" element={<Bookmarks />} />
             <Route path="communities" element={<Communities />} />
             <Route path="communities/:slug" element={<CommunityDetail />} />

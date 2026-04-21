@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, TrendingUp, MoreHorizontal, UserPlus } from 'lucide-react';
+import { Search, TrendingUp, MoreHorizontal, UserPlus, Trophy } from 'lucide-react';
 import { collection, query, limit, getDocs, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -192,9 +192,17 @@ export default function RightSidebar() {
       </div>
 
       {/* Trending Section */}
-      <div className="bg-gray-50 rounded-2xl overflow-hidden border border-gray-100">
-        <h3 className="font-black text-xl px-4 py-3">O que está acontecendo</h3>
-        <div className="divide-y divide-gray-100">
+      <div className="bg-gray-50 dark:bg-slate-900 amoled:bg-zinc-900 rounded-2xl overflow-hidden border border-gray-100 dark:border-white/10">
+        <div className="flex items-center justify-between px-4 py-3">
+          <h3 className="font-black text-xl">O que está acontecendo</h3>
+          <button 
+            onClick={() => navigate('/leaderboard')}
+            className="p-2 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-xl hover:scale-110 transition-transform shadow-sm"
+          >
+            <Trophy className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="divide-y divide-gray-100 dark:divide-white/5">
           {trendingTopics.map((topic, i) => (
             <div key={i} className="px-4 py-3 hover:bg-gray-100 cursor-pointer transition-colors group relative">
               <div className="flex justify-between items-start">

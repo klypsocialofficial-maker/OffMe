@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User as UserIcon, Image as ImageIcon, X, BarChart2, Film, Ghost, Clock, Users, Plus } from 'lucide-react';
-import { addDoc, collection, serverTimestamp, doc, updateDoc, increment, query, where, getDocs } from 'firebase/firestore';
+import { User as UserIcon, Image as ImageIcon, X, BarChart2, Film, Ghost, Clock, Users, Plus, Calendar, Flame } from 'lucide-react';
+import { addDoc, collection, serverTimestamp, doc, updateDoc, increment, query, where, getDocs, Timestamp, limit } from 'firebase/firestore';
 import { db } from '../firebase';
 import { uploadToImgBB } from '../lib/imgbb';
 import { awardPoints, trackMissionProgress } from '../services/gamificationService';
@@ -69,6 +69,76 @@ export default function CreatePostModal({
   const [showGifPicker, setShowGifPicker] = useState(false);
   const [gifSearch, setGifSearch] = useState('');
   const [gifUrl, setGifUrl] = useState<string | null>(null);
+  const [isStory, setIsStory] = useState(false);
+  const [scheduledAt, setScheduledAt] = useState<string>('');
+  const [showSchedule, setShowSchedule] = useState(false);
+  const [mentionSuggestions, setMentionSuggestions] = useState<any[]>([]);
+  const [hashtagSuggestions, setHashtagSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestionType, setSuggestionType] = useState<'mention' | 'hashtag' | null>(null);
+  const [cursorPosition, setCursorPosition] = useState(0);
+
+  const textInputRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const handleAutocomplete = async () => {
+      const textLine = content.substring(0, cursorPosition);
+      const matches = textLine.match(/([@#])([a-zA-Z0-9_À-ÿ]*)$/);
+      
+      if (matches) {
+        const type = matches[1] === '@' ? 'mention' : 'hashtag';
+        const queryStr = matches[2].toLowerCase();
+        
+        setSuggestionType(type);
+        setShowSuggestions(true);
+
+        if (type === 'mention') {
+          if (queryStr.length > 0) {
+            const q = query(
+              collection(db, 'users'), 
+              where('username', '>=', queryStr), 
+              where('username', '<=', queryStr + '\uf8ff'),
+              limit(5)
+            );
+            const snap = await getDocs(q);
+            setMentionSuggestions(snap.docs.map(d => d.data()));
+          } else {
+            // Show recent/followed users if query is empty
+            setMentionSuggestions(userProfile?.following?.slice(0, 5) || []);
+          }
+        } else {
+          // Hashtag suggestions (mock popular for now or fetch recent)
+          const mockHashtags = ['OffMe', 'Missions', 'Ghost', 'Brasil', 'Premium', 'Crypto', 'Tech'];
+          setHashtagSuggestions(mockHashtags.filter(h => h.toLowerCase().startsWith(queryStr)));
+        }
+      } else {
+        setShowSuggestions(false);
+      }
+    };
+
+    const timeoutId = setTimeout(handleAutocomplete, 300);
+    return () => clearTimeout(timeoutId);
+  }, [content, cursorPosition]);
+
+  const insertSuggestion = (value: string) => {
+    const textBefore = content.substring(0, cursorPosition);
+    const textAfter = content.substring(cursorPosition);
+    
+    // Find the start of the current word (@ or #)
+    const match = textBefore.match(/([@#])[a-zA-Z0-9_À-ÿ]*$/);
+    if (!match) return;
+    
+    const prefix = textBefore.substring(0, match.index);
+    const newContent = prefix + match[1] + value + ' ' + textAfter;
+    
+    setContent(newContent);
+    setShowSuggestions(false);
+    
+    // Focus back and move cursor
+    if (textInputRef.current) {
+      textInputRef.current.focus();
+    }
+  };
 
   React.useEffect(() => {
     if (isOpen) {
@@ -215,9 +285,12 @@ export default function CreatePostModal({
           authorPrivate,
           ownerId: userProfile?.uid || null,
           isAnonymous,
+          isStory,
           privacy: postAudience,
           audience: postAudience === 'circle' ? (userProfile?.circleMembers || []) : [],
-          expiresAt: null,
+          expiresAt: isStory ? Timestamp.fromDate(new Date(Date.now() + 24 * 60 * 60 * 1000)) : null,
+          scheduledAt: scheduledAt ? Timestamp.fromDate(new Date(scheduledAt)) : null,
+          status: scheduledAt ? 'scheduled' : 'published',
           createdAt: serverTimestamp(),
           likesCount: 0,
           repliesCount: 0,
@@ -481,12 +554,67 @@ export default function CreatePostModal({
                 {/* Content */}
                 <div className="flex-1">
                   <textarea
+                    ref={textInputRef}
                     value={content}
-                    onChange={(e) => setContent(e.target.value)}
+                    onChange={(e) => {
+                      setContent(e.target.value);
+                      setCursorPosition(e.target.selectionStart);
+                    }}
+                    onKeyUp={(e) => setCursorPosition((e.target as any).selectionStart)}
+                    onClick={(e) => setCursorPosition((e.target as any).selectionStart)}
                     placeholder={replyTo ? "Postar sua resposta" : "What's up?"}
                     className="w-full bg-transparent text-xl outline-none resize-none min-h-[120px] placeholder-gray-500"
                     autoFocus
                   />
+
+                  {/* Autocomplete Suggestions */}
+                  <AnimatePresence>
+                    {showSuggestions && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                        className="absolute z-50 left-10 mt-1 w-64 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-white/10 overflow-hidden"
+                      >
+                        <div className="p-2 border-b border-gray-50 dark:border-white/5 bg-gray-50/50 dark:bg-white/5 flex items-center justify-between">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Sugestões</span>
+                          <button onClick={() => setShowSuggestions(false)} className="p-1 hover:bg-gray-200 dark:hover:bg-white/10 rounded-full">
+                            <X className="w-3 h-3 text-gray-400" />
+                          </button>
+                        </div>
+                        <div className="max-h-48 overflow-y-auto">
+                          {suggestionType === 'mention' && mentionSuggestions.map((user, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => insertSuggestion(user.username)}
+                              className="w-full px-4 py-3 flex items-center space-x-3 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-left transition-colors border-b border-gray-50 dark:border-white/5 last:border-0"
+                            >
+                              <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden">
+                                <LazyImage src={user.photoURL || getDefaultAvatar(user.displayName, user.username)} alt={user.displayName} className="w-full h-full" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-bold text-sm truncate">{user.displayName}</p>
+                                <p className="text-xs text-gray-500 truncate">@{user.username}</p>
+                              </div>
+                            </button>
+                          ))}
+                          {suggestionType === 'hashtag' && hashtagSuggestions.map((tag, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => insertSuggestion(tag)}
+                              className="w-full px-4 py-3 text-left hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center space-x-3"
+                            >
+                              <div className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-white/10 flex items-center justify-center font-black text-gray-400 text-xs">#</div>
+                              <span className="font-bold text-sm">#{tag}</span>
+                            </button>
+                          ))}
+                          {((suggestionType === 'mention' && mentionSuggestions.length === 0) || (suggestionType === 'hashtag' && hashtagSuggestions.length === 0)) && (
+                            <div className="px-4 py-4 text-center text-gray-400 italic text-xs">Nenhuma sugestão encontrada</div>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                   
                   {/* Hidden file inputs */}
                   <input
@@ -536,6 +664,28 @@ export default function CreatePostModal({
                         <X className="w-4 h-4" />
                       </button>
                       <img src={gifUrl} alt="GIF" className="w-full h-auto max-h-64 object-cover" />
+                    </div>
+                  )}
+
+                  {showSchedule && (
+                    <div className="mt-4 mb-4 bg-gray-50 border border-gray-100 rounded-2xl p-4 flex flex-col items-center">
+                      <div className="flex justify-between items-center w-full mb-3">
+                        <h4 className="font-bold text-sm flex items-center space-x-2">
+                          <Calendar className="w-4 h-4 text-blue-500" />
+                          <span>Agendar Post</span>
+                        </h4>
+                        <button onClick={() => { setShowSchedule(false); setScheduledAt(''); }} className="text-gray-400 hover:text-red-500">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <input 
+                        type="datetime-local" 
+                        value={scheduledAt}
+                        onChange={(e) => setScheduledAt(e.target.value)}
+                        min={new Date().toISOString().slice(0, 16)}
+                        className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 ring-blue-500/20 font-medium text-sm"
+                      />
+                      <p className="mt-2 text-[10px] text-gray-400 font-bold uppercase italic">O post será publicado automaticamente na data escolhida.</p>
                     </div>
                   )}
 
@@ -636,6 +786,21 @@ export default function CreatePostModal({
                   className={`p-2 rounded-full transition-colors ${showGifPicker ? 'bg-blue-50 text-blue-500' : 'text-blue-500 hover:bg-blue-50'}`}
                 >
                   <Film className="w-5 h-5" />
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => { setShowSchedule(!showSchedule); setShowPoll(false); setShowGifPicker(false); }} 
+                  className={`p-2 rounded-full transition-colors ${showSchedule ? 'bg-blue-50 text-blue-500' : 'text-blue-500 hover:bg-blue-50'}`}
+                >
+                   <Clock className="w-5 h-5" />
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setIsStory(!isStory)} 
+                  className={`p-2 rounded-full transition-colors ${isStory ? 'bg-orange-50 text-orange-500' : 'text-orange-500 hover:bg-orange-50'}`}
+                  title="Postar como Off (Story)"
+                >
+                   <Flame className={`w-5 h-5 ${isStory ? 'fill-current' : ''}`} />
                 </button>
               </div>
               

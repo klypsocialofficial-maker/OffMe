@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-type Theme = 'light' | 'dark' | 'system';
+type Theme = 'light' | 'dark' | 'amoled' | 'system';
 
 interface ThemeContextType {
   theme: Theme;
@@ -10,20 +10,33 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setTheme] = useState<Theme>('light');
+  const [theme, setTheme] = useState<Theme>(() => {
+    const saved = localStorage.getItem('theme') as Theme;
+    return saved || 'light';
+  });
 
   useEffect(() => {
     const root = window.document.documentElement;
     const applyTheme = (t: Theme) => {
-      const isDark = t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      const isDark = t === 'dark' || t === 'amoled' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
       
       if (isDark) {
         document.documentElement.classList.add('dark');
         document.body.classList.add('dark');
         document.documentElement.style.setProperty('color-scheme', 'dark');
+        
+        if (t === 'amoled') {
+          document.documentElement.classList.add('amoled');
+          document.body.classList.add('amoled');
+        } else {
+          document.documentElement.classList.remove('amoled');
+          document.body.classList.remove('amoled');
+        }
       } else {
         document.documentElement.classList.remove('dark');
         document.body.classList.remove('dark');
+        document.documentElement.classList.remove('amoled');
+        document.body.classList.remove('amoled');
         document.documentElement.style.setProperty('color-scheme', 'light');
       }
     };
