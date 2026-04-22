@@ -3,10 +3,11 @@ import { useRegisterSW } from 'virtual:pwa-register/react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronRight, Sparkles, CheckCircle2, X } from 'lucide-react';
 
-const APP_VERSION = '0.0.0.08';
+const APP_VERSION = '0.0.0.11';
 
 export default function PWABadge() {
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
 
   const {
     offlineReady: [offlineReady, setOfflineReady],
@@ -32,20 +33,20 @@ export default function PWABadge() {
     const handleCheckUpdate = () => {
       console.log('Manually checking for PWA update...');
       if (registrationRef.current) {
+        setCheckingUpdate(true);
         registrationRef.current.update().then(() => {
           // needRefresh will be updated by useRegisterSW if found
-          // We wait a bit to see if needRefresh becomes true, if not, show up to date
           setTimeout(() => {
-            // How do we know if it's up to date? 
-            // If after update() call needRefresh is still false, then it is up to date
-            // (Note: this is a heuristic since we don't have a direct "upToDate" state from useRegisterSW)
-            // But if we are already seeing the refresh prompt, we don't show "up to date"
+            setCheckingUpdate(false);
             const pwaNeedsRefresh = document.querySelector('[data-pwa-needs-refresh="true"]');
             if (!pwaNeedsRefresh && !needRefresh) {
               setShowUpToDate(true);
               setTimeout(() => setShowUpToDate(false), 3000);
             }
-          }, 1500);
+          }, 2000);
+        }).catch(err => {
+          console.error('Update check failed:', err);
+          setCheckingUpdate(false);
         });
       }
     };
@@ -89,7 +90,16 @@ export default function PWABadge() {
     }, 200);
   };
 
-  if (!offlineReady && !needRefresh) return null;
+  if (!offlineReady && !needRefresh && !showUpToDate && !checkingUpdate) return null;
+
+  if (checkingUpdate) {
+    return (
+      <div className="fixed bottom-24 sm:bottom-8 left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 sm:right-8 z-[100] p-4 bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-100 flex items-center space-x-4">
+        <div className="w-8 h-8 border-3 border-gray-100 border-t-black rounded-full animate-spin" />
+        <p className="font-bold text-gray-900">Verificando...</p>
+      </div>
+    );
+  }
 
   if (needRefresh) {
     return (

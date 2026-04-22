@@ -76,7 +76,6 @@ export default function Settings() {
         <div 
           onClick={() => {
             window.dispatchEvent(new CustomEvent('check-pwa-update'));
-            alert('Verificando se há novas versões...');
           }}
           className="p-4 bg-white rounded-xl shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors"
         >

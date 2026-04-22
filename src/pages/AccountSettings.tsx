@@ -22,6 +22,11 @@ export default function AccountSettings() {
   const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
   const [showViolations, setShowViolations] = useState(false);
 
+  // Scroll to top on mount
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   const handleUpdateUsername = async (e: React.FormEvent) => {
     e.preventDefault();
     if (username === userProfile?.username) return;
@@ -102,8 +107,8 @@ export default function AccountSettings() {
   };
 
   return (
-    <div className="w-full h-full bg-white/50 overflow-y-auto pb-20">
-      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-2xl border-b border-black/5 shadow-sm pt-[env(safe-area-inset-top)]">
+    <div className="w-full h-full bg-white/50 pb-20">
+      <div className="sticky top-0 z-[150] bg-white/95 backdrop-blur-2xl border-b border-black/5 shadow-sm pt-[env(safe-area-inset-top)]">
         <div className="px-4 py-3 flex items-center space-x-3">
           <button onClick={() => navigate(-1)} className="p-2 -ml-2 hover:bg-black/5 rounded-full transition-colors">
             <ArrowLeft className="w-6 h-6" />
