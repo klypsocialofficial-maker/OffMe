@@ -3,7 +3,7 @@ import { useRegisterSW } from 'virtual:pwa-register/react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronRight, Sparkles, CheckCircle2, X } from 'lucide-react';
 
-const APP_VERSION = '0.0.0.06';
+const APP_VERSION = '0.0.0.07';
 
 export default function PWABadge() {
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
@@ -31,10 +31,11 @@ export default function PWABadge() {
   useEffect(() => {
     const handleCheckUpdate = () => {
       console.log('Manually checking for PWA update...');
-      registrationRef.current?.update().then(() => {
-        // If no update found, maybe show a toast or message
-        // But useRegisterSW will handle 'needRefresh' if it is found
-      });
+      if (registrationRef.current) {
+        registrationRef.current.update().then(() => {
+          // If update is found, needRefresh will be true
+        });
+      }
     };
     window.addEventListener('check-pwa-update' as any, handleCheckUpdate);
     return () => window.removeEventListener('check-pwa-update' as any, handleCheckUpdate);
@@ -42,7 +43,7 @@ export default function PWABadge() {
 
   console.log('PWA Status - offlineReady:', offlineReady, 'needRefresh:', needRefresh);
 
-  const [showChangelog, setShowChangelog] = useState(false);
+  const [showChangelog, setShowChangelog] = useState(true); // Default true now to show news
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateProgress, setUpdateProgress] = useState(0);
   const [updateComplete, setUpdateComplete] = useState(false);
@@ -65,12 +66,12 @@ export default function PWABadge() {
           setUpdateComplete(true);
           setTimeout(() => {
             updateServiceWorker(true);
-          }, 3000);
+          }, 2000);
         }, 500);
       } else {
         setUpdateProgress(progress);
       }
-    }, 300);
+    }, 200);
   };
 
   if (!offlineReady && !needRefresh) return null;
@@ -126,7 +127,7 @@ export default function PWABadge() {
                     </div>
                     
                     <h2 className="text-3xl font-black mb-2">{updateProgress}%</h2>
-                    <p className="text-white/60 font-medium">Atualizando o OffMe...</p>
+                    <p className="text-white/60 font-medium">Instalando melhorias...</p>
                   </motion.div>
                 ) : (
                   <motion.div 
@@ -138,9 +139,9 @@ export default function PWABadge() {
                     <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-6 shadow-[0_0_40px_rgba(255,255,255,0.3)]">
                       <CheckCircle2 className="w-12 h-12 text-black" />
                     </div>
-                    <h2 className="text-3xl font-black mb-3">Tudo pronto!</h2>
+                    <h2 className="text-3xl font-black mb-3">Versão {APP_VERSION}!</h2>
                     <p className="text-xl text-white/80 font-medium">
-                      Bem vindo a versão <span className="text-white font-bold">{APP_VERSION}</span> do OffMe
+                      O OffMe ficou ainda melhor. Aproveite!
                     </p>
                   </motion.div>
                 )}
@@ -163,10 +164,10 @@ export default function PWABadge() {
                 </div>
                 
                 <h3 className="font-black text-2xl text-gray-900 mb-3 leading-tight">
-                  Hey, temos uma nova atualização!
+                  Nova atualização disponível!
                 </h3>
                 <p className="text-gray-500 mb-6 font-medium">
-                  Bora atualizar para ter a melhor experiência?
+                  Confira as melhorias e novidades desta versão.
                 </p>
                 
                 <div className="w-full mb-6">
@@ -175,7 +176,7 @@ export default function PWABadge() {
                     className="flex items-center justify-center space-x-2 w-full py-3 px-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors text-sm font-bold text-gray-700"
                   >
                     <Sparkles className="w-4 h-4 text-amber-500" />
-                    <span>O que há de novo?</span>
+                    <span>O que mudou?</span>
                     <ChevronRight className={`w-4 h-4 transition-transform ${showChangelog ? 'rotate-90' : ''}`} />
                   </button>
                   
@@ -190,27 +191,23 @@ export default function PWABadge() {
                         <ul className="text-left mt-4 space-y-3 text-sm text-gray-600 bg-gray-50 p-4 rounded-xl border border-gray-100">
                           <li className="flex items-start">
                             <div className="w-1.5 h-1.5 rounded-full bg-black mt-1.5 mr-2 flex-shrink-0" />
-                            <span className="font-bold">v0.0.0.05:</span>
+                            <span className="font-bold">v0.0.0.07:</span>
                           </li>
                           <li className="flex items-start pl-4">
-                            <div className="w-1 h-1 rounded-full bg-gray-400 mt-1.5 mr-2 flex-shrink-0" />
-                            <span>Separação de layouts para iOS, Android e Desktop.</span>
+                            <div className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 mr-2 flex-shrink-0" />
+                            <span>Correção de erro de permissão ao salvar perfil.</span>
                           </li>
                           <li className="flex items-start pl-4">
-                            <div className="w-1 h-1 rounded-full bg-gray-400 mt-1.5 mr-2 flex-shrink-0" />
-                            <span>Otimização impecável para iOS PWA (Safe Areas).</span>
+                            <div className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 mr-2 flex-shrink-0" />
+                            <span>Sincronização de foto/nome em posts antigos otimizada.</span>
                           </li>
                           <li className="flex items-start pl-4">
-                            <div className="w-1 h-1 rounded-full bg-gray-400 mt-1.5 mr-2 flex-shrink-0" />
-                            <span>Novo design de navegação inferior e drawer lateral.</span>
-                          </li>
-                          <li className="flex items-start">
-                            <div className="w-1.5 h-1.5 rounded-full bg-black mt-1.5 mr-2 flex-shrink-0" />
-                            <span className="font-bold">v0.0.0.04:</span>
+                            <div className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 mr-2 flex-shrink-0" />
+                            <span>Botão "Verificar Atualizações" nas configurações.</span>
                           </li>
                           <li className="flex items-start pl-4">
-                            <div className="w-1 h-1 rounded-full bg-gray-400 mt-1.5 mr-2 flex-shrink-0" />
-                            <span>Correção definitiva dos cabeçalhos fixos.</span>
+                            <div className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 mr-2 flex-shrink-0" />
+                            <span>Verificação automática de novas versões (iOS/PWA).</span>
                           </li>
                         </ul>
                       </motion.div>
