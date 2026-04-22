@@ -177,6 +177,17 @@ export default function Home() {
   });
 
   const [activeStory, setActiveStory] = useState<any | null>(null);
+  const [realStories, setRealStories] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!db) return;
+    const fetchStories = async () => {
+        const q = query(collection(db, 'stories'), where('expiresAt', '>', Timestamp.now()));
+        const snap = await getDocs(q);
+        setRealStories(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    };
+    fetchStories();
+  }, [db]);
 
   const showToast = (message: string, type: 'info' | 'success' | 'error' = 'info') => {
     setToast({ message, type, isOpen: true });
@@ -882,16 +893,7 @@ export default function Home() {
         className="focus-visible:outline-none w-full max-w-2xl mx-auto"
       >
         <StoriesBar 
-          stories={[
-            {
-              id: '1',
-              authorId: 'ruly',
-              authorName: 'Ruly',
-              authorPhoto: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100',
-              mediaUrl: 'https://images.unsplash.com/photo-1596464406183-0ef3a3122718?w=500',
-              type: 'image'
-            }
-          ]} 
+          stories={realStories} 
           userProfile={userProfile} 
           onOpenStory={setActiveStory} 
           onCreateStory={() => showToast('Em breve: Criação de Stories', 'info')} 

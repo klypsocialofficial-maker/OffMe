@@ -48,23 +48,25 @@ export default function StoryViewer({ story, onClose }: StoryViewerProps) {
         className="fixed inset-0 z-[100] bg-black flex items-center justify-center"
       >
         {/* Barra de Progresso */}
-        <div className="absolute top-4 left-4 right-4 h-1 bg-white/30 rounded-full overflow-hidden">
-          <motion.div 
-            className="h-full bg-white"
-            style={{ width: `${progress}%` }}
-          />
+        <div className="absolute top-4 left-4 right-4 flex gap-1 z-20">
+           <div className="h-0.5 flex-1 bg-white/30 rounded-full overflow-hidden">
+             <motion.div 
+               className="h-full bg-white"
+               style={{ width: `${progress}%` }}
+             />
+           </div>
         </div>
 
-        {/* Informações do Autor */}
-        <div className="absolute top-8 left-4 flex items-center space-x-2 z-10">
-          <img src={story.authorPhoto} alt={story.authorName} className="w-8 h-8 rounded-full border border-white/20" />
-          <span className="text-white font-bold text-sm tracking-tight">{story.authorName}</span>
+        {/* Informações do Autor e Fechar */}
+        <div className="absolute top-0 left-0 right-0 p-4 flex items-center justify-between z-20 bg-gradient-to-b from-black/60 to-transparent">
+          <div className="flex items-center space-x-3">
+             <img src={story.authorPhoto} alt={story.authorName} className="w-9 h-9 rounded-full border-2 border-white/20" />
+             <span className="text-white font-bold text-sm tracking-tight">{story.authorName}</span>
+          </div>
+          <button onClick={onClose} className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors">
+            <X className="w-6 h-6" />
+          </button>
         </div>
-
-        {/* Botão Fechar */}
-        <button onClick={onClose} className="absolute top-8 right-4 text-white z-10 p-2">
-          <X className="w-6 h-6" />
-        </button>
 
         {/* Conteúdo */}
         <LazyImage src={story.mediaUrl} alt="Story" className="w-full h-full object-contain" />
