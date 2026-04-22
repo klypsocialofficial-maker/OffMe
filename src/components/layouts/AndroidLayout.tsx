@@ -12,7 +12,10 @@ interface AndroidLayoutProps {
   unreadNotificationsCount: number;
   unreadMessagesCount: number;
   openCreateModal: (replyTo?: any, quotePost?: any) => void;
+  openEditProfileModal: () => void;
   setIsLogoutModalOpen: (open: boolean) => void;
+  isProfileQuickModalOpen: boolean;
+  setIsProfileQuickModalOpen: (open: boolean) => void;
   isDrawerOpen: boolean;
   closeDrawer: () => void;
   openDrawer: () => void;
@@ -27,7 +30,10 @@ export default function AndroidLayout({
   unreadNotificationsCount,
   unreadMessagesCount,
   openCreateModal,
+  openEditProfileModal,
   setIsLogoutModalOpen,
+  isProfileQuickModalOpen,
+  setIsProfileQuickModalOpen,
   isDrawerOpen,
   closeDrawer,
   openDrawer,
@@ -36,6 +42,11 @@ export default function AndroidLayout({
   location
 }: AndroidLayoutProps) {
   const navigate = useNavigate();
+
+  const handleProfileClick = (e: React.MouseEvent, path: string) => {
+    e.preventDefault();
+    setIsProfileQuickModalOpen(true);
+  };
   const homeClickTimerRef = useRef<any>(null);
 
   return (
@@ -106,7 +117,7 @@ export default function AndroidLayout({
                 <Link
                   key={item.path}
                   to={item.path}
-                  onClick={handleHomeClick}
+                  onClick={item.isProfile ? (e) => handleProfileClick(e, item.path) : handleHomeClick}
                   className={`relative p-3 rounded-xl transition-all duration-200 flex flex-col items-center justify-center active:bg-black/5 ${
                     isActive ? 'text-black' : 'text-gray-400'
                   }`}

@@ -13,12 +13,16 @@ export default function PostContent({ content, className = '', showPreview = tru
 
   if (!content) return null;
   
-  // URL detection regex
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
-  const urls = content.match(urlRegex);
+  // URL detection regex - handles http, https and www
+  const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/gi;
+  
+  // Extract URLs and clean them (remove trailing punctuation)
+  const rawUrls = content.match(urlRegex) || [];
+  const urls = rawUrls.map(url => url.replace(/[.,!?;:)]+$/, ''));
   
   // Split by mentions (@username) OR hashtags (#hashtag) OR URLs
-  const parts = content.split(/(@\w+|#\w+|https?:\/\/[^\s]+)/g);
+  // We use a more complex split to ensure we match the cleaned URLs precisely
+  const parts = content.split(/(@\w+|#\w+|https?:\/\/[^\s]+|www\.[^\s]+)/gi);
   
   return (
     <div className={className}>
@@ -57,17 +61,22 @@ export default function PostContent({ content, className = '', showPreview = tru
           }
 
           if (part.match(urlRegex)) {
+            const cleanPart = part.replace(/[.,!?;:)]+$/, '');
+            const trailingPunc = part.substring(cleanPart.length);
+            const href = cleanPart.startsWith('http') ? cleanPart : `https://${cleanPart}`;
             return (
-              <a
-                key={index}
-                href={part}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="text-blue-500 hover:underline break-all"
-              >
-                {part}
-              </a>
+              <React.Fragment key={index}>
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-blue-500 hover:underline break-all"
+                >
+                  {cleanPart}
+                </a>
+                {trailingPunc}
+              </React.Fragment>
             );
           }
           

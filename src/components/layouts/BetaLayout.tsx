@@ -12,7 +12,10 @@ interface BetaLayoutProps {
   unreadNotificationsCount: number;
   unreadMessagesCount: number;
   openCreateModal: (replyTo?: any, quotePost?: any) => void;
+  openEditProfileModal: () => void;
   setIsLogoutModalOpen: (open: boolean) => void;
+  isProfileQuickModalOpen: boolean;
+  setIsProfileQuickModalOpen: (open: boolean) => void;
   isDrawerOpen: boolean;
   closeDrawer: () => void;
   openDrawer: () => void;
@@ -27,7 +30,10 @@ export default function BetaLayout({
   unreadNotificationsCount,
   unreadMessagesCount,
   openCreateModal,
+  openEditProfileModal,
   setIsLogoutModalOpen,
+  isProfileQuickModalOpen,
+  setIsProfileQuickModalOpen,
   isDrawerOpen,
   closeDrawer,
   openDrawer,
@@ -36,6 +42,11 @@ export default function BetaLayout({
   location
 }: BetaLayoutProps) {
   const navigate = useNavigate();
+
+  const handleProfileClick = (e: React.MouseEvent, path: string) => {
+    e.preventDefault();
+    setIsProfileQuickModalOpen(true);
+  };
   const homeClickTimerRef = useRef<any>(null);
 
   return (
@@ -111,7 +122,7 @@ export default function BetaLayout({
                 <Link
                   key={item.path}
                   to={item.path}
-                  onClick={handleHomeClick}
+                  onClick={item.isProfile ? (e) => handleProfileClick(e, item.path) : handleHomeClick}
                   className={`relative p-3 rounded-full transition-all duration-300 z-10 flex flex-col items-center justify-center active:bg-black/5 ${
                     isActive ? 'text-black' : 'text-gray-400'
                   }`}

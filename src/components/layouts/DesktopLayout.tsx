@@ -13,7 +13,10 @@ interface DesktopLayoutProps {
   unreadNotificationsCount: number;
   unreadMessagesCount: number;
   openCreateModal: (replyTo?: any, quotePost?: any) => void;
+  openEditProfileModal: () => void;
   setIsLogoutModalOpen: (open: boolean) => void;
+  isProfileQuickModalOpen: boolean;
+  setIsProfileQuickModalOpen: (open: boolean) => void;
   openDrawer?: () => void;
   Outlet: any;
   location: any;
@@ -25,12 +28,22 @@ export default function DesktopLayout({
   unreadNotificationsCount,
   unreadMessagesCount,
   openCreateModal,
+  openEditProfileModal,
   setIsLogoutModalOpen,
+  isProfileQuickModalOpen,
+  setIsProfileQuickModalOpen,
   openDrawer,
   Outlet,
   location
 }: DesktopLayoutProps) {
   const navigate = useNavigate();
+  const profileRef = useRef<HTMLDivElement>(null);
+  const sidebarProfileRef = useRef<HTMLDivElement>(null);
+
+  const handleProfileClick = (e: React.MouseEvent, path: string) => {
+    e.preventDefault();
+    setIsProfileQuickModalOpen(true);
+  };
   const homeClickTimerRef = useRef<any>(null);
 
   return (
@@ -95,12 +108,12 @@ export default function DesktopLayout({
               <Link
                 key={item.path}
                 to={item.path}
-                onClick={handleHomeClick}
+                onClick={item.isProfile ? (e) => handleProfileClick(e, item.path) : handleHomeClick}
                 className={`flex items-center justify-center xl:justify-start space-x-4 px-4 py-3 rounded-full transition-all relative z-10 group ${
                   isActive ? 'text-black' : 'text-gray-900 hover:bg-gray-100'
                 }`}
               >
-                <div className="relative">
+                <div className="relative" ref={item.isProfile ? profileRef : undefined}>
                   {item.isProfile ? (
                     <div className={`w-7 h-7 rounded-full overflow-hidden border-2 transition-all duration-200 ${isActive ? 'border-black' : 'border-transparent'}`}>
                       {userProfile?.photoURL ? (
@@ -158,8 +171,9 @@ export default function DesktopLayout({
           
           {userProfile && (
             <div 
+              ref={sidebarProfileRef}
               className="mt-4 flex items-center px-4 py-3 hover:bg-gray-100 rounded-full cursor-pointer transition-colors"
-              onClick={() => navigate(`/${userProfile.username}`)}
+              onClick={(e) => handleProfileClick(e, `/${userProfile.username}`)}
             >
               <div className="w-10 h-10 rounded-full bg-gray-100 overflow-hidden flex-shrink-0 border border-gray-200">
                 {userProfile.photoURL ? (
@@ -198,6 +212,25 @@ export default function DesktopLayout({
 
       {/* Right Sidebar (Desktop) */}
       <RightSidebar />
+
+      {/* Profile quick modal positioning logic for desktop */}
+      <style>{`
+        .profile-modal-desktop {
+          position: fixed;
+          bottom: 80px;
+          left: 20px;
+        }
+        @media (min-width: 1280px) {
+          .profile-modal-desktop {
+             left: calc(50% - 640px + 20px);
+          }
+        }
+      `}</style>
+      <div className="profile-modal-desktop pointer-events-none">
+        <div className="pointer-events-auto">
+          {/* The Actual Modal is rendered in Layout.tsx but we could move it here or just handle positioning via portal/CSS */}
+        </div>
+      </div>
     </div>
   );
 }

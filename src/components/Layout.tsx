@@ -39,6 +39,8 @@ import { usePlatform } from '../hooks/usePlatform';
 import DesktopLayout from './layouts/DesktopLayout';
 import AndroidLayout from './layouts/AndroidLayout';
 import BetaLayout from './layouts/BetaLayout';
+import EditProfileModal from './EditProfileModal';
+import ProfileQuickModal from './ProfileQuickModal';
 
 export default function Layout() {
   const { userProfile, logout } = useAuth();
@@ -67,6 +69,8 @@ export default function Layout() {
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
+  const [isProfileQuickModalOpen, setIsProfileQuickModalOpen] = useState(false);
   const [replyToPost, setReplyToPost] = useState<any | null>(null);
   const [quotePost, setQuotePost] = useState<any | null>(null);
   const [sharedMusic, setSharedMusic] = useState<any | null>(null);
@@ -80,6 +84,10 @@ export default function Layout() {
     setSharedMusic(sharedMusic);
     setIsAnonymousDefault(isAnonymous);
     setIsCreateModalOpen(true);
+  };
+
+  const openEditProfileModal = () => {
+    setIsEditProfileModalOpen(true);
   };
 
   useEffect(() => {
@@ -202,7 +210,10 @@ export default function Layout() {
         unreadNotificationsCount={unreadNotificationsCount}
         unreadMessagesCount={unreadMessagesCount}
         openCreateModal={openCreateModal}
+        openEditProfileModal={openEditProfileModal}
         setIsLogoutModalOpen={setIsLogoutModalOpen}
+        isProfileQuickModalOpen={isProfileQuickModalOpen}
+        setIsProfileQuickModalOpen={setIsProfileQuickModalOpen}
         openDrawer={openDrawer}
         Outlet={Outlet}
         location={location}
@@ -264,6 +275,21 @@ export default function Layout() {
       />
 
       <PermissionPrompt />
+
+      <EditProfileModal 
+        isOpen={isEditProfileModalOpen}
+        onClose={() => setIsEditProfileModalOpen(false)}
+        userProfile={userProfile}
+        handleFirestoreError={handleFirestoreError}
+        OperationType={OperationType}
+      />
+
+      <ProfileQuickModal
+        isOpen={isProfileQuickModalOpen}
+        onClose={() => setIsProfileQuickModalOpen(false)}
+        userProfile={userProfile}
+        openEditProfileModal={openEditProfileModal}
+      />
     </div>
   );
 }
