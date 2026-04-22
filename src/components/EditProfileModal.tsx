@@ -23,6 +23,7 @@ export default function EditProfileModal({ isOpen, onClose, userProfile, handleF
   const [profileTheme, setProfileTheme] = useState(userProfile?.profileTheme || 'default');
   const [loading, setLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
@@ -138,6 +139,7 @@ export default function EditProfileModal({ isOpen, onClose, userProfile, handleF
     if (!db || !userProfile) return;
     try {
       setLoading(true);
+      setError(null);
       
       let newAvatarUrl = userProfile.photoURL || '';
       let newBannerUrl = userProfile.bannerURL || '';
@@ -211,8 +213,9 @@ export default function EditProfileModal({ isOpen, onClose, userProfile, handleF
         setSaveSuccess(false);
         onClose();
       }, 1500);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `users/${userProfile.uid}`);
+    } catch (err: any) {
+      console.error(err);
+      setError('Erro ao salvar perfil. Tente novamente mais tarde.');
     } finally {
       setLoading(false);
     }
@@ -302,6 +305,12 @@ export default function EditProfileModal({ isOpen, onClose, userProfile, handleF
           </div>
 
           <div className="flex-1 overflow-y-auto no-scrollbar pb-24">
+            {error && (
+              <div className="px-6 py-3 bg-red-50 border-b border-red-100 text-red-600 text-xs font-bold flex items-center space-x-2">
+                <Info className="w-4 h-4" />
+                <span>{error}</span>
+              </div>
+            )}
             {/* Images Section */}
             <div className="relative">
               <div className="h-32 sm:h-48 bg-slate-100 relative group overflow-hidden">
