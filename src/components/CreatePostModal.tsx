@@ -11,6 +11,7 @@ import { GiphyFetch } from '@giphy/js-fetch-api';
 import { getDefaultAvatar } from '../lib/avatar';
 import { Grid } from '@giphy/react-components';
 import { handleMentions, sendPushNotification, notifyFollowers } from '../lib/notifications';
+import { suggestPostContent } from '../services/aiService';
 
 const gf = new GiphyFetch('rJC35Qp0ILjTI6mBlDGRcKCNnCucBBYn');
 
@@ -597,6 +598,19 @@ export default function CreatePostModal({
                     className="w-full bg-transparent text-xl outline-none resize-none min-h-[120px] placeholder-gray-500"
                     autoFocus
                   />
+                  
+                  {content.length > 5 && (
+                    <button 
+                      onClick={async () => {
+                         const suggestion = await suggestPostContent(content);
+                         setContent(suggestion);
+                      }}
+                      className="flex items-center space-x-1 text-xs font-bold text-purple-600 bg-purple-50 px-3 py-1 rounded-full mb-2 hover:bg-purple-100"
+                    >
+                      <Ghost className="w-3 h-3" />
+                      <span>Melhorar com IA</span>
+                    </button>
+                  )}
 
                   {/* Co-Authors Input */}
                   {!isAnonymous && (

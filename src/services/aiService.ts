@@ -31,3 +31,17 @@ export const generateSmartSummary = async (posts: any[]) => {
     return "O papo tá rendendo mas não consegui resumir agora. Tenta jaja! 👻";
   }
 };
+
+export const suggestPostContent = async (draft: string): Promise<string> => {
+  if (!ai) return draft;
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: `Melhore este draft de post para uma rede social moderna, tornando-o mais engajador e autêntico: "${draft}"`,
+    });
+    return response.text || draft;
+  } catch (error) {
+    console.error("AI service error:", error);
+    return draft;
+  }
+};

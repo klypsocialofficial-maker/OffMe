@@ -882,7 +882,16 @@ export default function Home() {
         className="focus-visible:outline-none w-full max-w-2xl mx-auto"
       >
         <StoriesBar 
-          stories={[]} 
+          stories={[
+            {
+              id: '1',
+              authorId: 'ruly',
+              authorName: 'Ruly',
+              authorPhoto: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100',
+              mediaUrl: 'https://images.unsplash.com/photo-1596464406183-0ef3a3122718?w=500',
+              type: 'image'
+            }
+          ]} 
           userProfile={userProfile} 
           onOpenStory={setActiveStory} 
           onCreateStory={() => showToast('Em breve: Criação de Stories', 'info')} 
