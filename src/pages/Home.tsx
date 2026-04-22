@@ -15,6 +15,7 @@ import ImageViewer from '../components/ImageViewer';
 import ConfirmModal from '../components/ConfirmModal';
 import PostCard from '../components/PostCard';
 import StoriesBar from '../components/StoriesBar';
+import StoryViewer from '../components/StoryViewer';
 import LazyImage from '../components/LazyImage';
 import PostSkeleton from '../components/PostSkeleton';
 import PremiumAdCard from '../components/PremiumAdCard';
@@ -174,6 +175,8 @@ export default function Home() {
     message: '',
     onConfirm: () => {}
   });
+
+  const [activeStory, setActiveStory] = useState<any | null>(null);
 
   const showToast = (message: string, type: 'info' | 'success' | 'error' = 'info') => {
     setToast({ message, type, isOpen: true });
@@ -881,8 +884,8 @@ export default function Home() {
         <StoriesBar 
           stories={[]} 
           userProfile={userProfile} 
-          onOpenStory={(s) => {}} 
-          onCreateStory={() => {}} 
+          onOpenStory={setActiveStory} 
+          onCreateStory={() => showToast('Em breve: Criação de Stories', 'info')} 
         />
         <PullToRefresh onRefresh={refreshFeed}>
           {/* New Posts Notification Bubble */}
@@ -1005,6 +1008,7 @@ export default function Home() {
           title={confirmModal.title}
           message={confirmModal.message}
         />
+        <StoryViewer story={activeStory} onClose={() => setActiveStory(null)} />
     </div>
   );
 }
