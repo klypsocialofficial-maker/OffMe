@@ -80,6 +80,7 @@ export default function PostDetail() {
   const navigate = useNavigate();
   const { userProfile, bookmarkPost, unbookmarkPost } = useAuth();
   const [post, setPost] = useState<any>(null);
+  const [parentPost, setParentPost] = useState<any>(null);
   const repostTimerRef = React.useRef<any>(null);
 
   const stopPropagation = (e: React.MouseEvent | React.PointerEvent) => e.stopPropagation();
@@ -237,6 +238,25 @@ export default function PostDetail() {
       unsubscribeQuotes();
     };
   }, [postId, userProfile?.mutedUsers]);
+
+  // Fetch parent post if this post is a reply
+  useEffect(() => {
+    if (!post?.replyToId || !db) {
+      setParentPost(null);
+      return;
+    }
+
+    const parentRef = doc(db, 'posts', post.replyToId);
+    const unsubscribeParent = onSnapshot(parentRef, (docSnap) => {
+      if (docSnap.exists()) {
+        setParentPost({ id: docSnap.id, ...docSnap.data() });
+      } else {
+        setParentPost(null);
+      }
+    });
+
+    return () => unsubscribeParent();
+  }, [post?.replyToId]);
 
   const handleDeleteReply = async (replyId: string) => {
     if (!db || !userProfile) return;
@@ -509,8 +529,42 @@ export default function PostDetail() {
       </div>
 
       <div className="max-w-2xl mx-auto p-4 space-y-6">
+        {/* Parent Post Context Chain */}
+        {parentPost && (
+          <div className="relative mb-[-24px]">
+             {/* Threading line to main post */}
+             <div className="absolute left-[34px] top-[40px] bottom-0 w-[3px] bg-gray-200 z-0"></div>
+             <div className="relative z-10">
+               <PostCard 
+                  post={parentPost}
+                  onLike={handleLikePost}
+                  onRepost={handleRepost}
+                  onDelete={handleDeletePost}
+                  onEdit={(p) => {
+                    setEditingPost(p);
+                    setEditContent(p.content);
+                  }}
+                  onShare={(p) => {
+                    setSelectedSharePost(p);
+                    setIsShareModalOpen(true);
+                  }}
+                  onReply={(p) => {
+                    setReplyToPost(p);
+                    setIsCreateModalOpen(true);
+                  }}
+                  onQuote={(p) => {
+                    setQuotePost(p);
+                    setIsCreateModalOpen(true);
+                  }}
+                  onImageClick={openImageViewer}
+                  canEdit={canEditPost}
+                />
+             </div>
+          </div>
+        )}
+
         {/* Main Post - Hero Design */}
-        <article className="bg-white rounded-[32px] shadow-sm border border-gray-100 p-6">
+        <article className={`bg-white rounded-[32px] shadow-sm border border-gray-100 p-6 relative z-10 ${parentPost ? 'mt-4' : ''}`}>
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center space-x-4">
               <div 
@@ -809,14 +863,13 @@ export default function PostDetail() {
               // Local component for recursive rendering
               const RenderReplyTree = ({ reply, depth = 0 }: { reply: any, depth?: number }) => (
                 <div key={reply.id} className="relative">
-                  {/* Threading line */}
-                  {depth > 0 && (
-                    <div 
-                      className="absolute top-0 bottom-0 w-[2px] bg-gray-100"
-                      style={{ left: -12 }}
-                    />
-                  )}
-                  <div style={{ marginLeft: depth > 0 ? 20 : 0 }}>
+                  {/* Threading line for child replies */}
+                  <div 
+                    className="absolute top-0 bottom-0 w-[4px] bg-gray-100/80 rounded-full"
+                    style={{ left: -14 }}
+                  />
+                  
+                  <div style={{ marginLeft: depth > 0 ? 10 : 0 }} className="pb-2">
                     <PostCard 
                       post={reply}
                       onLike={handleLikePost}
