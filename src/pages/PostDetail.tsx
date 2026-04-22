@@ -531,9 +531,9 @@ export default function PostDetail() {
       <div className="max-w-2xl mx-auto p-4 space-y-6">
         {/* Parent Post Context Chain */}
         {parentPost && (
-          <div className="relative mb-[-24px]">
+          <div className="relative mb-[-12px]">
              {/* Threading line to main post */}
-             <div className="absolute left-[34px] top-[40px] bottom-0 w-[3px] bg-gray-200 z-0"></div>
+             <div className="absolute left-[33px] top-[48px] bottom-0 w-[2px] bg-gray-200 z-0"></div>
              <div className="relative z-10">
                <PostCard 
                   post={parentPost}
@@ -806,11 +806,11 @@ export default function PostDetail() {
         </div>
 
         {/* Conversation / Replies */}
-        <div className="space-y-4">
+        <div className="space-y-0 -mx-4 sm:-mx-0">
           {quotes.length > 0 && (
-            <div className="space-y-3 mb-6">
-               <h2 className="px-4 font-black text-gray-400 text-xs uppercase tracking-widest">Citações</h2>
-               <div className="space-y-3">
+            <div className="mb-4">
+               <h2 className="px-4 py-2 font-black text-gray-400 text-[11px] uppercase tracking-widest border-b border-gray-50">Citações</h2>
+               <div className="divide-y divide-gray-50">
                  {quotes.map(quote => (
                    <PostCard 
                     key={quote.id}
@@ -841,35 +841,24 @@ export default function PostDetail() {
                </div>
             </div>
           )}
-          <h2 className="px-4 font-black text-gray-400 text-xs uppercase tracking-widest">Respostas</h2>
+          
+          <h2 className="px-4 py-3 font-black text-gray-400 text-[11px] uppercase tracking-widest border-b border-gray-50">Respostas</h2>
+          
           {replies.length === 0 ? (
-            <div className="bg-white p-12 rounded-[32px] text-center shadow-sm border border-gray-100 italic transition-all hover:shadow-md">
-              <div className="bg-gray-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <MessageCircle className="w-8 h-8 text-gray-300" />
-              </div>
-              <p className="text-gray-400 font-medium">Nenhuma resposta ainda. Seja o primeiro a responder!</p>
+            <div className="py-12 px-4 text-center">
+              <p className="text-gray-400 font-medium italic">Nenhuma resposta ainda.</p>
             </div>
           ) : (
-            (() => {
-              const buildTree = (repliesArray: any[], parentId: string | null): any[] => {
-                return repliesArray
-                  .filter(reply => reply.replyToId === parentId)
-                  .map(reply => ({
-                    ...reply,
-                    children: buildTree(repliesArray, reply.id)
-                  }));
-              };
-
-              // Local component for recursive rendering
-              const RenderReplyTree = ({ reply, depth = 0 }: { reply: any, depth?: number }) => (
-                <div key={reply.id} className="relative">
-                  {/* Threading line for child replies */}
-                  <div 
-                    className="absolute top-0 bottom-0 w-[4px] bg-gray-100/80 rounded-full"
-                    style={{ left: -14 }}
-                  />
-                  
-                  <div style={{ marginLeft: depth > 0 ? 10 : 0 }} className="pb-2">
+            <div className="divide-y divide-gray-100 bg-white">
+              {replies
+                .filter(r => r.replyToId === postId) // Only direct replies to this post in this view
+                .sort((a, b) => {
+                  const dateA = a.createdAt?.toDate?.() || new Date(0);
+                  const dateB = b.createdAt?.toDate?.() || new Date(0);
+                  return dateB.getTime() - dateA.getTime();
+                })
+                .map(reply => (
+                  <div key={reply.id} className="relative">
                     <PostCard 
                       post={reply}
                       onLike={handleLikePost}
@@ -894,20 +883,21 @@ export default function PostDetail() {
                       onImageClick={openImageViewer}
                       canEdit={canEditPost}
                     />
-                    {reply.children.map((child: any) => (
-                      <RenderReplyTree key={child.id} reply={child} depth={depth + 1} />
-                    ))}
+                    {/* Show simple link if there are nested replies */}
+                    {replies.some(r => r.replyToId === reply.id) && (
+                      <div className="px-4 pb-4">
+                        <button 
+                          onClick={() => navigate(`/post/${reply.id}`)}
+                          className="text-blue-500 hover:underline text-sm font-medium flex items-center space-x-1"
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                          <span>Mostrar esta conversa</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
-                </div>
-              );
-
-              const replyTreeData = buildTree(replies, postId || null);
-              return (
-                <div className="space-y-4">
-                  {replyTreeData.map(node => <RenderReplyTree key={node.id} reply={node} />)}
-                </div>
-              );
-            })()
+                ))}
+            </div>
           )}
         </div>
       </div>

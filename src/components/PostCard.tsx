@@ -366,6 +366,14 @@ export default function PostCard({
               {post.isEdited && <span className="text-gray-400 text-xs">(editado)</span>}
             </div>
 
+            {/* Twitter-style Replying to label */}
+            {post.replyToUsername && (
+              <div className="mt-0.5 mb-1 text-[13px] text-gray-500 flex items-center space-x-1">
+                <span>Respondendo a</span>
+                <span className="text-blue-500 hover:underline cursor-pointer">@{post.replyToUsername}</span>
+              </div>
+            )}
+
           <div className="relative">
             <button 
               onClick={(e) => {
