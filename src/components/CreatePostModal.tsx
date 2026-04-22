@@ -229,11 +229,11 @@ export default function CreatePostModal({
     e.preventDefault();
     
     // Check if we have anything to post
-    const hasCurrentContent = content.trim() || imageFiles.length > 0 || gifUrl;
-    if (!hasCurrentContent && threadPosts.length === 0) return;
-    
     const validPollOptions = pollOptions.filter(opt => opt.trim() !== '');
     const hasValidPoll = showPoll && validPollOptions.length >= 2;
+    
+    const hasCurrentContent = content.trim() || imageFiles.length > 0 || gifUrl || hasValidPoll;
+    if (!hasCurrentContent && threadPosts.length === 0) return;
     
     const canPostAnonymously = isAnonymous;
     if ((!userProfile && !canPostAnonymously) || !db) return;
@@ -264,7 +264,7 @@ export default function CreatePostModal({
       for (const [index, postItem] of allPostsToPublish.entries()) {
         let imageUrls = postItem.gifUrl ? [postItem.gifUrl] : [];
 
-        if (postItem.imageFiles.length > 0) {
+        if (postItem.imageFiles && postItem.imageFiles.length > 0) {
           const uploadedUrls = await Promise.all(postItem.imageFiles.map(file => uploadToImgBB(file)));
           imageUrls = uploadedUrls;
         }
@@ -301,9 +301,9 @@ export default function CreatePostModal({
           replyToVerified: currentReplyToVerified,
           threadId: mainThreadId,
           // Only the first post in the thread can have the quote or poll logic (to avoid duplicating it)
-          quotedPostId: index === 0 ? (quotePost?.id || null) : null,
-          quotedPostContent: index === 0 ? (quotePost?.content || null) : null,
-          quotedPostAuthor: index === 0 ? (quotePost?.authorName || null) : null
+          quotedPostId: index === allPostsToPublish.length - 1 ? (quotePost?.id || null) : null,
+          quotedPostContent: index === allPostsToPublish.length - 1 ? (quotePost?.content || null) : null,
+          quotedPostAuthor: index === allPostsToPublish.length - 1 ? (quotePost?.authorName || null) : null
         };
 
         if (communityId) {
@@ -311,7 +311,7 @@ export default function CreatePostModal({
           postData.communityName = communityName;
         }
 
-        if (index === 0 && hasValidPoll) {
+        if (index === allPostsToPublish.length - 1 && hasValidPoll) {
           postData.poll = {
             options: validPollOptions.map(opt => ({ text: opt, votes: 0 })),
             totalVotes: 0,
@@ -322,56 +322,45 @@ export default function CreatePostModal({
         const newPostRef = await addDoc(collection(db, 'posts'), postData);
         
         if (!isAnonymous && userProfile) {
-          await awardPoints(userProfile.uid, 10, 'post');
+          await awardPoints(userProfile.uid, 5, 'post');
         }
 
-        // Handle points, mentions, and notifications only for the first post to avoid spam
-        if (index === 0) {
-          if (!replyTo && !isAnonymous && userProfile) {
-            await awardPoints(userProfile.uid, 20);
-          }
+        // Handle mentions and notifications
+        if (postContent || index === allPostsToPublish.length - 1) {
           if (!isAnonymous && userProfile) {
-            await handleMentions(postContent, newPostRef.id, userProfile, imageUrls[0] || null);
-          }
-          if (!replyTo && !isAnonymous && userProfile) {
-            await notifyFollowers(userProfile, postContent, imageUrls[0] || null);
+            const firstImageUrl = imageUrls[0] || null;
+            await handleMentions(postContent, newPostRef.id, userProfile, firstImageUrl);
+            await notifyFollowers(userProfile, postContent, firstImageUrl);
           }
         }
         
-        // If this post replies to an existing external post, increment its repliesCount
-        if (index === 0 && replyTo) {
-          await updateDoc(doc(db, 'posts', replyTo.id), {
-            repliesCount: increment(1)
-          });
-          
-          if (!isAnonymous && userProfile) {
-            await awardPoints(userProfile.uid, 10);
-          }
-          
-          if (replyTo.authorId !== authorId && replyTo.authorId !== 'anonymous') {
+        // Notification for replies/quotes
+        if (index === allPostsToPublish.length - 1 && (replyTo || quotePost)) {
+          const targetAuthorId = replyTo?.authorId || quotePost?.authorId;
+          if (targetAuthorId && targetAuthorId !== authorId && targetAuthorId !== 'anonymous') {
             await addDoc(collection(db, 'notifications'), {
-              recipientId: replyTo.authorId,
+              recipientId: targetAuthorId,
               senderId: authorId,
               senderName: authorName,
               senderUsername: authorUsername,
               senderPhoto: authorPhoto || null,
               senderVerified: authorVerified,
-              type: 'reply',
+              type: replyTo ? 'reply' : 'quote',
               postId: newPostRef.id,
+              parentPostId: replyTo?.id || quotePost?.id,
               content: postContent,
               read: false,
               createdAt: serverTimestamp()
             });
 
-            await sendPushNotification(
-              replyTo.authorId,
-              'Nova Resposta',
-              `@${authorUsername} respondeu ao seu post.`
-            );
+            if (replyTo) {
+              await updateDoc(doc(db, 'posts', replyTo.id), {
+                repliesCount: increment(1)
+              });
+            }
           }
         }
 
-        // For the next post in the thread, make it reply to *this* newly created post
         currentReplyToId = newPostRef.id;
         currentReplyToUsername = authorUsername;
         currentReplyToVerified = authorVerified;
@@ -385,8 +374,12 @@ export default function CreatePostModal({
       setShowPoll(false);
       setPollOptions(['', '']);
       onClose();
-    } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, 'posts');
+    } catch (error: any) {
+      console.error("Erro ao postar:", error);
+      alert("Erro ao postar: " + (error.message || "Erro desconhecido"));
+      if (handleFirestoreError) {
+        handleFirestoreError(error, OperationType.CREATE, 'posts');
+      }
     } finally {
       setLoading(false);
     }

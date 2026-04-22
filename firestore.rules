@@ -28,7 +28,7 @@ service cloud.firestore {
     
     function isValidPost(data) {
       return data.get('content', '') is string &&
-             data.get('privacy', 'public') in ['public', 'private', 'followers'];
+             data.get('privacy', 'public') in ['public', 'private', 'followers', 'circle'];
     }
 
     function isFollowing(userId) {
@@ -38,9 +38,9 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if true;
       allow create: if isOwner(userId);
-      allow update: if (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isVerified', 'premiumTier', 'isPremium', 'points'])) || 
+      allow update: if (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isVerified', 'premiumTier', 'isPremium'])) || 
                     isAdmin() || 
-                    (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followers']));
+                    (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followers', 'points', 'level', 'completedMissionIds', 'missionProgress', 'badges']));
       allow delete: if isAdmin();
     }
 

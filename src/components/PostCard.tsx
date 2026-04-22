@@ -22,8 +22,6 @@ import LazyImage from './LazyImage';
 import { getGhostIdentity } from '../lib/ghostUtils';
 import ReactionPicker, { REACTION_TYPES } from './ReactionPicker';
 
-import { db } from '../firebase';
-
 interface PostCardProps {
   key?: any;
   post: any;

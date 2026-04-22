@@ -195,6 +195,7 @@ export default function Home() {
     
     let q = query(
       collection(db, 'posts'),
+      where('privacy', '==', 'public'),
       orderBy('createdAt', 'desc'),
       limit(postsLimit)
     );
@@ -206,6 +207,7 @@ export default function Home() {
         q = query(
           collection(db, 'posts'),
           where('authorId', 'in', followingIds),
+          where('privacy', 'in', ['public', 'circle']),
           orderBy('createdAt', 'desc'),
           limit(postsLimit)
         );
