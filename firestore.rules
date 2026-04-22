@@ -35,12 +35,15 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid in get(/databases/$(database)/documents/users/$(userId)).data.get('followers', []);
     }
 
-    match /users/{userId} {
-      allow read: if true;
-      allow create: if isOwner(userId);
-      allow update: if isAdmin() || 
-                    (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isVerified', 'premiumTier', 'isPremium']));
-      allow delete: if isAdmin();
+    match /users {
+      allow list: if isAuthenticated();
+      match /{userId} {
+        allow read: if true;
+        allow create: if isOwner(userId);
+        allow update: if isAdmin() || 
+                      (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isVerified', 'premiumTier', 'isPremium']));
+        allow delete: if isAdmin();
+      }
     }
 
     match /followRequests {
@@ -79,10 +82,13 @@ service cloud.firestore {
       }
     }
 
-    match /communities/{communityId} {
-      allow read: if true;
-      allow create, delete: if isAdmin();
-      allow update: if isAdmin() || (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'membersCount']));
+    match /communities {
+      allow list: if true;
+      match /{communityId} {
+        allow read: if true;
+        allow create, delete: if isAdmin();
+        allow update: if isAdmin() || (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'membersCount']));
+      }
     }
 
     match /missions {
@@ -94,8 +100,11 @@ service cloud.firestore {
       }
     }
 
-    match /lists/{listId} {
-      allow read, write: if isAuthenticated() && (resource == null || resource.data.ownerId == request.auth.uid);
+    match /lists {
+      allow list: if isAuthenticated();
+      match /{listId} {
+        allow read, write: if isAuthenticated() && (resource == null || resource.data.ownerId == request.auth.uid);
+      }
     }
     
     match /notifications {
@@ -149,9 +158,12 @@ service cloud.firestore {
       allow write: if isAuthenticated(); // For incrementing views/impressions
     }
     
-    match /ads/{adId} {
-      allow read: if true;
-      allow write: if isAdmin();
+    match /ads {
+      allow list: if true;
+      match /{adId} {
+        allow read: if true;
+        allow write: if isAdmin();
+      }
     }
   }
 }

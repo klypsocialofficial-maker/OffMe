@@ -744,7 +744,7 @@ export default function Profile() {
 
   const getThemeStyles = () => {
     let themeId = profileUser?.profileTheme;
-    const isPremium = profileUser?.premiumTier === 'gold';
+    const isPremium = profileUser?.premiumTier === 'gold' || profileUser?.premiumTier === 'black';
     
     if ((themeId === 'vibrant' || themeId === 'neon') && !isPremium) {
       themeId = 'default';

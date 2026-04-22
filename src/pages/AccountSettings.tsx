@@ -108,7 +108,7 @@ export default function AccountSettings() {
           <button onClick={() => navigate(-1)} className="p-2 -ml-2 hover:bg-black/5 rounded-full transition-colors">
             <ArrowLeft className="w-6 h-6" />
           </button>
-          <h1 className="text-xl font-black tracking-tight">Informações da conta</h1>
+          <h1 className="text-xl font-black italic tracking-tighter">Informações da conta</h1>
         </div>
       </div>
       <div className="p-4">
@@ -127,18 +127,42 @@ export default function AccountSettings() {
       )}
 
       <div className="space-y-8">
-        {/* Account Info Card */}
-        <section className="bg-gradient-to-br from-indigo-500 to-purple-600 p-6 rounded-[32px] shadow-xl text-white relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
-          <div className="relative z-10 flex flex-col items-center">
-            <div className="w-20 h-20 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30 mb-4">
-              <User className="w-10 h-10 text-white" />
+        {/* Account Info Card with Banner and Avatar */}
+        <section className="bg-white rounded-[32px] shadow-xl overflow-hidden border border-gray-100">
+          <div className="h-28 w-full relative">
+            {userProfile?.bannerURL ? (
+              <img src={userProfile.bannerURL} alt="Banner" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
+            )}
+            <div className="absolute inset-0 bg-black/10" />
+          </div>
+          
+          <div className="px-6 pb-8 -mt-10 relative z-10 flex flex-col items-center text-center">
+            <div className="relative group">
+              <div className="w-20 h-20 rounded-[2rem] border-4 border-white overflow-hidden shadow-2xl bg-white">
+                {userProfile?.photoURL ? (
+                  <img src={userProfile.photoURL} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                    <User className="w-8 h-8 text-gray-400" />
+                  </div>
+                )}
+              </div>
             </div>
-            <h2 className="text-2xl font-black italic tracking-tighter mb-1">@{userProfile?.username}</h2>
-            <p className="text-white/70 text-sm font-bold uppercase tracking-widest flex items-center">
-              <Clock className="w-4 h-4 mr-1.5" />
-              Membro desde {formatFullDate(userProfile?.createdAt?.toDate ? userProfile.createdAt.toDate() : null)}
-            </p>
+            
+            <div className="mt-4">
+              <h2 className="text-2xl font-black italic tracking-tighter text-gray-900 leading-none">@{userProfile?.username}</h2>
+              {userProfile?.displayName && (
+                <p className="text-gray-500 text-sm font-medium mt-1">{userProfile.displayName}</p>
+              )}
+              <div className="mt-4 flex items-center justify-center px-4 py-1.5 bg-gray-50 rounded-full border border-gray-100">
+                <Clock className="w-3.5 h-3.5 text-gray-400 mr-2" />
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">
+                  Membro desde {formatFullDate(userProfile?.createdAt?.toDate ? userProfile.createdAt.toDate() : null)}
+                </p>
+              </div>
+            </div>
           </div>
         </section>
 

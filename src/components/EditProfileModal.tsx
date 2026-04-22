@@ -482,7 +482,7 @@ export default function EditProfileModal({ isOpen, onClose, userProfile, handleF
                     { id: 'neon', name: 'Cyber', class: 'bg-stone-900 border-stone-800', isPremium: true },
                     { id: 'criador', name: 'Criador', class: 'bg-gradient-to-r from-emerald-500 to-yellow-500', isPremium: true }
                   ].map((theme) => {
-                    const isLocked = theme.isPremium && userProfile?.premiumTier !== 'gold';
+                    const isLocked = theme.isPremium && userProfile?.premiumTier !== 'gold' && userProfile?.premiumTier !== 'black';
                     return (
                       <button
                         key={theme.id}
