@@ -180,6 +180,20 @@
         "createdAt": { "type": "timestamp", "description": "The time the ad was created." }
       },
       "required": ["authorName", "authorUsername", "content", "link", "active", "createdAt"]
+    },
+    "VerificationRequest": {
+      "title": "VerificationRequest",
+      "description": "A request for profile verification.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The UID of the user requesting verification." },
+        "reason": { "type": "string", "description": "The reason for the verification request." },
+        "category": { "type": "string", "description": "The category of the account (e.g., Creator, Brand)." },
+        "documentUrl": { "type": "string", "description": "Optional URL to an identity document." },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "createdAt": { "type": "timestamp", "description": "The time the request was submitted." }
+      },
+      "required": ["userId", "reason", "category", "status", "createdAt"]
     }
   },
   "firestore": {
@@ -222,6 +236,10 @@
     "/lists/{listId}": {
       "schema": { "$ref": "#/entities/List" },
       "description": "Stores user-created lists of accounts."
+    },
+    "/verificationRequests/{requestId}": {
+      "schema": { "$ref": "#/entities/VerificationRequest" },
+      "description": "Stores user verification requests."
     }
   }
 }

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { ArrowLeft, User, Mail, Lock, Save, AlertCircle, CheckCircle, Trash2 } from 'lucide-react';
+import { ArrowLeft, User, Mail, Lock, Save, AlertCircle, CheckCircle, Trash2, ShieldCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'motion/react';
 import ConfirmModal from '../components/ConfirmModal';
+import VerificationRequestModal from '../components/VerificationRequestModal';
 
 export default function AccountSettings() {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ export default function AccountSettings() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
 
   const handleUpdateUsername = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -249,6 +251,10 @@ export default function AccountSettings() {
         confirmText="Sim, deletar conta"
         cancelText="Cancelar"
         type="danger"
+      />
+      <VerificationRequestModal 
+        isOpen={isVerificationModalOpen}
+        onClose={() => setIsVerificationModalOpen(false)}
       />
       </div>
     </div>
