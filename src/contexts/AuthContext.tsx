@@ -109,6 +109,13 @@ interface UserProfile {
   inventory?: string[];
   completedMissionIds?: string[];
   missionProgress?: Record<string, number>;
+  violations?: {
+    id: string;
+    reason: string;
+    date: any;
+    severity: 'low' | 'medium' | 'high';
+    type: string;
+  }[];
 }
 
 interface AuthContextType {

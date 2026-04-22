@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { ArrowLeft, User, Mail, Lock, Save, AlertCircle, CheckCircle, Trash2, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, User, Mail, Lock, Save, AlertCircle, CheckCircle, Trash2, ShieldCheck, Clock, ShieldAlert, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import ConfirmModal from '../components/ConfirmModal';
 import VerificationRequestModal from '../components/VerificationRequestModal';
+import { formatFullDate } from '../lib/dateUtils';
 
 export default function AccountSettings() {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ export default function AccountSettings() {
   const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
+  const [showViolations, setShowViolations] = useState(false);
 
   const handleUpdateUsername = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,6 +127,106 @@ export default function AccountSettings() {
       )}
 
       <div className="space-y-8">
+        {/* Account Info Card */}
+        <section className="bg-gradient-to-br from-indigo-500 to-purple-600 p-6 rounded-[32px] shadow-xl text-white relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
+          <div className="relative z-10 flex flex-col items-center">
+            <div className="w-20 h-20 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30 mb-4">
+              <User className="w-10 h-10 text-white" />
+            </div>
+            <h2 className="text-2xl font-black italic tracking-tighter mb-1">@{userProfile?.username}</h2>
+            <p className="text-white/70 text-sm font-bold uppercase tracking-widest flex items-center">
+              <Clock className="w-4 h-4 mr-1.5" />
+              Membro desde {formatFullDate(userProfile?.createdAt?.toDate ? userProfile.createdAt.toDate() : null)}
+            </p>
+          </div>
+        </section>
+
+        {/* Security & Rules Status */}
+        <section className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-2">
+              <ShieldCheck className="w-5 h-5 text-green-500" />
+              <h2 className="font-bold text-gray-900">Estado da conta</h2>
+            </div>
+            <div className="px-3 py-1 bg-green-50 text-green-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-green-100">
+              Regular
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100 transition-all">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center border border-black/5 shadow-sm">
+                  <ShieldAlert className={`w-5 h-5 ${userProfile?.violations?.length ? 'text-amber-500' : 'text-green-500'}`} />
+                </div>
+                <div>
+                  <p className="font-bold text-sm text-gray-900">Violação de regras</p>
+                  <p className="text-xs text-gray-500">
+                    {userProfile?.violations?.length 
+                      ? `${userProfile.violations.length} incidente(s) registrado(s)` 
+                      : 'Nenhuma violação encontrada'}
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowViolations(!showViolations)}
+                className="text-xs font-black uppercase tracking-widest text-blue-500 hover:text-blue-600"
+              >
+                {showViolations ? 'Fechar' : 'Detalhes'}
+              </button>
+            </div>
+
+            <AnimatePresence>
+              {showViolations && (
+                <motion.div 
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="p-4 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200 mt-2 space-y-3">
+                    {userProfile?.violations && userProfile.violations.length > 0 ? (
+                      userProfile.violations.map((v, i) => (
+                        <div key={v.id || i} className="flex flex-col space-y-1">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-bold text-gray-800">{v.reason}</p>
+                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${
+                              v.severity === 'high' ? 'bg-red-100 text-red-600' : 
+                              v.severity === 'medium' ? 'bg-amber-100 text-amber-600' : 
+                              'bg-indigo-100 text-indigo-600'
+                            }`}>
+                              {v.severity}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-gray-500">{formatFullDate(v.date?.toDate ? v.date.toDate() : null)}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="flex flex-col items-center py-4">
+                        <CheckCircle className="w-8 h-8 text-green-200 mb-2" />
+                        <p className="text-xs text-gray-500 font-medium text-center px-4">
+                          Sua conta está em conformidade com as diretrizes da comunidade. Continue sendo um fantasma exemplar!
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center border border-black/5 shadow-sm">
+                <FileText className="w-5 h-5 text-gray-400" />
+              </div>
+              <div>
+                <p className="font-bold text-sm text-gray-900">Termos de uso</p>
+                <p className="text-xs text-gray-500">Última atualização em 12 de Out 2023</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Username Section */}
         <section className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
           <div className="flex items-center space-x-2 mb-4">

@@ -59,6 +59,7 @@ export default function Layout() {
     { path: '/shop', icon: ShoppingBag, label: 'Loja' },
     { path: '/premium', icon: Star, label: 'Premium' },
     { path: '/bookmarks', icon: Bookmark, label: 'Itens salvos' },
+    { path: '/circle', icon: Users, label: 'Círculo' },
     { path: '/settings', icon: Settings, label: 'Configurações' },
   ];
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);

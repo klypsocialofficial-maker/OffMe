@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { User as UserIcon, Calendar, MapPin, Link as LinkIcon, Edit2, Trash2, BarChart2, MessageCircle, Heart, Repeat, Send, MoreHorizontal, ArrowLeft, Search, Share, Briefcase, Plus, AlertCircle, Star, VolumeX, Volume2, UserX, Bookmark, Users, Lock } from 'lucide-react';
+import { User as UserIcon, Calendar, MapPin, Link as LinkIcon, Edit2, Trash2, BarChart2, MessageCircle, Heart, Repeat, Send, MoreHorizontal, ArrowLeft, Search, Share, Briefcase, Plus, AlertCircle, Star, VolumeX, Volume2, UserX, Bookmark, Users, Lock, Sparkles, X } from 'lucide-react';
 import EditProfileModal from '../components/EditProfileModal';
 import CreatePostModal from '../components/CreatePostModal';
 import Toast from '../components/Toast';
@@ -104,6 +104,8 @@ export default function Profile() {
     type: 'info',
     isOpen: false
   });
+  const [circleSearchTerm, setCircleSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     title: string;
@@ -562,6 +564,41 @@ export default function Profile() {
       handleFirestoreError(error, OperationType.UPDATE, 'users');
     }
   };
+
+  const handleCircleToggleFromList = async (targetUser: any) => {
+    if (!userProfile?.uid || !targetUser?.uid || !db || targetUser.uid === userProfile.uid) return;
+    const isInCircle = userProfile.circleMembers?.includes(targetUser.uid);
+    try {
+      if (isInCircle) {
+        await removeFromCircle(targetUser.uid);
+        showToast(`Removido do seu Círculo`, 'info');
+      } else {
+        await addToCircle(targetUser.uid);
+        showToast(`Adicionado ao seu Círculo`, 'success');
+      }
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, 'users');
+    }
+  };
+
+  useEffect(() => {
+    if (circleSearchTerm.trim()) {
+      const searchUsers = async () => {
+        const q = query(
+          collection(db, 'users'),
+          where('username', '>=', circleSearchTerm.toLowerCase()),
+          where('username', '<=', circleSearchTerm.toLowerCase() + '\uf8ff'),
+          limit(5)
+        );
+        const snap = await getDocs(q);
+        setSearchResults(snap.docs.map(d => d.data()).filter(u => u.uid !== userProfile?.uid));
+      };
+      const timeout = setTimeout(searchUsers, 300);
+      return () => clearTimeout(timeout);
+    } else {
+      setSearchResults([]);
+    }
+  }, [circleSearchTerm, userProfile?.uid]);
 
   useEffect(() => {
     if (activeTab === 'circle' && profileUser?.uid === userProfile?.uid && userProfile?.circleMembers?.length > 0) {
@@ -1158,40 +1195,108 @@ export default function Profile() {
         ) : activeTab === 'circle' ? (
           <div className="p-4 space-y-4">
             <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl mb-4">
-              <p className="text-emerald-800 font-bold text-sm">Seu Círculo do OffMe</p>
-              <p className="text-emerald-600 text-xs mt-1">Pessoas que podem ver e responder aos seus posts exclusivos para o círculo.</p>
-            </div>
-            {circleUsers.length > 0 ? (
-              circleUsers.map(user => (
-                <div key={user.uid} className="flex items-center justify-between p-3 liquid-glass-card rounded-2xl">
-                  <div 
-                    className="flex items-center space-x-3 cursor-pointer"
-                    onClick={() => navigate(`/${user.username}`)}
-                  >
-                    <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden">
-                      <LazyImage src={user.photoURL || getDefaultAvatar(user.displayName, user.username)} alt={user.displayName} className="w-full h-full" />
-                    </div>
-                    <div>
-                      <div className="flex items-center space-x-1">
-                        <p className="font-bold text-sm">{user.displayName}</p>
-                        {(user.isVerified || user.username === 'Rulio') && <VerifiedBadge className="w-3 h-3" tier={user.premiumTier} />}
-                      </div>
-                      <p className="text-xs text-gray-500">@{user.username}</p>
-                    </div>
-                  </div>
-                  <button 
-                    onClick={() => removeFromCircle(user.uid)}
-                    className="px-4 py-1.5 bg-red-50 text-red-500 rounded-full text-xs font-bold hover:bg-red-100 transition-all"
-                  >
-                    Remover
-                  </button>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-12 text-gray-500">
-                <p className="font-bold text-black mb-1">Seu círculo está vazio</p>
-                <p className="text-sm">Adicione pessoas visitando o perfil delas.</p>
+              <div className="flex items-center space-x-2 text-emerald-800 mb-1">
+                <Sparkles className="w-4 h-4" />
+                <p className="font-bold text-sm">Seu Círculo do OffMe</p>
               </div>
+              <p className="text-emerald-600 text-xs">Apenas quem estiver no seu Círculo poderá ver e interagir com posts exclusivos.</p>
+            </div>
+
+            {/* Circle Search */}
+            <div className="relative mb-6">
+              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                <Search className="w-4 h-4 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Pesquisar seguidores para adicionar..."
+                value={circleSearchTerm}
+                onChange={(e) => setCircleSearchTerm(e.target.value)}
+                className="w-full bg-gray-50 border border-gray-100 rounded-2xl py-3 pl-12 pr-4 text-sm focus:bg-white focus:ring-2 ring-emerald-500/20 transition-all outline-none"
+              />
+              {circleSearchTerm && (
+                <button 
+                  onClick={() => setCircleSearchTerm('')}
+                  className="absolute inset-y-0 right-4 flex items-center"
+                >
+                  <X className="w-4 h-4 text-gray-400" />
+                </button>
+              )}
+            </div>
+
+            {circleSearchTerm ? (
+              <div className="space-y-3">
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Sugestões</p>
+                {searchResults.length > 0 ? (
+                  searchResults.map(user => (
+                    <div key={user.uid} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 rounded-full bg-gray-100 overflow-hidden">
+                          <LazyImage src={user.photoURL || getDefaultAvatar(user.displayName, user.username)} alt={user.displayName} />
+                        </div>
+                        <div>
+                          <p className="font-bold text-sm">{user.displayName}</p>
+                          <p className="text-xs text-gray-500">@{user.username}</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          handleCircleToggleFromList(user);
+                          setCircleSearchTerm('');
+                        }}
+                        className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+                          userProfile?.circleMembers?.includes(user.uid)
+                            ? 'bg-red-50 text-red-500'
+                            : 'bg-emerald-500 text-white'
+                        }`}
+                      >
+                        {userProfile?.circleMembers?.includes(user.uid) ? 'Remover' : 'Adicionar'}
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-center py-4 text-gray-400 text-sm italic">Nenhum resultado para "{circleSearchTerm}"</p>
+                )}
+              </div>
+            ) : (
+              <>
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Membros do Círculo ({userProfile?.circleMembers?.length || 0})</p>
+                {circleUsers.length > 0 ? (
+                  circleUsers.map(user => (
+                    <div key={user.uid} className="flex items-center justify-between p-3 bg-emerald-50/30 border border-emerald-100/50 rounded-2xl">
+                      <div 
+                        className="flex items-center space-x-3 cursor-pointer"
+                        onClick={() => navigate(`/${user.username}`)}
+                      >
+                        <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden shadow-sm">
+                          <LazyImage src={user.photoURL || getDefaultAvatar(user.displayName, user.username)} alt={user.displayName} className="w-full h-full" />
+                        </div>
+                        <div>
+                          <div className="flex items-center space-x-1">
+                            <p className="font-bold text-sm">{user.displayName}</p>
+                            {(user.isVerified || user.username === 'Rulio') && <VerifiedBadge className="w-3 h-3" tier={user.premiumTier} />}
+                          </div>
+                          <p className="text-xs text-gray-500">@{user.username}</p>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => removeFromCircle(user.uid)}
+                        className="px-4 py-1.5 bg-white border border-gray-100 text-red-400 rounded-full text-xs font-bold hover:bg-red-50 hover:text-red-500 transition-all shadow-sm"
+                      >
+                        Remover
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-12 bg-gray-50 rounded-3xl border border-dashed border-gray-200">
+                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                      <Users className="w-8 h-8 text-emerald-500 opacity-20" />
+                    </div>
+                    <p className="font-bold text-black mb-1">Seu círculo está vazio</p>
+                    <p className="text-sm text-gray-500 px-8">Adicione pessoas pesquisando acima ou visitando o perfil delas.</p>
+                  </div>
+                )}
+              </>
             )}
           </div>
         ) : displayPosts.length > 0 ? (

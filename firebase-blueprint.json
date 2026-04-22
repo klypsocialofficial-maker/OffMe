@@ -26,6 +26,20 @@
         "level": { "type": "number", "description": "The user's current level." },
         "badges": { "type": "array", "items": { "type": "string" }, "description": "Array of earned badge IDs." },
         "circleMembers": { "type": "array", "items": { "type": "string" }, "description": "Array of UIDs in the user's circle." },
+        "violations": { 
+          "type": "array", 
+          "items": { 
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "reason": { "type": "string" },
+              "date": { "type": "timestamp" },
+              "severity": { "type": "string", "enum": ["low", "medium", "high"] },
+              "type": { "type": "string" }
+            }
+          }, 
+          "description": "History of rule violations." 
+        },
         "createdAt": { "type": "timestamp", "description": "The time the user was created." }
       },
       "required": ["uid", "email", "username", "displayName"]

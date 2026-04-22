@@ -208,13 +208,54 @@ export default function Home() {
         }
 
         if (followingIds.length > 0) {
-          q = query(
+          // Fetch public posts from following
+          const qPublic = query(
             collection(db, 'posts'),
             where('authorId', 'in', followingIds),
-            where('privacy', 'in', ['public', 'circle']),
+            where('privacy', '==', 'public'),
             orderBy('createdAt', 'desc'),
             limit(POSTS_PER_PAGE)
           );
+
+          // Fetch circle posts where user is in audience (regardless of author, but we'll focus on followers)
+          const qCircle = query(
+            collection(db, 'posts'),
+            where('privacy', '==', 'circle'),
+            where('audience', 'array-contains', userProfile?.uid || 'none'),
+            orderBy('createdAt', 'desc'),
+            limit(5)
+          );
+
+          const [snapPublic, snapCircle] = await Promise.all([
+            getDocs(qPublic),
+            getDocs(qCircle)
+          ]);
+
+          const combinedPosts: any[] = [
+            ...snapPublic.docs.map(d => ({ id: d.id, ...d.data() })),
+            ...snapCircle.docs.map(d => ({ id: d.id, ...d.data() }))
+          ].sort((a: any, b: any) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+
+          const newPosts = combinedPosts.filter(post => !userProfile?.mutedUsers?.includes(post.authorId));
+          
+          if (isInitial) {
+            setDisplayedPosts(newPosts);
+          } else {
+            setDisplayedPosts(prev => {
+              const existingIds = new Set(prev.map(p => p.id));
+              const filteredNew = newPosts.filter(p => !existingIds.has(p.id));
+              return [...prev, ...filteredNew];
+            });
+          }
+          
+          // Simplified pagination for this complex split query
+          setHasMore(snapPublic.docs.length === POSTS_PER_PAGE);
+          if (snapPublic.docs.length > 0) {
+            setLastVisible(snapPublic.docs[snapPublic.docs.length - 1]);
+          }
+          setIsFetching(false);
+          setIsLoadingMore(false);
+          return; // Exit early since we handled following
         } else {
           q = query(
             collection(db, 'posts'),

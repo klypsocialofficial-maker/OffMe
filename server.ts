@@ -5,11 +5,29 @@ import cors from "cors";
 import fs from "fs";
 import admin from 'firebase-admin';
 
+// Load firebase config for the project ID
+let firebaseConfig: any = {};
+try {
+  const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
+  if (fs.existsSync(configPath)) {
+    firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  }
+} catch (e) {
+  console.warn("Could not load firebase-applet-config.json", e);
+}
+
 // Initialize Firebase Admin (Try to find a way to auth)
 try {
-  // If we wanted to perform real backend tasks, we'd need a service account.
-  // In many cases, if running on GCP with a service account attached, it just works.
-  admin.initializeApp();
+  // Use the project ID from the config to avoid defaulting to the environment's project
+  if (firebaseConfig.projectId) {
+    admin.initializeApp({
+      projectId: firebaseConfig.projectId,
+      databaseURL: `https://${firebaseConfig.projectId}.firebaseio.com`
+    });
+    console.log(`Firebase Admin initialized for project: ${firebaseConfig.projectId}`);
+  } else {
+    admin.initializeApp();
+  }
 } catch (error) {
   console.warn("Firebase Admin could not be initialized automatically. Scheduled posts might not work.", error);
 }
@@ -17,7 +35,10 @@ try {
 async function checkScheduledPosts() {
   if (!admin.apps.length) return;
   
-  const db = admin.firestore();
+  // Use the specific database ID if it exists in the config (Enterprise Firestore)
+  const db: any = firebaseConfig.firestoreDatabaseId 
+    ? (admin as any).firestore(firebaseConfig.firestoreDatabaseId)
+    : admin.firestore();
   const now = admin.firestore.Timestamp.now();
   
   try {

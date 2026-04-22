@@ -26,3 +26,12 @@ export function formatRelativeTime(date: Date | null | undefined): string {
   // If more than a week, show the date
   return date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
 }
+
+export function formatFullDate(date: Date | null | undefined): string {
+  if (!date) return '-';
+  return date.toLocaleDateString('pt-BR', { 
+    day: 'numeric', 
+    month: 'long', 
+    year: 'numeric' 
+  });
+}

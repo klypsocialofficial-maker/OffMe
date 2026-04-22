@@ -7,7 +7,7 @@ import {
   Flag, ShieldCheck, User as UserIcon, Trash2, 
   ExternalLink, Eye, Filter, Search, MoreVertical 
 } from 'lucide-react';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc, writeBatch, getDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc, writeBatch, getDoc, arrayUnion, where, getDocs, limit, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import LazyImage from '../components/LazyImage';
 import VerifiedBadge from '../components/VerifiedBadge';
@@ -15,10 +15,16 @@ import VerifiedBadge from '../components/VerifiedBadge';
 export default function AdminPanel() {
   const { userProfile } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'reports' | 'verification'>('reports');
+  const [activeTab, setActiveTab] = useState<'reports' | 'verification' | 'users'>('reports');
   const [reports, setReports] = useState<any[]>([]);
   const [verifications, setVerifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [userResults, setUserResults] = useState<any[]>([]);
+  const [isSearchingUsers, setIsSearchingUsers] = useState(false);
+  const [selectedUserForMod, setSelectedUserForMod] = useState<any>(null);
+  const [violationReason, setViolationReason] = useState('');
+  const [violationSeverity, setViolationSeverity] = useState<'low' | 'medium' | 'high'>('low');
 
   // Security check: only klypsocialofficial@gmail.com is allowed
   const isAdmin = userProfile?.email === 'klypsocialofficial@gmail.com';
@@ -44,9 +50,56 @@ export default function AdminPanel() {
     };
   }, [isAdmin]);
 
-  const handleResolveReport = async (reportId: string, action: 'dismissed' | 'approved') => {
+  const handleSearchUsers = async () => {
+    if (!userSearchQuery.trim()) return;
+    setIsSearchingUsers(true);
     try {
-      await updateDoc(doc(db, 'reports', reportId), { status: action, resolvedAt: new Date() });
+      const q = query(
+        collection(db, 'users'),
+        where('username', '>=', userSearchQuery.toLowerCase()),
+        where('username', '<=', userSearchQuery.toLowerCase() + '\uf8ff'),
+        limit(10)
+      );
+      const snap = await getDocs(q);
+      setUserResults(snap.docs.map(d => ({ uid: d.id, ...d.data() })));
+    } catch (error) {
+      console.error('Search error:', error);
+    } finally {
+      setIsSearchingUsers(false);
+    }
+  };
+
+  const handleAddViolation = async (userId: string, reason: string, severity: 'low' | 'medium' | 'high') => {
+    try {
+      const violation = {
+        id: Math.random().toString(36).substr(2, 9),
+        reason,
+        severity,
+        date: new Date(),
+        type: 'moderation'
+      };
+      await updateDoc(doc(db, 'users', userId), {
+        violations: arrayUnion(violation)
+      });
+      alert('Violação registrada com sucesso!');
+      setViolationReason('');
+      setSelectedUserForMod(null);
+    } catch (error) {
+      console.error('Error adding violation:', error);
+    }
+  };
+
+  const handleResolveReport = async (report: any, action: 'dismissed' | 'approved') => {
+    try {
+      await updateDoc(doc(db, 'reports', report.id), { status: action, resolvedAt: new Date() });
+      
+      if (action === 'approved') {
+        // If it's a user report, add a violation automatically
+        const targetUid = report.targetType === 'user' ? report.targetId : null;
+        if (targetUid) {
+          await handleAddViolation(targetUid, `Reportado por: ${report.reason}`, 'medium');
+        }
+      }
     } catch (error) {
       console.error('Error resolving report:', error);
     }
@@ -98,10 +151,10 @@ export default function AdminPanel() {
 
       <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
         {/* Tabs */}
-        <div className="flex space-x-2 bg-white p-1 rounded-2xl border border-gray-200">
+        <div className="flex space-x-2 bg-white p-1 rounded-2xl border border-gray-200 overflow-x-auto no-scrollbar">
            <button 
             onClick={() => setActiveTab('reports')}
-            className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center space-x-2 ${
+            className={`flex-1 py-3 px-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center space-x-2 whitespace-nowrap ${
               activeTab === 'reports' ? 'bg-black text-white shadow-lg' : 'text-gray-500 hover:bg-gray-50'
             }`}
            >
@@ -110,12 +163,21 @@ export default function AdminPanel() {
            </button>
            <button 
             onClick={() => setActiveTab('verification')}
-            className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center space-x-2 ${
+            className={`flex-1 py-3 px-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center space-x-2 whitespace-nowrap ${
               activeTab === 'verification' ? 'bg-black text-white shadow-lg' : 'text-gray-500 hover:bg-gray-50'
             }`}
            >
              <ShieldCheck className="w-4 h-4" />
              <span>Verificações ({verifications.filter(v => v.status === 'pending').length})</span>
+           </button>
+           <button 
+            onClick={() => setActiveTab('users')}
+            className={`flex-1 py-3 px-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center space-x-2 whitespace-nowrap ${
+              activeTab === 'users' ? 'bg-black text-white shadow-lg' : 'text-gray-500 hover:bg-gray-50'
+            }`}
+           >
+             <UserIcon className="w-4 h-4" />
+             <span>Usuários</span>
            </button>
         </div>
 
@@ -166,17 +228,16 @@ export default function AdminPanel() {
                          <Eye className="w-3.5 h-3.5" />
                          Ver Alvo
                       </button>
-                      
-                      {report.status === 'pending' && (
+                                {report.status === 'pending' && (
                         <div className="flex space-x-2">
                            <button 
-                            onClick={() => handleResolveReport(report.id, 'dismissed')}
+                            onClick={() => handleResolveReport(report, 'dismissed')}
                             className="px-4 py-2 bg-gray-100 text-gray-600 rounded-full text-xs font-bold hover:bg-gray-200"
                            >
                               Ignorar
                            </button>
                            <button 
-                            onClick={() => handleResolveReport(report.id, 'approved')}
+                            onClick={() => handleResolveReport(report, 'approved')}
                             className="px-4 py-2 bg-red-500 text-white rounded-full text-xs font-bold hover:bg-red-600 shadow-lg shadow-red-500/20"
                            >
                               Punição
@@ -186,7 +247,7 @@ export default function AdminPanel() {
                    </div>
                 </motion.div>
               ))
-            ) : (
+            ) : activeTab === 'verification' ? (
               verifications.length === 0 ? (
                 <div className="py-20 text-center text-gray-500 bg-white rounded-3xl border border-dashed border-gray-200">Sem pedidos pendentes.</div>
               ) : verifications.map(req => (
@@ -254,6 +315,111 @@ export default function AdminPanel() {
                    </div>
                 </motion.div>
               ))
+            ) : (
+              <div className="space-y-6">
+                <div className="flex space-x-2">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input 
+                      type="text" 
+                      value={userSearchQuery}
+                      onChange={(e) => setUserSearchQuery(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSearchUsers()}
+                      placeholder="Buscar por @username..."
+                      className="w-full bg-white border border-gray-200 rounded-2xl py-3 pl-10 pr-4 outline-none focus:ring-2 focus:ring-black transition-all"
+                    />
+                  </div>
+                  <button 
+                    onClick={handleSearchUsers}
+                    disabled={isSearchingUsers}
+                    className="px-6 bg-black text-white rounded-2xl font-bold text-sm hover:bg-gray-800 transition-all disabled:opacity-50"
+                  >
+                    {isSearchingUsers ? '...' : 'Buscar'}
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {userResults.map(user => (
+                    <div key={user.uid} className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100">
+                          <LazyImage src={user.photoURL} alt={user.displayName} className="w-full h-full" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-gray-900">{user.displayName}</p>
+                          <p className="text-xs text-gray-500">@{user.username}</p>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => setSelectedUserForMod(user)}
+                        className="px-4 py-2 bg-gray-100 text-gray-600 rounded-xl text-xs font-bold hover:bg-gray-200"
+                      >
+                        Moderar
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Moderation Modal */}
+                <AnimatePresence>
+                  {selectedUserForMod && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                      <motion.div 
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.9, opacity: 0 }}
+                        className="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl"
+                      >
+                        <div className="flex justify-between items-center mb-6">
+                          <h3 className="text-xl font-black italic tracking-tighter">Punir @{selectedUserForMod.username}</h3>
+                          <button onClick={() => setSelectedUserForMod(null)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                            <ArrowLeft className="w-5 h-5 rotate-90" />
+                          </button>
+                        </div>
+
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Motivo da violação</label>
+                            <textarea 
+                              value={violationReason}
+                              onChange={(e) => setViolationReason(e.target.value)}
+                              placeholder="Ex: Spam de link suspeito..."
+                              className="w-full bg-gray-50 border border-gray-100 rounded-xl p-4 outline-none focus:ring-2 focus:ring-black h-24"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Gravidade</label>
+                            <div className="grid grid-cols-3 gap-2">
+                              {['low', 'medium', 'high'].map((sev) => (
+                                <button 
+                                  key={sev}
+                                  onClick={() => setViolationSeverity(sev as any)}
+                                  className={`py-2 rounded-xl text-xs font-bold border transition-all ${
+                                    violationSeverity === sev 
+                                      ? 'bg-black text-white border-black' 
+                                      : 'bg-white text-gray-500 border-gray-200 hover:border-black'
+                                  }`}
+                                >
+                                  {sev.toUpperCase()}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <button 
+                            onClick={() => handleAddViolation(selectedUserForMod.uid, violationReason, violationSeverity)}
+                            disabled={!violationReason.trim()}
+                            className="w-full py-4 bg-red-500 text-white rounded-2xl font-black hover:bg-red-600 transition-all shadow-lg shadow-red-500/20 disabled:opacity-50"
+                          >
+                            Aplicar Punição
+                          </button>
+                        </div>
+                      </motion.div>
+                    </div>
+                  )}
+                </AnimatePresence>
+              </div>
             )}
           </div>
         )}
