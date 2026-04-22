@@ -499,25 +499,22 @@ export default function CreatePostModal({
             </div>
 
             {/* Body */}
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {replyTo && (
-                <div className="mb-4 flex space-x-3">
-                  <div className="flex flex-col items-center">
-                    <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
-                      {replyTo.authorPhoto ? (
-                        <LazyImage src={replyTo.authorPhoto} alt={replyTo.authorName} className="w-full h-full" />
-                      ) : (
-                        <LazyImage src={getDefaultAvatar(replyTo.authorName, replyTo.authorUsername)} alt={replyTo.authorName} className="w-full h-full" />
-                      )}
-                    </div>
-                    <div className="w-0.5 flex-1 bg-gray-200 my-1" />
+                <div className="flex space-x-3 p-3 bg-gray-50 rounded-2xl border border-gray-100">
+                  <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+                    {replyTo.authorPhoto ? (
+                      <LazyImage src={replyTo.authorPhoto} alt={replyTo.authorName} className="w-full h-full object-cover" />
+                    ) : (
+                      <LazyImage src={getDefaultAvatar(replyTo.authorName, replyTo.authorUsername)} alt={replyTo.authorName} className="w-full h-full object-cover" />
+                    )}
                   </div>
-                  <div className="flex-1 pb-4">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-1">
-                      <span className="font-bold text-sm">{replyTo.authorName}</span>
-                      <span className="text-gray-500 text-sm">@{replyTo.authorUsername}</span>
+                      <span className="font-black text-xs text-gray-900">{replyTo.authorName}</span>
+                      <span className="text-gray-400 text-xs">@{replyTo.authorUsername}</span>
                     </div>
-                    <p className="text-gray-700 text-sm mt-0.5">{replyTo.content}</p>
+                    <p className="text-gray-600 text-xs mt-0.5 truncate">{replyTo.content}</p>
                   </div>
                 </div>
               )}
