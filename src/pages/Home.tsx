@@ -878,6 +878,12 @@ export default function Home() {
         id="feed-panel" 
         className="focus-visible:outline-none w-full max-w-2xl mx-auto"
       >
+        <StoriesBar 
+          stories={[]} 
+          userProfile={userProfile} 
+          onOpenStory={(s) => {}} 
+          onCreateStory={() => {}} 
+        />
         <PullToRefresh onRefresh={refreshFeed}>
           {/* New Posts Notification Bubble */}
           <AnimatePresence>
