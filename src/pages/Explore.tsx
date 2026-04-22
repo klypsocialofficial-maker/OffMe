@@ -825,6 +825,50 @@ export default function Explore() {
                   exit={{ opacity: 0, x: -20 }}
                   transition={{ duration: 0.2 }}
                 >
+                  {/* Trending Hashtags - Now visible on top for all tabs when not searching */}
+                  <div className="px-4 mb-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <h2 className="text-lg font-black italic tracking-tighter flex items-center space-x-2">
+                        <TrendingUp className="w-5 h-5 text-blue-600" />
+                        <span>Hashtags em alta</span>
+                      </h2>
+                    </div>
+                    <div className="flex overflow-x-auto no-scrollbar gap-2 pb-2">
+                      {trendingHashtags.length > 0 ? trendingHashtags.map((trend) => (
+                        <button 
+                          key={trend.tag}
+                          onClick={() => {
+                            const hashtag = trend.tag.startsWith('#') ? trend.tag : `#${trend.tag.toLowerCase()}`;
+                            setSearchQuery(hashtag);
+                            setSearchTab('posts');
+                            // Navigate to search with tag to trigger refetch
+                            navigate(`?q=${encodeURIComponent(hashtag)}`);
+                            
+                            // Visual feedback for click
+                            if (typeof window !== 'undefined' && window.scrollTo) {
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }
+                          }}
+                          className="flex-shrink-0 px-4 py-2 bg-white dark:bg-white/5 rounded-2xl border border-black/5 dark:border-white/10 shadow-sm hover:shadow-md hover:bg-gray-50 dark:hover:bg-white/10 transition-all flex items-center space-x-2 group active:scale-95"
+                        >
+                          <div className="w-6 h-6 rounded-full bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center">
+                            <Hash className="w-3.5 h-3.5 text-blue-500 group-hover:scale-110 transition-transform" />
+                          </div>
+                          <div className="flex flex-col items-start leading-tight">
+                            <span className="text-sm font-black text-gray-800 dark:text-gray-100">#{trend.tag.toLowerCase()}</span>
+                            <span className="text-[10px] text-gray-500 font-medium">{trend.posts}</span>
+                          </div>
+                        </button>
+                      )) : (
+                        <div className="flex space-x-2">
+                          {[1, 2, 3].map(i => (
+                            <div key={i} className="w-24 h-10 bg-gray-100 dark:bg-white/5 rounded-2xl animate-pulse" />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   {/* Featured Hero Card */}
                   {activeTab === 'foryou' && (
                     <div className="px-4 mb-8">
@@ -849,40 +893,6 @@ export default function Explore() {
                       <div className="mb-0">
                         <TrendingPosts isFullList={activeTab === 'trending'} />
                       </div>
-                      
-                      {activeTab === 'foryou' && (
-                        <div className="px-4 mt-8">
-                          <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-xl font-black italic tracking-tighter">O que está acontecendo</h2>
-                          </div>
-                          <div className="bg-white rounded-3xl border border-black/5 divide-y divide-black/5 overflow-hidden shadow-sm">
-                            {trendingHashtags.length > 0 ? trendingHashtags.map((trend) => (
-                              <button 
-                                key={trend.tag}
-                                className="w-full text-left p-4 hover:bg-gray-50 transition-colors flex items-center justify-between group"
-                                onClick={() => {
-                                  setSearchQuery(trend.tag);
-                                  setSearchTab('posts');
-                                }}
-                              >
-                                <div>
-                                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">{trend.category} · Em alta</p>
-                                  <p className="text-base font-bold text-gray-900 group-hover:text-blue-600 transition-colors">#{trend.tag}</p>
-                                  <p className="text-xs text-gray-500">{trend.posts}</p>
-                                </div>
-                                <MoreHorizontal className="w-5 h-5 text-gray-300 group-hover:text-gray-600" />
-                              </button>
-                            )) : (
-                              <div className="p-8 text-center text-gray-500 text-sm">
-                                Não há tendências o suficiente agora.
-                              </div>
-                            )}
-                            <button className="w-full p-4 text-sm font-bold text-blue-500 hover:bg-gray-50 transition-colors text-left">
-                              Mostrar mais
-                            </button>
-                          </div>
-                        </div>
-                      )}
                     </>
                   ) : (
                     <div className="flex flex-col items-center justify-center p-12 text-center">

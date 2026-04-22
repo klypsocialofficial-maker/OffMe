@@ -270,9 +270,13 @@ export default function CreatePostModal({
         }
 
         const postContent = postItem.content.trim();
+        
+        // Extract hashtags
+        const hashtags = postContent.match(/#[a-zA-Z0-9_À-ÿ]+/g)?.map(tag => tag.substring(1).toLowerCase()) || [];
 
         const postData: any = {
           content: postContent,
+          hashtags,
           imageUrls,
           altText: postItem.altText || '',
           authorId,
