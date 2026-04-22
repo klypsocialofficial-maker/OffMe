@@ -63,7 +63,7 @@ export default function QuotedPost({ post }: QuotedPostProps) {
     >
       <div className="flex items-center space-x-2 mb-2">
         <img 
-          src={displayPhoto || getDefaultAvatar(displayAuthor)} 
+          src={displayPhoto || getDefaultAvatar(displayAuthor, displayUsername)} 
           alt={displayAuthor}
           className="w-5 h-5 rounded-full object-cover"
         />

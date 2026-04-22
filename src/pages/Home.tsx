@@ -104,7 +104,7 @@ export default function Home() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot | null>(null);
+  const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot | null>(null);
   const [activeMenuPostId, setActiveMenuPostId] = useState<string | null>(null);
   const loaderRef = useRef<HTMLDivElement>(null);
 
@@ -116,10 +116,8 @@ export default function Home() {
     await new Promise(resolve => setTimeout(resolve, 1500));
     
     isInitialLoadRef.current = true;
-    setPostsLimit(POSTS_PER_PAGE);
     setRefreshKey(prev => prev + 1);
     setIsFetching(true);
-    // The useEffect will pick up the changes and re-run onSnapshot
     setIsRefreshing(false);
   }, []);
 
@@ -185,69 +183,144 @@ export default function Home() {
     setIsViewerOpen(true);
   };
 
-  const [postsLimit, setPostsLimit] = useState(15);
+  const [newPostsCount, setNewPostsCount] = useState(0);
   const POSTS_PER_PAGE = 15;
 
-  useEffect(() => {
+  const fetchPosts = async (isInitial = true) => {
     if (!db) return;
     
-    setIsFetching(true);
-    
-    let q = query(
-      collection(db, 'posts'),
-      where('privacy', '==', 'public'),
-      orderBy('createdAt', 'desc'),
-      limit(postsLimit)
-    );
+    if (isInitial) {
+      setIsFetching(true);
+      setLastVisible(null);
+      setHasMore(true);
+      setNewPostsCount(0);
+    } else {
+      if (isLoadingMore || !hasMore) return;
+      setIsLoadingMore(true);
+    }
 
-    // If Following tab and user is following people
-    if (activeTab === 'following') {
-      if (userProfile?.following && userProfile.following.length > 0) {
-        const followingIds = userProfile.following.slice(0, 30);
+    try {
+      let q;
+      if (activeTab === 'following') {
+        const followingIds = userProfile?.following ? [...userProfile.following.slice(0, 30)] : [];
+        if (userProfile?.uid && !followingIds.includes(userProfile.uid)) {
+          followingIds.push(userProfile.uid);
+        }
+
+        if (followingIds.length > 0) {
+          q = query(
+            collection(db, 'posts'),
+            where('authorId', 'in', followingIds),
+            where('privacy', 'in', ['public', 'circle']),
+            orderBy('createdAt', 'desc'),
+            limit(POSTS_PER_PAGE)
+          );
+        } else {
+          q = query(
+            collection(db, 'posts'),
+            where('authorId', '==', userProfile?.uid || 'none'),
+            orderBy('createdAt', 'desc'),
+            limit(POSTS_PER_PAGE)
+          );
+        }
+      } else {
         q = query(
           collection(db, 'posts'),
-          where('authorId', 'in', followingIds),
-          where('privacy', 'in', ['public', 'circle']),
+          where('privacy', 'in', ['public']),
           orderBy('createdAt', 'desc'),
-          limit(postsLimit)
+          limit(POSTS_PER_PAGE)
         );
-      } else {
-        // Not following anyone
-        setDisplayedPosts([]);
-        setIsFetching(false);
-        setHasMore(false);
-        return;
       }
+
+      if (!isInitial && lastVisible) {
+        q = query(q, startAfter(lastVisible));
+      }
+
+      const snapshot = await getDocs(q);
+      
+      if (snapshot.empty) {
+        if (isInitial) setDisplayedPosts([]);
+        setHasMore(false);
+      } else {
+        const lastDoc = snapshot.docs[snapshot.docs.length - 1];
+        setLastVisible(lastDoc);
+        
+        const newPosts = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...(doc.data() as any)
+        })).filter(post => !userProfile?.mutedUsers?.includes(post.authorId));
+
+        if (isInitial) {
+          setDisplayedPosts(newPosts);
+        } else {
+          setDisplayedPosts(prev => {
+            const existingIds = new Set(prev.map(p => p.id));
+            const filteredNew = newPosts.filter(p => !existingIds.has(p.id));
+            return [...prev, ...filteredNew];
+          });
+        }
+        
+        setHasMore(snapshot.docs.length === POSTS_PER_PAGE);
+      }
+    } catch (error) {
+      console.error("Feed error:", error);
+      if (isInitial) setDisplayedPosts([]);
+      setHasMore(false);
+    } finally {
+      setIsFetching(false);
+      setIsLoadingMore(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPosts(true);
+  }, [activeTab, db, userProfile?.following, refreshKey]);
+
+  // Listener for new posts to show update notification
+  useEffect(() => {
+    if (!db || !userProfile || isFetching || displayedPosts.length === 0) return;
+
+    // Get the timestamp of the most recent post we have
+    const latestTimestamp = displayedPosts[0]?.createdAt;
+    if (!latestTimestamp) return;
+
+    let q;
+    if (activeTab === 'following') {
+      const followingIds = userProfile?.following ? [...userProfile.following.slice(0, 30)] : [];
+      if (userProfile?.uid && !followingIds.includes(userProfile.uid)) {
+        followingIds.push(userProfile.uid);
+      }
+      
+      if (followingIds.length === 0) return;
+
+      q = query(
+        collection(db, 'posts'),
+        where('authorId', 'in', followingIds),
+        where('privacy', 'in', ['public', 'circle']),
+        where('createdAt', '>', latestTimestamp),
+        limit(20)
+      );
+    } else {
+      q = query(
+        collection(db, 'posts'),
+        where('privacy', '==', 'public'),
+        where('createdAt', '>', latestTimestamp),
+        limit(20)
+      );
     }
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const allPosts = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      
-      const filteredPosts = allPosts.filter((post: any) => 
-        !userProfile?.mutedUsers?.includes(post.authorId)
-      );
-      
-      setDisplayedPosts(filteredPosts);
-      setHasMore(snapshot.docs.length === postsLimit);
-      setIsFetching(false);
-      setIsLoadingMore(false);
-    }, (error) => {
-      console.error("Feed error:", error);
-      setIsFetching(false);
-      setIsLoadingMore(false);
+      // Filter out our own posts
+      const news = snapshot.docs.filter(doc => doc.data().authorId !== userProfile.uid);
+      setNewPostsCount(news.length);
     });
 
     return () => unsubscribe();
-  }, [activeTab, db, userProfile?.following, postsLimit, refreshKey]);
+  }, [activeTab, db, userProfile?.uid, isFetching, displayedPosts[0]?.id]);
 
   const loadMorePosts = useCallback(() => {
-    if (isLoadingMore || !hasMore || !db) return;
-    setIsLoadingMore(true);
-    setPostsLimit(prev => prev + POSTS_PER_PAGE);
-  }, [isLoadingMore, hasMore, db]);
+    fetchPosts(false);
+  }, [isLoadingMore, hasMore, db, isFetching, lastVisible, activeTab]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -716,6 +789,24 @@ export default function Home() {
         className="focus-visible:outline-none w-full max-w-2xl mx-auto"
       >
         <PullToRefresh onRefresh={refreshFeed}>
+          {/* New Posts Notification Bubble */}
+          <AnimatePresence>
+            {newPostsCount > 0 && (
+              <div className="flex justify-center sticky top-24 z-20 pointer-events-none">
+                <motion.button
+                  initial={{ opacity: 0, y: -20, scale: 0.8 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -20, scale: 0.8 }}
+                  onClick={refreshFeed}
+                  className="pointer-events-auto bg-blue-500 text-white px-5 py-2.5 rounded-full shadow-2xl flex items-center space-x-2 border border-blue-400 font-bold text-sm hover:bg-blue-600 transition-colors active:scale-95"
+                >
+                  <ArrowUp className="w-4 h-4 animate-bounce" />
+                  <span>Novos posts disponíveis ({newPostsCount})</span>
+                </motion.button>
+              </div>
+            )}
+          </AnimatePresence>
+
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
