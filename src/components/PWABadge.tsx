@@ -33,13 +33,25 @@ export default function PWABadge() {
       console.log('Manually checking for PWA update...');
       if (registrationRef.current) {
         registrationRef.current.update().then(() => {
-          // If update is found, needRefresh will be true
+          // needRefresh will be updated by useRegisterSW if found
+          // We wait a bit to see if needRefresh becomes true, if not, show up to date
+          setTimeout(() => {
+            // How do we know if it's up to date? 
+            // If after update() call needRefresh is still false, then it is up to date
+            // (Note: this is a heuristic since we don't have a direct "upToDate" state from useRegisterSW)
+            // But if we are already seeing the refresh prompt, we don't show "up to date"
+            const pwaNeedsRefresh = document.querySelector('[data-pwa-needs-refresh="true"]');
+            if (!pwaNeedsRefresh && !needRefresh) {
+              setShowUpToDate(true);
+              setTimeout(() => setShowUpToDate(false), 3000);
+            }
+          }, 1500);
         });
       }
     };
     window.addEventListener('check-pwa-update' as any, handleCheckUpdate);
     return () => window.removeEventListener('check-pwa-update' as any, handleCheckUpdate);
-  }, []);
+  }, [needRefresh]);
 
   console.log('PWA Status - offlineReady:', offlineReady, 'needRefresh:', needRefresh);
 
@@ -47,14 +59,17 @@ export default function PWABadge() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateProgress, setUpdateProgress] = useState(0);
   const [updateComplete, setUpdateComplete] = useState(false);
+  const [showUpToDate, setShowUpToDate] = useState(false);
 
   const close = () => {
     setOfflineReady(false);
     setNeedRefresh(false);
+    setShowUpToDate(false);
   };
 
   const handleUpdate = () => {
     setIsUpdating(true);
+    setShowUpToDate(false);
     let progress = 0;
     const interval = setInterval(() => {
       progress += Math.floor(Math.random() * 15) + 5;
@@ -79,7 +94,7 @@ export default function PWABadge() {
   if (needRefresh) {
     return (
       <AnimatePresence>
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+        <div data-pwa-needs-refresh="true" className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
           {isUpdating ? (
             <motion.div 
               initial={{ opacity: 0, scale: 0.9 }}
@@ -233,6 +248,33 @@ export default function PWABadge() {
             </motion.div>
           )}
         </div>
+      </AnimatePresence>
+    );
+  }
+
+  if (showUpToDate) {
+    return (
+      <AnimatePresence>
+        <motion.div 
+          initial={{ opacity: 0, y: 50, scale: 0.9 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 50, scale: 0.9 }}
+          className="fixed bottom-24 sm:bottom-8 left-1/2 -track-x-1/2 sm:left-auto sm:translate-x-0 sm:right-8 z-[100] p-4 bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-100 flex items-center space-x-4 min-w-[280px]"
+        >
+          <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+            <Sparkles className="w-5 h-5 text-indigo-600" />
+          </div>
+          <div className="flex-1">
+            <p className="font-bold text-gray-900">Você está atualizado!</p>
+            <p className="text-sm text-gray-500">Versão {APP_VERSION}</p>
+          </div>
+          <button 
+            className="p-2 text-gray-400 hover:text-black transition-colors" 
+            onClick={() => setShowUpToDate(false)}
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </motion.div>
       </AnimatePresence>
     );
   }
