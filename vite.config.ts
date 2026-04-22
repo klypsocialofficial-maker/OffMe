@@ -14,14 +14,16 @@ export default defineConfig(({mode}) => {
         strategies: 'injectManifest',
         srcDir: 'src',
         filename: 'sw.ts',
-        registerType: 'prompt',
+        registerType: 'autoUpdate',
+        includeAssets: ['logo.svg', 'apple-touch-icon.png', 'ghost.svg', 'favicon.ico'],
         injectManifest: {
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         },
         manifest: {
           name: 'OffMe',
           short_name: 'OffMe',
-          description: 'Rede social minimalista e fluida.',
+          description: 'A rede social que flui com você.',
           theme_color: '#ffffff',
           background_color: '#ffffff',
           display: 'standalone',
@@ -32,7 +34,22 @@ export default defineConfig(({mode}) => {
               src: '/logo.svg',
               sizes: '192x192 512x512',
               type: 'image/svg+xml',
-              purpose: 'any maskable'
+              purpose: 'any'
+            },
+            {
+              src: '/icon-192.png',
+              sizes: '192x192',
+              type: 'image/png'
+            },
+            {
+              src: '/icon-512.png',
+              sizes: '512x512',
+              type: 'image/png'
+            },
+            {
+              src: '/apple-touch-icon.png',
+              sizes: '180x180',
+              type: 'image/png'
             }
           ]
         },

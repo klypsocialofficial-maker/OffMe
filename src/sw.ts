@@ -3,16 +3,48 @@
 import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
 import { clientsClaim } from 'workbox-core';
 import { registerRoute, NavigationRoute } from 'workbox-routing';
-import { NetworkFirst } from 'workbox-strategies';
+import { NetworkFirst, CacheFirst, StaleWhileRevalidate } from 'workbox-strategies';
+import { CacheableResponsePlugin } from 'workbox-cacheable-response';
+import { ExpirationPlugin } from 'workbox-expiration';
 import * as navigationPreload from 'workbox-navigation-preload';
 
 declare const self: ServiceWorkerGlobalScope & {
   __WB_MANIFEST: any;
 };
 
-// PWA Logic v0.0.0.12
+// PWA Logic v0.0.0.13
 cleanupOutdatedCaches();
 precacheAndRoute(self.__WB_MANIFEST);
+
+// Cache Google Fonts
+registerRoute(
+  ({ url }) => url.origin === 'https://fonts.googleapis.com' || url.origin === 'https://fonts.gstatic.com',
+  new StaleWhileRevalidate({
+    cacheName: 'google-fonts',
+    plugins: [
+      new ExpirationPlugin({ maxEntries: 20 }),
+    ],
+  })
+);
+
+// Cache common image formats with CacheFirst strategy
+registerRoute(
+  ({ request }) => request.destination === 'image',
+  new CacheFirst({
+    cacheName: 'images',
+    plugins: [
+      new CacheableResponsePlugin({
+        statuses: [0, 200],
+      }),
+      new ExpirationPlugin({
+        maxEntries: 60,
+        maxAgeSeconds: 30 * 24 * 60 * 60, // 30 Days
+      }),
+    ],
+  })
+);
+
+// Handle specific image providers like imgbb if needed separately, but request.destination === 'image' covers them.
 
 // This allows the web app to control the service worker and skip waiting
 self.addEventListener('message', (event) => {
