@@ -19,6 +19,7 @@ import Toast from '../components/Toast';
 import ConfirmModal from '../components/ConfirmModal';
 import { auth } from '../firebase';
 
+import PostCard from '../components/PostCard';
 import PostImageGrid from '../components/PostImageGrid';
 import ImageViewer from '../components/ImageViewer';
 import LazyImage from '../components/LazyImage';
@@ -498,106 +499,101 @@ export default function PostDetail() {
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-2xl border-b border-black/5 shadow-sm pt-[env(safe-area-inset-top)]">
-        <div className="px-4 py-3 flex items-center space-x-4">
-          <button onClick={() => navigate(-1)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-2xl border-b border-black/5 shadow-sm pt-[max(env(safe-area-inset-top),44px)]">
+        <div className="px-4 h-14 flex items-center space-x-4">
+          <button onClick={() => navigate(-1)} className="p-2 hover:bg-gray-100 rounded-full transition-colors active:scale-90">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-xl font-black tracking-tight">Post</h1>
+          <h1 className="text-xl font-black tracking-tighter">THREAD</h1>
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto p-4 space-y-4">
-        {/* Main Post */}
-        <article className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
-          <div className="flex space-x-4">
-            <div 
-              className={`w-12 h-12 rounded-full overflow-hidden flex-shrink-0 cursor-pointer ${post.authorId === 'anonymous' ? 'bg-gradient-to-br from-indigo-50 to-purple-100 border border-purple-200 flex items-center justify-center' : 'bg-gray-200'}`}
-              onClick={() => {
-                if (post.authorId === 'anonymous') navigate('/anonymous-feed');
-                else navigate(`/${post.authorUsername}`);
-              }}
-            >
-              {post.authorId === 'anonymous' ? (
-                <Ghost className="w-6 h-6 text-indigo-400" />
-              ) : post.authorPhoto ? (
-                <LazyImage src={post.authorPhoto} alt={post.authorName} className="w-full h-full" />
-              ) : (
-                <LazyImage src={getDefaultAvatar(post.authorName, post.authorUsername)} alt={post.authorName} className="w-full h-full" />
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center space-x-1" onClick={() => {
-                    if (post.authorId === 'anonymous') navigate('/anonymous-feed');
-                    else navigate(`/${post.authorUsername}`);
-                  }}>
-                    <div className={`font-bold text-lg leading-tight truncate max-w-[150px] sm:max-w-[250px] cursor-pointer ${post.authorId === 'anonymous' ? 'text-indigo-600 italic hover:underline' : 'hover:underline'}`}>{post.authorName}</div>
-                    {post.authorId !== 'anonymous' && post.authorPrivate && <Lock className="w-3.5 h-3.5 text-gray-400" />}
-                    {(post.authorVerified || post.authorUsername === 'Rulio') && <VerifiedBadge tier={post.authorPremiumTier} />}
-                    <span className="text-gray-500 text-sm">·</span>
-                    <span className="text-gray-500 text-sm">
-                      {post.createdAt?.toDate ? formatRelativeTime(post.createdAt.toDate()) : 'Agora'}
-                    </span>
-                  </div>
-                  <div className="text-gray-500 truncate">@{post.authorUsername}</div>
+      <div className="max-w-2xl mx-auto p-4 space-y-6">
+        {/* Main Post - Hero Design */}
+        <article className="bg-white rounded-[32px] shadow-sm border border-gray-100 p-6">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center space-x-4">
+              <div 
+                className={`w-14 h-14 rounded-2xl overflow-hidden flex-shrink-0 cursor-pointer shadow-md ${post.authorId === 'anonymous' ? 'bg-gradient-to-br from-indigo-50 to-purple-100 border border-purple-200 flex items-center justify-center' : 'bg-gray-200'}`}
+                onClick={() => {
+                  if (post.authorId === 'anonymous') navigate('/anonymous-feed');
+                  else navigate(`/${post.authorUsername}`);
+                }}
+              >
+                {post.authorId === 'anonymous' ? (
+                  <Ghost className="w-8 h-8 text-indigo-400" />
+                ) : post.authorPhoto ? (
+                  <LazyImage src={post.authorPhoto} alt={post.authorName} className="w-full h-full" />
+                ) : (
+                  <LazyImage src={getDefaultAvatar(post.authorName, post.authorUsername)} alt={post.authorName} className="w-full h-full" />
+                )}
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center space-x-1" onClick={() => {
+                  if (post.authorId === 'anonymous') navigate('/anonymous-feed');
+                  else navigate(`/${post.authorUsername}`);
+                }}>
+                  <div className={`font-black text-xl leading-tight truncate cursor-pointer ${post.authorId === 'anonymous' ? 'text-indigo-600 italic hover:underline' : 'hover:underline text-gray-900 tracking-tight'}`}>{post.authorName}</div>
+                  {post.authorId !== 'anonymous' && post.authorPrivate && <Lock className="w-4 h-4 text-gray-400" />}
+                  {(post.authorVerified || post.authorUsername === 'Rulio') && <VerifiedBadge tier={post.authorPremiumTier} />}
                 </div>
-                <div className="relative">
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveMenuPostId(activeMenuPostId === post.id ? null : post.id);
-                    }}
-                    className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500"
-                  >
-                    <MoreHorizontal className="w-5 h-5" />
-                  </button>
-                  
-                  {activeMenuPostId === post.id && (
-                    <div className="absolute right-0 mt-1 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-10" onClick={(e) => e.stopPropagation()}>
-                      {(post.authorId === userProfile?.uid || post.ownerId === userProfile?.uid) ? (
-                        <>
-                          <button 
-                            onClick={() => handleDeletePost(post.id)}
-                            className="w-full text-left px-4 py-2 text-red-500 hover:bg-gray-50 flex items-center space-x-2"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            <span>Apagar post</span>
-                          </button>
-                          <button 
-                            onClick={() => {
-                              if (canEditPost(post)) {
-                                setEditingPost(post);
-                                setEditContent(post.content);
-                                setActiveMenuPostId(null);
-                              } else {
-                                showToast('O tempo de edição (3 minutos) expirou. Assine o Premium para editar a qualquer momento.', 'info');
-                                setActiveMenuPostId(null);
-                              }
-                            }}
-                            className={`w-full text-left px-4 py-2 flex items-center space-x-2 ${canEditPost(post) ? 'text-gray-700 hover:bg-gray-50' : 'text-gray-400 cursor-not-allowed'}`}
-                          >
-                            <Edit2 className="w-4 h-4" />
-                            <span>Editar post</span>
-                          </button>
-                        </>
-                      ) : (
-                        <div className="px-4 py-2 text-gray-500 text-sm">Nenhuma ação disponível</div>
-                      )}
-                    </div>
+                <div className="text-gray-500 font-medium">@{post.authorUsername}</div>
+              </div>
+            </div>
+            
+            <div className="relative">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveMenuPostId(activeMenuPostId === post.id ? null : post.id);
+                }}
+                className="p-2.5 hover:bg-gray-100 rounded-full transition-colors text-gray-500 active:scale-90"
+              >
+                <MoreHorizontal className="w-6 h-6" />
+              </button>
+              
+              {activeMenuPostId === post.id && (
+                <div className="absolute right-0 mt-2 w-56 bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/40 py-2 z-10" onClick={(e) => e.stopPropagation()}>
+                  {(post.authorId === userProfile?.uid || post.ownerId === userProfile?.uid) ? (
+                    <>
+                      <button 
+                        onClick={() => handleDeletePost(post.id)}
+                        className="w-full text-left px-4 py-3 text-red-500 hover:bg-red-50 flex items-center space-x-3 font-bold text-sm"
+                      >
+                        <Trash2 className="w-4.5 h-4.5" />
+                        <span>Apagar post</span>
+                      </button>
+                      <button 
+                        onClick={() => {
+                          if (canEditPost(post)) {
+                            setEditingPost(post);
+                            setEditContent(post.content);
+                            setActiveMenuPostId(null);
+                          } else {
+                            showToast('O tempo de edição expirou.', 'info');
+                            setActiveMenuPostId(null);
+                          }
+                        }}
+                        className={`w-full text-left px-4 py-3 flex items-center space-x-3 font-bold text-sm ${canEditPost(post) ? 'text-gray-700 hover:bg-gray-50' : 'text-gray-400 cursor-not-allowed'}`}
+                      >
+                        <Edit2 className="w-4.5 h-4.5" />
+                        <span>Editar post</span>
+                      </button>
+                    </>
+                  ) : (
+                    <div className="px-4 py-3 text-gray-500 text-sm font-medium italic">Nenhuma ação disponível</div>
                   )}
                 </div>
-              </div>
+              )}
             </div>
           </div>
 
-          <div className="mt-4">
+          <div className="space-y-4">
             {post.replyToUsername && (
-              <div className="mb-2 text-gray-500 flex items-center space-x-1">
-                <span>Respondendo a</span>
-                <span className="text-blue-500">@{post.replyToUsername}</span>
-                {(post.replyToVerified || post.replyToUsername === 'Rulio') && <VerifiedBadge className="w-3.5 h-3.5 text-blue-500" />}
+              <div className="bg-blue-50/50 px-3 py-1.5 rounded-lg text-blue-600 font-bold text-sm inline-flex items-center space-x-1.5">
+                <MessageCircle className="w-3.5 h-3.5" />
+                <span>Respondendo a @{post.replyToUsername}</span>
+                {(post.replyToVerified || post.replyToUsername === 'Rulio') && <VerifiedBadge className="w-3.5 h-3.5" />}
               </div>
             )}
             
@@ -607,24 +603,24 @@ export default function PostDetail() {
                   value={editContent}
                   onChange={(e) => setEditContent(e.target.value)}
                   maxLength={1000}
-                  className="w-full bg-white border border-gray-200 rounded-xl p-3 outline-none resize-none min-h-[80px]"
+                  className="w-full bg-gray-50 border border-gray-100 rounded-2xl p-4 outline-none resize-none min-h-[120px] text-lg"
                   autoFocus
                 />
-                <div className="flex justify-between items-center mt-2">
-                  <div className={`text-xs font-medium ${editContent.length > 1000 ? 'text-red-500' : 'text-gray-400'}`}>
+                <div className="flex justify-between items-center mt-3">
+                  <div className={`text-xs font-black ${editContent.length > 1000 ? 'text-red-500' : 'text-gray-400'}`}>
                     {editContent.length} / 1000
                   </div>
                   <div className="flex space-x-2">
                     <button 
                       onClick={() => setEditingPost(null)}
-                      className="px-4 py-1.5 rounded-full font-bold hover:bg-gray-100 transition-colors"
+                      className="px-5 py-2 rounded-full font-black text-sm hover:bg-gray-100 transition-colors"
                     >
                       Cancelar
                     </button>
                     <button 
                       onClick={() => handleEditPost(post.id)}
                       disabled={!editContent.trim() || editContent === post.content || editContent.length > 1000}
-                      className="bg-black text-white px-4 py-1.5 rounded-full font-bold hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                      className="bg-black text-white px-6 py-2 rounded-xl font-black text-sm hover:bg-gray-800 disabled:opacity-50 transition-colors shadow-lg"
                     >
                       Salvar
                     </button>
@@ -632,11 +628,11 @@ export default function PostDetail() {
                 </div>
               </div>
             ) : (
-              <>
-                <PostContent content={post.content} className="text-xl text-gray-900 leading-relaxed" />
+              <div className="space-y-4">
+                <PostContent content={post.content} className="text-2xl text-gray-900 leading-[1.4] font-medium tracking-tight break-words" />
                 {post.quotedPostId && <QuotedPost post={post} />}
-                {post.isEdited && <span className="text-gray-400 text-xs">(editado)</span>}
-              </>
+                {post.isEdited && <span className="text-gray-400 text-xs font-bold block">(editado)</span>}
+              </div>
             )}
             
             {post.poll && (
@@ -645,290 +641,219 @@ export default function PostDetail() {
             
             <PostImageGrid imageUrls={post.imageUrls} onImageClick={openImageViewer} />
 
-            <div className="flex justify-around mt-4 py-3 border-t border-gray-50 text-gray-500">
+            {/* Timestamps and Meta */}
+            <div className="py-4 border-y border-gray-50 flex flex-wrap gap-4 text-sm font-bold text-gray-400 uppercase tracking-widest">
+              <span>{post.createdAt?.toDate ? new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(post.createdAt.toDate()) : ''}</span>
+              <span>·</span>
+              <span>{post.createdAt?.toDate ? new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).format(post.createdAt.toDate()) : ''}</span>
+              <span>·</span>
+              <span className="text-black">{post.viewCount || 0} <span className="text-gray-400">Visualizações</span></span>
+            </div>
+
+            {/* Expanded Stats */}
+            {(post.repliesCount > 0 || post.repostsCount > 0 || post.likesCount > 0) && (
+              <div className="py-4 border-b border-gray-50 flex space-x-6 text-sm">
+                {post.repliesCount > 0 && (
+                  <div className="flex space-x-1 items-baseline">
+                    <span className="font-black text-black">{post.repliesCount}</span>
+                    <span className="text-gray-500 font-bold uppercase tracking-tighter text-[10px]">Respostas</span>
+                  </div>
+                )}
+                {post.repostsCount > 0 && (
+                  <div className="flex space-x-1 items-baseline">
+                    <span className="font-black text-black">{post.repostsCount}</span>
+                    <span className="text-gray-500 font-bold uppercase tracking-tighter text-[10px]">Reposts</span>
+                  </div>
+                )}
+                {post.likesCount > 0 && (
+                  <div className="flex space-x-1 items-baseline">
+                    <span className="font-black text-black">{post.likesCount}</span>
+                    <span className="text-gray-500 font-bold uppercase tracking-tighter text-[10px]">Curtidas</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Action Bar - Hero Style */}
+            <div className="flex justify-around pt-2 text-gray-500">
               <button 
                 onClick={() => {
                   setReplyToPost(post);
                   setIsCreateModalOpen(true);
                 }}
-                className="flex items-center space-x-2 hover:text-blue-500 transition-colors p-2 rounded-full hover:bg-blue-50"
+                className="flex flex-col items-center space-y-1 group/action hover:text-blue-500 transition-colors p-2"
               >
-                <MessageCircle className="w-6 h-6" />
-                <span className="text-sm font-medium">{post.repliesCount || 0}</span>
+                <div className="p-2.5 group-hover/action:bg-blue-50 rounded-2xl transition-colors">
+                  <MessageCircle className="w-7 h-7" />
+                </div>
               </button>
               <button 
                 onPointerDown={handleRepostPointerDown(post)}
                 onPointerUp={handleRepostPointerUp(post)}
                 onPointerCancel={handleRepostPointerCancel}
                 onContextMenu={(e) => e.preventDefault()}
-                className={`flex items-center space-x-2 transition-colors p-2 rounded-full ${post.reposts?.includes(userProfile?.uid) ? 'text-green-500 bg-green-50' : 'hover:text-green-500 hover:bg-green-50'}`}
+                className={`flex flex-col items-center space-y-1 transition-colors p-2 ${post.reposts?.includes(userProfile?.uid) ? 'text-green-500' : 'hover:text-green-500'}`}
               >
-                <Repeat className={`w-6 h-6 ${post.reposts?.includes(userProfile?.uid) ? 'stroke-[3px]' : ''}`} />
-                <span className="text-sm font-medium">{post.repostsCount || 0}</span>
+                <div className={`p-2.5 rounded-2xl transition-colors ${post.reposts?.includes(userProfile?.uid) ? 'bg-green-50' : 'hover:bg-green-50'}`}>
+                  <Repeat className={`w-7 h-7 ${post.reposts?.includes(userProfile?.uid) ? 'stroke-[3px]' : ''}`} />
+                </div>
               </button>
               <motion.button 
                 whileTap={{ scale: 1.3 }}
                 animate={{ scale: post.likes?.includes(userProfile?.uid) ? 1.1 : 1 }}
                 transition={{ type: "spring", stiffness: 400, damping: 17 }}
                 onClick={() => handleLikePost(post)}
-                className={`flex items-center space-x-2 transition-colors p-2 rounded-full ${post.likes?.includes(userProfile?.uid) ? 'text-red-500 bg-red-50' : 'hover:text-red-500 hover:bg-red-50'}`}
+                className={`flex flex-col items-center space-y-1 transition-colors p-2 ${post.likes?.includes(userProfile?.uid) ? 'text-red-500' : 'hover:text-red-500'}`}
               >
-                <Heart className={`w-6 h-6 ${post.likes?.includes(userProfile?.uid) ? 'fill-current' : ''}`} />
-                <span className="text-sm font-medium">{post.likesCount || 0}</span>
+                <div className={`p-2.5 rounded-2xl transition-colors ${post.likes?.includes(userProfile?.uid) ? 'bg-red-50' : 'hover:bg-red-50'}`}>
+                  <Heart className={`w-7 h-7 ${post.likes?.includes(userProfile?.uid) ? 'fill-current' : ''}`} />
+                </div>
               </motion.button>
-              {post.authorId === userProfile?.uid && (
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedStatsPostId(post.id);
-                    setIsStatsModalOpen(true);
-                  }}
-                  className="flex items-center space-x-2 hover:text-blue-500 transition-colors p-2 rounded-full hover:bg-blue-50"
-                >
-                  <BarChart2 className="w-6 h-6" />
-                </button>
-              )}
               <button 
                 onClick={handleBookmark}
-                className={`flex items-center space-x-2 transition-colors p-2 rounded-full ${userProfile?.bookmarks?.includes(post.id) ? 'text-blue-500 bg-blue-50' : 'hover:text-blue-500 hover:bg-blue-50'}`}
+                className={`flex flex-col items-center space-y-1 transition-colors p-2 ${userProfile?.bookmarks?.includes(post.id) ? 'text-blue-500' : 'hover:text-blue-500'}`}
               >
-                {userProfile?.bookmarks?.includes(post.id) ? (
-                  <BookmarkCheck className="w-6 h-6 fill-current" />
-                ) : (
-                  <Bookmark className="w-6 h-6" />
-                )}
+                <div className={`p-2.5 rounded-2xl transition-colors ${userProfile?.bookmarks?.includes(post.id) ? 'bg-blue-50' : 'hover:bg-blue-50'}`}>
+                  {userProfile?.bookmarks?.includes(post.id) ? (
+                    <BookmarkCheck className="w-7 h-7 fill-current" />
+                  ) : (
+                    <Bookmark className="w-7 h-7" />
+                  )}
+                </div>
               </button>
               <button 
                 onClick={handleShare}
-                className="flex items-center space-x-2 hover:text-blue-500 transition-colors p-2 rounded-full hover:bg-blue-50"
+                className="flex flex-col items-center space-y-1 hover:text-blue-500 transition-colors p-2 group/action"
               >
-                <Send className="w-6 h-6" />
+                <div className="p-2.5 group-hover/action:bg-blue-50 rounded-2xl transition-colors">
+                  <Send className="w-7 h-7" />
+                </div>
               </button>
             </div>
           </div>
         </article>
 
-        {/* Reply Input Area */}
+        {/* Reply Shortcut Area */}
         <div 
           onClick={() => {
             setReplyToPost(post);
             setIsCreateModalOpen(true);
           }}
-          className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center space-x-4 cursor-pointer hover:bg-gray-50 transition-colors"
+          className="bg-white rounded-[24px] p-4 shadow-sm border border-gray-100 flex items-center space-x-4 cursor-pointer hover:border-black/10 transition-all group active:scale-[0.98]"
         >
-          <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0 shadow-inner">
             {userProfile?.photoURL ? (
               <LazyImage src={userProfile.photoURL} alt="Your profile" className="w-full h-full" />
             ) : (
               <LazyImage src={getDefaultAvatar(userProfile?.displayName || '', userProfile?.username || '')} alt="Your profile" className="w-full h-full" />
             )}
           </div>
-          <span className="text-gray-500 text-lg">Postar sua resposta</span>
+          <span className="text-gray-400 font-bold text-lg group-hover:text-gray-600 transition-colors">Postar sua resposta...</span>
         </div>
 
         {/* Conversation / Replies */}
-        <div className="space-y-3">
+        <div className="space-y-4">
           {quotes.length > 0 && (
             <div className="space-y-3 mb-6">
-               <h2 className="px-2 font-bold text-gray-700">Citações</h2>
-               <div className="space-y-2">
+               <h2 className="px-4 font-black text-gray-400 text-xs uppercase tracking-widest">Citações</h2>
+               <div className="space-y-3">
                  {quotes.map(quote => (
-                   <div key={quote.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => navigate(`/post/${quote.id}`)}>
-                      <p className="text-gray-900 font-bold">@{quote.authorUsername}</p>
-                      <p className="text-gray-600 text-sm">{quote.content}</p>
-                   </div>
+                   <PostCard 
+                    key={quote.id}
+                    post={quote}
+                    onLike={handleLikePost}
+                    onRepost={handleRepost}
+                    onDelete={handleDeletePost}
+                    onEdit={(p) => {
+                      setEditingPost(p);
+                      setEditContent(p.content);
+                    }}
+                    onShare={(p) => {
+                      setSelectedSharePost(p);
+                      setIsShareModalOpen(true);
+                    }}
+                    onReply={(p) => {
+                      setReplyToPost(p);
+                      setIsCreateModalOpen(true);
+                    }}
+                    onQuote={(p) => {
+                      setQuotePost(p);
+                      setIsCreateModalOpen(true);
+                    }}
+                    onImageClick={openImageViewer}
+                    canEdit={canEditPost}
+                  />
                  ))}
                </div>
             </div>
           )}
-          <h2 className="px-2 font-bold text-gray-700">Respostas</h2>
+          <h2 className="px-4 font-black text-gray-400 text-xs uppercase tracking-widest">Respostas</h2>
           {replies.length === 0 ? (
-            <div className="bg-white p-8 rounded-2xl text-center shadow-sm border border-gray-100">
-              <p className="text-gray-500">Nenhuma resposta ainda. Seja o primeiro a responder!</p>
+            <div className="bg-white p-12 rounded-[32px] text-center shadow-sm border border-gray-100 italic transition-all hover:shadow-md">
+              <div className="bg-gray-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <MessageCircle className="w-8 h-8 text-gray-300" />
+              </div>
+              <p className="text-gray-400 font-medium">Nenhuma resposta ainda. Seja o primeiro a responder!</p>
             </div>
           ) : (
             (() => {
-              const buildTree = (replies: any[], parentId: string | null): any[] => {
-                return replies
+              const buildTree = (repliesArray: any[], parentId: string | null): any[] => {
+                return repliesArray
                   .filter(reply => reply.replyToId === parentId)
                   .map(reply => ({
                     ...reply,
-                    children: buildTree(replies, reply.id)
+                    children: buildTree(repliesArray, reply.id)
                   }));
               };
 
-              const ReplyComponent: React.FC<{ reply: any, depth?: number }> = ({ reply, depth = 0 }) => (
-                <div style={{ marginLeft: depth * 20 }}>
-                  <article 
-                    className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex space-x-4 cursor-pointer hover:bg-gray-50 transition-colors"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/post/${reply.id}`);
-                    }}
-                  >
-                    <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
-                      {reply.authorPhoto ? (
-                        <LazyImage src={reply.authorPhoto} alt={reply.authorName} className="w-full h-full" />
-                      ) : (
-                        <LazyImage src={getDefaultAvatar(reply.authorName, reply.authorUsername)} alt={reply.authorName} className="w-full h-full" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-1 flex-1 min-w-0">
-                          <span className="font-bold truncate max-w-[100px] sm:max-w-[150px]">{reply.authorName}</span>
-                          {(reply.authorVerified || reply.authorUsername === 'Rulio') && <VerifiedBadge tier={reply.authorPremiumTier} />}
-                          <span className="text-gray-500 truncate text-sm flex-shrink min-w-0">@{reply.authorUsername}</span>
-                          <span className="text-gray-500 flex-shrink-0">·</span>
-                          <span className="text-gray-500 flex-shrink-0 text-sm">
-                            {reply.createdAt?.toDate ? formatRelativeTime(reply.createdAt.toDate()) : 'Agora'}
-                          </span>
-                        </div>
-                        <div className="relative">
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setActiveMenuReplyId(activeMenuReplyId === reply.id ? null : reply.id);
-                            }}
-                            className="p-1.5 text-gray-400 hover:text-black hover:bg-gray-100 rounded-full transition-colors"
-                          >
-                            <MoreHorizontal className="w-4 h-4" />
-                          </button>
-                          
-                          {activeMenuReplyId === reply.id && (
-                            <div className="absolute right-0 mt-1 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-10" onClick={(e) => e.stopPropagation()}>
-                              {(reply.authorId === userProfile?.uid || reply.ownerId === userProfile?.uid) ? (
-                                <>
-                                  <button 
-                                    onClick={() => handleDeleteReply(reply.id)}
-                                    className="w-full text-left px-4 py-2 text-red-500 hover:bg-gray-50 flex items-center space-x-2"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                    <span>Apagar resposta</span>
-                                  </button>
-                                  <button 
-                                    onClick={() => {
-                                      if (canEditPost(reply)) {
-                                        setEditingPost(reply);
-                                        setEditContent(reply.content);
-                                        setActiveMenuReplyId(null);
-                                      } else {
-                                        showToast('O tempo de edição (3 minutos) expirou. Assine o Premium para editar a qualquer momento.', 'info');
-                                        setActiveMenuReplyId(null);
-                                      }
-                                    }}
-                                    className={`w-full text-left px-4 py-2 flex items-center space-x-2 ${canEditPost(reply) ? 'text-gray-700 hover:bg-gray-50' : 'text-gray-400 cursor-not-allowed'}`}
-                                  >
-                                    <Edit2 className="w-4 h-4" />
-                                    <span>Editar resposta</span>
-                                  </button>
-                                </>
-                              ) : (
-                                <div className="px-4 py-2 text-gray-500 text-sm">Nenhuma ação disponível</div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {editingPost?.id === reply.id ? (
-                        <div className="mt-2" onClick={(e) => e.stopPropagation()}>
-                          <textarea
-                            value={editContent}
-                            onChange={(e) => setEditContent(e.target.value)}
-                            maxLength={1000}
-                            className="w-full bg-white border border-gray-200 rounded-xl p-3 outline-none resize-none min-h-[80px]"
-                            autoFocus
-                          />
-                          <div className="flex justify-between items-center mt-2">
-                            <div className={`text-xs font-medium ${editContent.length > 1000 ? 'text-red-500' : 'text-gray-400'}`}>
-                              {editContent.length} / 1000
-                            </div>
-                            <div className="flex space-x-2">
-                              <button 
-                                onClick={() => setEditingPost(null)}
-                                className="px-4 py-1.5 rounded-full font-bold hover:bg-gray-100 transition-colors"
-                              >
-                                Cancelar
-                              </button>
-                              <button 
-                                onClick={() => handleEditPost(reply.id)}
-                                disabled={!editContent.trim() || editContent === reply.content || editContent.length > 1000}
-                                className="bg-black text-white px-4 py-1.5 rounded-full font-bold hover:bg-gray-800 disabled:opacity-50 transition-colors"
-                              >
-                                Salvar
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <PostContent content={reply.content} className="mt-1 text-gray-900" />
-                          {reply.isEdited && <span className="text-gray-400 text-xs">(editado)</span>}
-                        </>
-                      )}
-                      
-                      {reply.poll && (
-                        <Poll post={reply} handleFirestoreError={handleFirestoreError} OperationType={OperationType} />
-                      )}
-                      
-                      <PostImageGrid imageUrls={reply.imageUrls} onImageClick={openImageViewer} />
-
-                      <div className="flex justify-between mt-3 text-gray-500 max-w-[200px]">
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setReplyToPost(reply);
-                            setIsCreateModalOpen(true);
-                          }}
-                          className="flex items-center space-x-1 hover:text-blue-500"
-                        >
-                          <MessageCircle className="w-4 h-4" />
-                          <span className="text-xs">{reply.repliesCount || 0}</span>
-                        </button>
-                        <button 
-                          onPointerDown={handleRepostPointerDown(reply)}
-                          onPointerUp={handleRepostPointerUp(reply)}
-                          onPointerCancel={handleRepostPointerCancel}
-                          onContextMenu={(e) => e.preventDefault()}
-                          className={`flex items-center space-x-1 transition-colors ${reply.reposts?.includes(userProfile?.uid) ? 'text-green-500' : 'hover:text-green-500'}`}
-                        >
-                          <Repeat className={`w-4 h-4 ${reply.reposts?.includes(userProfile?.uid) ? 'stroke-[3px]' : ''}`} />
-                          <span className="text-xs">{reply.repostsCount || 0}</span>
-                        </button>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleLikePost(reply);
-                          }}
-                          className={`flex items-center space-x-1 transition-colors ${reply.likes?.includes(userProfile?.uid) ? 'text-red-500' : 'hover:text-red-500'}`}
-                        >
-                          <Heart className={`w-4 h-4 ${reply.likes?.includes(userProfile?.uid) ? 'fill-current' : ''}`} />
-                          <span className="text-xs">{reply.likesCount || 0}</span>
-                        </button>
-                        {reply.authorId === userProfile?.uid && (
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedStatsPostId(reply.id);
-                              setIsStatsModalOpen(true);
-                            }}
-                            className="flex items-center space-x-1 hover:text-blue-500 transition-colors"
-                          >
-                            <BarChart2 className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </article>
-                  {reply.children.map((child: any) => (
-                    <ReplyComponent key={child.id} reply={child} depth={depth + 1} />
-                  ))}
+              // Local component for recursive rendering
+              const RenderReplyTree = ({ reply, depth = 0 }: { reply: any, depth?: number }) => (
+                <div key={reply.id} className="relative">
+                  {/* Threading line */}
+                  {depth > 0 && (
+                    <div 
+                      className="absolute top-0 bottom-0 w-[2px] bg-gray-100"
+                      style={{ left: -12 }}
+                    />
+                  )}
+                  <div style={{ marginLeft: depth > 0 ? 20 : 0 }}>
+                    <PostCard 
+                      post={reply}
+                      onLike={handleLikePost}
+                      onRepost={handleRepost}
+                      onDelete={handleDeletePost}
+                      onEdit={(p) => {
+                        setEditingPost(p);
+                        setEditContent(p.content);
+                      }}
+                      onShare={(p) => {
+                        setSelectedSharePost(p);
+                        setIsShareModalOpen(true);
+                      }}
+                      onReply={(p) => {
+                        setReplyToPost(p);
+                        setIsCreateModalOpen(true);
+                      }}
+                      onQuote={(p) => {
+                        setQuotePost(p);
+                        setIsCreateModalOpen(true);
+                      }}
+                      onImageClick={openImageViewer}
+                      canEdit={canEditPost}
+                    />
+                    {reply.children.map((child: any) => (
+                      <RenderReplyTree key={child.id} reply={child} depth={depth + 1} />
+                    ))}
+                  </div>
                 </div>
               );
 
-              const replyTree = buildTree(replies, postId || null);
-              return replyTree.map(reply => <ReplyComponent key={reply.id} reply={reply} />);
+              const replyTreeData = buildTree(replies, postId || null);
+              return (
+                <div className="space-y-4">
+                  {replyTreeData.map(node => <RenderReplyTree key={node.id} reply={node} />)}
+                </div>
+              );
             })()
           )}
         </div>
