@@ -38,9 +38,8 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if true;
       allow create: if isOwner(userId);
-      allow update: if (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isVerified', 'premiumTier', 'isPremium'])) || 
-                    isAdmin() || 
-                    (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followers', 'points', 'level', 'completedMissionIds', 'missionProgress', 'badges']));
+      allow update: if isAdmin() || 
+                    (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isVerified', 'premiumTier', 'isPremium']));
       allow delete: if isAdmin();
     }
 
@@ -103,11 +102,11 @@ service cloud.firestore {
       allow list: if isAuthenticated();
       
       match /{notificationId} {
-        allow read: if isAuthenticated() && resource.data.recipientId == request.auth.uid;
-        allow update, delete: if isAuthenticated() && (
-          resource.data.recipientId == request.auth.uid ||
-          resource.data.senderId == request.auth.uid
-        );
+        allow read: if isAuthenticated() && resource.data.get('recipientId', '') == request.auth.uid;
+        allow update, delete: if isAdmin() || (isAuthenticated() && (
+          resource.data.get('recipientId', '') == request.auth.uid ||
+          resource.data.get('senderId', '') == request.auth.uid
+        ));
         allow create: if isAuthenticated();
       }
     }

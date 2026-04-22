@@ -159,29 +159,43 @@ export default function EditProfileModal({ isOpen, onClose, userProfile, handleF
       if (!newDisplayName) throw new Error('O nome de exibição é obrigatório.');
 
       const userRef = doc(db, 'users', userProfile.uid);
-      await updateDoc(userRef, {
-        displayName: newDisplayName,
-        bio: bio.trim(),
-        location: location.trim(),
-        website: website.trim(),
-        category: category.trim(),
-        profileTheme,
-        photoURL: newAvatarUrl,
-        bannerURL: newBannerUrl,
-        updatedAt: serverTimestamp(),
-      });
+      try {
+        await updateDoc(userRef, {
+          displayName: newDisplayName,
+          bio: bio.trim(),
+          location: location.trim(),
+          website: website.trim(),
+          category: category.trim(),
+          profileTheme,
+          photoURL: newAvatarUrl,
+          bannerURL: newBannerUrl,
+          updatedAt: serverTimestamp(),
+        });
+      } catch (userErr: any) {
+        console.error('User doc update failed:', userErr);
+        throw new Error('Falha ao atualizar cadastro principal. Permissão negada.');
+      }
 
       // Update all posts by this user
-      const postsQuery = query(collection(db, 'posts'), where('authorId', '==', userProfile.uid));
-      const postsSnapshot = await getDocs(postsQuery);
+      let postsSnapshot: any = { docs: [] };
+      try {
+        const postsQuery = query(collection(db, 'posts'), where('authorId', '==', userProfile.uid));
+        postsSnapshot = await getDocs(postsQuery);
+      } catch (e) { console.error('Failed to fetch posts for sync', e); }
       
       // Update all notifications sent by this user
-      const notifsQuery = query(collection(db, 'notifications'), where('senderId', '==', userProfile.uid));
-      const notifsSnapshot = await getDocs(notifsQuery);
+      let notifsSnapshot: any = { docs: [] };
+      try {
+        const notifsQuery = query(collection(db, 'notifications'), where('senderId', '==', userProfile.uid));
+        notifsSnapshot = await getDocs(notifsQuery);
+      } catch (e) { console.error('Failed to fetch notifications for sync', e); }
 
       // Update conversations
-      const convsQuery = query(collection(db, 'conversations'), where('participants', 'array-contains', userProfile.uid));
-      const convsSnapshot = await getDocs(convsQuery);
+      let convsSnapshot: any = { docs: [] };
+      try {
+        const convsQuery = query(collection(db, 'conversations'), where('participants', 'array-contains', userProfile.uid));
+        convsSnapshot = await getDocs(convsQuery);
+      } catch (e) { console.error('Failed to fetch conversations for sync', e); }
 
       const allDocs = [...postsSnapshot.docs, ...notifsSnapshot.docs, ...convsSnapshot.docs];
       
@@ -210,7 +224,12 @@ export default function EditProfileModal({ isOpen, onClose, userProfile, handleF
             }
           });
           
-          await batch.commit();
+          try {
+            await batch.commit();
+          } catch (batchErr) {
+            console.error('Batch sync failed for chunk:', i, batchErr);
+            // Non-critical if it fails for some posts
+          }
         }
       }
 
