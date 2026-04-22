@@ -595,35 +595,6 @@ export default function CreatePostModal({
                     </button>
                   )}
 
-                  {/* Co-Authors Input */}
-                  {!isAnonymous && (
-                    <div className="mt-4 p-3 bg-gray-50 rounded-2xl border border-gray-100">
-                      <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block">Colaboradores (@username)</label>
-                      <input 
-                        type="text"
-                        placeholder="Adicionar @username"
-                        className="w-full bg-transparent outline-none text-sm placeholder-gray-400"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            const val = (e.target as HTMLInputElement).value.replace('@', '');
-                            if (val && !coAuthors.includes(val)) {
-                              setCoAuthors([...coAuthors, val]);
-                              (e.target as HTMLInputElement).value = '';
-                            }
-                          }
-                        }}
-                      />
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {coAuthors.map(author => (
-                          <span key={author} className="px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold flex items-center gap-1">
-                            @{author}
-                            <X className="w-3 h-3 cursor-pointer" onClick={() => setCoAuthors(coAuthors.filter(a => a !== author))} />
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
 
                   {sharedMusic && (
                     <div className="bg-blue-50 rounded-2xl p-3 border border-blue-100 mb-4 flex items-center space-x-4 relative group">
