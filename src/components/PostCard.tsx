@@ -305,6 +305,25 @@ export default function PostCard({
         </div>
       )}
 
+      {/* Replying Context Header */}
+      {post.replyToUsername && (
+        <div className="flex items-center space-x-2 text-gray-500 text-[13px] font-bold mb-2 ml-10">
+          <MessageCircle className="w-3.5 h-3.5" />
+          <div className="flex items-center space-x-1">
+            <span>Respondendo a</span>
+            <span 
+              className="text-blue-500 hover:underline cursor-pointer"
+              onClick={(e) => {
+                stopPropagation(e);
+                if (post.replyToId) navigate(`/post/${post.replyToId}`);
+              }}
+            >
+              @{post.replyToUsername}
+            </span>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-row space-x-3 relative group/card">
         <div className="flex flex-col items-center flex-shrink-0 relative">
           {/* Avatar */}
@@ -376,14 +395,6 @@ export default function PostCard({
               </span>
               {post.isEdited && <span className="text-gray-400 text-xs">(editado)</span>}
             </div>
-
-            {/* Twitter-style Replying to label */}
-            {post.replyToUsername && (
-              <div className="mt-0.5 mb-1 text-[13px] text-gray-500 flex items-center space-x-1">
-                <span>Respondendo a</span>
-                <span className="text-blue-500 hover:underline cursor-pointer">@{post.replyToUsername}</span>
-              </div>
-            )}
 
           <div className="relative">
             <button 

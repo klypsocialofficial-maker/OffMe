@@ -565,6 +565,23 @@ export default function PostDetail() {
 
         {/* Main Post (Focus) */}
         <article className="bg-white p-4 relative z-10">
+          {post.replyToUsername && (
+            <div className="flex items-center space-x-2 text-gray-500 text-[13px] font-bold mb-3 ml-1">
+              <MessageCircle className="w-3.5 h-3.5" />
+              <div className="flex items-center space-x-1">
+                <span>Respondendo a</span>
+                <span 
+                  className="text-blue-500 hover:underline cursor-pointer"
+                  onClick={() => {
+                    if (post.replyToId) navigate(`/post/${post.replyToId}`);
+                  }}
+                >
+                  @{post.replyToUsername}
+                </span>
+              </div>
+            </div>
+          )}
+
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center space-x-3">
               <div 
