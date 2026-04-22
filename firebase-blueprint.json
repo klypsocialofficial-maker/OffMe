@@ -55,6 +55,7 @@
         "authorUsername": { "type": "string", "description": "The username of the author." },
         "authorPhoto": { "type": "string", "description": "The photo URL of the author." },
         "authorVerified": { "type": "boolean", "description": "Whether the author is verified." },
+        "coAuthors": { "type": "array", "items": { "type": "string" }, "description": "Array of UIDs of co-authors." },
         "createdAt": { "type": "timestamp", "description": "The time the post was created." },
         "likesCount": { "type": "number", "description": "The number of likes the post has received." },
         "repliesCount": { "type": "number", "description": "The number of replies the post has received." },
@@ -208,6 +209,31 @@
         "createdAt": { "type": "timestamp", "description": "The time the request was submitted." }
       },
       "required": ["userId", "reason", "category", "status", "createdAt"]
+    },
+    "Story": {
+      "title": "Story",
+      "description": "A 24h ephemeral story.",
+      "type": "object",
+      "properties": {
+        "authorId": { "type": "string" },
+        "mediaUrl": { "type": "string" },
+        "type": { "type": "string", "enum": ["image", "video"] },
+        "createdAt": { "type": "timestamp" },
+        "expiresAt": { "type": "timestamp" }
+      },
+      "required": ["authorId", "mediaUrl", "type", "createdAt", "expiresAt"]
+    },
+    "Collection": {
+      "title": "Collection",
+      "description": "A curated moodboard of posts.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "postIds": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "timestamp" }
+      },
+      "required": ["name", "ownerId", "createdAt"]
     }
   },
   "firestore": {
