@@ -115,7 +115,17 @@ export default function AndroidLayout({
                     className="flex flex-col items-center justify-center"
                     whileTap={{ scale: 0.9 }}
                   >
-                    <item.icon className={`w-6 h-6 ${isActive ? 'stroke-[2.5px]' : 'stroke-[2px]'}`} />
+                    {item.isProfile ? (
+                      <div className={`w-6 h-6 rounded-full overflow-hidden border-2 transition-all duration-200 ${isActive ? 'border-black' : 'border-transparent'}`}>
+                        {userProfile?.photoURL ? (
+                          <LazyImage src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full" />
+                        ) : (
+                          <LazyImage src={getDefaultAvatar(userProfile?.displayName || '', userProfile?.username || '')} alt={userProfile?.displayName} className="w-full h-full" />
+                        )}
+                      </div>
+                    ) : (
+                      <item.icon className={`w-6 h-6 ${isActive ? 'stroke-[2.5px]' : 'stroke-[2px]'}`} />
+                    )}
                     <span className={`text-[10px] mt-1 font-bold ${isActive ? 'opacity-100' : 'opacity-0'}`}>
                       {item.label}
                     </span>

@@ -49,11 +49,11 @@ export default function Layout() {
   const navItems = [
     { path: '/', icon: HomeIcon, label: 'Início' },
     { path: '/explore', icon: Search, label: 'Explorar' },
-    { path: '/communities', icon: Users, label: 'Comunidades' },
+    { path: `/${userProfile?.username || 'profile'}`, icon: UserIcon, label: 'Perfil', isProfile: true },
     { path: '#create', icon: Plus, label: 'Postar', isAction: true },
     { path: '/notifications', icon: Bell, label: 'Notificações' },
     { path: '/messages', icon: Mail, label: 'Mensagens' },
-    { path: `/${userProfile?.username || 'profile'}`, icon: UserIcon, label: 'Perfil' },
+    { path: '/communities', icon: Users, label: 'Comunidades' },
     { path: '/creator-studio', icon: Star, label: 'Criação' },
     { path: '/missions', icon: ZapIcon, label: 'Missões' },
     { path: '/shop', icon: ShoppingBag, label: 'Loja' },

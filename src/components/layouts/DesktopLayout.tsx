@@ -101,7 +101,17 @@ export default function DesktopLayout({
                 }`}
               >
                 <div className="relative">
-                  <item.icon className={`w-7 h-7 ${isActive ? 'stroke-[2.5px]' : 'stroke-[2px]'}`} />
+                  {item.isProfile ? (
+                    <div className={`w-7 h-7 rounded-full overflow-hidden border-2 transition-all duration-200 ${isActive ? 'border-black' : 'border-transparent'}`}>
+                      {userProfile?.photoURL ? (
+                        <LazyImage src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full" />
+                      ) : (
+                        <LazyImage src={getDefaultAvatar(userProfile?.displayName || '', userProfile?.username || '')} alt={userProfile?.displayName} className="w-full h-full" />
+                      )}
+                    </div>
+                  ) : (
+                    <item.icon className={`w-7 h-7 ${isActive ? 'stroke-[2.5px]' : 'stroke-[2px]'}`} />
+                  )}
                   {item.path === '/notifications' && unreadNotificationsCount > 0 && (
                     <span className="absolute -top-1 -right-1 bg-black text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">
                       {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
