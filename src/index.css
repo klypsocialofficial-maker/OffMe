@@ -23,13 +23,13 @@
       transform: translateX(3px);
     }
   }
-
-  .animate-bounce-horizontal {
-    animation: bounce-horizontal 1s infinite ease-in-out;
-  }
 }
 
 @layer utilities {
+  .animate-bounce-horizontal {
+    animation: bounce-horizontal 1s infinite ease-in-out;
+  }
+
   .liquid-glass {
     @apply bg-white/40 backdrop-blur-[32px] border border-white/40 shadow-[0_20px_50px_rgba(0,0,0,0.1)];
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1));
