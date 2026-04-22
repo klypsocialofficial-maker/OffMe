@@ -57,8 +57,7 @@ export default function CreatePostModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isAnonymous, setIsAnonymous] = useState(isAnonymousDefault);
   const [postAudience, setPostAudience] = useState<'public' | 'circle'>('public');
-  const [coAuthors, setCoAuthors] = useState<string[]>([]);
-  
+
   // Threads state
   const [threadPosts, setThreadPosts] = useState<{
     content: string, 
@@ -266,18 +265,6 @@ export default function CreatePostModal({
         allPostsToPublish.push({ content, imageFiles, imagePreviews, gifUrl, altText });
       }
       
-      // Resolve co-authors usernames to UIDs
-      let coAuthorUids: string[] = [];
-      if (coAuthors.length > 0) {
-        for (const username of coAuthors) {
-          const q = query(collection(db, 'users'), where('username', '==', username), limit(1));
-          const snap = await getDocs(q);
-          if (!snap.empty) {
-            coAuthorUids.push(snap.docs[0].id);
-          }
-        }
-      }
-
       let currentReplyToId = replyTo?.id || null;
       let currentReplyToUsername = replyTo?.authorUsername || null;
       let currentReplyToVerified = replyTo?.authorVerified || replyTo?.authorUsername === 'Rulio' || false;
@@ -313,7 +300,6 @@ export default function CreatePostModal({
           isAnonymous,
           privacy: postAudience,
           audience: postAudience === 'circle' ? (userProfile?.circleMembers || []) : [],
-          coAuthors: coAuthorUids,
           expiresAt: null,
           scheduledAt: scheduledAt ? Timestamp.fromDate(new Date(scheduledAt)) : null,
           status: scheduledAt ? 'scheduled' : 'published',

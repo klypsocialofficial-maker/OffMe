@@ -55,7 +55,6 @@
         "authorUsername": { "type": "string", "description": "The username of the author." },
         "authorPhoto": { "type": "string", "description": "The photo URL of the author." },
         "authorVerified": { "type": "boolean", "description": "Whether the author is verified." },
-        "coAuthors": { "type": "array", "items": { "type": "string" }, "description": "Array of UIDs of co-authors." },
         "createdAt": { "type": "timestamp", "description": "The time the post was created." },
         "likesCount": { "type": "number", "description": "The number of likes the post has received." },
         "repliesCount": { "type": "number", "description": "The number of replies the post has received." },
