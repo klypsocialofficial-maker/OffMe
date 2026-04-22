@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
-import { User as UserIcon, MoreHorizontal, Trash2, Edit2, Send, MessageCircle, Repeat, Heart, Ghost, VolumeX, UserX, ShieldAlert, Bookmark, BookmarkCheck, Pin, PinOff, Users, BarChart2, Gift, Lock } from 'lucide-react';
+import { User as UserIcon, MoreHorizontal, Trash2, Edit2, Send, MessageCircle, Repeat, Heart, Ghost, VolumeX, UserX, ShieldAlert, Bookmark, BookmarkCheck, Pin, PinOff, Users, BarChart2, Gift, Lock, Music, Play, Pause, ExternalLink } from 'lucide-react';
 import { formatRelativeTime } from '../lib/dateUtils';
 import { doc, updateDoc, increment } from 'firebase/firestore';
 import VerifiedBadge from './VerifiedBadge';
@@ -556,6 +556,50 @@ export default function PostCard({
           onImageClick={onImageClick} 
           altText={post.altText}
         />
+
+        {/* Shared Music */}
+        {post.sharedMusic && (
+          <div 
+            className="mt-3 bg-blue-50/50 border border-blue-100 rounded-2xl p-3 flex items-center space-x-4 group/music relative"
+            onClick={(e) => {
+              e.stopPropagation();
+              // Prevent navigation to post detail when clicking on music card
+            }}
+          >
+            <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 shadow-sm relative">
+              <img src={post.sharedMusic.artwork} alt={post.sharedMusic.title} className="w-full h-full object-cover" />
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // We'll handle global audio better, but for now simple preview
+                  const audio = new Audio(post.sharedMusic.previewUrl);
+                  audio.play();
+                }}
+                className="absolute inset-0 bg-black/20 group-hover/music:bg-black/40 flex items-center justify-center opacity-0 group-hover/music:opacity-100 transition-all"
+              >
+                <Play className="w-6 h-6 text-white fill-current" />
+              </button>
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center space-x-1 mb-0.5">
+                <Music className="w-3 h-3 text-blue-500" />
+                <span className="text-[10px] font-black italic text-blue-500 uppercase tracking-widest">Música Compartilhada</span>
+              </div>
+              <h4 className="font-bold text-sm text-gray-900 truncate">{post.sharedMusic.title}</h4>
+              <p className="text-xs text-gray-500 truncate">{post.sharedMusic.artist}</p>
+            </div>
+            <a 
+              href={post.sharedMusic.spotifyUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="p-2 bg-emerald-100 text-emerald-600 rounded-full hover:bg-emerald-200 transition-colors"
+              title="Ouvir no Spotify"
+            >
+              <ExternalLink className="w-4 h-4" />
+            </a>
+          </div>
+        )}
 
         {/* Quote Post */}
         {post.quotePostId && (

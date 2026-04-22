@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, User as UserIcon, TrendingUp, Music, Trophy, Tv, Cpu, Hash, MoreHorizontal } from 'lucide-react';
+import { Search, User as UserIcon, TrendingUp, Music, Trophy, Tv, Cpu, Hash, MoreHorizontal, Send, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import VerifiedBadge from '../components/VerifiedBadge';
 import TrendingPosts from '../components/TrendingPosts';
@@ -918,9 +918,24 @@ export default function Explore() {
                            )}
                            <button 
                             onClick={() => window.open(track.spotifyUrl, '_blank')}
-                            className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white shadow-lg active:scale-95 transition-transform"
+                            className="w-10 h-10 rounded-full bg-green-500/10 text-green-600 hover:bg-green-500 flex items-center justify-center hover:text-white shadow-sm active:scale-95 transition-all"
+                            title="Ouvir no Spotify"
                           >
-                            <Music className="w-5 h-5 fill-current" />
+                            <ExternalLink className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => {
+                              const event = new CustomEvent('open-create-modal', { 
+                                detail: { 
+                                  sharedMusic: track
+                                } 
+                              });
+                              window.dispatchEvent(event);
+                            }}
+                            className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white shadow-lg active:scale-95 transition-transform"
+                            title="Compartilhar no Feed"
+                          >
+                            <Send className="w-4 h-4" />
                           </button>
                         </div>
                       </motion.div>

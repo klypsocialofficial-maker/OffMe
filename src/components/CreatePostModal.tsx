@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User as UserIcon, Image as ImageIcon, X, BarChart2, Film, Ghost, Clock, Users, Plus, Calendar } from 'lucide-react';
+import { User as UserIcon, Image as ImageIcon, X, BarChart2, Film, Ghost, Clock, Users, Plus, Calendar, Music } from 'lucide-react';
 import { addDoc, collection, serverTimestamp, doc, updateDoc, increment, query, where, getDocs, Timestamp, limit } from 'firebase/firestore';
 import { db } from '../firebase';
 import { uploadToImgBB } from '../lib/imgbb';
@@ -25,6 +25,14 @@ interface CreatePostModalProps {
   isAnonymousDefault?: boolean;
   communityId?: string;
   communityName?: string;
+  sharedMusic?: {
+    id: string;
+    title: string;
+    artist: string;
+    artwork: string;
+    previewUrl: string;
+    spotifyUrl: string;
+  } | null;
 }
 
 export default function CreatePostModal({ 
@@ -37,7 +45,8 @@ export default function CreatePostModal({
   quotePost, 
   isAnonymousDefault = false,
   communityId,
-  communityName 
+  communityName,
+  sharedMusic = null
 }: CreatePostModalProps) {
   const [content, setContent] = useState('');
   const [imageFiles, setImageFiles] = useState<File[]>([]);
@@ -307,7 +316,8 @@ export default function CreatePostModal({
           // Only the first post in the thread can have the quote or poll logic (to avoid duplicating it)
           quotedPostId: index === allPostsToPublish.length - 1 ? (quotePost?.id || null) : null,
           quotedPostContent: index === allPostsToPublish.length - 1 ? (quotePost?.content || null) : null,
-          quotedPostAuthor: index === allPostsToPublish.length - 1 ? (quotePost?.authorName || null) : null
+          quotedPostAuthor: index === allPostsToPublish.length - 1 ? (quotePost?.authorName || null) : null,
+          sharedMusic: index === 0 ? sharedMusic : null
         };
 
         if (communityId) {
@@ -515,6 +525,18 @@ export default function CreatePostModal({
                   <div className="flex-1 pb-4 pt-1">
                     <p className="text-gray-900 text-lg whitespace-pre-wrap leading-tight">{tp.content}</p>
                     
+                    {tp.content === '' && idx === 0 && sharedMusic && (
+                      <div className="bg-gray-50 rounded-2xl p-3 border border-black/5 mt-2 flex items-center space-x-3">
+                        <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 shadow-sm">
+                          <img src={sharedMusic.artwork} alt={sharedMusic.title} className="w-full h-full object-cover" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-xs truncate">{sharedMusic.title}</h4>
+                          <p className="text-[10px] text-gray-500 truncate">{sharedMusic.artist}</p>
+                        </div>
+                      </div>
+                    )}
+
                     {tp.imagePreviews.length > 0 && (
                       <div className={`grid gap-2 mt-2 ${tp.imagePreviews.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
                         {tp.imagePreviews.map((preview, imgIdx) => (
@@ -561,6 +583,22 @@ export default function CreatePostModal({
                     className="w-full bg-transparent text-xl outline-none resize-none min-h-[120px] placeholder-gray-500"
                     autoFocus
                   />
+
+                  {sharedMusic && (
+                    <div className="bg-blue-50 rounded-2xl p-3 border border-blue-100 mb-4 flex items-center space-x-4 relative group">
+                      <div className="w-16 h-16 rounded-2xl overflow-hidden flex-shrink-0 shadow-md">
+                        <img src={sharedMusic.artwork} alt={sharedMusic.title} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-bold text-sm text-blue-900 truncate">{sharedMusic.title}</h4>
+                        <p className="text-xs text-blue-700 truncate">{sharedMusic.artist}</p>
+                        <div className="flex items-center space-x-1 mt-1">
+                           <Music className="w-3 h-3 text-blue-400" />
+                           <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">Música Compartilhada</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Autocomplete Suggestions */}
                   <AnimatePresence>

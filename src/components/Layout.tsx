@@ -69,16 +69,27 @@ export default function Layout() {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [replyToPost, setReplyToPost] = useState<any | null>(null);
   const [quotePost, setQuotePost] = useState<any | null>(null);
+  const [sharedMusic, setSharedMusic] = useState<any | null>(null);
   const [isAnonymousDefault, setIsAnonymousDefault] = useState(false);
   const [viewerImage, setViewerImage] = useState<{ src: string; alt: string } | null>(null);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
 
-  const openCreateModal = (replyTo: any = null, quotePost: any = null, isAnonymous: boolean = false) => {
+  const openCreateModal = (replyTo: any = null, quotePost: any = null, isAnonymous: boolean = false, sharedMusic: any = null) => {
     setReplyToPost(replyTo);
     setQuotePost(quotePost);
+    setSharedMusic(sharedMusic);
     setIsAnonymousDefault(isAnonymous);
     setIsCreateModalOpen(true);
   };
+
+  useEffect(() => {
+    const handleOpenCreateModal = (e: any) => {
+      const { replyTo, quotePost, isAnonymous, sharedMusic } = e.detail || {};
+      openCreateModal(replyTo, quotePost, isAnonymous, sharedMusic);
+    };
+    window.addEventListener('open-create-modal', handleOpenCreateModal);
+    return () => window.removeEventListener('open-create-modal', handleOpenCreateModal);
+  }, []);
 
   useEffect(() => {
     if (!userProfile?.uid || !db) return;
@@ -213,6 +224,7 @@ export default function Layout() {
           setIsCreateModalOpen(false);
           setReplyToPost(null);
           setQuotePost(null);
+          setSharedMusic(null);
           setIsAnonymousDefault(false);
         }} 
         userProfile={userProfile}
@@ -221,6 +233,7 @@ export default function Layout() {
         replyTo={replyToPost}
         quotePost={quotePost}
         isAnonymousDefault={isAnonymousDefault}
+        sharedMusic={sharedMusic}
       />
 
       <ConfirmModal
