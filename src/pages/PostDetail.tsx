@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { doc, onSnapshot, collection, query, where, orderBy, serverTimestamp, addDoc, deleteDoc, updateDoc, arrayRemove, arrayUnion, getDocs, limit } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { User as UserIcon, ArrowLeft, MoreHorizontal, Trash2, Edit2, BarChart2, Heart, Repeat, MessageCircle, Send, Bookmark, BookmarkCheck, Ghost, Lock } from 'lucide-react';
+import { User as UserIcon, ArrowLeft, MoreHorizontal, Trash2, Edit2, BarChart2, Heart, Repeat, MessageCircle, Send, Bookmark, BookmarkCheck, Ghost, Lock, Music, Play, Pause, ExternalLink } from 'lucide-react';
 import VerifiedBadge from '../components/VerifiedBadge';
 import PostContent from '../components/PostContent';
 import QuotedPost from '../components/QuotedPost';
@@ -647,6 +647,40 @@ export default function PostDetail() {
             ) : (
               <div className="space-y-4">
                 <PostContent content={post.content} className="text-[22px] leading-tight text-gray-900 font-normal break-words whitespace-pre-wrap" />
+                {post.sharedMusic && (
+                  <div className="mt-4 bg-blue-50/50 border border-blue-100 rounded-2xl p-4 flex items-center space-x-4 group/music relative">
+                    <div className="w-20 h-20 rounded-2xl overflow-hidden flex-shrink-0 shadow-md relative">
+                      <img src={post.sharedMusic.artwork} alt={post.sharedMusic.title} className="w-full h-full object-cover" />
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const audio = new Audio(post.sharedMusic.previewUrl);
+                          audio.play();
+                        }}
+                        className="absolute inset-0 bg-black/20 group-hover/music:bg-black/40 flex items-center justify-center opacity-0 group-hover/music:opacity-100 transition-all"
+                      >
+                        <Play className="w-8 h-8 text-white fill-current" />
+                      </button>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-1.5 mb-1">
+                        <Music className="w-4 h-4 text-blue-500" />
+                        <span className="text-[11px] font-black italic text-blue-500 uppercase tracking-widest">Música Compartilhada</span>
+                      </div>
+                      <h4 className="font-bold text-lg text-gray-900 truncate">{post.sharedMusic.title}</h4>
+                      <p className="text-sm text-gray-500 truncate">{post.sharedMusic.artist}</p>
+                    </div>
+                    <a 
+                      href={post.sharedMusic.spotifyUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-3 bg-emerald-100 text-emerald-600 rounded-full hover:bg-emerald-200 transition-colors shadow-sm"
+                      title="Ouvir no Spotify"
+                    >
+                      <ExternalLink className="w-5 h-5" />
+                    </a>
+                  </div>
+                )}
                 {post.quotedPostId && <QuotedPost post={post} />}
                 {post.imageUrls && <PostImageGrid imageUrls={post.imageUrls} onImageClick={openImageViewer} />}
                 {post.poll && <Poll post={post} handleFirestoreError={handleFirestoreError} OperationType={OperationType} />}

@@ -675,6 +675,7 @@ export default function PostCard({
             onPointerDown={handleRepostPointerDown}
             onPointerUp={handleRepostPointerUp}
             onPointerCancel={handleRepostPointerCancel}
+            onClick={stopPropagation}
             onContextMenu={(e) => e.preventDefault()}
             className={`flex items-center space-x-2 group/action transition-colors ${effectivePost.reposts?.includes(userProfile?.uid) ? 'text-green-500' : 'hover:text-green-500'}`}
           >
@@ -698,6 +699,7 @@ export default function PostCard({
               onPointerDown={handleLikePointerDown}
               onPointerUp={handleLikePointerUp}
               onPointerCancel={handleLikePointerCancel}
+              onClick={stopPropagation}
               onContextMenu={(e) => e.preventDefault()}
               style={{ touchAction: 'manipulation', WebkitTouchCallout: 'none', userSelect: 'none' }}
               className={`flex items-center space-x-2 group/action transition-colors outline-none ${reactionColor}`}
