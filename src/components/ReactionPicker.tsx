@@ -29,11 +29,12 @@ export default function ReactionPicker({ onSelect }: ReactionPickerProps) {
             key={reaction.id}
             whileHover={{ scale: 1.3, y: -5 }}
             whileTap={{ scale: 0.9 }}
-            onPointerUp={(e) => {
+            onPointerDown={(e) => {
+              e.preventDefault();
               e.stopPropagation();
               onSelect(reaction.id);
             }}
-            style={{ touchAction: 'manipulation' }}
+            style={{ touchAction: 'manipulation', WebkitTouchCallout: 'none', userSelect: 'none' }}
             className={`p-2 rounded-full ${reaction.bg} dark:bg-white/5 transition-colors relative group`}
           >
             <Icon className={`w-5 h-5 ${reaction.color}`} />

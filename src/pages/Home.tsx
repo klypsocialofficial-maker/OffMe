@@ -446,6 +446,32 @@ export default function Home() {
     const isLiked = !!existingReaction;
     const postRef = doc(db, 'posts', targetPost.id);
     
+    // Optimistic UI Update - Update all instances of the post (original or repost)
+    const newDisplayedPosts = displayedPosts.map(p => {
+      const isMatch = p.id === targetPost.id || (p.type === 'repost' && p.repostedPostId === targetPost.id);
+      if (isMatch) {
+        const reactions = { ...(p.reactions || {}) };
+        let likesCount = p.likesCount || 0;
+        let likes = [...(p.likes || [])];
+        
+        if (isLiked && existingReaction === reactionId) {
+          delete reactions[userProfile.uid];
+          likesCount = Math.max(0, likesCount - 1);
+          likes = likes.filter(uid => uid !== userProfile.uid);
+        } else {
+          if (!isLiked) {
+            likesCount += 1;
+            likes.push(userProfile.uid);
+          }
+          reactions[userProfile.uid] = reactionId;
+        }
+        
+        return { ...p, reactions, likesCount, likes };
+      }
+      return p;
+    });
+    setDisplayedPosts(newDisplayedPosts);
+
     try {
       if (isLiked && existingReaction === reactionId) {
         // Toggle off if clicking the same reaction
@@ -503,6 +529,27 @@ export default function Home() {
     const isReposted = targetPost.reposts?.includes(userProfile.uid);
     const postRef = doc(db, 'posts', targetPost.id);
     
+    // Optimistic UI Update - Update all instances
+    const newDisplayedPosts = displayedPosts.map(p => {
+      const isMatch = p.id === targetPost.id || (p.type === 'repost' && p.repostedPostId === targetPost.id);
+      if (isMatch) {
+        let repostsCount = p.repostsCount || 0;
+        let reposts = [...(p.reposts || [])];
+        
+        if (isReposted) {
+          repostsCount = Math.max(0, repostsCount - 1);
+          reposts = reposts.filter(uid => uid !== userProfile.uid);
+        } else {
+          repostsCount += 1;
+          reposts.push(userProfile.uid);
+        }
+        
+        return { ...p, repostsCount, reposts };
+      }
+      return p;
+    });
+    setDisplayedPosts(newDisplayedPosts);
+
     try {
       if (isReposted) {
         // Remove repost
