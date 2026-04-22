@@ -55,22 +55,29 @@ service cloud.firestore {
       }
     }
 
-    match /posts/{postId} {
-      allow read: if isAdmin() ||
-                   resource.data.get('privacy', 'public') == 'public' ||
-                   isAuthenticated() && (
-                     resource.data.get('authorId', '') == request.auth.uid ||
-                     request.auth.uid in resource.data.get('audience', []) ||
-                     resource.data.get('ownerId', '') == request.auth.uid
-                   );
+    match /posts {
+      allow list: if true;
       
-      allow create: if (isAuthenticated() || (request.resource.data.get('authorId', '') == 'anonymous')) && isValidPost(request.resource.data);
-      
-      allow update: if isAdmin() ||
-                    (isDocOwner() && request.resource.data.get('authorId', '') == resource.data.get('authorId', '') && isValidPost(request.resource.data) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['likes', 'likesCount', 'repliesCount', 'reposts', 'repostsCount', 'viewCount'])) ||
-                    (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'likesCount', 'repliesCount', 'reposts', 'repostsCount', 'viewCount']));
-      
-      allow delete: if isDocOwner() || isAdmin();
+      match /{postId} {
+        allow read: if isAdmin() ||
+                     resource.data.get('privacy', 'public') == 'public' ||
+                     isAuthenticated() && (
+                       resource.data.get('authorId', '') == request.auth.uid ||
+                       request.auth.uid in resource.data.get('audience', []) ||
+                       resource.data.get('ownerId', '') == request.auth.uid
+                     );
+        
+        allow create: if (isAuthenticated() || (request.resource.data.get('authorId', '') == 'anonymous')) && isValidPost(request.resource.data);
+        
+        allow update: if isAdmin() ||
+                      (isDocOwner() && (
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['authorName', 'authorPhoto']) ||
+                        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['likes', 'likesCount', 'repliesCount', 'reposts', 'repostsCount', 'viewCount']) && isValidPost(request.resource.data))
+                      )) ||
+                      (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'likesCount', 'repliesCount', 'reposts', 'repostsCount', 'viewCount']));
+        
+        allow delete: if isDocOwner() || isAdmin();
+      }
     }
 
     match /communities/{communityId} {
@@ -99,7 +106,7 @@ service cloud.firestore {
         allow read: if isAuthenticated() && resource.data.recipientId == request.auth.uid;
         allow update, delete: if isAuthenticated() && (
           resource.data.recipientId == request.auth.uid ||
-          (resource.data.senderId == request.auth.uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['senderName', 'senderPhoto']))
+          resource.data.senderId == request.auth.uid
         );
         allow create: if isAuthenticated();
       }

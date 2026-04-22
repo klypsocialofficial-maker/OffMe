@@ -136,7 +136,7 @@ export default function EditProfileModal({ isOpen, onClose, userProfile, handleF
   }, [isOpen]);
 
   const handleSave = async () => {
-    if (!db || !userProfile) return;
+    if (!db || !userProfile || !userProfile.uid) return;
     try {
       setLoading(true);
       setError(null);
@@ -144,16 +144,22 @@ export default function EditProfileModal({ isOpen, onClose, userProfile, handleF
       let newAvatarUrl = userProfile.photoURL || '';
       let newBannerUrl = userProfile.bannerURL || '';
 
-      if (avatarFile) {
-        newAvatarUrl = await uploadToImgBB(avatarFile);
-      }
-      if (bannerFile) {
-        newBannerUrl = await uploadToImgBB(bannerFile);
+      try {
+        if (avatarFile) {
+          newAvatarUrl = await uploadToImgBB(avatarFile);
+        }
+        if (bannerFile) {
+          newBannerUrl = await uploadToImgBB(bannerFile);
+        }
+      } catch (uploadErr) {
+        throw new Error('Falha no envio das imagens (ImgBB).');
       }
 
-      const newDisplayName = displayName.trim();
+      const newDisplayName = (displayName || '').trim();
+      if (!newDisplayName) throw new Error('O nome de exibição é obrigatório.');
 
-      await updateDoc(doc(db, 'users', userProfile.uid), {
+      const userRef = doc(db, 'users', userProfile.uid);
+      await updateDoc(userRef, {
         displayName: newDisplayName,
         bio: bio.trim(),
         location: location.trim(),
@@ -214,8 +220,18 @@ export default function EditProfileModal({ isOpen, onClose, userProfile, handleF
         onClose();
       }, 1500);
     } catch (err: any) {
-      console.error(err);
-      setError('Erro ao salvar perfil. Tente novamente mais tarde.');
+      console.error('Profile Update Error:', err);
+      let errorMessage = 'Erro ao salvar perfil. Tente novamente mais tarde.';
+      
+      if (err.message?.includes('permission-denied') || err.code === 'permission-denied') {
+        errorMessage = 'Erro de permissão ao salvar perfil. Verifique se você está conectado corretamente.';
+      } else if (err.message?.includes('Failed to upload')) {
+        errorMessage = 'Erro ao enviar as imagens. Tente novamente ou use imagens menores.';
+      } else if (err.message) {
+        errorMessage = `Erro: ${err.message}`;
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
