@@ -14,6 +14,7 @@ import SharePostModal from '../components/SharePostModal';
 import ImageViewer from '../components/ImageViewer';
 import ConfirmModal from '../components/ConfirmModal';
 import PostCard from '../components/PostCard';
+import StoriesBar from '../components/StoriesBar';
 import LazyImage from '../components/LazyImage';
 import PostSkeleton from '../components/PostSkeleton';
 import PremiumAdCard from '../components/PremiumAdCard';
