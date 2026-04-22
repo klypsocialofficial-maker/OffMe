@@ -62,9 +62,9 @@ export default function PremiumAdCard() {
 
         <div className="flex-1 min-w-0 px-2">
           <div className="flex items-center space-x-1 mb-1">
-            <span className="font-black italic tracking-tighter text-sm">OffMe Official</span>
+            <span className="font-black italic tracking-tighter text-sm">OffMe</span>
             <VerifiedBadge className="w-4 h-4" tier="black" />
-            <span className="text-gray-400 text-xs font-bold">@offme</span>
+            <span className="text-gray-400 text-xs font-bold">@OffMe</span>
           </div>
 
           <p className="text-[14px] font-medium text-gray-800 mb-4 leading-relaxed">
