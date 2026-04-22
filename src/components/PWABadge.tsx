@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronRight, Sparkles, CheckCircle2, X } from 'lucide-react';
 
-const APP_VERSION = '0.0.0.05';
+const APP_VERSION = '0.0.0.06';
 
 export default function PWABadge() {
+  const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
+
   const {
     offlineReady: [offlineReady, setOfflineReady],
     needRefresh: [needRefresh, setNeedRefresh],
@@ -13,11 +15,30 @@ export default function PWABadge() {
   } = useRegisterSW({
     onRegistered(r) {
       console.log('SW Registered: ', r);
+      if (r) {
+        registrationRef.current = r;
+        // Check for updates every hour
+        setInterval(() => {
+          r.update();
+        }, 60 * 60 * 1000);
+      }
     },
     onRegisterError(error) {
       console.log('SW registration error', error);
     },
   });
+
+  useEffect(() => {
+    const handleCheckUpdate = () => {
+      console.log('Manually checking for PWA update...');
+      registrationRef.current?.update().then(() => {
+        // If no update found, maybe show a toast or message
+        // But useRegisterSW will handle 'needRefresh' if it is found
+      });
+    };
+    window.addEventListener('check-pwa-update' as any, handleCheckUpdate);
+    return () => window.removeEventListener('check-pwa-update' as any, handleCheckUpdate);
+  }, []);
 
   console.log('PWA Status - offlineReady:', offlineReady, 'needRefresh:', needRefresh);
 

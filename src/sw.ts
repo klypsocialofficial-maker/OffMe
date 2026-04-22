@@ -18,14 +18,11 @@ precacheAndRoute(self.__WB_MANIFEST);
 navigationPreload.enable();
 
 // Register a route for navigation requests (HTML)
-// Use NetworkFirst strategy which will use the preloaded response if available.
-// We also add a plugin to fallback to index.html if the network is down or the request fails.
 const navigationRoute = new NavigationRoute(
   new NetworkFirst({
     cacheName: 'navigations',
     plugins: [
       {
-        // If the fetch fails (e.g., offline and not in cache), return the precached index.html
         handlerDidError: async () => {
           return await caches.match('/index.html') || Response.error();
         },
@@ -36,7 +33,13 @@ const navigationRoute = new NavigationRoute(
 
 registerRoute(navigationRoute);
 
-self.skipWaiting();
+// This allows the web app to control the service worker and skip waiting
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 clientsClaim();
 
 // Firebase Messaging Logic

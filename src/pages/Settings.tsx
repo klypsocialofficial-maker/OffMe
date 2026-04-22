@@ -73,6 +73,16 @@ export default function Settings() {
           <h3 className="font-black italic tracking-tighter">Acessibilidade, exibição e idiomas</h3>
           <p className="text-sm text-gray-500">Gerencie como o conteúdo do OffMe é exibido para você.</p>
         </div>
+        <div 
+          onClick={() => {
+            window.dispatchEvent(new CustomEvent('check-pwa-update'));
+            alert('Verificando se há novas versões...');
+          }}
+          className="p-4 bg-white rounded-xl shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors"
+        >
+          <h3 className="font-black italic tracking-tighter">Verificar atualizações</h3>
+          <p className="text-sm text-gray-500">Toque aqui para verificar se há uma nova versão do OffMe disponível.</p>
+        </div>
       </div>
     </div>
   );
