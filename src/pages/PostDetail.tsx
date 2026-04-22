@@ -517,65 +517,65 @@ export default function PostDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-white pb-20">
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-2xl border-b border-black/5 shadow-sm pt-[max(env(safe-area-inset-top),44px)]">
-        <div className="px-4 h-14 flex items-center space-x-4">
-          <button onClick={() => navigate(-1)} className="p-2 hover:bg-gray-100 rounded-full transition-colors active:scale-90">
+      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-gray-100 pt-[max(env(safe-area-inset-top),44px)]">
+        <div className="px-4 h-14 flex items-center space-x-6">
+          <button onClick={() => navigate(-1)} className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors active:scale-90">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-xl font-black tracking-tighter">THREAD</h1>
+          <div className="flex flex-col">
+            <h1 className="text-xl font-black tracking-tight">{post.authorName}</h1>
+            <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">Publicação</span>
+          </div>
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto p-4 space-y-6">
-        {/* Parent Post Context Chain */}
+      <div className="max-w-2xl mx-auto px-0 sm:px-4">
+        {/* Thread Chain Above Focus Post */}
         {parentPost && (
-          <div className="relative mb-[-12px]">
-             {/* Threading line to main post */}
-             <div className="absolute left-[33px] top-[48px] bottom-0 w-[2px] bg-gray-200 z-0"></div>
-             <div className="relative z-10">
-               <PostCard 
-                  post={parentPost}
-                  onLike={handleLikePost}
-                  onRepost={handleRepost}
-                  onDelete={handleDeletePost}
-                  onEdit={(p) => {
-                    setEditingPost(p);
-                    setEditContent(p.content);
-                  }}
-                  onShare={(p) => {
-                    setSelectedSharePost(p);
-                    setIsShareModalOpen(true);
-                  }}
-                  onReply={(p) => {
-                    setReplyToPost(p);
-                    setIsCreateModalOpen(true);
-                  }}
-                  onQuote={(p) => {
-                    setQuotePost(p);
-                    setIsCreateModalOpen(true);
-                  }}
-                  onImageClick={openImageViewer}
-                  canEdit={canEditPost}
-                />
-             </div>
+          <div className="relative">
+             <PostCard 
+                post={parentPost}
+                isThreadParent={true}
+                onLike={handleLikePost}
+                onRepost={handleRepost}
+                onDelete={handleDeletePost}
+                onEdit={(p) => {
+                  setEditingPost(p);
+                  setEditContent(p.content);
+                }}
+                onShare={(p) => {
+                  setSelectedSharePost(p);
+                  setIsShareModalOpen(true);
+                }}
+                onReply={(p) => {
+                  setReplyToPost(p);
+                  setIsCreateModalOpen(true);
+                }}
+                onQuote={(p) => {
+                  setQuotePost(p);
+                  setIsCreateModalOpen(true);
+                }}
+                onImageClick={openImageViewer}
+                canEdit={canEditPost}
+              />
           </div>
         )}
 
-        {/* Main Post - Hero Design */}
-        <article className={`bg-white rounded-[32px] shadow-sm border border-gray-100 p-6 relative z-10 ${parentPost ? 'mt-4' : ''}`}>
+        {/* Main Post (Focus) */}
+        <article className="bg-white p-4 relative z-10">
           <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
               <div 
-                className={`w-14 h-14 rounded-2xl overflow-hidden flex-shrink-0 cursor-pointer shadow-md ${post.authorId === 'anonymous' ? 'bg-gradient-to-br from-indigo-50 to-purple-100 border border-purple-200 flex items-center justify-center' : 'bg-gray-200'}`}
+                className={`w-12 h-12 rounded-full overflow-hidden flex-shrink-0 cursor-pointer shadow-sm ${post.authorId === 'anonymous' ? 'bg-gradient-to-br from-indigo-50 to-purple-100 border border-purple-200 flex items-center justify-center' : 'bg-gray-200'}`}
                 onClick={() => {
                   if (post.authorId === 'anonymous') navigate('/anonymous-feed');
                   else navigate(`/${post.authorUsername}`);
                 }}
               >
                 {post.authorId === 'anonymous' ? (
-                  <Ghost className="w-8 h-8 text-indigo-400" />
+                  <Ghost className="w-6 h-6 text-indigo-400" />
                 ) : post.authorPhoto ? (
                   <LazyImage src={post.authorPhoto} alt={post.authorName} className="w-full h-full" />
                 ) : (
@@ -587,72 +587,29 @@ export default function PostDetail() {
                   if (post.authorId === 'anonymous') navigate('/anonymous-feed');
                   else navigate(`/${post.authorUsername}`);
                 }}>
-                  <div className={`font-black text-xl leading-tight truncate cursor-pointer ${post.authorId === 'anonymous' ? 'text-indigo-600 italic hover:underline' : 'hover:underline text-gray-900 tracking-tight'}`}>{post.authorName}</div>
-                  {post.authorId !== 'anonymous' && post.authorPrivate && <Lock className="w-4 h-4 text-gray-400" />}
+                  <div className="font-bold text-[16px] truncate cursor-pointer hover:underline text-gray-900">{post.authorName}</div>
                   {(post.authorVerified || post.authorUsername === 'Rulio') && <VerifiedBadge tier={post.authorPremiumTier} />}
+                  {post.authorPrivate && <Lock className="w-3 h-3 text-gray-400" />}
                 </div>
-                <div className="text-gray-500 font-medium">@{post.authorUsername}</div>
+                <div className="text-gray-500 text-[15px]">@{post.authorUsername}</div>
               </div>
             </div>
             
-            <div className="relative">
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setActiveMenuPostId(activeMenuPostId === post.id ? null : post.id);
-                }}
-                className="p-2.5 hover:bg-gray-100 rounded-full transition-colors text-gray-500 active:scale-90"
-              >
-                <MoreHorizontal className="w-6 h-6" />
-              </button>
-              
-              {activeMenuPostId === post.id && (
-                <div className="absolute right-0 mt-2 w-56 bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/40 py-2 z-10" onClick={(e) => e.stopPropagation()}>
-                  {(post.authorId === userProfile?.uid || post.ownerId === userProfile?.uid) ? (
-                    <>
-                      <button 
-                        onClick={() => handleDeletePost(post.id)}
-                        className="w-full text-left px-4 py-3 text-red-500 hover:bg-red-50 flex items-center space-x-3 font-bold text-sm"
-                      >
-                        <Trash2 className="w-4.5 h-4.5" />
-                        <span>Apagar post</span>
-                      </button>
-                      <button 
-                        onClick={() => {
-                          if (canEditPost(post)) {
-                            setEditingPost(post);
-                            setEditContent(post.content);
-                            setActiveMenuPostId(null);
-                          } else {
-                            showToast('O tempo de edição expirou.', 'info');
-                            setActiveMenuPostId(null);
-                          }
-                        }}
-                        className={`w-full text-left px-4 py-3 flex items-center space-x-3 font-bold text-sm ${canEditPost(post) ? 'text-gray-700 hover:bg-gray-50' : 'text-gray-400 cursor-not-allowed'}`}
-                      >
-                        <Edit2 className="w-4.5 h-4.5" />
-                        <span>Editar post</span>
-                      </button>
-                    </>
-                  ) : (
-                    <div className="px-4 py-3 text-gray-500 text-sm font-medium italic">Nenhuma ação disponível</div>
-                  )}
-                </div>
-              )}
-            </div>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveMenuPostId(activeMenuPostId === post.id ? null : post.id);
+              }}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500"
+            >
+              <MoreHorizontal className="w-5 h-5" />
+            </button>
           </div>
 
+          {/* Content */}
           <div className="space-y-4">
-            {post.replyToUsername && (
-              <div className="bg-blue-50/50 px-3 py-1.5 rounded-lg text-blue-600 font-bold text-sm inline-flex items-center space-x-1.5">
-                <MessageCircle className="w-3.5 h-3.5" />
-                <span>Respondendo a @{post.replyToUsername}</span>
-                {(post.replyToVerified || post.replyToUsername === 'Rulio') && <VerifiedBadge className="w-3.5 h-3.5" />}
-              </div>
-            )}
-            
             {editingPost?.id === post.id ? (
-              <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+              <div className="mt-2">
                 <textarea
                   value={editContent}
                   onChange={(e) => setEditContent(e.target.value)}
@@ -665,239 +622,138 @@ export default function PostDetail() {
                     {editContent.length} / 1000
                   </div>
                   <div className="flex space-x-2">
-                    <button 
-                      onClick={() => setEditingPost(null)}
-                      className="px-5 py-2 rounded-full font-black text-sm hover:bg-gray-100 transition-colors"
-                    >
-                      Cancelar
-                    </button>
-                    <button 
-                      onClick={() => handleEditPost(post.id)}
-                      disabled={!editContent.trim() || editContent === post.content || editContent.length > 1000}
-                      className="bg-black text-white px-6 py-2 rounded-xl font-black text-sm hover:bg-gray-800 disabled:opacity-50 transition-colors shadow-lg"
-                    >
-                      Salvar
-                    </button>
+                    <button onClick={() => setEditingPost(null)} className="px-4 py-2 rounded-full text-sm font-bold hover:bg-gray-100 transition-all">Cancelar</button>
+                    <button onClick={() => handleEditPost(post.id)} className="bg-black text-white px-6 py-2 rounded-full text-sm font-bold">Salvar</button>
                   </div>
                 </div>
               </div>
             ) : (
               <div className="space-y-4">
-                <PostContent content={post.content} className="text-2xl text-gray-900 leading-[1.4] font-medium tracking-tight break-words" />
+                <PostContent content={post.content} className="text-[22px] leading-tight text-gray-900 font-normal break-words whitespace-pre-wrap" />
                 {post.quotedPostId && <QuotedPost post={post} />}
-                {post.isEdited && <span className="text-gray-400 text-xs font-bold block">(editado)</span>}
+                {post.imageUrls && <PostImageGrid imageUrls={post.imageUrls} onImageClick={openImageViewer} />}
+                {post.poll && <Poll post={post} handleFirestoreError={handleFirestoreError} OperationType={OperationType} />}
               </div>
             )}
-            
-            {post.poll && (
-              <Poll post={post} handleFirestoreError={handleFirestoreError} OperationType={OperationType} />
-            )}
-            
-            <PostImageGrid imageUrls={post.imageUrls} onImageClick={openImageViewer} />
 
-            {/* Timestamps and Meta */}
-            <div className="py-4 border-y border-gray-50 flex flex-wrap gap-4 text-sm font-bold text-gray-400 uppercase tracking-widest">
+            {/* Time & Stats */}
+            <div className="py-4 border-b border-gray-100 text-[15px] text-gray-500 flex space-x-1 items-center">
               <span>{post.createdAt?.toDate ? new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(post.createdAt.toDate()) : ''}</span>
               <span>·</span>
               <span>{post.createdAt?.toDate ? new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).format(post.createdAt.toDate()) : ''}</span>
-              <span>·</span>
-              <span className="text-black">{post.viewCount || 0} <span className="text-gray-400">Visualizações</span></span>
+              {post.viewCount > 0 && (
+                <>
+                  <span>·</span>
+                  <span className="text-gray-900 font-bold">{post.viewCount}</span>
+                  <span className="text-gray-500">Visualizações</span>
+                </>
+              )}
             </div>
 
-            {/* Expanded Stats */}
-            {(post.repliesCount > 0 || post.repostsCount > 0 || post.likesCount > 0) && (
-              <div className="py-4 border-b border-gray-50 flex space-x-6 text-sm">
-                {post.repliesCount > 0 && (
-                  <div className="flex space-x-1 items-baseline">
-                    <span className="font-black text-black">{post.repliesCount}</span>
-                    <span className="text-gray-500 font-bold uppercase tracking-tighter text-[10px]">Respostas</span>
+            {/* Counters */}
+            {(post.repostsCount > 0 || post.likesCount > 0 || post.repliesCount > 0) && (
+              <div className="py-4 border-b border-gray-100 flex space-x-5 text-[15px]">
+                {post.repostsCount > 0 && (
+                  <div className="flex space-x-1 cursor-pointer hover:underline" onClick={() => {/* handle stats modal */}}>
+                    <span className="font-bold text-gray-900">{post.repostsCount}</span>
+                    <span className="text-gray-500">Reposts</span>
                   </div>
                 )}
-                {post.repostsCount > 0 && (
-                  <div className="flex space-x-1 items-baseline">
-                    <span className="font-black text-black">{post.repostsCount}</span>
-                    <span className="text-gray-500 font-bold uppercase tracking-tighter text-[10px]">Reposts</span>
+                {post.repliesCount > 0 && (
+                  <div className="flex space-x-1">
+                    <span className="font-bold text-gray-900">{post.repliesCount}</span>
+                    <span className="text-gray-500">Respostas</span>
                   </div>
                 )}
                 {post.likesCount > 0 && (
-                  <div className="flex space-x-1 items-baseline">
-                    <span className="font-black text-black">{post.likesCount}</span>
-                    <span className="text-gray-500 font-bold uppercase tracking-tighter text-[10px]">Curtidas</span>
+                  <div className="flex space-x-1 cursor-pointer hover:underline">
+                    <span className="font-bold text-gray-900">{post.likesCount}</span>
+                    <span className="text-gray-500">Curtidas</span>
                   </div>
                 )}
               </div>
             )}
 
-            {/* Action Bar - Hero Style */}
-            <div className="flex justify-around pt-2 text-gray-500">
+            {/* Actions Bar */}
+            <div className="flex justify-around py-1 border-b border-gray-100">
               <button 
-                onClick={() => {
-                  setReplyToPost(post);
-                  setIsCreateModalOpen(true);
-                }}
-                className="flex flex-col items-center space-y-1 group/action hover:text-blue-500 transition-colors p-2"
+                onClick={() => { setReplyToPost(post); setIsCreateModalOpen(true); }}
+                className="p-3 text-gray-500 hover:text-blue-500 hover:bg-blue-50 rounded-full transition-all"
               >
-                <div className="p-2.5 group-hover/action:bg-blue-50 rounded-2xl transition-colors">
-                  <MessageCircle className="w-7 h-7" />
-                </div>
+                <MessageCircle className="w-5.5 h-5.5" />
               </button>
               <button 
-                onPointerDown={handleRepostPointerDown(post)}
-                onPointerUp={handleRepostPointerUp(post)}
-                onPointerCancel={handleRepostPointerCancel}
-                onContextMenu={(e) => e.preventDefault()}
-                className={`flex flex-col items-center space-y-1 transition-colors p-2 ${post.reposts?.includes(userProfile?.uid) ? 'text-green-500' : 'hover:text-green-500'}`}
+                onClick={() => handleRepost(post)}
+                className={`p-3 transition-all rounded-full ${post.reposts?.includes(userProfile?.uid) ? 'text-green-500' : 'text-gray-500 hover:text-green-500 hover:bg-green-50'}`}
               >
-                <div className={`p-2.5 rounded-2xl transition-colors ${post.reposts?.includes(userProfile?.uid) ? 'bg-green-50' : 'hover:bg-green-50'}`}>
-                  <Repeat className={`w-7 h-7 ${post.reposts?.includes(userProfile?.uid) ? 'stroke-[3px]' : ''}`} />
-                </div>
+                <Repeat className={`w-5.5 h-5.5 ${post.reposts?.includes(userProfile?.uid) ? 'stroke-[2.5px]' : ''}`} />
               </button>
-              <motion.button 
-                whileTap={{ scale: 1.3 }}
-                animate={{ scale: post.likes?.includes(userProfile?.uid) ? 1.1 : 1 }}
-                transition={{ type: "spring", stiffness: 400, damping: 17 }}
+              <button 
                 onClick={() => handleLikePost(post)}
-                className={`flex flex-col items-center space-y-1 transition-colors p-2 ${post.likes?.includes(userProfile?.uid) ? 'text-red-500' : 'hover:text-red-500'}`}
+                className={`p-3 transition-all rounded-full ${post.likes?.includes(userProfile?.uid) ? 'text-red-500' : 'text-gray-500 hover:text-red-500 hover:bg-red-50'}`}
               >
-                <div className={`p-2.5 rounded-2xl transition-colors ${post.likes?.includes(userProfile?.uid) ? 'bg-red-50' : 'hover:bg-red-50'}`}>
-                  <Heart className={`w-7 h-7 ${post.likes?.includes(userProfile?.uid) ? 'fill-current' : ''}`} />
-                </div>
-              </motion.button>
+                <Heart className={`w-5.5 h-5.5 ${post.likes?.includes(userProfile?.uid) ? 'fill-current' : ''}`} />
+              </button>
               <button 
                 onClick={handleBookmark}
-                className={`flex flex-col items-center space-y-1 transition-colors p-2 ${userProfile?.bookmarks?.includes(post.id) ? 'text-blue-500' : 'hover:text-blue-500'}`}
+                className={`p-3 transition-all rounded-full ${userProfile?.bookmarks?.includes(post.id) ? 'text-blue-500' : 'text-gray-500 hover:text-blue-500 hover:bg-blue-50'}`}
               >
-                <div className={`p-2.5 rounded-2xl transition-colors ${userProfile?.bookmarks?.includes(post.id) ? 'bg-blue-50' : 'hover:bg-blue-50'}`}>
-                  {userProfile?.bookmarks?.includes(post.id) ? (
-                    <BookmarkCheck className="w-7 h-7 fill-current" />
-                  ) : (
-                    <Bookmark className="w-7 h-7" />
-                  )}
-                </div>
+                <Bookmark className={`w-5.5 h-5.5 ${userProfile?.bookmarks?.includes(post.id) ? 'fill-current' : ''}`} />
               </button>
-              <button 
-                onClick={handleShare}
-                className="flex flex-col items-center space-y-1 hover:text-blue-500 transition-colors p-2 group/action"
-              >
-                <div className="p-2.5 group-hover/action:bg-blue-50 rounded-2xl transition-colors">
-                  <Send className="w-7 h-7" />
-                </div>
+              <button onClick={handleShare} className="p-3 text-gray-500 hover:text-blue-500 hover:bg-blue-50 rounded-full transition-all">
+                <Send className="w-5.5 h-5.5" />
               </button>
             </div>
           </div>
         </article>
 
-        {/* Reply Shortcut Area */}
-        <div 
-          onClick={() => {
-            setReplyToPost(post);
-            setIsCreateModalOpen(true);
-          }}
-          className="bg-white rounded-[24px] p-4 shadow-sm border border-gray-100 flex items-center space-x-4 cursor-pointer hover:border-black/10 transition-all group active:scale-[0.98]"
-        >
-          <div className="w-10 h-10 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0 shadow-inner">
-            {userProfile?.photoURL ? (
-              <LazyImage src={userProfile.photoURL} alt="Your profile" className="w-full h-full" />
-            ) : (
-              <LazyImage src={getDefaultAvatar(userProfile?.displayName || '', userProfile?.username || '')} alt="Your profile" className="w-full h-full" />
-            )}
+        {/* Quick Reply Bar */}
+        <div className="px-4 py-3 border-b border-gray-100 bg-white flex items-center space-x-3 cursor-pointer" onClick={() => { setReplyToPost(post); setIsCreateModalOpen(true); }}>
+          <div className="w-10 h-10 rounded-full bg-gray-100 overflow-hidden flex-shrink-0">
+            {userProfile?.photoURL ? <LazyImage src={userProfile.photoURL} alt="User" className="w-full h-full" /> : <div className="w-full h-full bg-gray-200" />}
           </div>
-          <span className="text-gray-400 font-bold text-lg group-hover:text-gray-600 transition-colors">Postar sua resposta...</span>
+          <div className="text-gray-500 text-[17px]">Postar sua resposta...</div>
         </div>
 
-        {/* Conversation / Replies */}
-        <div className="space-y-0 -mx-4 sm:-mx-0">
-          {quotes.length > 0 && (
-            <div className="mb-4">
-               <h2 className="px-4 py-2 font-black text-gray-400 text-[11px] uppercase tracking-widest border-b border-gray-50">Citações</h2>
-               <div className="divide-y divide-gray-50">
-                 {quotes.map(quote => (
-                   <PostCard 
-                    key={quote.id}
-                    post={quote}
+        {/* Replies List (Flat Order) */}
+        <div className="divide-y divide-gray-100 pb-20">
+          {replies.length === 0 ? (
+            <div className="py-20 text-center">
+              <p className="text-gray-500 font-bold">Nenhuma resposta encontrada.</p>
+              <p className="text-gray-400 text-sm">Seja o primeiro a comentar!</p>
+            </div>
+          ) : (
+            replies
+              .filter(r => r.replyToId === postId)
+              .sort((a, b) => {
+                const dateA = a.createdAt?.toDate?.().getTime() || 0;
+                const dateB = b.createdAt?.toDate?.().getTime() || 0;
+                return dateB - dateA;
+              })
+              .map(reply => (
+                <div key={reply.id} className="group">
+                  <PostCard 
+                    post={reply}
                     onLike={handleLikePost}
                     onRepost={handleRepost}
                     onDelete={handleDeletePost}
-                    onEdit={(p) => {
-                      setEditingPost(p);
-                      setEditContent(p.content);
-                    }}
-                    onShare={(p) => {
-                      setSelectedSharePost(p);
-                      setIsShareModalOpen(true);
-                    }}
-                    onReply={(p) => {
-                      setReplyToPost(p);
-                      setIsCreateModalOpen(true);
-                    }}
-                    onQuote={(p) => {
-                      setQuotePost(p);
-                      setIsCreateModalOpen(true);
-                    }}
+                    onEdit={(p) => { setEditingPost(p); setEditContent(p.content); }}
+                    onShare={(p) => { setSelectedSharePost(p); setIsShareModalOpen(true); }}
+                    onReply={(p) => { setReplyToPost(p); setIsCreateModalOpen(true); }}
+                    onQuote={(p) => { setQuotePost(p); setIsCreateModalOpen(true); }}
                     onImageClick={openImageViewer}
                     canEdit={canEditPost}
                   />
-                 ))}
-               </div>
-            </div>
-          )}
-          
-          <h2 className="px-4 py-3 font-black text-gray-400 text-[11px] uppercase tracking-widest border-b border-gray-50">Respostas</h2>
-          
-          {replies.length === 0 ? (
-            <div className="py-12 px-4 text-center">
-              <p className="text-gray-400 font-medium italic">Nenhuma resposta ainda.</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-100 bg-white">
-              {replies
-                .filter(r => r.replyToId === postId) // Only direct replies to this post in this view
-                .sort((a, b) => {
-                  const dateA = a.createdAt?.toDate?.() || new Date(0);
-                  const dateB = b.createdAt?.toDate?.() || new Date(0);
-                  return dateB.getTime() - dateA.getTime();
-                })
-                .map(reply => (
-                  <div key={reply.id} className="relative">
-                    <PostCard 
-                      post={reply}
-                      onLike={handleLikePost}
-                      onRepost={handleRepost}
-                      onDelete={handleDeletePost}
-                      onEdit={(p) => {
-                        setEditingPost(p);
-                        setEditContent(p.content);
-                      }}
-                      onShare={(p) => {
-                        setSelectedSharePost(p);
-                        setIsShareModalOpen(true);
-                      }}
-                      onReply={(p) => {
-                        setReplyToPost(p);
-                        setIsCreateModalOpen(true);
-                      }}
-                      onQuote={(p) => {
-                        setQuotePost(p);
-                        setIsCreateModalOpen(true);
-                      }}
-                      onImageClick={openImageViewer}
-                      canEdit={canEditPost}
-                    />
-                    {/* Show simple link if there are nested replies */}
-                    {replies.some(r => r.replyToId === reply.id) && (
-                      <div className="px-4 pb-4">
-                        <button 
-                          onClick={() => navigate(`/post/${reply.id}`)}
-                          className="text-blue-500 hover:underline text-sm font-medium flex items-center space-x-1"
-                        >
-                          <MessageCircle className="w-4 h-4" />
-                          <span>Mostrar esta conversa</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-            </div>
+                  {replies.some(r => r.replyToId === reply.id) && (
+                    <div className="px-4 pb-4 -mt-2">
+                       <button onClick={() => navigate(`/post/${reply.id}`)} className="text-blue-500 hover:underline text-sm font-medium flex items-center space-x-1">
+                         <MessageCircle className="w-4 h-4" />
+                         <span>Mostrar esta conversa</span>
+                       </button>
+                    </div>
+                  )}
+                </div>
+              ))
           )}
         </div>
       </div>

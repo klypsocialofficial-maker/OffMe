@@ -26,6 +26,8 @@ interface PostCardProps {
   key?: any;
   post: any;
   isProfilePinned?: boolean;
+  isThreadChild?: boolean;
+  isThreadParent?: boolean;
   onLike: (post: any, reactionId?: string) => void;
   onRepost: (post: any) => void;
   onDelete: (postId: string) => void;
@@ -42,6 +44,8 @@ const viewedPostsInSession = new Set<string>();
 export default function PostCard({
   post,
   isProfilePinned,
+  isThreadChild,
+  isThreadParent,
   onLike,
   onRepost,
   onDelete,
@@ -297,37 +301,44 @@ export default function PostCard({
           <div className="bg-emerald-100 p-1 rounded-full">
             <Users className="w-3 h-3" />
           </div>
-          <span>Meu Círculo</span>
+          <span>Somente Círculo</span>
         </div>
       )}
 
-      <div className="flex flex-row space-x-3">
-        {/* Avatar */}
-        <div 
-          className={`w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 cursor-pointer ${post.authorId === 'anonymous' ? 'bg-gradient-to-br from-indigo-50 to-purple-100 border border-purple-200 flex items-center justify-center' : ''}`}
-          onClick={(e) => {
-            const authorId = post.type === 'repost' ? post.originalPostAuthorId : post.authorId;
-            
-            if (authorId === 'anonymous') {
-              navigate('/anonymous-feed');
-              return;
-            }
-            stopPropagation(e);
-            navigate(`/${post.type === 'repost' ? post.originalPostAuthorUsername : post.authorUsername}`);
-          }}
-        >
-          {post.authorId === 'anonymous' ? (
-            <Ghost className={`w-5 h-5 ${ghostIdentity?.color || 'text-indigo-400'}`} />
-          ) : post.type === 'repost' ? (
-            post.originalPostAuthorPhoto ? (
-              <LazyImage src={post.originalPostAuthorPhoto} alt={post.originalPostAuthorName} className="w-full h-full" />
+      <div className="flex flex-row space-x-3 relative group/card">
+        <div className="flex flex-col items-center flex-shrink-0 relative">
+          {/* Avatar */}
+          <div 
+            className={`w-10 h-10 rounded-full bg-gray-200 overflow-hidden cursor-pointer relative z-10 ${post.authorId === 'anonymous' ? 'bg-gradient-to-br from-indigo-50 to-purple-100 border border-purple-200 flex items-center justify-center' : ''}`}
+            onClick={(e) => {
+              const authorId = post.type === 'repost' ? post.originalPostAuthorId : post.authorId;
+              
+              if (authorId === 'anonymous') {
+                navigate('/anonymous-feed');
+                return;
+              }
+              stopPropagation(e);
+              navigate(`/${post.type === 'repost' ? post.originalPostAuthorUsername : post.authorUsername}`);
+            }}
+          >
+            {post.authorId === 'anonymous' ? (
+              <Ghost className={`w-5 h-5 ${ghostIdentity?.color || 'text-indigo-400'}`} />
+            ) : post.type === 'repost' ? (
+              post.originalPostAuthorPhoto ? (
+                <LazyImage src={post.originalPostAuthorPhoto} alt={post.originalPostAuthorName} className="w-full h-full" />
+              ) : (
+                <LazyImage src={getDefaultAvatar(post.originalPostAuthorName, post.originalPostAuthorUsername)} alt={post.originalPostAuthorName} className="w-full h-full" />
+              )
+            ) : post.authorPhoto ? (
+              <LazyImage src={post.authorPhoto} alt={post.authorName} className="w-full h-full" />
             ) : (
-              <LazyImage src={getDefaultAvatar(post.originalPostAuthorName, post.originalPostAuthorUsername)} alt={post.originalPostAuthorName} className="w-full h-full" />
-            )
-          ) : post.authorPhoto ? (
-            <LazyImage src={post.authorPhoto} alt={post.authorName} className="w-full h-full" />
-          ) : (
-            <LazyImage src={getDefaultAvatar(post.authorName, post.authorUsername)} alt={post.authorName} className="w-full h-full" />
+              <LazyImage src={getDefaultAvatar(post.authorName, post.authorUsername)} alt={post.authorName} className="w-full h-full" />
+            )}
+          </div>
+          
+          {/* Thread Connector Line (Down) */}
+          {isThreadParent && (
+            <div className="w-[2px] bg-gray-200 absolute top-10 bottom-[-16px] left-1/2 -translate-x-1/2 z-0"></div>
           )}
         </div>
 
