@@ -209,6 +209,7 @@ export default function PWABadge() {
                             <div className="w-1.5 h-1.5 rounded-full bg-black mt-1.5 mr-2 flex-shrink-0" />
                             <span className="font-bold">v0.0.0.07:</span>
                           </li>
+                        </ul>
                       </motion.div>
                     )}
                   </AnimatePresence>
