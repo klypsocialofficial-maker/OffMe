@@ -3,7 +3,7 @@ import { useRegisterSW } from 'virtual:pwa-register/react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronRight, Sparkles, CheckCircle2, X } from 'lucide-react';
 
-const APP_VERSION = '0.0.0.07';
+const APP_VERSION = '0.0.0.08';
 
 export default function PWABadge() {
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
@@ -191,25 +191,24 @@ export default function PWABadge() {
                         <ul className="text-left mt-4 space-y-3 text-sm text-gray-600 bg-gray-50 p-4 rounded-xl border border-gray-100">
                           <li className="flex items-start">
                             <div className="w-1.5 h-1.5 rounded-full bg-black mt-1.5 mr-2 flex-shrink-0" />
+                            <span className="font-bold">v0.0.0.08:</span>
+                          </li>
+                          <li className="flex items-start pl-4">
+                            <div className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 mr-2 flex-shrink-0" />
+                            <span>Novas animações de reação com efeitos de "bolhas" e partículas.</span>
+                          </li>
+                          <li className="flex items-start pl-4">
+                            <div className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 mr-2 flex-shrink-0" />
+                            <span>Feedback tátil (vibração) em todas as interações principais.</span>
+                          </li>
+                          <li className="flex items-start pl-4">
+                            <div className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 mr-2 flex-shrink-0" />
+                            <span>Seletor de reações com animação fluida e design modernizado.</span>
+                          </li>
+                          <li className="flex items-start">
+                            <div className="w-1.5 h-1.5 rounded-full bg-black mt-1.5 mr-2 flex-shrink-0" />
                             <span className="font-bold">v0.0.0.07:</span>
                           </li>
-                          <li className="flex items-start pl-4">
-                            <div className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 mr-2 flex-shrink-0" />
-                            <span>Correção de erro de permissão ao salvar perfil.</span>
-                          </li>
-                          <li className="flex items-start pl-4">
-                            <div className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 mr-2 flex-shrink-0" />
-                            <span>Sincronização de foto/nome em posts antigos otimizada.</span>
-                          </li>
-                          <li className="flex items-start pl-4">
-                            <div className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 mr-2 flex-shrink-0" />
-                            <span>Botão "Verificar Atualizações" nas configurações.</span>
-                          </li>
-                          <li className="flex items-start pl-4">
-                            <div className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 mr-2 flex-shrink-0" />
-                            <span>Verificação automática de novas versões (iOS/PWA).</span>
-                          </li>
-                        </ul>
                       </motion.div>
                     )}
                   </AnimatePresence>

@@ -10,7 +10,7 @@ declare const self: ServiceWorkerGlobalScope & {
   __WB_MANIFEST: any;
 };
 
-// PWA Logic
+// PWA Logic v0.0.0.08
 cleanupOutdatedCaches();
 precacheAndRoute(self.__WB_MANIFEST);
 

@@ -80,6 +80,12 @@ export default function PostCard({
     onLike(effectivePost, rid);
     setShowReactionPicker(false);
     setShowLikeAnimation(true);
+    
+    // Add vibration for reaction selection
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(20);
+    }
+    
     setTimeout(() => setShowLikeAnimation(false), 1000);
   };
 
@@ -110,6 +116,9 @@ export default function PostCard({
         handleSelectReaction('heart');
       } else {
         onLike(effectivePost, currentUserReaction);
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+          navigator.vibrate(10);
+        }
       }
     }
   };
@@ -151,6 +160,9 @@ export default function PostCard({
     if (repostTimerRef.current) {
       clearTimeout(repostTimerRef.current);
       repostTimerRef.current = null;
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(15);
+      }
       onRepost(effectivePost);
     }
   };
@@ -188,6 +200,10 @@ export default function PostCard({
   const handleBookmark = async (e: React.MouseEvent) => {
     stopPropagation(e);
     if (!userProfile?.uid) return;
+    
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(15);
+    }
     
     try {
       if (userProfile.bookmarks?.includes(effectivePost.id)) {
@@ -566,6 +582,9 @@ export default function PostCard({
             whileTap={{ scale: 0.9 }}
             onClick={(e) => {
               stopPropagation(e);
+              if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                navigator.vibrate(15);
+              }
               onReply(effectivePost);
             }}
             className="flex items-center space-x-2 group/action hover:text-blue-500 transition-colors"
@@ -585,10 +604,17 @@ export default function PostCard({
             onContextMenu={(e) => e.preventDefault()}
             className={`flex items-center space-x-2 group/action transition-colors ${effectivePost.reposts?.includes(userProfile?.uid) ? 'text-green-500' : 'hover:text-green-500'}`}
           >
-            <div className="p-2 group-hover/action:bg-green-50 rounded-full transition-colors">
+            <div className="p-2 group-hover/action:bg-green-50 rounded-full transition-colors relative">
               <Repeat className="w-4.5 h-4.5" />
             </div>
-            <span className="text-sm">{effectivePost.repostsCount || 0}</span>
+            <motion.span 
+              key={effectivePost.repostsCount}
+              initial={{ scale: 0.8, opacity: 0.5 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="text-sm"
+            >
+              {effectivePost.repostsCount || 0}
+            </motion.span>
           </motion.button>
 
           <div className="relative group/like">
@@ -606,18 +632,46 @@ export default function PostCard({
                 <ActiveReactionIcon className={`w-4.5 h-4.5 ${currentUserReaction ? 'fill-current' : ''}`} />
                 <AnimatePresence>
                   {showLikeAnimation && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 0, scale: 0.5 }}
-                      animate={{ opacity: 1, y: -30, scale: 1.5 }}
-                      exit={{ opacity: 0 }}
-                      className="absolute -top-6 left-0 z-50 text-indigo-500"
-                    >
-                      <ActiveReactionIcon className="w-6 h-6 fill-current" />
-                    </motion.div>
+                    <>
+                      {/* Main Pop Animation */}
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.5, y: 0 }}
+                        animate={{ opacity: [0, 1, 1, 0], scale: [0.5, 1.5, 1.5, 2], y: -40 }}
+                        transition={{ duration: 0.6, times: [0, 0.2, 0.8, 1] }}
+                        className={`absolute inset-0 flex items-center justify-center z-50 ${reactionColor}`}
+                      >
+                        <ActiveReactionIcon className="w-6 h-6 fill-current drop-shadow-xl" />
+                      </motion.div>
+                      
+                      {/* Floating Bubbles */}
+                      {[...Array(6)].map((_, i) => (
+                        <motion.div
+                          key={i}
+                          initial={{ opacity: 1, scale: 0, x: 0, y: 0 }}
+                          animate={{ 
+                            opacity: 0, 
+                            scale: Math.random() * 0.5 + 0.5,
+                            x: (Math.random() - 0.5) * 60,
+                            y: -(Math.random() * 50 + 40)
+                          }}
+                          transition={{ duration: 0.8, delay: i * 0.05, ease: "easeOut" }}
+                          className={`absolute inset-0 flex items-center justify-center z-40 ${reactionColor}`}
+                        >
+                          <div className={`w-1.5 h-1.5 rounded-full fill-current`} style={{ backgroundColor: 'currentColor' }} />
+                        </motion.div>
+                      ))}
+                    </>
                   )}
                 </AnimatePresence>
               </div>
-              <span className="text-sm">{effectivePost.likesCount || 0}</span>
+              <motion.span 
+                key={effectivePost.likesCount}
+                initial={{ scale: 0.8, opacity: 0.5 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="text-sm"
+              >
+                {effectivePost.likesCount || 0}
+              </motion.span>
             </motion.button>
             <AnimatePresence>
               {showReactionPicker && (
