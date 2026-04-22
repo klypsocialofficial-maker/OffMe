@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Play, Disc, TrendingUp, TrendingDown, Minus, Music } from 'lucide-react';
+import { Play, Disc, TrendingUp, TrendingDown, Minus, Music, Trophy } from 'lucide-react';
 
 const HOT_100_SONGS = [
   { rank: 1, title: "TEXAS HOLD 'EM", artist: "Beyoncé", trend: 'up', cover: "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/4e/7f/05/4e7f0529-684a-ee82-9386-35fe6be58348/196589088497.jpg/300x300bb.jpg" },
