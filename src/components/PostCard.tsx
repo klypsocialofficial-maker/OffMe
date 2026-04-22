@@ -91,7 +91,7 @@ export default function PostCard({
       if (typeof navigator !== 'undefined' && navigator.vibrate) {
         navigator.vibrate(50);
       }
-    }, 500);
+    }, 600);
   };
 
   const handleLikePointerUp = (e: React.PointerEvent) => {
@@ -593,15 +593,16 @@ export default function PostCard({
 
           <div className="relative group/like">
             <motion.button 
-              whileHover={{ scale: 1.2 }}
-              whileTap={{ scale: 0.8 }}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
               onPointerDown={handleLikePointerDown}
               onPointerUp={handleLikePointerUp}
               onPointerCancel={handleLikePointerCancel}
               onContextMenu={(e) => e.preventDefault()}
-              className={`flex items-center space-x-2 group/action transition-colors ${reactionColor}`}
+              style={{ touchAction: 'manipulation', WebkitTouchCallout: 'none', userSelect: 'none' }}
+              className={`flex items-center space-x-2 group/action transition-colors outline-none ${reactionColor}`}
             >
-              <div className="p-2 group-hover/action:bg-red-50 rounded-full transition-colors relative">
+              <div className="p-2 group-hover/action:bg-red-50 dark:group-hover/action:bg-red-500/10 rounded-full transition-colors relative">
                 <ActiveReactionIcon className={`w-4.5 h-4.5 ${currentUserReaction ? 'fill-current' : ''}`} />
                 <AnimatePresence>
                   {showLikeAnimation && (
