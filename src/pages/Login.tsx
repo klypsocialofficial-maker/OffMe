@@ -8,6 +8,7 @@ import { db } from '../firebase';
 export default function Login() {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { loginWithEmail } = useAuth();
@@ -33,7 +34,7 @@ export default function Login() {
         loginEmail = snapshot.docs[0].data().email;
       }
       
-      await loginWithEmail(loginEmail, password);
+      await loginWithEmail(loginEmail, password, rememberMe);
       navigate('/');
     } catch (err: any) {
       let message = err.message;
@@ -123,6 +124,28 @@ export default function Login() {
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <input
+                id="remember-me"
+                name="remember-me"
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="h-4 w-4 text-black focus:ring-black border-gray-300 rounded cursor-pointer"
+              />
+              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900 cursor-pointer font-medium">
+                Lembrar-me
+              </label>
+            </div>
+
+            <div className="text-sm">
+              <Link to="/forgot-password" disable-link="true" className="font-semibold text-black hover:underline opacity-50 cursor-not-allowed">
+                Esqueceu a senha?
+              </Link>
             </div>
           </div>
 

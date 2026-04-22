@@ -173,7 +173,10 @@ export default function Layout() {
           unreadNotificationsCount={unreadNotificationsCount}
           unreadMessagesCount={unreadMessagesCount}
           openCreateModal={openCreateModal}
+          openEditProfileModal={openEditProfileModal}
           setIsLogoutModalOpen={setIsLogoutModalOpen}
+          isProfileQuickModalOpen={isProfileQuickModalOpen}
+          setIsProfileQuickModalOpen={setIsProfileQuickModalOpen}
           isDrawerOpen={isDrawerOpen}
           closeDrawer={closeDrawer}
           openDrawer={openDrawer}
@@ -192,7 +195,10 @@ export default function Layout() {
           unreadNotificationsCount={unreadNotificationsCount}
           unreadMessagesCount={unreadMessagesCount}
           openCreateModal={openCreateModal}
+          openEditProfileModal={openEditProfileModal}
           setIsLogoutModalOpen={setIsLogoutModalOpen}
+          isProfileQuickModalOpen={isProfileQuickModalOpen}
+          setIsProfileQuickModalOpen={setIsProfileQuickModalOpen}
           isDrawerOpen={isDrawerOpen}
           closeDrawer={closeDrawer}
           openDrawer={openDrawer}

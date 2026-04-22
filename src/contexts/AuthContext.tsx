@@ -8,6 +8,9 @@ import {
   User,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
   updateEmail,
   updatePassword,
   deleteUser,
@@ -128,7 +131,7 @@ interface AuthContextType {
   sendVerificationEmail: () => Promise<void>;
   logout: () => Promise<void>;
   signUpWithEmail: (email: string, pass: string, username: string, name: string) => Promise<void>;
-  loginWithEmail: (email: string, pass: string) => Promise<void>;
+  loginWithEmail: (email: string, pass: string, remember?: boolean) => Promise<void>;
   updateUserEmail: (email: string) => Promise<void>;
   updateUserPassword: (password: string) => Promise<void>;
   updateUserUsername: (username: string) => Promise<void>;
@@ -530,8 +533,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUserProfile(newProfile);
   };
 
-  const loginWithEmail = async (email: string, pass: string) => {
+  const loginWithEmail = async (email: string, pass: string, remember: boolean = true) => {
     if (!auth) throw new Error("Firebase not initialized");
+    const persistence = remember ? browserLocalPersistence : browserSessionPersistence;
+    await setPersistence(auth, persistence);
     await signInWithEmailAndPassword(auth, email, pass);
   };
 

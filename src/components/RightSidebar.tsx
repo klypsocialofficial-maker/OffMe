@@ -7,6 +7,8 @@ import VerifiedBadge from './VerifiedBadge';
 import { useNavigate } from 'react-router-dom';
 import LazyImage from './LazyImage';
 import { getDefaultAvatar } from '../lib/avatar';
+import Toast from './Toast';
+import ConfirmModal from './ConfirmModal';
 import MissionWidget from './MissionWidget';
 import SmartSummary from './SmartSummary';
 
@@ -17,6 +19,17 @@ export default function RightSidebar() {
   const [loading, setLoading] = useState(true);
   const [followingStates, setFollowingStates] = useState<Record<string, boolean>>({});
   const [trendingTopics, setTrendingTopics] = useState<any[]>([]);
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  });
 
   useEffect(() => {
     if (!db) return;
@@ -152,16 +165,29 @@ export default function RightSidebar() {
     if (!userProfile) return;
 
     const isFollowing = followingStates[targetUser.uid];
+    
+    if (isFollowing) {
+      setConfirmModal({
+        isOpen: true,
+        title: `Deixar de seguir @${targetUser.username}?`,
+        message: `As publicações de @${targetUser.username} não aparecerão mais na sua aba Seguindo.`,
+        onConfirm: async () => {
+          try {
+            await unfollowUser(targetUser.uid);
+            setFollowingStates(prev => ({ ...prev, [targetUser.uid]: false }));
+          } catch (error) {
+            console.error('Error unfollowing:', error);
+          }
+        }
+      });
+      return;
+    }
+
     try {
-      if (isFollowing) {
-        await unfollowUser(targetUser.uid);
-        setFollowingStates(prev => ({ ...prev, [targetUser.uid]: false }));
-      } else {
-        await followUser(targetUser.uid);
-        setFollowingStates(prev => ({ ...prev, [targetUser.uid]: true }));
-      }
+      await followUser(targetUser.uid);
+      setFollowingStates(prev => ({ ...prev, [targetUser.uid]: true }));
     } catch (error) {
-      console.error('Error toggling follow:', error);
+      console.error('Error following:', error);
     }
   };
 
@@ -292,6 +318,11 @@ export default function RightSidebar() {
         <a href="#" className="hover:underline">Mais...</a>
         <span>© 2026 OffMe Corp.</span>
       </div>
+
+      <ConfirmModal
+        {...confirmModal}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+      />
     </aside>
   );
 }
