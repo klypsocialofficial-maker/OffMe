@@ -154,7 +154,7 @@ export default function Messages() {
 
   return (
     <div className="w-full min-h-full bg-white/50">
-      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-2xl border-b border-black/5 shadow-sm pt-[env(safe-area-inset-top)]">
+      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-2xl border-b border-black/5 shadow-sm pt-[max(env(safe-area-inset-top),44px)]">
         <div className="px-4 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-4">
             <button onClick={openDrawer} className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 sm:hidden">

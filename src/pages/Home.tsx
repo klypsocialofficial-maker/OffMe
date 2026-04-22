@@ -764,7 +764,7 @@ export default function Home() {
       </AnimatePresence>
 
       {/* Sticky Header with Liquid Glass & Tabs */}
-      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-2xl border-b border-black/5 shadow-sm pt-[env(safe-area-inset-top)]">
+      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-2xl border-b border-black/5 shadow-sm pt-[max(env(safe-area-inset-top),44px)]">
         <div className="w-full px-4 py-2">
           <div className="flex items-center justify-between h-12 relative px-1">
             {/* Left Section (Mobile Avatar) */}

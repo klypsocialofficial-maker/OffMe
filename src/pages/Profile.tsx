@@ -809,7 +809,7 @@ export default function Profile() {
       {/* Profile Header with Cover Photo and Action Buttons */}
       <div className="relative">
         {/* Top Action Bar (Floating on Cover) - Glass Effect */}
-        <div className="absolute top-0 left-0 right-0 z-30 pt-[env(safe-area-inset-top)]">
+        <div className="absolute top-0 left-0 right-0 z-30 pt-[max(env(safe-area-inset-top),44px)]">
           <div className="p-4 flex justify-between items-center">
             <button 
               onClick={() => navigate(-1)} 

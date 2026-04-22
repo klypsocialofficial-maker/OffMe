@@ -700,7 +700,7 @@ export default function Explore() {
 
   return (
     <div className="w-full min-h-full bg-slate-50 relative">
-      <div className="sticky top-0 z-40 bg-white/70 backdrop-blur-2xl border-b border-black/5 pt-[env(safe-area-inset-top)]">
+      <div className="sticky top-0 z-40 bg-white/70 backdrop-blur-2xl border-b border-black/5 pt-[max(env(safe-area-inset-top),44px)]">
         <div className="w-full px-4 py-3">
           <div className="flex items-center space-x-3">
             <button onClick={openDrawer} className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 sm:hidden border border-white/40 shadow-sm transition-transform active:scale-95">

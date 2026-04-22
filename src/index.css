@@ -170,6 +170,10 @@ body {
   .ios-safe-top {
     padding-top: env(safe-area-inset-top);
   }
+  .ios-safe-top-dynamic {
+    /* Dynamic Island needs a bit more space in some cases than standard status bar */
+    padding-top: max(env(safe-area-inset-top), 44px);
+  }
   .ios-safe-bottom {
     padding-bottom: env(safe-area-inset-bottom);
   }
