@@ -14,8 +14,6 @@ import SharePostModal from '../components/SharePostModal';
 import ImageViewer from '../components/ImageViewer';
 import ConfirmModal from '../components/ConfirmModal';
 import PostCard from '../components/PostCard';
-import StoriesBar from '../components/StoriesBar';
-import StoryViewer from '../components/StoryViewer';
 import LazyImage from '../components/LazyImage';
 import PostSkeleton from '../components/PostSkeleton';
 import PremiumAdCard from '../components/PremiumAdCard';
@@ -175,19 +173,6 @@ export default function Home() {
     message: '',
     onConfirm: () => {}
   });
-
-  const [activeStory, setActiveStory] = useState<any | null>(null);
-  const [realStories, setRealStories] = useState<any[]>([]);
-
-  useEffect(() => {
-    if (!db) return;
-    const fetchStories = async () => {
-        const q = query(collection(db, 'stories'), where('expiresAt', '>', Timestamp.now()));
-        const snap = await getDocs(q);
-        setRealStories(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    };
-    fetchStories();
-  }, [db]);
 
   const showToast = (message: string, type: 'info' | 'success' | 'error' = 'info') => {
     setToast({ message, type, isOpen: true });
@@ -892,12 +877,6 @@ export default function Home() {
         id="feed-panel" 
         className="focus-visible:outline-none w-full max-w-2xl mx-auto"
       >
-        <StoriesBar 
-          stories={realStories} 
-          userProfile={userProfile} 
-          onOpenStory={setActiveStory} 
-          onCreateStory={() => showToast('Em breve: Criação de Stories', 'info')} 
-        />
         <PullToRefresh onRefresh={refreshFeed}>
           {/* New Posts Notification Bubble */}
           <AnimatePresence>
@@ -1019,7 +998,6 @@ export default function Home() {
           title={confirmModal.title}
           message={confirmModal.message}
         />
-        <StoryViewer story={activeStory} onClose={() => setActiveStory(null)} />
     </div>
   );
 }

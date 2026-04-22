@@ -456,99 +456,109 @@ export default function Chat() {
           const isMine = msg.senderId === userProfile?.uid;
           const showAvatar = !isMine && (index === 0 || messages[index - 1].senderId !== msg.senderId);
           const isSelected = selectedMessageId === msg.id;
+          
+          // Data separator logic
+          const prevMsg = messages[index - 1];
+          const msgDate = msg.createdAt?.toDate ? new Date(msg.createdAt.toDate()).toLocaleDateString() : '';
+          const prevDate = prevMsg?.createdAt?.toDate ? new Date(prevMsg.createdAt.toDate()).toLocaleDateString() : '';
+          const showDate = index === 0 || msgDate !== prevDate;
 
           return (
-            <div key={msg.id} className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}>
-              <div className={`flex w-full ${isMine ? 'justify-end' : 'justify-start'}`}>
-                {!isMine && (
-                  <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 mr-2 self-end mb-1">
-                    {showAvatar ? (
-                      otherParticipantInfo?.photoURL ? (
-                        <LazyImage src={otherParticipantInfo.photoURL} alt={otherParticipantInfo.displayName} className="w-full h-full" />
-                      ) : (
-                        <LazyImage src={getDefaultAvatar(otherParticipantInfo?.displayName || 'Usuário', otherParticipantInfo?.username || '')} alt={otherParticipantInfo?.displayName} className="w-full h-full" />
-                      )
-                    ) : (
-                      <div className="w-8 h-8" /> // Placeholder to maintain alignment
-                    )}
-                  </div>
-                )}
-                <div 
-                  onClick={(e) => {
-                    if (isMine && !msg.isDeleted) {
-                      e.stopPropagation();
-                      setSelectedMessageId(isSelected ? null : msg.id);
-                    }
-                  }}
-                  className={`max-w-[75%] rounded-2xl cursor-pointer transition-all ${
-                    msg.imageUrl && !msg.text 
-                      ? 'p-0 bg-transparent' // Media only: no bubble
-                      : 'px-4 py-2 ' + (
-                          isMine 
-                            ? msg.isDeleted 
-                              ? 'bg-gray-100 text-gray-400 italic rounded-br-sm border border-gray-200'
-                              : 'bg-blue-500 text-white rounded-br-sm hover:bg-blue-600' 
-                            : msg.isDeleted
-                              ? 'bg-gray-50 text-gray-400 italic rounded-bl-sm border border-gray-100'
-                              : 'bg-gray-100 text-black rounded-bl-sm'
+            <React.Fragment key={msg.id}>
+              {showDate && (
+                  <div className="text-center text-xs text-gray-400 py-2 font-medium">{msgDate}</div>
+              )}
+              <div className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}>
+                <div className={`flex w-full ${isMine ? 'justify-end' : 'justify-start'}`}>
+                  {!isMine && (
+                    <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 mr-2 self-end mb-1">
+                      {showAvatar ? (
+                        otherParticipantInfo?.photoURL ? (
+                          <LazyImage src={otherParticipantInfo.photoURL} alt={otherParticipantInfo.displayName} className="w-full h-full" />
+                        ) : (
+                          <LazyImage src={getDefaultAvatar(otherParticipantInfo?.displayName || 'Usuário', otherParticipantInfo?.username || '')} alt={otherParticipantInfo?.displayName} className="w-full h-full" />
                         )
-                  } ${isSelected ? 'ring-2 ring-blue-300 ring-offset-2' : ''}`}
-                >
-                  {msg.imageUrl && (
-                    <div className={`${msg.text ? 'mb-2' : ''} max-w-full overflow-hidden rounded-2xl`}>
-                       <LazyImage src={msg.imageUrl} alt="Mídia" className={`w-full object-cover max-h-80 ${msg.text ? 'rounded-xl' : 'rounded-2xl shadow-sm'}`} />
-                    </div>
-                  )}
-                  {msg.audioUrl && (
-                    <div className="py-1 min-w-[200px]">
-                      <audio src={msg.audioUrl} controls className={`w-full max-h-10 ${isMine ? 'brightness-125 saturate-150' : ''}`} />
-                    </div>
-                  )}
-                  {msg.text && (
-                    msg.postId ? (
-                      <div className="space-y-2 cursor-pointer" onClick={() => navigate(`/post/${msg.postId}`)}>
-                          <p className="text-xs font-bold opacity-80 underline">Post compartilhado</p>
-                          <p className="break-words text-sm font-medium">{msg.text || 'Clique para ver o post'}</p>
-                      </div>
-                    ) : (
-                      <p className="break-words text-sm">{msg.text}</p>
-                    )
-                  )}
-                  {isMine && !msg.isDeleted && (
-                    <div className={`flex justify-end mt-1 items-center space-x-1 ${msg.imageUrl && !msg.text ? 'bg-black/20 backdrop-blur-md px-2 py-0.5 rounded-full absolute bottom-2 right-2' : ''}`}>
-                      <span className="text-[10px] opacity-70">
-                        {msg.createdAt?.toDate ? new Date(msg.createdAt.toDate()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
-                      </span>
-                      {msg.read ? (
-                        <CheckCheck className={`w-3 h-3 ${msg.imageUrl && !msg.text ? 'text-white' : 'text-blue-200'}`} />
                       ) : (
-                        <Check className={`w-3 h-3 ${msg.imageUrl && !msg.text ? 'text-white' : 'text-blue-100'}`} />
+                        <div className="w-8 h-8" />
                       )}
                     </div>
                   )}
-                </div>
-              </div>
-              
-              {/* Delete Action (Mobile-friendly "long-press" simulation via click) */}
-              {isSelected && isMine && !msg.isDeleted && (
-                <motion.div 
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mt-1 flex items-center space-x-2"
-                >
-                  <button 
+                  <div 
                     onClick={(e) => {
-                      e.stopPropagation();
-                      setDeleteConfirmModal({ isOpen: true, messageId: msg.id });
+                      if (isMine && !msg.isDeleted) {
+                        e.stopPropagation();
+                        setSelectedMessageId(isSelected ? null : msg.id);
+                      }
                     }}
-                    className="flex items-center space-x-1 text-xs text-red-500 font-medium hover:bg-red-50 px-2 py-1 rounded-full transition-colors"
+                    className={`max-w-[75%] rounded-2xl cursor-pointer transition-all ${
+                      msg.imageUrl && !msg.text 
+                        ? 'p-0 bg-transparent'
+                        : 'px-4 py-2 ' + (
+                            isMine 
+                              ? msg.isDeleted 
+                                ? 'bg-gray-100 text-gray-400 italic rounded-br-sm border border-gray-200'
+                                : 'bg-blue-500 text-white rounded-br-sm hover:bg-blue-600' 
+                              : msg.isDeleted
+                                ? 'bg-gray-50 text-gray-400 italic rounded-bl-sm border border-gray-100'
+                                : 'bg-gray-100 text-black rounded-bl-sm'
+                          )
+                    } ${isSelected ? 'ring-2 ring-blue-300 ring-offset-2' : ''}`}
                   >
-                    <Trash2 className="w-3 h-3" />
-                    <span>Apagar para todos</span>
-                  </button>
-                </motion.div>
-              )}
-            </div>
+                    {msg.imageUrl && (
+                      <div className={`${msg.text ? 'mb-2' : ''} max-w-full overflow-hidden rounded-2xl`}>
+                         <LazyImage src={msg.imageUrl} alt="Mídia" className={`w-full object-cover max-h-80 ${msg.text ? 'rounded-xl' : 'rounded-2xl shadow-sm'}`} />
+                      </div>
+                    )}
+                    {msg.audioUrl && (
+                      <div className="py-1 min-w-[200px]">
+                        <audio src={msg.audioUrl} controls className={`w-full max-h-10 ${isMine ? 'brightness-125 saturate-150' : ''}`} />
+                      </div>
+                    )}
+                    {msg.text && (
+                      msg.postId ? (
+                        <div className="space-y-2 cursor-pointer" onClick={() => navigate(`/post/${msg.postId}`)}>
+                            <p className="text-xs font-bold opacity-80 underline">Post compartilhado</p>
+                            <p className="break-words text-sm font-medium">{msg.text || 'Clique para ver o post'}</p>
+                        </div>
+                      ) : (
+                        <p className="break-words text-sm">{msg.text}</p>
+                      )
+                    )}
+                    {isMine && !msg.isDeleted && (
+                      <div className={`flex justify-end mt-1 items-center space-x-1 ${msg.imageUrl && !msg.text ? 'bg-black/20 backdrop-blur-md px-2 py-0.5 rounded-full absolute bottom-2 right-2' : ''}`}>
+                        <span className="text-[10px] opacity-70">
+                          {msg.createdAt?.toDate ? new Date(msg.createdAt.toDate()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                        </span>
+                        {msg.read ? (
+                          <CheckCheck className={`w-3 h-3 ${msg.imageUrl && !msg.text ? 'text-white' : 'text-blue-200'}`} />
+                        ) : (
+                          <Check className={`w-3 h-3 ${msg.imageUrl && !msg.text ? 'text-white' : 'text-blue-100'}`} />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {isSelected && isMine && !msg.isDeleted && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-1 flex items-center space-x-2"
+                  >
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteConfirmModal({ isOpen: true, messageId: msg.id });
+                      }}
+                      className="flex items-center space-x-1 text-xs text-red-500 font-medium hover:bg-red-50 px-2 py-1 rounded-full transition-colors"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      <span>Apagar para todos</span>
+                    </button>
+                  </motion.div>
+                )}
+              </div>
+            </React.Fragment>
           );
         })}
           {otherUserTyping && (

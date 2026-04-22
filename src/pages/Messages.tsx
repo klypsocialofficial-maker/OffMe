@@ -78,6 +78,7 @@ export default function Messages() {
     message: '',
     onConfirm: () => {}
   });
+  const [searchTerm, setSearchTerm] = useState('');
   const [toast, setToast] = useState<{ message: string; type: 'info' | 'success' | 'error'; isOpen: boolean }>({
     message: '',
     type: 'info',
@@ -88,6 +89,7 @@ export default function Messages() {
     setToast({ message, type, isOpen: true });
   };
 
+  // ... (dentro do useEffect, filtrar as conversas)
   useEffect(() => {
     if (!userProfile?.uid || !db) return;
 
@@ -102,11 +104,13 @@ export default function Messages() {
         ...doc.data()
       }));
       
-      // Filter out archived, muted and sort by updatedAt descending in memory
+      // Filtrar, buscar e ordenar
       results = results
         .filter((conv: any) => {
           const otherParticipantId = conv.participants.find((id: string) => id !== userProfile?.uid);
-          return conv.archived !== true && !userProfile?.mutedUsers?.includes(otherParticipantId);
+          const otherParticipantInfo = conv.participantInfo?.[otherParticipantId];
+          const matchesSearch = !searchTerm || (otherParticipantInfo?.displayName || '').toLowerCase().includes(searchTerm.toLowerCase());
+          return conv.archived !== true && !userProfile?.mutedUsers?.includes(otherParticipantId) && matchesSearch;
         })
         .sort((a: any, b: any) => {
           const timeA = typeof a.updatedAt?.toMillis === 'function' ? a.updatedAt.toMillis() : 0;
@@ -124,7 +128,7 @@ export default function Messages() {
     });
 
     return unsubscribe;
-  }, [userProfile?.uid]);
+  }, [userProfile?.uid, searchTerm]);
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -170,6 +174,9 @@ export default function Messages() {
             <Mail className="w-5 h-5" />
           </button>
         </div>
+        <div className="px-4 pb-4">
+             <input type="text" placeholder="Buscar conversas..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-gray-100 rounded-full px-4 py-2 text-sm outline-none" />
+        </div>
       </div>
       <div className="flex-1 overflow-y-auto">
         {loading ? (
@@ -187,11 +194,14 @@ export default function Messages() {
                   onClick={() => navigate(`/messages/${conversation.id}`)}
                   className="p-4 hover:bg-black/5 transition-colors flex items-center space-x-4 cursor-pointer relative"
                 >
-                  <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+                <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 relative">
                     {otherParticipantInfo?.photoURL ? (
                       <LazyImage src={otherParticipantInfo.photoURL} alt={otherParticipantInfo.displayName} className="w-full h-full" />
                     ) : (
                       <LazyImage src={getDefaultAvatar(otherParticipantInfo?.displayName || 'Usuário', otherParticipantInfo?.username || '')} alt={otherParticipantInfo?.displayName} className="w-full h-full" />
+                    )}
+                    {otherParticipantInfo?.onlineStatus === 'online' && (
+                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full z-10" />
                     )}
                   </div>
                       <div className="flex-1 min-w-0">

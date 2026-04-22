@@ -108,15 +108,21 @@ service cloud.firestore {
     }
     
     match /notifications {
-      allow list: if isAuthenticated();
+      // Permitir listar apenas notificações onde o usuário é o destinatário
+      allow list: if isAuthenticated() && request.query.filters.recipientId == request.auth.uid;
       
       match /{notificationId} {
+        // Permitir leitura apenas se o usuário for o destinatário
         allow read: if isAuthenticated() && resource.data.get('recipientId', '') == request.auth.uid;
-        allow update, delete: if isAdmin() || (isAuthenticated() && (
-          resource.data.get('recipientId', '') == request.auth.uid ||
-          resource.data.get('senderId', '') == request.auth.uid
-        ));
-        allow create: if isAuthenticated();
+        
+        // Criar uma notificação exige que o remetente seja o mesmo que o usuário autenticado
+        // E só pode ser criada para outros, nunca para si mesmo
+        allow create: if isAuthenticated() && 
+                      request.resource.data.get('senderId', '') == request.auth.uid &&
+                      request.resource.data.get('recipientId', '') != request.auth.uid;
+        
+        // Atualizar/Deletar apenas pelo destinatário ou admin
+        allow update, delete: if isAdmin() || (isAuthenticated() && resource.data.get('recipientId', '') == request.auth.uid);
       }
     }
     

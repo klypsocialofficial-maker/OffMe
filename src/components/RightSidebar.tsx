@@ -18,7 +18,14 @@ export default function RightSidebar() {
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [followingStates, setFollowingStates] = useState<Record<string, boolean>>({});
+  const [ignoredUids, setIgnoredUids] = useState<string[]>([]);
   const [trendingTopics, setTrendingTopics] = useState<any[]>([]);
+
+  const ignoreSuggestion = (e: React.MouseEvent, uid: string) => {
+    e.stopPropagation();
+    setIgnoredUids(prev => [...prev, uid]);
+    setSuggestions(prev => prev.filter(u => u.uid !== uid));
+  };
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     title: string;
@@ -158,7 +165,7 @@ export default function RightSidebar() {
     };
 
     fetchSuggestions();
-  }, [userProfile?.uid, userProfile?.following?.length]);
+  }, [userProfile?.uid, userProfile?.following?.length, ignoredUids]);
 
   const handleFollowToggle = async (e: React.MouseEvent, targetUser: any) => {
     e.stopPropagation();
@@ -282,21 +289,26 @@ export default function RightSidebar() {
                     <p className="text-gray-500 text-xs truncate">@{user.username}</p>
                   </div>
                 </div>
-                <button 
-                  onClick={(e) => handleFollowToggle(e, user)}
-                  className={`px-4 py-1.5 rounded-full font-bold text-xs transition-colors ${
-                    followingStates[user.uid] 
-                      ? 'bg-transparent border border-gray-300 text-black hover:bg-red-50 hover:text-red-600 hover:border-red-200 group/btn' 
-                      : 'bg-black text-white hover:bg-gray-800'
-                  }`}
-                >
-                  <span className={followingStates[user.uid] ? 'group-hover/btn:hidden' : ''}>
-                    {followingStates[user.uid] ? 'Seguindo' : 'Seguir'}
-                  </span>
-                  {followingStates[user.uid] && (
-                    <span className="hidden group-hover/btn:inline">Deixar de seguir</span>
-                  )}
-                </button>
+                <div className="flex items-center space-x-2">
+                    <button 
+                      onClick={(e) => handleFollowToggle(e, user)}
+                      className={`px-4 py-1.5 rounded-full font-bold text-xs transition-colors ${
+                        followingStates[user.uid] 
+                          ? 'bg-transparent border border-gray-300 text-black hover:bg-red-50 hover:text-red-600 hover:border-red-200 group/btn' 
+                          : 'bg-black text-white hover:bg-gray-800'
+                      }`}
+                    >
+                      <span className={followingStates[user.uid] ? 'group-hover/btn:hidden' : ''}>
+                        {followingStates[user.uid] ? 'Seguindo' : 'Seguir'}
+                      </span>
+                      {followingStates[user.uid] && (
+                        <span className="hidden group-hover/btn:inline">Deixar de seguir</span>
+                      )}
+                    </button>
+                    <button onClick={(e) => ignoreSuggestion(e, user.uid)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-gray-200 rounded-full transition-colors">
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
               </div>
             ))
           ) : (
