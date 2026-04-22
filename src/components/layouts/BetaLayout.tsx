@@ -45,7 +45,7 @@ export default function BetaLayout({
 
   const handleProfileClick = (e: React.MouseEvent, path: string) => {
     e.preventDefault();
-    setIsProfileQuickModalOpen(true);
+    setIsProfileQuickModalOpen(!isProfileQuickModalOpen);
   };
   const homeClickTimerRef = useRef<any>(null);
 

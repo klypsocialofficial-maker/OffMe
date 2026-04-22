@@ -38,19 +38,22 @@ export default function ProfileQuickModal({ isOpen, onClose, userProfile, openEd
       {isOpen && (
         <>
           {/* Transparent backdrop that closes the modal when clicked */}
-          <div 
-            className="fixed inset-0 z-[100] cursor-default" 
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9998] bg-black/20 backdrop-blur-sm cursor-default" 
             onClick={onClose} 
           />
           
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            className="fixed z-[101] bottom-20 left-4 right-4 sm:left-auto sm:right-auto sm:bottom-auto sm:top-auto sm:relative bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden w-auto sm:w-72"
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="fixed z-[9999] bottom-20 left-4 right-4 md:bottom-24 md:left-[clamp(1rem,calc(50vw-620px),20vw)] md:right-auto bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden w-auto md:w-80"
             onClick={(e) => e.stopPropagation()}
             style={{
-               boxShadow: '0 20px 50px -12px rgba(0, 0, 0, 0.25)'
+               boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)'
             }}
           >
             <div className="p-4 border-b border-gray-50 bg-gray-50/50">
