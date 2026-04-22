@@ -7,6 +7,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import Toast from '../components/Toast';
 import LazyImage from '../components/LazyImage';
 import PostCard from '../components/PostCard';
+import MusicCharts from '../components/MusicCharts';
 import { useAuth } from '../contexts/AuthContext';
 import { useOutletContext, Link, useNavigate, useLocation } from 'react-router-dom';
 import { getDefaultAvatar } from '../lib/avatar';
@@ -67,6 +68,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 
 const CATEGORIES = [
   { id: 'foryou', label: 'Para você', icon: UserIcon },
+  { id: 'music', label: 'Música', icon: Music },
   { id: 'trending', label: 'Em alta', icon: TrendingUp },
   { id: 'news', label: 'Notícias', icon: Hash },
   { id: 'sports', label: 'Esportes', icon: Trophy },
@@ -894,6 +896,8 @@ export default function Explore() {
                         <TrendingPosts isFullList={activeTab === 'trending'} />
                       </div>
                     </>
+                  ) : activeTab === 'music' ? (
+                    <MusicCharts />
                   ) : (
                     <div className="flex flex-col items-center justify-center p-12 text-center">
                       <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
@@ -966,7 +970,7 @@ export default function Explore() {
                       <div className="mt-8 px-4">
                         <h2 className="text-xl font-black tracking-tight mb-4">Navegar por Categorias</h2>
                         <div className="grid grid-cols-2 gap-3">
-                          {CATEGORIES.slice(2).map((cat, i) => (
+                          {CATEGORIES.filter(c => c.id !== 'foryou').map((cat, i) => (
                             <button
                               key={`cat-card-${cat.id}`}
                               onClick={() => setActiveTab(cat.id)}

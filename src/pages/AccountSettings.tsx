@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { ArrowLeft, User, Mail, Lock, Save, AlertCircle, CheckCircle, Trash2, ShieldCheck, Clock, ShieldAlert, FileText } from 'lucide-react';
+import { ArrowLeft, User, Mail, Lock, Save, AlertCircle, CheckCircle, Trash2, ShieldCheck, Clock, ShieldAlert, FileText, Send } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { auth } from '../firebase';
+import { sendEmailVerification } from 'firebase/auth';
 import { motion, AnimatePresence } from 'motion/react';
 import ConfirmModal from '../components/ConfirmModal';
 import VerificationRequestModal from '../components/VerificationRequestModal';
@@ -21,6 +23,7 @@ export default function AccountSettings() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
   const [showViolations, setShowViolations] = useState(false);
+  const [resendingEmail, setResendingEmail] = useState(false);
 
   // Scroll to top on mount
   React.useEffect(() => {
@@ -86,6 +89,24 @@ export default function AccountSettings() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!auth.currentUser) return;
+    setResendingEmail(true);
+    setStatus(null);
+    try {
+      await sendEmailVerification(auth.currentUser);
+      setStatus({ type: 'success', message: 'E-mail de verificação enviado! Verifique sua caixa de entrada e spam.' });
+    } catch (error: any) {
+      if (error.code === 'auth/too-many-requests') {
+        setStatus({ type: 'error', message: 'Muitas tentativas. Aguarde um pouco antes de tentar reenviar.' });
+      } else {
+        setStatus({ type: 'error', message: error.message || 'Erro ao enviar e-mail de verificação.' });
+      }
+    } finally {
+      setResendingEmail(false);
     }
   };
 
@@ -293,6 +314,27 @@ export default function AccountSettings() {
             <Mail className="w-5 h-5 text-gray-400" />
             <h2 className="font-bold text-gray-900">E-mail</h2>
           </div>
+
+          {auth.currentUser && !auth.currentUser.emailVerified && (
+            <div className="mb-6 p-4 bg-amber-50 border border-amber-100 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-start space-x-3">
+                <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="text-sm font-bold text-amber-800">E-mail não verificado</h3>
+                  <p className="text-xs text-amber-700 mt-1">Sua conta precisa ser verificada para acessar todos os recursos.</p>
+                </div>
+              </div>
+              <button 
+                onClick={handleResendVerification}
+                disabled={resendingEmail}
+                className="w-full sm:w-auto px-4 py-2 bg-amber-500 text-white text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-amber-600 transition-colors disabled:opacity-50 flex items-center justify-center space-x-2 flex-shrink-0"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>{resendingEmail ? 'Enviando...' : 'Reenviar E-mail'}</span>
+              </button>
+            </div>
+          )}
+
           <form onSubmit={handleUpdateEmail} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Endereço de e-mail</label>
