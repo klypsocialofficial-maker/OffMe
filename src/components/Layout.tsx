@@ -210,6 +210,15 @@ export default function Layout() {
     );
   };
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('action') === 'new-post') {
+      openCreateModal();
+      // Clean up URL without triggering re-render
+      window.history.replaceState({}, '', location.pathname);
+    }
+  }, [location.search, location.pathname]);
+
   return (
     <div className="min-h-screen text-gray-900 flex justify-center relative bg-white transition-colors duration-500 overflow-x-clip">
       {/* Decorative background blobs - reduced opacity for light mode */}

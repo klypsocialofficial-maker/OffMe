@@ -70,7 +70,10 @@ export default function BetaLayout({
                 return (
                   <button
                     key={item.path}
-                    onClick={() => openCreateModal()}
+                    onClick={() => {
+                      if (navigator.vibrate) navigator.vibrate(20);
+                      openCreateModal();
+                    }}
                     className="relative flex items-center justify-center active:scale-90 transition-transform"
                   >
                     <div className="bg-black text-white p-3 rounded-2xl shadow-xl shadow-black/20 ring-4 ring-white/30">
@@ -82,6 +85,7 @@ export default function BetaLayout({
 
               // Double click handling for Home
               const handleHomeClick = (e: React.MouseEvent) => {
+                if (navigator.vibrate) navigator.vibrate(10);
                 if (item.path === '/') {
                   if (homeClickTimerRef.current) {
                     // Double click

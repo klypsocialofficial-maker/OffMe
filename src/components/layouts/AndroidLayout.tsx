@@ -67,7 +67,10 @@ export default function AndroidLayout({
                 return (
                   <button
                     key={item.path}
-                    onClick={() => openCreateModal()}
+                    onClick={() => {
+                      if (navigator.vibrate) navigator.vibrate(20);
+                      openCreateModal();
+                    }}
                     className="relative -top-4 p-4 rounded-2xl bg-black text-white shadow-xl active:scale-90 transition-transform"
                   >
                     <Plus className="w-6 h-6 stroke-[3px]" />
@@ -77,6 +80,7 @@ export default function AndroidLayout({
 
               // Double click handling for Home
               const handleHomeClick = (e: React.MouseEvent) => {
+                if (navigator.vibrate) navigator.vibrate(10);
                 if (item.path === '/') {
                   if (homeClickTimerRef.current) {
                     // Double click
