@@ -1,13 +1,13 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Heart, Zap, Ghost, Flame, Star } from 'lucide-react';
+import { Heart, CheckCircle2, Laugh, Zap, Star } from 'lucide-react';
 
 export const REACTION_TYPES = [
   { id: 'heart', icon: Heart, color: 'text-red-500', bg: 'bg-red-50', label: 'Amei' },
+  { id: 'correct', icon: CheckCircle2, color: 'text-green-500', bg: 'bg-green-50', label: 'Correto' },
+  { id: 'funny', icon: Laugh, color: 'text-yellow-500', bg: 'bg-yellow-50', label: 'Engraçado' },
   { id: 'zap', icon: Zap, color: 'text-blue-500', bg: 'bg-blue-50', label: 'Eletrizante' },
-  { id: 'ghost', icon: Ghost, color: 'text-indigo-500', bg: 'bg-indigo-50', label: 'Fantasmarcular' },
-  { id: 'flame', icon: Flame, color: 'text-orange-500', bg: 'bg-orange-50', label: 'Fogo' },
-  { id: 'star', icon: Star, color: 'text-yellow-500', bg: 'bg-yellow-50', label: 'Estrela' }
+  { id: 'star', icon: Star, color: 'text-yellow-600', bg: 'bg-yellow-50', label: 'Destaque' }
 ];
 
 interface ReactionPickerProps {

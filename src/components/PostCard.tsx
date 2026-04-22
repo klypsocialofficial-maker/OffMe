@@ -72,6 +72,7 @@ export default function PostCard({
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [showLikeAnimation, setShowLikeAnimation] = useState(false);
   const repostTimerRef = React.useRef<any>(null);
+  const reactionTimerRef = React.useRef<any>(null);
 
   const stopPropagation = (e: React.MouseEvent | React.PointerEvent) => e.stopPropagation();
 
@@ -80,6 +81,44 @@ export default function PostCard({
     setShowReactionPicker(false);
     setShowLikeAnimation(true);
     setTimeout(() => setShowLikeAnimation(false), 1000);
+  };
+
+  const handleLikePointerDown = (e: React.PointerEvent) => {
+    stopPropagation(e);
+    reactionTimerRef.current = setTimeout(() => {
+      setShowReactionPicker(true);
+      reactionTimerRef.current = 'PICKER_OPEN';
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+    }, 500);
+  };
+
+  const handleLikePointerUp = (e: React.PointerEvent) => {
+    stopPropagation(e);
+    if (reactionTimerRef.current === 'PICKER_OPEN') {
+      reactionTimerRef.current = null;
+      return;
+    }
+    
+    if (reactionTimerRef.current) {
+      clearTimeout(reactionTimerRef.current);
+      reactionTimerRef.current = null;
+      
+      // Regular click logic
+      if (!currentUserReaction) {
+        handleSelectReaction('heart');
+      } else {
+        onLike(effectivePost, currentUserReaction);
+      }
+    }
+  };
+
+  const handleLikePointerCancel = () => {
+    if (reactionTimerRef.current && reactionTimerRef.current !== 'PICKER_OPEN') {
+      clearTimeout(reactionTimerRef.current);
+    }
+    reactionTimerRef.current = null;
   };
 
   const currentUserReaction = effectivePost.reactions?.[userProfile?.uid];
@@ -556,16 +595,10 @@ export default function PostCard({
             <motion.button 
               whileHover={{ scale: 1.2 }}
               whileTap={{ scale: 0.8 }}
-              onMouseEnter={() => setShowReactionPicker(true)}
-              onMouseLeave={() => setTimeout(() => setShowReactionPicker(false), 500)}
-              onClick={(e) => {
-                stopPropagation(e);
-                if (!currentUserReaction) {
-                  handleSelectReaction('heart');
-                } else {
-                  onLike(effectivePost, currentUserReaction);
-                }
-              }}
+              onPointerDown={handleLikePointerDown}
+              onPointerUp={handleLikePointerUp}
+              onPointerCancel={handleLikePointerCancel}
+              onContextMenu={(e) => e.preventDefault()}
               className={`flex items-center space-x-2 group/action transition-colors ${reactionColor}`}
             >
               <div className="p-2 group-hover/action:bg-red-50 rounded-full transition-colors relative">
@@ -588,8 +621,8 @@ export default function PostCard({
             <AnimatePresence>
               {showReactionPicker && (
                 <div 
-                  onMouseEnter={() => setShowReactionPicker(true)}
-                  onMouseLeave={() => setShowReactionPicker(false)}
+                  className="absolute bottom-full left-0 z-50"
+                  onPointerLeave={() => setShowReactionPicker(false)}
                 >
                   <ReactionPicker onSelect={handleSelectReaction} />
                 </div>
