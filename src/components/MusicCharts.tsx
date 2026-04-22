@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Headphones } from 'lucide-react';
+import { Headphones, Search } from 'lucide-react';
 
 export default function MusicCharts() {
   const [activeTab, setActiveTab] = useState<'global' | 'brazil'>('global');
@@ -24,6 +24,18 @@ export default function MusicCharts() {
           </div>
           <h2 className="text-3xl font-black italic tracking-tighter mb-1">Spotify Oficial</h2>
           <p className="text-white/80 text-sm font-medium">Os hits mais ouvidos do momento.</p>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl p-4 mb-6 border border-black/5 flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+            <Search className="w-5 h-5 text-gray-400" />
+          </div>
+          <div>
+            <h4 className="font-bold text-sm">Procurando algo específico?</h4>
+            <p className="text-xs text-gray-500">Use a barra de busca acima para encontrar faixas e artistas.</p>
+          </div>
         </div>
       </div>
 

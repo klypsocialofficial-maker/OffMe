@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, User as UserIcon, TrendingUp, Music, Trophy, Tv, Cpu, Hash, MoreHorizontal } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import VerifiedBadge from '../components/VerifiedBadge';
@@ -84,6 +84,20 @@ export default function Explore() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [suggestedUsers, setSuggestedUsers] = useState<any[]>([]);
 
+  const [activeTab, setActiveTab] = useState('foryou');
+  const [searchTab, setSearchTab] = useState<'users' | 'posts' | 'media' | 'music'>('users');
+  const [searchFilter, setSearchFilter] = useState<'top' | 'latest'>('top');
+  const [loading, setLoading] = useState(false);
+  const [postsResults, setPostsResults] = useState<any[]>([]);
+  const [musicResults, setMusicResults] = useState<any[]>([]);
+  const [playingTrackId, setPlayingTrackId] = useState<string | null>(null);
+  const audioRef = React.useRef<HTMLAudioElement | null>(null);
+  const [hasMoreUsers, setHasMoreUsers] = useState(true);
+  const [isLoadingMoreUsers, setIsLoadingMoreUsers] = useState(false);
+  const [lastUserDoc, setLastUserDoc] = useState<any>(null);
+  const loaderRef = useRef<HTMLDivElement>(null);
+  const [usersLimit, setUsersLimit] = useState(20);
+
   // Sync searchQuery with URL param
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -96,11 +110,24 @@ export default function Explore() {
     }
   }, [location.search]);
 
-  const [activeTab, setActiveTab] = useState('foryou');
-  const [searchTab, setSearchTab] = useState<'users' | 'posts' | 'media'>('users');
-  const [searchFilter, setSearchFilter] = useState<'top' | 'latest'>('top');
-  const [loading, setLoading] = useState(false);
-  const [postsResults, setPostsResults] = useState<any[]>([]);
+  useEffect(() => {
+    if (searchQuery.trim() && activeTab === 'music' && searchTab !== 'music') {
+      setSearchTab('music');
+    }
+  }, [searchQuery, activeTab]);
+
+  const handleTogglePlay = (track: any) => {
+    if (playingTrackId === track.id) {
+      audioRef.current?.pause();
+      setPlayingTrackId(null);
+    } else {
+      if (audioRef.current) {
+        audioRef.current.src = track.previewUrl;
+        audioRef.current.play();
+        setPlayingTrackId(track.id);
+      }
+    }
+  };
 
   const handleDeletePost = async (postId: string) => {
     if (!db || !userProfile) return;
@@ -496,44 +523,18 @@ export default function Explore() {
     
     if (!cleanQuery || !db) {
       setSearchResults([]);
+      setLastUserDoc(null);
+      setHasMoreUsers(true);
       return;
     }
 
     setLoading(true);
+    setUsersLimit(20); // Reset limit on new query
     
     // We run multiple queries to simulate a more flexible search
-    // 1. Exact case match for username
-    const qUsername = query(
-      collection(db, 'users'),
-      where('username', '>=', cleanQuery),
-      where('username', '<=', cleanQuery + '\uf8ff'),
-      limit(10)
-    );
-    
-    // 2. Lowercase match for username (common case)
-    const qUsernameLower = query(
-      collection(db, 'users'),
-      where('username', '>=', cleanQuery.toLowerCase()),
-      where('username', '<=', cleanQuery.toLowerCase() + '\uf8ff'),
-      limit(10)
-    );
-
-    // 3. Exact case match for displayName
-    const qDisplayName = query(
-      collection(db, 'users'),
-      where('displayName', '>=', cleanQuery),
-      where('displayName', '<=', cleanQuery + '\uf8ff'),
-      limit(10)
-    );
-
-    // 4. Capitalized match for displayName (e.g. "joao" -> "Joao")
-    const capitalizedQuery = cleanQuery.charAt(0).toUpperCase() + cleanQuery.slice(1).toLowerCase();
-    const qDisplayNameCap = query(
-      collection(db, 'users'),
-      where('displayName', '>=', capitalizedQuery),
-      where('displayName', '<=', capitalizedQuery + '\uf8ff'),
-      limit(10)
-    );
+    // Note: Pagination with multiple merged queries is complex. 
+    // We'll use a larger initial limit and simulate the "load more" by increasing that limit if we kept using the map merging strategy,
+    // OR we can consolidate into a single more robust query if we had indexes, but since we have 4, we'll fetch a larger set when "loading more".
 
   const fetchResults = async () => {
       try {
@@ -552,33 +553,74 @@ export default function Explore() {
           return;
         }
 
-        // Default to users search but also fetch posts if available
-        const [snap1, snap2, snap3, snap4] = await Promise.all([
-          getDocs(qUsername),
-          getDocs(qUsernameLower),
-          getDocs(qDisplayName),
-          getDocs(qDisplayNameCap)
-        ]);
+        // Search for Users
+        const executeUserSearch = async (currentLimit: number) => {
+            const qUsername = query(
+              collection(db, 'users'),
+              where('username', '>=', cleanQuery),
+              where('username', '<=', cleanQuery + '\uf8ff'),
+              limit(currentLimit)
+            );
+            
+            const qUsernameLower = query(
+              collection(db, 'users'),
+              where('username', '>=', cleanQuery.toLowerCase()),
+              where('username', '<=', cleanQuery.toLowerCase() + '\uf8ff'),
+              limit(currentLimit)
+            );
 
-        const resultsMap = new Map();
-        
-        const addDocs = (snapshot: any) => {
-          snapshot.docs.forEach((doc: any) => {
-            if (!resultsMap.has(doc.id)) {
-              resultsMap.set(doc.id, { id: doc.id, ...doc.data() });
-            }
-          });
+            const qDisplayName = query(
+              collection(db, 'users'),
+              where('displayName', '>=', cleanQuery),
+              where('displayName', '<=', cleanQuery + '\uf8ff'),
+              limit(currentLimit)
+            );
+
+            const capitalizedQuery = cleanQuery.charAt(0).toUpperCase() + cleanQuery.slice(1).toLowerCase();
+            const qDisplayNameCap = query(
+              collection(db, 'users'),
+              where('displayName', '>=', capitalizedQuery),
+              where('displayName', '<=', capitalizedQuery + '\uf8ff'),
+              limit(currentLimit)
+            );
+
+            const [snap1, snap2, snap3, snap4] = await Promise.all([
+              getDocs(qUsername),
+              getDocs(qUsernameLower),
+              getDocs(qDisplayName),
+              getDocs(qDisplayNameCap)
+            ]);
+
+            const resultsMap = new Map();
+            const addDocs = (snapshot: any) => {
+              snapshot.docs.forEach((doc: any) => {
+                if (!resultsMap.has(doc.id)) {
+                  resultsMap.set(doc.id, { id: doc.id, ...doc.data() });
+                }
+              });
+            };
+
+            addDocs(snap1);
+            addDocs(snap2);
+            addDocs(snap3);
+            addDocs(snap4);
+
+            const finalResults = Array.from(resultsMap.values())
+              .filter(u => !userProfile?.blockedUsers?.includes(u.id));
+
+            setSearchResults(finalResults);
+            // If any query returned the full limit, there might be more
+            setHasMoreUsers(
+              snap1.docs.length === currentLimit || 
+              snap2.docs.length === currentLimit || 
+              snap3.docs.length === currentLimit || 
+              snap4.docs.length === currentLimit
+            );
         };
 
-        addDocs(snap1);
-        addDocs(snap2);
-        addDocs(snap3);
-        addDocs(snap4);
+        await executeUserSearch(usersLimit);
 
-        const finalResults = Array.from(resultsMap.values())
-          .filter(u => !userProfile?.blockedUsers?.includes(u.id));
-
-        setSearchResults(finalResults.slice(0, 20));
+        // Also search for posts...
 
         // Also search for posts matching the content if not doing a hashtag search
         const qContent = query(
@@ -601,6 +643,26 @@ export default function Explore() {
         }
 
         setPostsResults(results.slice(0, 20));
+
+        // 5. Search for Music using iTunes API
+        try {
+          const musicResponse = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(cleanQuery)}&media=music&limit=20&country=br`);
+          const musicData = await musicResponse.json();
+          if (musicData.results) {
+            setMusicResults(musicData.results.map((item: any) => ({
+              id: item.trackId,
+              title: item.trackName,
+              artist: item.artistName,
+              album: item.collectionName,
+              artwork: item.artworkUrl100.replace('100x100', '400x400'),
+              previewUrl: item.previewUrl,
+              spotifyUrl: `https://open.spotify.com/search/${encodeURIComponent(item.trackName + ' ' + item.artistName)}`
+            })));
+          }
+        } catch (error) {
+          console.error("Error searching music:", error);
+        }
+
       } catch (error) {
         console.error("Error searching users:", error);
       } finally {
@@ -609,7 +671,32 @@ export default function Explore() {
     };
 
     fetchResults();
-  }, [searchQuery]);
+  }, [searchQuery, usersLimit]);
+
+  const loadMoreUsers = useCallback(() => {
+    if (!loading && !isLoadingMoreUsers && hasMoreUsers && searchTab === 'users') {
+      setIsLoadingMoreUsers(true);
+      setUsersLimit(prev => prev + 20);
+      setIsLoadingMoreUsers(false);
+    }
+  }, [loading, isLoadingMoreUsers, hasMoreUsers, searchTab]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMoreUsers && !loading && !isLoadingMoreUsers && searchTab === 'users') {
+          loadMoreUsers();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (loaderRef.current) {
+      observer.observe(loaderRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [loadMoreUsers, hasMoreUsers, loading, isLoadingMoreUsers, searchTab]);
 
   return (
     <div className="w-full min-h-full bg-slate-50 relative">
@@ -654,14 +741,14 @@ export default function Explore() {
                 {searchTab === 'posts' && <motion.div layoutId="search-tab-indicator" className="absolute bottom-0 left-8 right-8 h-0.5 bg-black rounded-full" />}
               </button>
               <button 
-                onClick={() => setSearchTab('media')}
-                className={`flex-1 py-3 text-sm font-bold transition-all relative ${searchTab === 'media' ? 'text-black' : 'text-gray-500'}`}
+                onClick={() => setSearchTab('music')}
+                className={`flex-1 py-3 text-sm font-bold transition-all relative ${searchTab === 'music' ? 'text-black' : 'text-gray-500'}`}
               >
-                Mídia
-                {searchTab === 'media' && <motion.div layoutId="search-tab-indicator" className="absolute bottom-0 left-8 right-8 h-0.5 bg-black rounded-full" />}
+                Música
+                {searchTab === 'music' && <motion.div layoutId="search-tab-indicator" className="absolute bottom-0 left-8 right-8 h-0.5 bg-black rounded-full" />}
               </button>
             </div>
-            {searchTab !== 'users' && (
+            {(searchTab !== 'users' && searchTab !== 'music') && (
               <div className="px-4 py-2 flex items-center space-x-2 border-t border-black/5 overflow-x-auto no-scrollbar">
                 <button 
                   onClick={() => setSearchFilter('top')}
@@ -705,6 +792,8 @@ export default function Explore() {
         )}
       </div>
       
+      <audio ref={audioRef} onEnded={() => setPlayingTrackId(null)} className="hidden" />
+
       <div className="pb-24">
         <AnimatePresence mode="wait">
           {searchQuery.trim() ? (
@@ -767,6 +856,11 @@ export default function Explore() {
                         )}
                       </motion.div>
                     ))}
+                    {hasMoreUsers && (
+                      <div ref={loaderRef} className="flex justify-center p-8">
+                        <div className="w-6 h-6 border-2 border-black/10 border-t-black rounded-full animate-spin" />
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center p-12 text-center">
@@ -776,6 +870,70 @@ export default function Explore() {
                     <h3 className="font-bold text-gray-900">Nenhum resultado</h3>
                     <p className="text-gray-500 text-sm mt-1">
                       Não encontramos ninguém com "{searchQuery}"
+                    </p>
+                  </div>
+                )
+              ) : searchTab === 'music' ? (
+                musicResults.length > 0 ? (
+                  <div className="space-y-4">
+                    {musicResults.map((track) => (
+                      <motion.div 
+                        key={`music-${track.id}`}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-white rounded-3xl p-4 shadow-sm border border-black/5 flex items-center space-x-4"
+                      >
+                        <div className="w-16 h-16 rounded-2xl overflow-hidden flex-shrink-0 shadow-md">
+                          <LazyImage src={track.artwork} alt={track.title} className="w-full h-full object-cover" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-black truncate">{track.title}</h4>
+                          <p className="text-gray-500 text-sm truncate">{track.artist}</p>
+                          <p className="text-gray-400 text-[10px] uppercase tracking-wider font-bold mt-1 truncate">{track.album}</p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                           {track.previewUrl && (
+                             <button 
+                              onClick={() => handleTogglePlay(track)}
+                              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-95 shadow-md ${
+                                playingTrackId === track.id 
+                                  ? 'bg-black text-white' 
+                                  : 'bg-gray-100 text-black hover:bg-gray-200'
+                              }`}
+                            >
+                              {playingTrackId === track.id ? (
+                                <motion.div 
+                                  animate={{ scale: [1, 1.2, 1] }} 
+                                  transition={{ repeat: Infinity, duration: 1 }}
+                                  className="flex items-center space-x-0.5"
+                                >
+                                  <div className="w-1 h-3 bg-white rounded-full" />
+                                  <div className="w-1 h-5 bg-white rounded-full" />
+                                  <div className="w-1 h-3 bg-white rounded-full" />
+                                </motion.div>
+                              ) : (
+                                <div className="ml-1 w-0 h-0 border-t-[6px] border-t-transparent border-l-[10px] border-l-current border-b-[6px] border-b-transparent" />
+                              )}
+                            </button>
+                           )}
+                           <button 
+                            onClick={() => window.open(track.spotifyUrl, '_blank')}
+                            className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white shadow-lg active:scale-95 transition-transform"
+                          >
+                            <Music className="w-5 h-5 fill-current" />
+                          </button>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center p-12 text-center">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                      <Music className="w-8 h-8 text-gray-300" />
+                    </div>
+                    <h3 className="font-bold text-gray-900">Nenhuma música encontrada</h3>
+                    <p className="text-gray-500 text-sm mt-1">
+                      Tente buscar por outro artista ou música
                     </p>
                   </div>
                 )
