@@ -10,28 +10,9 @@ declare const self: ServiceWorkerGlobalScope & {
   __WB_MANIFEST: any;
 };
 
-// PWA Logic v0.0.0.08
+// PWA Logic v0.0.0.12
 cleanupOutdatedCaches();
 precacheAndRoute(self.__WB_MANIFEST);
-
-// Enable navigation preload
-navigationPreload.enable();
-
-// Register a route for navigation requests (HTML)
-const navigationRoute = new NavigationRoute(
-  new NetworkFirst({
-    cacheName: 'navigations',
-    plugins: [
-      {
-        handlerDidError: async () => {
-          return await caches.match('/index.html') || Response.error();
-        },
-      },
-    ],
-  })
-);
-
-registerRoute(navigationRoute);
 
 // This allows the web app to control the service worker and skip waiting
 self.addEventListener('message', (event) => {

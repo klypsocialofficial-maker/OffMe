@@ -16,6 +16,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import PostCard from '../components/PostCard';
 import LazyImage from '../components/LazyImage';
 import PostSkeleton from '../components/PostSkeleton';
+import PremiumAdCard from '../components/PremiumAdCard';
 import { handleMentions, sendPushNotification, notifyFollowers } from '../lib/notifications';
 import { uploadToImgBB } from '../lib/imgbb';
 import { awardPoints } from '../services/gamificationService';
@@ -924,26 +925,28 @@ export default function Home() {
                 </div>
               ) : (
                 <>
-                  {filteredPosts.map((post) => (
-                    <PostCard
-                      key={post.id}
-                      post={post}
-                      onLike={handleLikePost}
-                      onRepost={handleRepost}
-                      onDelete={handleDeletePost}
-                      onEdit={(p) => {
-                        setEditingPost(p);
-                        setEditContent(p.content);
-                      }}
-                      onShare={(p) => {
-                        setSelectedSharePost(p);
-                        setIsShareModalOpen(true);
-                      }}
-                      onReply={(p) => openCreateModal(p)}
-                      onQuote={(p) => openCreateModal(null, p)}
-                      onImageClick={openImageViewer}
-                      canEdit={canEditPost}
-                    />
+                  {filteredPosts.map((post, index) => (
+                    <React.Fragment key={post.id}>
+                      {index === 2 && <PremiumAdCard />}
+                      <PostCard
+                        post={post}
+                        onLike={handleLikePost}
+                        onRepost={handleRepost}
+                        onDelete={handleDeletePost}
+                        onEdit={(p) => {
+                          setEditingPost(p);
+                          setEditContent(p.content);
+                        }}
+                        onShare={(p) => {
+                          setSelectedSharePost(p);
+                          setIsShareModalOpen(true);
+                        }}
+                        onReply={(p) => openCreateModal(p)}
+                        onQuote={(p) => openCreateModal(null, p)}
+                        onImageClick={openImageViewer}
+                        canEdit={canEditPost}
+                      />
+                    </React.Fragment>
                   ))}
                   
                   {/* Intersection Observer Sentinel */}
