@@ -100,6 +100,15 @@ service cloud.firestore {
       }
     }
 
+    match /userMissions {
+      allow list: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      
+      match /{userMissionId} {
+        allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+        allow write: if isAdmin() || (isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid) && request.resource.data.userId == request.auth.uid);
+      }
+    }
+
     match /lists {
       allow list: if isAuthenticated();
       match /{listId} {

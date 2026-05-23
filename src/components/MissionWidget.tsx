@@ -30,6 +30,9 @@ export default function MissionWidget({ userId }: MissionWidgetProps) {
       }));
       setMissions(missionData.slice(0, 3));
       setLoading(false);
+    }, (error) => {
+      console.error("MissionWidget onSnapshot error: ", error);
+      setLoading(false);
     });
 
     return () => unsubscribe();

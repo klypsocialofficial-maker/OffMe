@@ -37,6 +37,9 @@ export default function CommunityChat({ communityId }: CommunityChatProps) {
           scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
       }, 100);
+    }, (error) => {
+      console.error("CommunityChat onSnapshot error: ", error);
+      setLoading(false);
     });
 
     return () => unsubscribe();

@@ -25,11 +25,7 @@ describe("OffMe Security Rules", () => {
     await testEnv.cleanup();
   });
 
-  it("should prevent unauthorized users from creating notifications for others", async () => {
-    const alice = testEnv.authenticatedContext("alice");
-    const bob = testEnv.authenticatedContext("bob");
-
-  it("should prevent unauthorized users from spoofing senderId", async () => {
+  it("should prevent unauthorized users from creating notifications for themselves or spoofing senderId", async () => {
     const alice = testEnv.authenticatedContext("alice");
     const impostor = testEnv.authenticatedContext("impostor");
 

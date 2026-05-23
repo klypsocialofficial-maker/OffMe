@@ -285,6 +285,8 @@ export default function Explore() {
       if (sortedTags.length > 0) {
         setTrendingHashtags(sortedTags);
       }
+    }, (error) => {
+      console.error("Explore onSnapshot error: ", error);
     });
     
     return () => unsubscribe();

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, TrendingUp, MoreHorizontal, UserPlus, Trophy } from 'lucide-react';
+import { Search, TrendingUp, MoreHorizontal, UserPlus, Trophy, X } from 'lucide-react';
 import { collection, query, limit, getDocs, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';

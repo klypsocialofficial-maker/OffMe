@@ -196,6 +196,9 @@ export default function PostDetail() {
         setPost(null);
       }
       setLoading(false);
+    }, (error) => {
+      console.error("PostDetail unsubscribePost error: ", error);
+      setLoading(false);
     });
 
     const repliesQuery = query(
@@ -214,6 +217,8 @@ export default function PostDetail() {
       // Filter out replies from muted users
       const filteredReplies = repliesData.filter((reply: any) => !userProfile?.mutedUsers?.includes(reply.authorId));
       setReplies(filteredReplies);
+    }, (error) => {
+      console.error("PostDetail unsubscribeReplies error: ", error);
     });
 
     const quotesQuery = query(
@@ -230,6 +235,8 @@ export default function PostDetail() {
       }) as any);
       
       setQuotes(quotesData);
+    }, (error) => {
+      console.error("PostDetail unsubscribeQuotes error: ", error);
     });
 
     return () => {
@@ -253,6 +260,8 @@ export default function PostDetail() {
       } else {
         setParentPost(null);
       }
+    }, (error) => {
+      console.error("PostDetail unsubscribeParent error: ", error);
     });
 
     return () => unsubscribeParent();

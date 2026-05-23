@@ -46,6 +46,8 @@ export default function CommunityDetail() {
       limit(1)
     );
 
+    let unsubscribePosts: (() => void) | null = null;
+
     const unsubscribeCommunity = onSnapshot(q, (snapshot) => {
       if (!snapshot.empty) {
         const communityData = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
@@ -59,14 +61,19 @@ export default function CommunityDetail() {
           limit(20)
         );
 
-        const unsubscribePosts = onSnapshot(postsQuery, (postSnapshot) => {
+        if (unsubscribePosts) {
+          unsubscribePosts();
+        }
+
+        unsubscribePosts = onSnapshot(postsQuery, (postSnapshot) => {
           const allPosts = postSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
           setPosts(allPosts.filter(p => !p.isCommunityPinned));
           setPinnedPosts(allPosts.filter(p => p.isCommunityPinned));
           setLoading(false);
+        }, (error) => {
+          console.error("Error fetching community posts: ", error);
+          setLoading(false);
         });
-
-        return () => unsubscribePosts();
       } else {
         setCommunity(null);
         setLoading(false);
@@ -76,7 +83,12 @@ export default function CommunityDetail() {
       setLoading(false);
     });
 
-    return () => unsubscribeCommunity();
+    return () => {
+      unsubscribeCommunity();
+      if (unsubscribePosts) {
+        unsubscribePosts();
+      }
+    };
   }, [slug, db]);
 
   const handleJoinLeave = async () => {

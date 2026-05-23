@@ -355,6 +355,10 @@ export default function Home() {
       // Filter out our own posts
       const news = snapshot.docs.filter(doc => doc.data().authorId !== userProfile.uid);
       setNewPostsCount(news.length);
+    }, (error) => {
+      if (error.code !== 'permission-denied') {
+        handleFirestoreError(error, OperationType.LIST, 'posts');
+      }
     });
 
     return () => unsubscribe();
@@ -822,7 +826,7 @@ export default function Home() {
               </nav>
             </div>
 
-            {/* Search Toggle & Anonymous Post Buttons (Right) */}
+            {/* Anonymous Post Buttons (Right) */}
             <div className="flex-1 flex items-center justify-end z-10 space-x-1 sm:space-x-2 min-w-0">
               <motion.button 
                 whileHover={{ scale: 1.05 }}
@@ -834,40 +838,8 @@ export default function Home() {
                 <div className="absolute inset-0 bg-gradient-to-tr from-purple-50 via-gray-50 to-blue-50 opacity-100 group-hover:opacity-80 transition-opacity"></div>
                 <Ghost className="w-4.5 h-4.5 sm:w-5 h-5 text-gray-500 group-hover:text-black relative z-10" />
               </motion.button>
-              <button 
-                onClick={() => setIsSearchOpen(!isSearchOpen)}
-                className={`p-2 sm:p-2.5 rounded-full transition-all duration-300 border border-white/40 shadow-sm flex-shrink-0 ${isSearchOpen ? 'bg-black text-white' : 'liquid-glass-pill text-gray-500'}`}
-              >
-                <Search className="w-4.5 h-4.5 sm:w-5 h-5" />
-              </button>
             </div>
           </div>
-
-          {/* Search Bar (Animated) */}
-          <AnimatePresence>
-            {isSearchOpen && (
-              <motion.div 
-                initial={{ height: 0, opacity: 0, marginTop: 0 }}
-                animate={{ height: 'auto', opacity: 1, marginTop: 12 }}
-                exit={{ height: 0, opacity: 0, marginTop: 0 }}
-                className="overflow-hidden"
-              >
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Search className="w-4 h-4 text-gray-400 group-focus-within:text-black transition-colors" />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Pesquisar posts..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    autoFocus
-                    className="block w-full pl-11 pr-4 py-3 border border-white/40 rounded-2xl bg-white/60 backdrop-blur-xl focus:ring-2 focus:ring-blue-500/20 outline-none transition-all text-sm shadow-sm"
-                  />
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
       </div>
 

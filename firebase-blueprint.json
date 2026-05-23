@@ -233,6 +233,21 @@
         "createdAt": { "type": "timestamp" }
       },
       "required": ["name", "ownerId", "createdAt"]
+    },
+    "UserMission": {
+      "title": "UserMission",
+      "description": "An active or completed daily engagement goal specifically assigned to or tracked for a user.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "The description/title of the mission." },
+        "userId": { "type": "string", "description": "The UID of the user this mission belongs to." },
+        "requirement": { "type": "number", "description": "Target count needed for completion." },
+        "currentProgress": { "type": "number", "description": "User's current progress." },
+        "reward": { "type": "number", "description": "XP awarded on completion." },
+        "status": { "type": "string", "enum": ["active", "completed", "failed"], "description": "Status of the user's mission." },
+        "createdAt": { "type": "timestamp" }
+      },
+      "required": ["title", "userId", "requirement", "currentProgress", "status"]
     }
   },
   "firestore": {
@@ -271,6 +286,10 @@
     "/missions/{missionId}": {
       "schema": { "$ref": "#/entities/Mission" },
       "description": "Stores daily goals."
+    },
+    "/userMissions/{userMissionId}": {
+      "schema": { "$ref": "#/entities/UserMission" },
+      "description": "Stores user missions tracking status and progress."
     },
     "/lists/{listId}": {
       "schema": { "$ref": "#/entities/List" },

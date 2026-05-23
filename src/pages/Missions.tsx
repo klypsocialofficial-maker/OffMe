@@ -57,6 +57,9 @@ export default function Missions() {
       setMissions(results);
       setCompletedToday(results.filter(m => m.isCompleted).length);
       setLoading(false);
+    }, (error) => {
+      console.error("Missions onSnapshot error: ", error);
+      setLoading(false);
     });
 
     return () => unsubscribe();
