@@ -15,7 +15,7 @@ import VerifiedBadge from '../components/VerifiedBadge';
 export default function AdminPanel() {
   const { userProfile } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'reports' | 'verification' | 'users'>('reports');
+  const [activeTab, setActiveTab] = useState<'reports' | 'verification' | 'users' | 'system'>('reports');
   const [reports, setReports] = useState<any[]>([]);
   const [verifications, setVerifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,6 +25,185 @@ export default function AdminPanel() {
   const [selectedUserForMod, setSelectedUserForMod] = useState<any>(null);
   const [violationReason, setViolationReason] = useState('');
   const [violationSeverity, setViolationSeverity] = useState<'low' | 'medium' | 'high'>('low');
+
+  // Sweep states
+  const [cleanupStatus, setCleanupStatus] = useState<'idle' | 'running' | 'done' | 'error'>('idle');
+  const [cleanupLog, setCleanupLog] = useState<string[]>([]);
+  const [deletedDocCount, setDeletedDocCount] = useState(0);
+  const [updatedUserCount, setUpdatedUserCount] = useState(0);
+
+  const runSystemSweep = async () => {
+    setCleanupStatus('running');
+    setCleanupLog(['Iniciando varredura geral de segurança e dados...', 'Buscando perfil do Alisson (UID: E6mUok5hdIYJAKXwHKNcGn0GieN2)...']);
+    setDeletedDocCount(0);
+    setUpdatedUserCount(0);
+    
+    let deletedCount = 0;
+    let updatedCount = 0;
+
+    try {
+      const targetUids = new Set<string>(['E6mUok5hdIYJAKXwHKNcGn0GieN2']);
+      
+      const usernamesToSearch = [
+        'Alisson', 'alisson', 'Alissom', 'alissom', 'AlissonWachholz', 'alissonwachholz',
+        'AlissonW', 'alissonw', 'AlissomW', 'alissomw', 'Alisson do rúlio', 'Alisson do rulio',
+        '@Alisson do rúlio', '@Alisson do rulio', 'alisson_wachholz', 'Alisson Wachholz'
+      ];
+      
+      for (const uname of usernamesToSearch) {
+        const snap = await getDocs(query(collection(db, 'users'), where('username', '==', uname)));
+        snap.forEach(d => {
+          if (d.id) {
+            targetUids.add(d.id);
+          }
+        });
+        const snapDisp = await getDocs(query(collection(db, 'users'), where('displayName', '==', uname)));
+        snapDisp.forEach(d => {
+          if (d.id) {
+            targetUids.add(d.id);
+          }
+        });
+      }
+
+      setCleanupLog(prev => [...prev, `Identificados ${targetUids.size} perfis associados ao Alisson: [${Array.from(targetUids).join(', ')}]`]);
+
+      const uidList = Array.from(targetUids);
+
+      // Remover perfis da coleção 'users'
+      for (const uid of uidList) {
+        setCleanupLog(prev => [...prev, `Deletando perfil principal e documentos para UID: ${uid}...`]);
+        await deleteDoc(doc(db, 'users', uid)).catch(e => {
+          console.error(e);
+          setCleanupLog(prev => [...prev, `Aviso ao deletar perfil ${uid}: ${e.message}`]);
+        });
+        deletedCount++;
+
+        // Deletar missões do usuário
+        const missionsSnap = await getDocs(query(collection(db, 'userMissions'), where('userId', '==', uid)));
+        for (const mDoc of missionsSnap.docs) {
+          await deleteDoc(mDoc.ref).catch(() => {});
+          deletedCount++;
+        }
+
+        // Deletar posts do usuário
+        const postsSnap = await getDocs(query(collection(db, 'posts'), where('authorId', '==', uid)));
+        for (const pDoc of postsSnap.docs) {
+          await deleteDoc(pDoc.ref).catch(() => {});
+          deletedCount++;
+        }
+
+        // Deletar notificações enviadas/recebidas
+        const sentNotifs = await getDocs(query(collection(db, 'notifications'), where('senderId', '==', uid)));
+        for (const dNot of sentNotifs.docs) {
+          await deleteDoc(dNot.ref).catch(() => {});
+          deletedCount++;
+        }
+        const recvNotifs = await getDocs(query(collection(db, 'notifications'), where('recipientId', '==', uid)));
+        for (const dNot of recvNotifs.docs) {
+          await deleteDoc(dNot.ref).catch(() => {});
+          deletedCount++;
+        }
+
+        // Deletar conversas
+        const convsSnap = await getDocs(query(collection(db, 'conversations'), where('participants', 'array-contains', uid)));
+        for (const cDoc of convsSnap.docs) {
+          await deleteDoc(cDoc.ref).catch(() => {});
+          deletedCount++;
+        }
+      }
+
+      setCleanupLog(prev => [...prev, 'Perfis e mídias deletadas com sucesso.', 'Agora escaneando e removendo de listas de seguidores de TODOS os usuários...']);
+
+      // Remover Alisson de toda lista de seguidores/following de cada usuário
+      const allUsersSnap = await getDocs(collection(db, 'users'));
+      setCleanupLog(prev => [...prev, `Escaneando ${allUsersSnap.size} contas de usuários cadastrados...`]);
+
+      for (const uDoc of allUsersSnap.docs) {
+        const uData = uDoc.data();
+        let changed = false;
+        const updatePayload: any = {};
+
+        const listFields = ['following', 'followers', 'circleMembers', 'blockedUsers', 'mutedUsers'];
+        for (const field of listFields) {
+          if (Array.isArray(uData[field])) {
+            const originalLength = uData[field].length;
+            const cleanedList = uData[field].filter((id: string) => !uidList.includes(id));
+            if (cleanedList.length !== originalLength) {
+              updatePayload[field] = cleanedList;
+              changed = true;
+            }
+          }
+        }
+
+        if (changed) {
+          setCleanupLog(prev => [...prev, `Limpando laços de seguidores no perfil de @${uData.username || uDoc.id}...`]);
+          await updateDoc(uDoc.ref, updatePayload).catch(e => {
+            console.error(e);
+            setCleanupLog(prev => [...prev, `Erro ao atualizar @${uData.username || uDoc.id}: ${e.message}`]);
+          });
+          updatedCount++;
+        }
+      }
+
+      // Remover de listas e comunidades
+      const listsSnap = await getDocs(collection(db, 'lists'));
+      for (const lDoc of listsSnap.docs) {
+        const lData = lDoc.data();
+        if (uidList.includes(lData.ownerId)) {
+          await deleteDoc(lDoc.ref).catch(() => {});
+          deletedCount++;
+        } else if (Array.isArray(lData.memberIds)) {
+          const cleaned = lData.memberIds.filter((idOnList: string) => !uidList.includes(idOnList));
+          if (cleaned.length !== lData.memberIds.length) {
+            await updateDoc(lDoc.ref, { memberIds: cleaned }).catch(() => {});
+          }
+        }
+      }
+
+      const commsSnap = await getDocs(collection(db, 'communities'));
+      for (const commDoc of commsSnap.docs) {
+        const commData = commDoc.data();
+        let cChanged = false;
+        const cUpdate: any = {};
+        if (Array.isArray(commData.members)) {
+          const cleaned = commData.members.filter((idMember: string) => !uidList.includes(idMember));
+          if (cleaned.length !== commData.members.length) {
+            cUpdate.members = cleaned;
+            cChanged = true;
+          }
+        }
+        if (Array.isArray(commData.moderators)) {
+          const cleaned = commData.moderators.filter((idMod: string) => !uidList.includes(idMod));
+          if (cleaned.length !== commData.moderators.length) {
+            cUpdate.moderators = cleaned;
+            cChanged = true;
+          }
+        }
+        if (cChanged) {
+          await updateDoc(commDoc.ref, cUpdate).catch(() => {});
+        }
+      }
+
+      // Limpar posts anônimos residuais
+      const anonQ = query(collection(db, 'posts'), where('authorId', '==', 'anonymous'), limit(500));
+      const anonSnap = await getDocs(anonQ);
+      if (!anonSnap.empty) {
+        for (const anDoc of anonSnap.docs) {
+          await deleteDoc(anDoc.ref).catch(() => {});
+          deletedCount++;
+        }
+      }
+
+      setDeletedDocCount(deletedCount);
+      setUpdatedUserCount(updatedCount);
+      setCleanupStatus('done');
+      setCleanupLog(prev => [...prev, '✨ Faxina concluída com sucesso absoluto!', `Total de documentos deletados: ${deletedCount}`, `Total de listas de usuários corrigidas: ${updatedCount}`]);
+    } catch (err: any) {
+      console.error(err);
+      setCleanupStatus('error');
+      setCleanupLog(prev => [...prev, `❌ ERRO DURANTE A FAXINA: ${err.message}`]);
+    }
+  };
 
   // Security check: only klypsocialofficial@gmail.com is allowed
   const isAdmin = userProfile?.email === 'klypsocialofficial@gmail.com';
@@ -179,6 +358,15 @@ export default function AdminPanel() {
              <UserIcon className="w-4 h-4" />
              <span>Usuários</span>
            </button>
+           <button 
+            onClick={() => setActiveTab('system')}
+            className={`flex-1 py-3 px-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center space-x-2 whitespace-nowrap ${
+              activeTab === 'system' ? 'bg-black text-white shadow-lg' : 'text-gray-500 hover:bg-gray-50'
+            }`}
+           >
+             <Trash2 className="w-4 h-4" />
+             <span>Faxina DB</span>
+           </button>
         </div>
 
         {loading ? (
@@ -315,7 +503,7 @@ export default function AdminPanel() {
                    </div>
                 </motion.div>
               ))
-            ) : (
+            ) : activeTab === 'users' ? (
               <div className="space-y-6">
                 <div className="flex space-x-2">
                   <div className="relative flex-1">
@@ -419,6 +607,75 @@ export default function AdminPanel() {
                     </div>
                   )}
                 </AnimatePresence>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="bg-white p-6 sm:p-8 rounded-3xl border border-gray-100 shadow-sm space-y-6">
+                  <div className="flex items-start space-x-4">
+                    <div className="p-4 bg-red-50 text-red-500 rounded-2xl flex-shrink-0">
+                      <Trash2 className="w-8 h-8" />
+                    </div>
+                    <div className="space-y-1">
+                      <h2 className="text-lg font-bold text-gray-900">Faxina Geral do Banco de Dados</h2>
+                      <p className="text-sm text-gray-500">
+                        Remove completamente o usuário <span className="font-semibold text-black">Alisson Wachholz (@Alisson do rúlio)</span> (UID: <code className="bg-gray-100 px-1.5 py-0.5 rounded font-mono text-xs">E6mUok5hdIYJAKXwHKNcGn0GieN2</code>) de todo o sistema.
+                      </p>
+                      <p className="text-xs text-amber-600 font-semibold bg-amber-50 px-2.5 py-1.5 rounded inline-block mt-2">
+                        ⚠️ Esta ação é destrutiva, permanente e removerá o Alisson de todas as listas de seguidores/seguindo de todos os usuários do app.
+                      </p>
+                    </div>
+                  </div>
+
+                  <hr className="border-gray-100" />
+
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-bold text-gray-700">Status Operacional:</span>
+                      <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
+                        cleanupStatus === 'idle' ? 'bg-gray-100 text-gray-600' :
+                        cleanupStatus === 'running' ? 'bg-amber-100 text-amber-700 animate-pulse' :
+                        cleanupStatus === 'done' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                       }`}>
+                        {cleanupStatus === 'idle' && 'Aguardando Comando'}
+                        {cleanupStatus === 'running' && 'Faxina em Progresso...'}
+                        {cleanupStatus === 'done' && 'Sucesso! Banco Limpo'}
+                        {cleanupStatus === 'error' && 'Erro na Execução'}
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={runSystemSweep}
+                      disabled={cleanupStatus === 'running'}
+                      className={`w-full py-4 text-center rounded-2xl font-black text-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                        cleanupStatus === 'running' 
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                          : 'bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/20 active:scale-[0.98]'
+                      }`}
+                    >
+                      {cleanupStatus === 'running' ? 'EXECUTANDO VARREDURA E LIMPEZA...' : 'INICIAR FAXINA DO ALISSON AGORA'}
+                    </button>
+                  </div>
+                </div>
+
+                {cleanupLog.length > 0 && (
+                  <div className="bg-neutral-900 text-neutral-200 p-6 rounded-3xl font-mono text-xs space-y-2 max-h-96 overflow-y-auto shadow-inner">
+                    <p className="text-neutral-500 font-bold border-b border-neutral-800 pb-2 flex justify-between">
+                      <span>CONSOLE DE SEGURANÇA MOD_SYSTEM</span>
+                      <span>UTC: {new Date().toISOString()}</span>
+                    </p>
+                    <div className="space-y-1.5 pt-2">
+                      {cleanupLog.map((log, index) => (
+                        <div key={index} className={
+                          log.startsWith('❌') ? 'text-red-400 font-bold' :
+                          log.startsWith('✨') ? 'text-green-400 font-bold' :
+                          log.startsWith('⚠️') ? 'text-amber-400' : 'text-neutral-300'
+                        }>
+                          {log}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

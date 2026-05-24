@@ -101,28 +101,28 @@ service cloud.firestore {
     }
 
     match /userMissions {
-      allow list: if isAuthenticated();
+      allow list: if isAuthenticated() || isAdmin();
       
       match /{userMissionId} {
-        allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
+        allow read: if isAdmin() || (isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid));
         allow write: if isAdmin() || (isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid) && request.resource.data.userId == request.auth.uid);
       }
     }
 
     match /lists {
-      allow list: if isAuthenticated();
+      allow list: if isAuthenticated() || isAdmin();
       match /{listId} {
-        allow read, write: if isAuthenticated() && (resource == null || resource.data.ownerId == request.auth.uid);
+        allow read, write: if isAdmin() || (isAuthenticated() && (resource == null || resource.data.ownerId == request.auth.uid));
       }
     }
     
     match /notifications {
-      // Permitir listar apenas notificações onde o usuário é o destinatário
-      allow list: if isAuthenticated() && request.query.filters.recipientId == request.auth.uid;
+      // Permitir listar apenas notificações onde o usuário é o destinatário ou admin
+      allow list: if isAdmin() || (isAuthenticated() && request.query.filters.recipientId == request.auth.uid);
       
       match /{notificationId} {
-        // Permitir leitura apenas se o usuário for o destinatário
-        allow read: if isAuthenticated() && resource.data.get('recipientId', '') == request.auth.uid;
+        // Permitir leitura apenas se o usuário for o destinatário ou admin
+        allow read: if isAdmin() || (isAuthenticated() && resource.data.get('recipientId', '') == request.auth.uid);
         
         // Criar uma notificação exige que o remetente seja o mesmo que o usuário autenticado
         // E só pode ser criada para outros, nunca para si mesmo
@@ -136,15 +136,15 @@ service cloud.firestore {
     }
     
     match /conversations {
-      allow list: if isAuthenticated();
+      allow list: if isAuthenticated() || isAdmin();
       
       match /{conversationId} {
-        allow read: if isAuthenticated() && request.auth.uid in resource.data.participants;
+        allow read: if isAdmin() || (isAuthenticated() && request.auth.uid in resource.data.participants);
         allow create: if isAuthenticated() && request.auth.uid in request.resource.data.participants;
         allow update: if isAuthenticated() && (request.auth.uid in resource.data.participants || isAdmin());
         
         match /{allSegments=**} {
-          allow read, write: if isAuthenticated() && (request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants || isAdmin());
+          allow read, write: if isAdmin() || (isAuthenticated() && (request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants || isAdmin()));
         }
       }
     }

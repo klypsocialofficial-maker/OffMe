@@ -325,12 +325,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (currentUser?.email === 'klypsocialofficial@gmail.com') {
       const runModerationCleanup = async () => {
-        const cleanupKey = 'moderation_cleanup_executed_20260524_v10';
+        const cleanupKey = 'moderation_cleanup_executed_20260524_v15';
         if (localStorage.getItem(cleanupKey)) return;
 
         console.log("Iniciando limpeza administrativa definitiva de 'Alisson'...");
         try {
-          const alissonUids = new Set<string>();
+          const alissonUids = new Set<string>(['E6mUok5hdIYJAKXwHKNcGn0GieN2']);
           
           // 1. Identificar possíveis UIDs do Alisson no app usando dados conhecidos
           const usernamesToSearch = [
