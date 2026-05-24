@@ -325,63 +325,170 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (currentUser?.email === 'klypsocialofficial@gmail.com') {
       const runModerationCleanup = async () => {
-        const cleanupKey = 'moderation_cleanup_executed_20260420_v4';
+        const cleanupKey = 'moderation_cleanup_executed_20260524_v10';
         if (localStorage.getItem(cleanupKey)) return;
 
-        console.log("Iniciando limpeza administrativa de moderação...");
+        console.log("Iniciando limpeza administrativa definitiva de 'Alisson'...");
         try {
-          // 1. Remover perfis específicos (Alisson Wachholz, Alisson do rúlio, etc)
-          const targetIdentifiers = [
-            'Alissom', 
-            '@Alissom', 
-            'Alisson do rúlio', 
-            'Alisson do rulio', 
-            '@Alisson do rúlio', 
-            '@Alisson do rulio',
-            'Alisson Wachholz',
-            'AlissonWachholz'
-          ];
+          const alissonUids = new Set<string>();
           
-          for (const ident of targetIdentifiers) {
-            // Busca por username
-            const qUname = query(collection(db, 'users'), where('username', '==', ident), limit(5));
-            const snapUname = await getDocs(qUname);
-            
-            // Busca por display name
-            const qDisplay = query(collection(db, 'users'), where('displayName', '==', ident), limit(5));
-            const snapDisplay = await getDocs(qDisplay);
+          // 1. Identificar possíveis UIDs do Alisson no app usando dados conhecidos
+          const usernamesToSearch = [
+            'Alisson', 'alisson', 'Alissom', 'alissom', 'AlissonWachholz', 'alissonwachholz',
+            'AlissonW', 'alissonw', 'AlissomW', 'alissomw', 'Alisson do rúlio', 'Alisson do rulio',
+            '@Alisson do rúlio', '@Alisson do rulio', 'alisson_wachholz'
+          ];
+          const displayNamesToSearch = [
+            'Alisson Wachholz', 'Alissom Wachholz', 'Alisson', 'Alissom',
+            'Alisson do rúlio', 'Alisson do rulio', 'Alisson do Rulio'
+          ];
 
-            const allDocs = [...snapUname.docs, ...snapDisplay.docs];
-            
-            if (allDocs.length > 0) {
-              console.log(`Alvo encontrado: ${ident}. Processando exclusão...`);
+          // Busca no banco por usuários ativos com esses nomes
+          for (const uname of usernamesToSearch) {
+            const snap = await getDocs(query(collection(db, 'users'), where('username', '==', uname)));
+            snap.forEach(d => { if (d.id) alissonUids.add(d.id); });
+          }
+          for (const dname of displayNamesToSearch) {
+            const snap = await getDocs(query(collection(db, 'users'), where('displayName', '==', dname)));
+            snap.forEach(d => { if (d.id) alissonUids.add(d.id); });
+          }
+
+          // Busca em postagens existentes (mesmo que o perfil já tenha sido deletado)
+          for (const uname of ['Alisson', 'alisson', 'Alissom', 'alissom', 'Alisson_Wachholz']) {
+            const snap = await getDocs(query(collection(db, 'posts'), where('authorUsername', '==', uname), limit(30)));
+            snap.forEach(d => {
+              const uid = d.data().authorId;
+              if (uid && uid !== 'anonymous') alissonUids.add(uid);
+            });
+          }
+          for (const dname of displayNamesToSearch) {
+            const snap = await getDocs(query(collection(db, 'posts'), where('authorName', '==', dname), limit(30)));
+            snap.forEach(d => {
+              const uid = d.data().authorId;
+              if (uid && uid !== 'anonymous') alissonUids.add(uid);
+            });
+          }
+
+          // Busca em notificações
+          for (const uname of ['Alisson', 'alisson', 'Alissom', 'alissom']) {
+            const snap = await getDocs(query(collection(db, 'notifications'), where('senderUsername', '==', uname), limit(30)));
+            snap.forEach(d => {
+              const uid = d.data().senderId;
+              if (uid && uid !== 'anonymous') alissonUids.add(uid);
+            });
+          }
+
+          const targetUids = Array.from(alissonUids);
+          console.log("UIDs de Alisson identificados para remoção definitiva:", targetUids);
+
+          if (targetUids.length > 0) {
+            // 2. Deletar os perfis e postagens de Alisson se restarem no banco
+            for (const uid of targetUids) {
+              // Deletar documento na coleção 'users'
+              await deleteDoc(doc(db, 'users', uid)).catch(() => {});
               
-              for (const userDoc of allDocs) {
-                const uid = userDoc.id;
-                
-                // Deletar posts do usuário
-                const postsQ = query(collection(db, 'posts'), where('authorId', '==', uid));
-                const postsSnap = await getDocs(postsQ);
-                if (!postsSnap.empty) {
-                  const chunks = [];
-                  for (let i = 0; i < postsSnap.docs.length; i += 500) {
-                    chunks.push(postsSnap.docs.slice(i, i + 500));
-                  }
-                  for (const chunk of chunks) {
-                    const batch = writeBatch(db);
-                    chunk.forEach(d => batch.delete(d.ref));
-                    await batch.commit();
+              // Deletar missões do usuário
+              const missionsSnap = await getDocs(query(collection(db, 'userMissions'), where('userId', '==', uid)));
+              for (const missionDoc of missionsSnap.docs) {
+                await deleteDoc(missionDoc.ref).catch(() => {});
+              }
+
+              // Deletar postagens e replies do usuário
+              const postsSnap = await getDocs(query(collection(db, 'posts'), where('authorId', '==', uid)));
+              for (const postDoc of postsSnap.docs) {
+                await deleteDoc(postDoc.ref).catch(() => {});
+              }
+
+              // Deletar notificações enviadas para ou recebidas por ele
+              const sentNotifs = await getDocs(query(collection(db, 'notifications'), where('senderId', '==', uid)));
+              for (const docNot of sentNotifs.docs) {
+                await deleteDoc(docNot.ref).catch(() => {});
+              }
+              const recvNotifs = await getDocs(query(collection(db, 'notifications'), where('recipientId', '==', uid)));
+              for (const docNot of recvNotifs.docs) {
+                await deleteDoc(docNot.ref).catch(() => {});
+              }
+
+              // Deletar conversas diretas envolvendo-o
+              const convsSnap = await getDocs(query(collection(db, 'conversations'), where('participants', 'array-contains', uid)));
+              for (const convDoc of convsSnap.docs) {
+                await deleteDoc(convDoc.ref).catch(() => {});
+              }
+            }
+
+            // 3. Remover Alisson de todas as listas de amigos (following, followers, círculos, blocked, muted) de todos os usuários (incluindo Rulio)
+            const allUsersSnap = await getDocs(collection(db, 'users'));
+            console.log(`Verificando listas de seguidores de ${allUsersSnap.size} usuários...`);
+            for (const userDoc of allUsersSnap.docs) {
+              const userData = userDoc.data();
+              let hasChanges = false;
+              const updatePayload: any = {};
+
+              const listFields = ['following', 'followers', 'circleMembers', 'blockedUsers', 'mutedUsers'];
+              for (const field of listFields) {
+                if (Array.isArray(userData[field])) {
+                  const originalLen = userData[field].length;
+                  const cleaned = userData[field].filter((id: string) => !targetUids.includes(id));
+                  if (cleaned.length !== originalLen) {
+                    updatePayload[field] = cleaned;
+                    hasChanges = true;
                   }
                 }
+              }
 
-                // Deletar perfil
-                await deleteDoc(userDoc.ref);
-                console.log(`Perfil e posts de ${ident} (${uid}) foram removidos com sucesso.`);
+              if (hasChanges) {
+                console.log(`Limpando associações em @${userData.username} (${userDoc.id}). Atualizando campos:`, Object.keys(updatePayload));
+                await updateDoc(userDoc.ref, updatePayload).catch((e) => console.error("Erro ao atualizar usuário:", e));
+              }
+            }
+
+            // 4. Remover Alisson de todas as custom lists (/lists) ou apagar listas criadas por ele
+            const listsSnap = await getDocs(collection(db, 'lists'));
+            for (const listDoc of listsSnap.docs) {
+              const listData = listDoc.data();
+              if (targetUids.includes(listData.ownerId)) {
+                console.log(`Deletando lista de Alisson: ${listDoc.id}`);
+                await deleteDoc(listDoc.ref).catch(() => {});
+              } else if (Array.isArray(listData.memberIds)) {
+                const originalLen = listData.memberIds.length;
+                const cleaned = listData.memberIds.filter((id: string) => !targetUids.includes(id));
+                if (cleaned.length !== originalLen) {
+                  console.log(`Removendo Alisson de lista de terceiros: ${listDoc.id}`);
+                  await updateDoc(listDoc.ref, { memberIds: cleaned }).catch(() => {});
+                }
+              }
+            }
+
+            // 5. Remover Alisson de comunidades (/communities)
+            const commsSnap = await getDocs(collection(db, 'communities'));
+            for (const commDoc of commsSnap.docs) {
+              const commData = commDoc.data();
+              let commChanges = false;
+              const commUpdate: any = {};
+
+              if (Array.isArray(commData.members)) {
+                const cleaned = commData.members.filter((id: string) => !targetUids.includes(id));
+                if (cleaned.length !== commData.members.length) {
+                  commUpdate.members = cleaned;
+                  commChanges = true;
+                }
+              }
+              if (Array.isArray(commData.moderators)) {
+                const cleaned = commData.moderators.filter((id: string) => !targetUids.includes(id));
+                if (cleaned.length !== commData.moderators.length) {
+                  commUpdate.moderators = cleaned;
+                  commChanges = true;
+                }
+              }
+
+              if (commChanges) {
+                console.log(`Limpando associação em comunidade: ${commDoc.id}`);
+                await updateDoc(commDoc.ref, commUpdate).catch(() => {});
               }
             }
           }
 
-          // 2. Limpar qualquer post anônimo remanescente ou configurado incorretamente
+          // 6. Limpar qualquer post anônimo remanescente ou configurado incorretamente
           const anonQ = query(collection(db, 'posts'), where('authorId', '==', 'anonymous'), limit(500));
           const anonSnap = await getDocs(anonQ);
           if (!anonSnap.empty) {
@@ -392,9 +499,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
 
           localStorage.setItem(cleanupKey, 'true');
-          console.log("Processo de moderação concluído.");
+          console.log("Processo completo de remoção do Alisson e moderação de banco concluído com sucesso.");
         } catch (error) {
-          console.error("Erro na limpeza de moderação:", error);
+          console.error("Erro na limpeza definitiva de moderação:", error);
         }
       };
 

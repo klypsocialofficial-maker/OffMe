@@ -101,10 +101,10 @@ service cloud.firestore {
     }
 
     match /userMissions {
-      allow list: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow list: if isAuthenticated();
       
       match /{userMissionId} {
-        allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+        allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
         allow write: if isAdmin() || (isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid) && request.resource.data.userId == request.auth.uid);
       }
     }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, TrendingUp, MoreHorizontal, UserPlus, Trophy, X } from 'lucide-react';
+import { Search, TrendingUp, MoreHorizontal, UserPlus, Trophy, X as XIcon } from 'lucide-react';
 import { collection, query, limit, getDocs, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -306,7 +306,7 @@ export default function RightSidebar() {
                       )}
                     </button>
                     <button onClick={(e) => ignoreSuggestion(e, user.uid)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-gray-200 rounded-full transition-colors">
-                        <X className="w-4 h-4" />
+                        <XIcon className="w-4 h-4" />
                     </button>
                 </div>
               </div>

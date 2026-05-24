@@ -4,6 +4,7 @@ import path from "path";
 import cors from "cors";
 import fs from "fs";
 import admin from 'firebase-admin';
+import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 
 // Load firebase config for the project ID
 let firebaseConfig: any = {};
@@ -36,10 +37,10 @@ async function checkScheduledPosts() {
   if (!admin.apps.length) return;
   
   // Use the specific database ID if it exists in the config (Enterprise Firestore)
-  const db: any = firebaseConfig.firestoreDatabaseId 
-    ? (admin as any).firestore(firebaseConfig.firestoreDatabaseId)
-    : admin.firestore();
-  const now = admin.firestore.Timestamp.now();
+  const db = firebaseConfig.firestoreDatabaseId 
+    ? getFirestore(undefined, firebaseConfig.firestoreDatabaseId)
+    : getFirestore();
+  const now = Timestamp.now();
   
   try {
     const q = db.collection('posts')
