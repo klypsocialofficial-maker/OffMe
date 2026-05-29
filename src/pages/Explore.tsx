@@ -6,6 +6,7 @@ import TrendingPosts from '../components/TrendingPosts';
 import ConfirmModal from '../components/ConfirmModal';
 import Toast from '../components/Toast';
 import LazyImage from '../components/LazyImage';
+import RealTimeUserCounter from '../components/RealTimeUserCounter';
 import PostCard from '../components/PostCard';
 import MusicCharts from '../components/MusicCharts';
 import { useAuth } from '../contexts/AuthContext';
@@ -1046,22 +1047,10 @@ export default function Explore() {
                     </div>
                   </div>
 
-                  {/* Featured Hero Card */}
+                  {/* Real-Time User Counter Panel */}
                   {activeTab === 'foryou' && (
                     <div className="px-4 mb-8">
-                      <div className="relative h-48 rounded-3xl overflow-hidden group cursor-pointer shadow-xl">
-                        <LazyImage 
-                          src="https://picsum.photos/seed/offme/800/400" 
-                          alt="Featured" 
-                          className="w-full h-full transition-transform duration-700 group-hover:scale-110"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                        <div className="absolute bottom-6 left-6 right-6">
-                          <span className="bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md mb-2 inline-block">Destaque</span>
-                          <h2 className="text-2xl font-black italic tracking-tighter text-white mb-1 leading-tight">O futuro das redes sociais</h2>
-                          <p className="text-white/80 text-sm font-medium">Veja o que está acontecendo no Offme hoje.</p>
-                        </div>
-                      </div>
+                      <RealTimeUserCounter />
                     </div>
                   )}
 

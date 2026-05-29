@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { doc, onSnapshot, collection, query, where, orderBy, serverTimestamp, addDoc, deleteDoc, updateDoc, arrayRemove, arrayUnion, getDocs, limit } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { User as UserIcon, ArrowLeft, MoreHorizontal, Trash2, Edit2, BarChart2, Heart, Repeat, MessageCircle, Send, Bookmark, BookmarkCheck, Ghost, Lock, Music, Play, Pause, ExternalLink } from 'lucide-react';
+import { User as UserIcon, ArrowLeft, MoreHorizontal, Trash2, Edit2, BarChart2, Heart, Repeat, MessageCircle, Send, Bookmark, BookmarkCheck, Ghost, Lock, Music, Play, Pause, ExternalLink, Pin, PinOff, VolumeX, UserX, Gift, ShieldAlert } from 'lucide-react';
 import VerifiedBadge from '../components/VerifiedBadge';
 import PostContent from '../components/PostContent';
 import QuotedPost from '../components/QuotedPost';
@@ -15,6 +15,9 @@ import { awardPoints } from '../services/gamificationService';
 import { getDefaultAvatar } from '../lib/avatar';
 import CreatePostModal from '../components/CreatePostModal';
 import SharePostModal from '../components/SharePostModal';
+import ShareViaDMModal from '../components/ShareViaDMModal';
+import ReportModal from '../components/ReportModal';
+import TipModal from '../components/TipModal';
 import Toast from '../components/Toast';
 import ConfirmModal from '../components/ConfirmModal';
 import { auth } from '../firebase';
@@ -78,7 +81,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 export default function PostDetail() {
   const { postId } = useParams();
   const navigate = useNavigate();
-  const { userProfile, bookmarkPost, unbookmarkPost } = useAuth();
+  const { userProfile, bookmarkPost, unbookmarkPost, pinPost, unpinPost, muteUser, unmuteUser, blockUser } = useAuth();
   const [post, setPost] = useState<any>(null);
   const [parentPost, setParentPost] = useState<any>(null);
   const repostTimerRef = React.useRef<any>(null);
@@ -146,6 +149,9 @@ export default function PostDetail() {
   const [selectedStatsPostId, setSelectedStatsPostId] = useState<string | null>(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [selectedSharePost, setSelectedSharePost] = useState<any | null>(null);
+  const [isDMShareModalOpen, setIsDMShareModalOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isTipModalOpen, setIsTipModalOpen] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'info' | 'success' | 'error'; isOpen: boolean }>({
     message: '',
     type: 'info',
@@ -621,6 +627,7 @@ export default function PostDetail() {
               </div>
             </div>
             
+          <div className="relative">
             <button 
               onClick={(e) => {
                 e.stopPropagation();
@@ -630,6 +637,232 @@ export default function PostDetail() {
             >
               <MoreHorizontal className="w-5 h-5" />
             </button>
+            
+            {activeMenuPostId === post.id && (
+              <div className="absolute right-0 mt-1 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-20" onClick={stopPropagation}>
+                {(post.authorId === userProfile?.uid || post.ownerId === userProfile?.uid) ? (
+                  <>
+                    <button 
+                      onClick={() => {
+                        setActiveMenuPostId(null);
+                        handleDeletePost(post.id);
+                      }}
+                      className="w-full text-left px-4 py-2 text-red-500 hover:bg-red-50 flex items-center space-x-2"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span>Apagar post</span>
+                    </button>
+                    
+                    <button 
+                      onClick={() => {
+                        if (canEditPost(post)) {
+                          setEditingPost(post);
+                          setEditContent(post.content || '');
+                        }
+                        setActiveMenuPostId(null);
+                      }}
+                      className={`w-full text-left px-4 py-2 flex items-center space-x-2 ${canEditPost(post) ? 'text-gray-700 hover:bg-gray-50' : 'text-gray-400 cursor-not-allowed'}`}
+                    >
+                      <Edit2 className="w-4 h-4" />
+                      <span>Editar post</span>
+                    </button>
+
+                    <button 
+                      onClick={async () => {
+                        setActiveMenuPostId(null);
+                        try {
+                          if (userProfile?.pinnedPostIds?.includes(post.id)) {
+                            await unpinPost(post.id);
+                            showToast('Post desafixado do perfil', 'success');
+                          } else {
+                            await pinPost(post.id);
+                            showToast('Post fixado no perfil', 'success');
+                          }
+                        } catch (error) {
+                          showToast('Erro ao atualizar marcador', 'error');
+                        }
+                      }}
+                      className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                    >
+                      {userProfile?.pinnedPostIds?.includes(post.id) ? (
+                        <>
+                          <PinOff className="w-4 h-4" />
+                          <span>Desafixar do perfil</span>
+                        </>
+                      ) : (
+                        <>
+                          <Pin className="w-4 h-4" />
+                          <span>Fixar no perfil</span>
+                        </>
+                      )}
+                    </button>
+                  </>
+                ) : post.authorId !== 'anonymous' ? (
+                  <>
+                    <button 
+                      onClick={async () => {
+                        setActiveMenuPostId(null);
+                        try {
+                          if (userProfile?.bookmarks?.includes(post.id)) {
+                            await unbookmarkPost(post.id);
+                            showToast('Removido dos salvos', 'success');
+                          } else {
+                            await bookmarkPost(post.id);
+                            showToast('Salvo nos seus marcadores', 'success');
+                          }
+                        } catch (error) {
+                          showToast('Erro ao salvar post', 'error');
+                        }
+                      }}
+                      className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                    >
+                      {userProfile?.bookmarks?.includes(post.id) ? (
+                        <>
+                          <BookmarkCheck className="w-4 h-4 text-blue-500" />
+                          <span>Remover dos salvos</span>
+                        </>
+                      ) : (
+                        <>
+                          <Bookmark className="w-4 h-4" />
+                          <span>Salvar post</span>
+                        </>
+                      )}
+                    </button>
+
+                    <button 
+                      onClick={() => {
+                        setActiveMenuPostId(null);
+                        navigate(`/${post.authorUsername}`);
+                      }}
+                      className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                    >
+                      <UserIcon className="w-4 h-4" />
+                      <span>Ver perfil @{post.authorUsername}</span>
+                    </button>
+
+                    {userProfile && userProfile.uid !== post.authorId && (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveMenuPostId(null);
+                          setIsTipModalOpen(true);
+                        }}
+                        className="w-full text-left px-4 py-2 text-yellow-600 hover:bg-yellow-50 flex items-center space-x-2"
+                      >
+                        <Gift className="w-4 h-4" />
+                        <span>Dar gorjeta</span>
+                      </button>
+                    )}
+
+                    <button 
+                      onClick={async () => {
+                        setActiveMenuPostId(null);
+                        try {
+                          if (userProfile?.mutedUsers?.includes(post.authorId)) {
+                            await unmuteUser(post.authorId);
+                            showToast(`Desmutado @${post.authorUsername}`, 'success');
+                          } else {
+                            await muteUser(post.authorId);
+                            showToast(`Mutado @${post.authorUsername}`, 'success');
+                          }
+                        } catch (error) {
+                          showToast('Erro ao atualizar mudo', 'error');
+                        }
+                      }}
+                      className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                    >
+                      <VolumeX className="w-4 h-4" />
+                      <span>{userProfile?.mutedUsers?.includes(post.authorId) ? 'Desmutar' : 'Mutar'} @{post.authorUsername}</span>
+                    </button>
+
+                    <button 
+                      onClick={async () => {
+                        setActiveMenuPostId(null);
+                        try {
+                          await blockUser(post.authorId);
+                          showToast(`Bloqueado @${post.authorUsername}`, 'success');
+                          navigate('/', { replace: true });
+                        } catch (error) {
+                          showToast('Erro ao bloquear usuário', 'error');
+                        }
+                      }}
+                      className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 flex items-center space-x-2"
+                    >
+                      <UserX className="w-4 h-4" />
+                      <span>Bloquear @{post.authorUsername}</span>
+                    </button>
+
+                    <button 
+                      onClick={() => {
+                        setActiveMenuPostId(null);
+                        setIsReportModalOpen(true);
+                      }}
+                      className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                    >
+                      <ShieldAlert className="w-4 h-4" />
+                      <span>Denunciar post</span>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div className="px-4 py-2 text-xs text-gray-400 italic border-b border-gray-100">Post anônimo</div>
+                    <button 
+                      onClick={async () => {
+                        setActiveMenuPostId(null);
+                        try {
+                          if (userProfile?.bookmarks?.includes(post.id)) {
+                            await unbookmarkPost(post.id);
+                            showToast('Removido dos salvos', 'success');
+                          } else {
+                            await bookmarkPost(post.id);
+                            showToast('Salvo nos seus marcadores', 'success');
+                          }
+                        } catch (error) {
+                          showToast('Erro ao salvar post', 'error');
+                        }
+                      }}
+                      className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                    >
+                      {userProfile?.bookmarks?.includes(post.id) ? (
+                        <>
+                          <BookmarkCheck className="w-4 h-4 text-blue-500" />
+                          <span>Remover dos salvos</span>
+                        </>
+                      ) : (
+                        <>
+                          <Bookmark className="w-4 h-4" />
+                          <span>Salvar post</span>
+                        </>
+                      )}
+                    </button>
+                  </>
+                )}
+
+                <button 
+                  onClick={(e) => {
+                    stopPropagation(e);
+                    setActiveMenuPostId(null);
+                    setIsDMShareModalOpen(true);
+                  }}
+                  className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 flex items-center space-x-2 border-t border-gray-50"
+                >
+                  <Send className="w-4 h-4" />
+                  <span>Enviar por DM</span>
+                </button>
+                
+                <button 
+                  onClick={(e) => {
+                    setActiveMenuPostId(null);
+                    handleShare(e);
+                  }}
+                  className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                >
+                  <Send className="w-4 h-4" />
+                  <span>Compartilhar link</span>
+                </button>
+              </div>
+            )}
+          </div>
           </div>
 
           {/* Content */}
@@ -947,6 +1180,40 @@ export default function PostDetail() {
         onClose={() => setIsViewerOpen(false)}
         alt={viewerImage?.alt}
       />
+
+      <ShareViaDMModal
+        isOpen={isDMShareModalOpen}
+        onClose={() => setIsDMShareModalOpen(false)}
+        post={post}
+      />
+
+      {post && (
+        <ReportModal 
+          isOpen={isReportModalOpen}
+          onClose={() => setIsReportModalOpen(false)}
+          targetId={post.id}
+          targetType="post"
+          targetName={post.authorName}
+        />
+      )}
+
+      {post && (
+        <TipModal
+          isOpen={isTipModalOpen}
+          onClose={() => setIsTipModalOpen(false)}
+          senderId={userProfile?.uid}
+          senderPoints={userProfile?.points || 0}
+          receiverId={post.authorId}
+          receiverName={post.authorName}
+          onSuccess={() => {
+              showToast('Gorjeta enviada com sucesso!', 'success');
+              setIsTipModalOpen(false);
+          }}
+          onError={(err: string) => {
+              showToast(err || 'Erro ao enviar gorjeta.', 'error');
+          }}
+        />
+      )}
     </div>
   );
 }
