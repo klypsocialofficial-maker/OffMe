@@ -208,7 +208,7 @@ export default function RightSidebar() {
           </div>
           <input
             type="text"
-            placeholder="Buscar no Klyp"
+            placeholder="Buscar no OffMe"
             className="block w-full pl-11 pr-4 py-3 bg-gray-100 dark:bg-white/5 border-none rounded-full focus:ring-2 focus:ring-black/5 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all text-sm dark:text-white"
           />
         </div>

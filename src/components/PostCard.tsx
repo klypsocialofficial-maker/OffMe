@@ -271,7 +271,7 @@ function PostCard({
       viewport={{ once: true, margin: "-10% 0px -10% 0px" }}
       transition={{ duration: 0.4, ease: "easeOut" }}
       onClick={() => navigate(`/post/${effectivePost.id}`)}
-      className="group relative p-4 bg-white border-b border-gray-100 hover:bg-gray-50 transition-all cursor-pointer flex flex-col"
+      className="group relative p-4 bg-white border-b border-gray-100 hover:bg-gray-50/70 transition-colors duration-200 ease-out cursor-pointer flex flex-col"
     >
       {/* Repost Header */}
       {post.type === 'repost' && (

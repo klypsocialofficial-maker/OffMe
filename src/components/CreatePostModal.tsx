@@ -851,9 +851,41 @@ export default function CreatePostModal({
                 >
                   <Plus className="w-5 h-5" />
                 </button>
-                <div className={`text-xs font-medium ${content.length > 1000 ? 'text-red-500' : 'text-gray-400'}`}>
-                  {content.length} / 1000
-                </div>
+                {content.length > 0 && (
+                  <div className="flex items-center space-x-2">
+                    <div className="relative w-7 h-7 flex items-center justify-center">
+                      <svg className="w-7 h-7 transform -rotate-90">
+                        {/* Background track */}
+                        <circle
+                          cx="14"
+                          cy="14"
+                          r="9"
+                          className="stroke-gray-100"
+                          strokeWidth="2"
+                          fill="transparent"
+                        />
+                        {/* Progress track */}
+                        <motion.circle
+                          cx="14"
+                          cy="14"
+                          r="9"
+                          className={`${content.length > 1000 ? 'stroke-red-500' : content.length > 900 ? 'stroke-amber-500' : 'stroke-blue-500'} transition-colors duration-200`}
+                          strokeWidth="2"
+                          fill="transparent"
+                          strokeDasharray={2 * Math.PI * 9}
+                          animate={{ strokeDashoffset: (2 * Math.PI * 9) - (Math.min((content.length / 1000) * 100, 100) / 100) * (2 * Math.PI * 9) }}
+                          transition={{ duration: 0.1 }}
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                      {content.length >= 900 && (
+                        <span className={`absolute text-[9px] font-black ${content.length > 1000 ? 'text-red-500 animate-pulse' : 'text-gray-600'}`}>
+                          {1000 - content.length}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>
