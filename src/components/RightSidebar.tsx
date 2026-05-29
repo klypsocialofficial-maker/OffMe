@@ -322,12 +322,6 @@ export default function RightSidebar() {
 
       {/* Footer Links */}
       <div className="px-4 py-2 flex flex-wrap gap-x-3 gap-y-1 text-[13px] text-gray-500">
-        <a href="#" className="hover:underline">Termos de Serviço</a>
-        <a href="#" className="hover:underline">Política de Privacidade</a>
-        <a href="#" className="hover:underline">Política de Cookies</a>
-        <a href="#" className="hover:underline">Acessibilidade</a>
-        <a href="#" className="hover:underline">Informações de anúncios</a>
-        <a href="#" className="hover:underline">Mais...</a>
         <span>© 2026 OffMe Corp.</span>
       </div>
 
