@@ -118,6 +118,8 @@ export default function Home() {
   const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot | null>(null);
   const [activeMenuPostId, setActiveMenuPostId] = useState<string | null>(null);
   const loaderRef = useRef<HTMLDivElement>(null);
+  const lastFetchTimeRef = useRef<{foryou: number; following: number}>({ foryou: 0, following: 0 });
+  const lastRefreshKeyRef = useRef(refreshKey);
 
   const refreshFeed = useCallback(async () => {
     setIsRefreshing(true);
@@ -202,10 +204,26 @@ export default function Home() {
     
     if (isInitial) {
       const tabChanged = lastActiveTabRef.current !== activeTab;
+      const refreshKeyChanged = lastRefreshKeyRef.current !== refreshKey;
+      
       if (tabChanged) {
         lastActiveTabRef.current = activeTab;
       }
+      if (refreshKeyChanged) {
+        lastRefreshKeyRef.current = refreshKey;
+      }
+
+      const now = Date.now();
+      const lastFetch = lastFetchTimeRef.current[activeTab] || 0;
+      const hasContent = displayedPostsRef.current.length > 0;
       
+      if (!tabChanged && !refreshKeyChanged && hasContent && (now - lastFetch < 15000)) {
+        // Skip background refetch to avoid flickering and infinite loading
+        return;
+      }
+      
+      lastFetchTimeRef.current[activeTab] = now;
+
       if (displayedPostsRef.current.length === 0 || tabChanged) {
         setIsFetching(true);
       }
