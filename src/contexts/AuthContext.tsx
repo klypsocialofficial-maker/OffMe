@@ -22,6 +22,7 @@ import {
 import { doc, getDoc, setDoc, onSnapshot, serverTimestamp, collection, query, where, getDocs, updateDoc, arrayUnion, arrayRemove, deleteDoc, addDoc, writeBatch, limit, increment } from 'firebase/firestore';
 import { sendPushNotification } from '../lib/notifications';
 import { awardPoints } from '../services/gamificationService';
+import Toast from '../components/Toast';
 
 enum OperationType {
   CREATE = 'create',
@@ -163,6 +164,7 @@ interface AuthContextType {
   sendChatMessage: (conversationId: string, text: string, imageUrl?: string, audioUrl?: string) => Promise<void>;
   setTypingStatus: (conversationId: string, isTyping: boolean) => Promise<void>;
   purchaseItem: (itemId: string, cost: number) => Promise<void>;
+  showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -180,6 +182,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const migrationDoneRef = useRef<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info'; isOpen: boolean }>({
+    message: '',
+    type: 'info',
+    isOpen: false
+  });
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setToast({ message, type, isOpen: true });
+  };
 
   useEffect(() => {
     if (!auth) {
@@ -511,50 +522,69 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginWithPhone = async (phoneNumber: string, appVerifier: any) => {
     if (!auth) throw new Error("Firebase not initialized");
-    return await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
+    try {
+      const result = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
+      showToast("Código de verificação enviado via SMS!", "success");
+      return result;
+    } catch (error: any) {
+      showToast("Erro ao enviar código SMS: " + (error.message || error), "error");
+      throw error;
+    }
   };
 
   const verifyPhoneCode = async (confirmationResult: ConfirmationResult, code: string) => {
     if (!auth) throw new Error("Firebase not initialized");
-    const result = await confirmationResult.confirm(code);
-    const user = result.user;
-    
-    // Check if user exists in db
-    const docRef = doc(db, 'users', user.uid);
-    let docSnap;
     try {
-      docSnap = await getDoc(docRef);
-    } catch (error) {
-      console.error("Error fetching user profile after Phone login:", error);
-      handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
-      return;
-    }
-    
-    if (!docSnap.exists()) {
-      // Create new user profile for phone user
-      const newProfile: UserProfile = {
-        uid: user.uid,
-        email: user.email || '',
-        username: 'user_' + Math.floor(Math.random() * 1000000),
-        displayName: 'User',
-        photoURL: '',
-        following: [],
-        followers: [],
-        createdAt: serverTimestamp()
-      };
+      const result = await confirmationResult.confirm(code);
+      const user = result.user;
+      
+      // Check if user exists in db
+      const docRef = doc(db, 'users', user.uid);
+      let docSnap;
       try {
-        await setDoc(docRef, newProfile);
+        docSnap = await getDoc(docRef);
       } catch (error) {
-        console.error("Error creating user profile after Phone login:", error);
-        handleFirestoreError(error, OperationType.CREATE, `users/${user.uid}`);
+        console.error("Error fetching user profile after Phone login:", error);
+        handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
+        return;
       }
-      setUserProfile(newProfile);
+      
+      if (!docSnap.exists()) {
+        // Create new user profile for phone user
+        const newProfile: UserProfile = {
+          uid: user.uid,
+          email: user.email || '',
+          username: 'user_' + Math.floor(Math.random() * 1000000),
+          displayName: 'User',
+          photoURL: '',
+          following: [],
+          followers: [],
+          createdAt: serverTimestamp()
+        };
+        try {
+          await setDoc(docRef, newProfile);
+        } catch (error) {
+          console.error("Error creating user profile after Phone login:", error);
+          handleFirestoreError(error, OperationType.CREATE, `users/${user.uid}`);
+        }
+        setUserProfile(newProfile);
+      }
+      showToast("Verificação realizada com sucesso! Bem-vindo(a)!", "success");
+    } catch (error: any) {
+      showToast("Código inválido ou expirado. Tente novamente.", "error");
+      throw error;
     }
   };
 
   const sendVerificationEmail = async () => {
     if (!auth?.currentUser) throw new Error("No user logged in");
-    await sendEmailVerification(auth.currentUser);
+    try {
+      await sendEmailVerification(auth.currentUser);
+      showToast("E-mail de verificação enviado! Verifique sua caixa de entrada.", "success");
+    } catch (error: any) {
+      showToast("Erro ao enviar e-mail de verificação: " + (error.message || error), "error");
+      throw error;
+    }
   };
 
   const loginWithGoogle = async () => {
@@ -594,17 +624,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         setUserProfile(newProfile);
       }
+      showToast("Login com Google realizado com sucesso!", "success");
     } catch (error: any) {
       console.error("Full Google Login Error Object:", error);
+      let errorMsg = "Erro ao fazer login com Google.";
       if (error.code === 'auth/operation-not-allowed') {
-        throw new Error("O login com Google não está ativado no Firebase Console.");
+        errorMsg = "O login com Google não está ativado no Firebase Console.";
+      } else if (error.code === 'auth/unauthorized-domain') {
+        errorMsg = "Este domínio não está autorizado no Firebase Console. Por favor, adicione '" + window.location.hostname + "' aos domínios autorizados.";
+      } else if (error.code === 'auth/invalid-api-key') {
+        errorMsg = "A chave de API do Firebase é inválida. Verifique sua configuração.";
+      } else if (error.message) {
+        errorMsg = error.message;
       }
-      if (error.code === 'auth/unauthorized-domain') {
-        throw new Error("Este domínio não está autorizado no Firebase Console. Por favor, adicione '" + window.location.hostname + "' aos domínios autorizados.");
-      }
-      if (error.code === 'auth/invalid-api-key') {
-        throw new Error("A chave de API do Firebase é inválida. Verifique sua configuração.");
-      }
+      showToast(errorMsg, "error");
       throw error;
     }
   };
@@ -612,63 +645,93 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUpWithEmail = async (email: string, pass: string, username: string, name: string) => {
     if (!auth) throw new Error("Firebase not initialized");
     
-    // Check if username is taken
-    const q = query(collection(db, 'users'), where('username', '==', username));
-    const snapshot = await getDocs(q);
-    if (!snapshot.empty) {
-      throw new Error("Este nome de usuário já está em uso.");
-    }
-
-    const result = await createUserWithEmailAndPassword(auth, email, pass);
-    const user = result.user;
-    
-    const newProfile: UserProfile = {
-      uid: user.uid,
-      email: user.email || '',
-      username: username,
-      displayName: name,
-      photoURL: '',
-      following: [],
-      followers: [],
-      createdAt: serverTimestamp()
-    };
     try {
-      await setDoc(doc(db, 'users', user.uid), newProfile);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, `users/${user.uid}`);
+      // Check if username is taken
+      const q = query(collection(db, 'users'), where('username', '==', username));
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+        throw new Error("Este nome de usuário já está em uso.");
+      }
+
+      const result = await createUserWithEmailAndPassword(auth, email, pass);
+      const user = result.user;
+      
+      const newProfile: UserProfile = {
+        uid: user.uid,
+        email: user.email || '',
+        username: username,
+        displayName: name,
+        photoURL: '',
+        following: [],
+        followers: [],
+        createdAt: serverTimestamp()
+      };
+      try {
+        await setDoc(doc(db, 'users', user.uid), newProfile);
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, `users/${user.uid}`);
+      }
+      setUserProfile(newProfile);
+      showToast("Sua conta foi criada com sucesso! Bem-vindo(a)!", "success");
+    } catch (error: any) {
+      showToast("Erro ao criar conta: " + (error.message || error), "error");
+      throw error;
     }
-    setUserProfile(newProfile);
   };
 
   const loginWithEmail = async (email: string, pass: string, remember: boolean = true) => {
     if (!auth) throw new Error("Firebase not initialized");
-    const persistence = remember ? browserLocalPersistence : browserSessionPersistence;
-    await setPersistence(auth, persistence);
-    await signInWithEmailAndPassword(auth, email, pass);
+    try {
+      const persistence = remember ? browserLocalPersistence : browserSessionPersistence;
+      await setPersistence(auth, persistence);
+      await signInWithEmailAndPassword(auth, email, pass);
+      showToast("Login realizado com sucesso!", "success");
+    } catch (error: any) {
+      showToast("Erro ao realizar login: " + (error.message || error), "error");
+      throw error;
+    }
   };
 
   const updateUserEmail = async (email: string) => {
     if (!auth || !auth.currentUser) throw new Error("User not authenticated");
-    await updateEmail(auth.currentUser, email);
-    await updateDoc(doc(db, 'users', auth.currentUser.uid), { email });
+    try {
+      await updateEmail(auth.currentUser, email);
+      await updateDoc(doc(db, 'users', auth.currentUser.uid), { email });
+      showToast("Endereço de e-mail atualizado com sucesso!", "success");
+    } catch (error: any) {
+      showToast("Erro ao atualizar e-mail: " + (error.message || error), "error");
+      throw error;
+    }
   };
 
   const updateUserPassword = async (password: string) => {
     if (!auth || !auth.currentUser) throw new Error("User not authenticated");
-    await updatePassword(auth.currentUser, password);
+    try {
+      await updatePassword(auth.currentUser, password);
+      showToast("Sua senha foi alterada com sucesso!", "success");
+    } catch (error: any) {
+      showToast("Erro ao atualizar senha: " + (error.message || error), "error");
+      throw error;
+    }
   };
 
   const updateUserUsername = async (username: string) => {
     if (!auth || !auth.currentUser) throw new Error("User not authenticated");
     
-    // Check if username is taken
-    const q = query(collection(db, 'users'), where('username', '==', username));
-    const snapshot = await getDocs(q);
-    if (!snapshot.empty && snapshot.docs[0].id !== auth.currentUser.uid) {
-      throw new Error("Username already taken");
-    }
+    try {
+      // Check if username is taken
+      const q = query(collection(db, 'users'), where('username', '==', username));
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty && snapshot.docs[0].id !== auth.currentUser.uid) {
+        throw new Error("Username already taken");
+      }
 
-    await updateDoc(doc(db, 'users', auth.currentUser.uid), { username });
+      await updateDoc(doc(db, 'users', auth.currentUser.uid), { username });
+      showToast("Nome de usuário atualizado com sucesso!", "success");
+    } catch (error: any) {
+      showToast("Erro ao atualizar nome de usuário: " + (error.message || error), "error");
+      throw error;
+    }
   };
 
   const deleteAccount = async () => {
@@ -711,38 +774,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // 5. Clear local state
       setCurrentUser(null);
       setUserProfile(null);
+      showToast("Sua conta foi excluída permanentemente.", "success");
     } catch (error: any) {
       if (error.code === 'auth/requires-recent-login') {
+        showToast("Necessário login recente para excluir a conta.", "error");
         throw error;
       }
+      showToast("Erro ao excluir conta.", "error");
       handleFirestoreError(error, OperationType.DELETE, `users/${uid}`);
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
     if (!auth) throw new Error("Firebase not initialized");
-    return signOut(auth);
+    try {
+      await signOut(auth);
+      showToast("Você saiu da sua conta.", "info");
+    } catch (error: any) {
+      showToast("Erro ao desconectar: " + (error.message || error), "error");
+      throw error;
+    }
   };
 
   const followUser = async (targetUid: string) => {
     if (!userProfile || !currentUser) throw new Error("User not authenticated");
     
-    // Check private status
-    const targetUserRef = doc(db, 'users', targetUid);
-    const targetSnap = await getDoc(targetUserRef);
-    if (!targetSnap.exists()) throw new Error("User not found");
-    const targetProfile = targetSnap.data() as UserProfile;
-
-    if (targetProfile.privateProfile) {
-        await sendFollowRequest(targetUid);
-        return;
-    }
-
-    if (userProfile.uid === targetUid) throw new Error("You cannot follow yourself");
-
-    const currentUserRef = doc(db, 'users', currentUser.uid);
-
     try {
+      // Check private status
+      const targetUserRef = doc(db, 'users', targetUid);
+      const targetSnap = await getDoc(targetUserRef);
+      if (!targetSnap.exists()) throw new Error("User not found");
+      const targetProfile = targetSnap.data() as UserProfile;
+
+      if (targetProfile.privateProfile) {
+          await sendFollowRequest(targetUid);
+          return;
+      }
+
+      if (userProfile.uid === targetUid) throw new Error("You cannot follow yourself");
+
+      const currentUserRef = doc(db, 'users', currentUser.uid);
+
       await updateDoc(currentUserRef, {
         following: arrayUnion(targetUid)
       });
@@ -772,7 +844,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         'Novo Seguidor',
         `${userProfile.displayName} começou a seguir você.`
       );
-    } catch (error) {
+      showToast(`Agora você está seguindo @${targetProfile.username}!`, "success");
+    } catch (error: any) {
+      showToast("Erro ao seguir usuário: " + (error.message || error), "error");
       handleFirestoreError(error, OperationType.UPDATE, `users/${targetUid}`);
     }
   };
@@ -780,136 +854,160 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const sendFollowRequest = async (targetUid: string) => {
     if (!userProfile || !currentUser) throw new Error("User not authenticated");
     
-    const q = query(
-      collection(db, 'followRequests'),
-      where('senderId', '==', currentUser.uid),
-      where('receiverId', '==', targetUid),
-      where('status', '==', 'pending')
-    );
-    const snap = await getDocs(q);
-    if (!snap.empty) throw new Error("Request already sent");
+    try {
+      const q = query(
+        collection(db, 'followRequests'),
+        where('senderId', '==', currentUser.uid),
+        where('receiverId', '==', targetUid),
+        where('status', '==', 'pending')
+      );
+      const snap = await getDocs(q);
+      if (!snap.empty) throw new Error("Request already sent");
 
-    const reqDoc = await addDoc(collection(db, 'followRequests'), {
-      senderId: currentUser.uid,
-      receiverId: targetUid,
-      status: 'pending',
-      createdAt: serverTimestamp()
-    });
+      const reqDoc = await addDoc(collection(db, 'followRequests'), {
+        senderId: currentUser.uid,
+        receiverId: targetUid,
+        status: 'pending',
+        createdAt: serverTimestamp()
+      });
 
-    // Create notification for the receiver
-    await addDoc(collection(db, 'notifications'), {
-      recipientId: targetUid,
-      senderId: userProfile.uid,
-      senderName: userProfile.displayName,
-      senderUsername: userProfile.username,
-      senderPhoto: userProfile.photoURL || null,
-      senderVerified: userProfile.isVerified || userProfile.username === 'Rulio',
-      senderPremiumTier: userProfile.premiumTier || null,
-      type: 'follow_request',
-      followRequestId: reqDoc.id,
-      read: false,
-      createdAt: serverTimestamp()
-    });
+      // Create notification for the receiver
+      await addDoc(collection(db, 'notifications'), {
+        recipientId: targetUid,
+        senderId: userProfile.uid,
+        senderName: userProfile.displayName,
+        senderUsername: userProfile.username,
+        senderPhoto: userProfile.photoURL || null,
+        senderVerified: userProfile.isVerified || userProfile.username === 'Rulio',
+        senderPremiumTier: userProfile.premiumTier || null,
+        type: 'follow_request',
+        followRequestId: reqDoc.id,
+        read: false,
+        createdAt: serverTimestamp()
+      });
 
-    // Trigger push notification
-    await sendPushNotification(
-      targetUid,
-      'Solicitação para seguir',
-      `${userProfile.displayName} quer seguir você.`
-    );
+      // Trigger push notification
+      await sendPushNotification(
+        targetUid,
+        'Solicitação para seguir',
+        `${userProfile.displayName} quer seguir você.`
+      );
+      showToast("Solicitação de seguidor enviada com sucesso!", "success");
+    } catch (error: any) {
+      showToast("Erro ao enviar solicitação para seguir: " + (error.message || error), "error");
+      throw error;
+    }
   };
 
   const cancelFollowRequest = async (targetUid: string) => {
     if (!currentUser) throw new Error("User not authenticated");
-    const q = query(
-      collection(db, 'followRequests'),
-      where('senderId', '==', currentUser.uid),
-      where('receiverId', '==', targetUid),
-      where('status', '==', 'pending')
-    );
-    const snap = await getDocs(q);
-    if (!snap.empty) {
-      const batch = writeBatch(db);
-      snap.docs.forEach(d => batch.delete(d.ref));
-      
-      // Also delete the notification if possible
-      const qNotif = query(
-        collection(db, 'notifications'),
+    try {
+      const q = query(
+        collection(db, 'followRequests'),
         where('senderId', '==', currentUser.uid),
-        where('recipientId', '==', targetUid),
-        where('type', '==', 'follow_request')
+        where('receiverId', '==', targetUid),
+        where('status', '==', 'pending')
       );
-      const snapNotif = await getDocs(qNotif);
-      snapNotif.forEach(d => batch.delete(d.ref));
-      
-      await batch.commit();
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        const batch = writeBatch(db);
+        snap.docs.forEach(d => batch.delete(d.ref));
+        
+        // Also delete the notification if possible
+        const qNotif = query(
+          collection(db, 'notifications'),
+          where('senderId', '==', currentUser.uid),
+          where('recipientId', '==', targetUid),
+          where('type', '==', 'follow_request')
+        );
+        const snapNotif = await getDocs(qNotif);
+        snapNotif.forEach(d => batch.delete(d.ref));
+        
+        await batch.commit();
+      }
+      showToast("Solicitação para seguir cancelada com sucesso.", "info");
+    } catch (error: any) {
+      showToast("Erro ao cancelar solicitação: " + (error.message || error), "error");
+      throw error;
     }
   };
 
   const acceptFollowRequest = async (requestId: string) => {
      if (!userProfile || !currentUser) throw new Error("User not authenticated");
-     const reqRef = doc(db, 'followRequests', requestId);
-     const reqSnap = await getDoc(reqRef);
-     if (!reqSnap.exists()) throw new Error("Request not found");
-     const data = reqSnap.data();
+     try {
+       const reqRef = doc(db, 'followRequests', requestId);
+       const reqSnap = await getDoc(reqRef);
+       if (!reqSnap.exists()) throw new Error("Request not found");
+       const data = reqSnap.data();
 
-     // Atomic update: accept request, add follower
-     const batch = writeBatch(db);
-     batch.update(reqRef, { status: 'accepted' });
-     batch.update(doc(db, 'users', data.senderId), {
-         following: arrayUnion(data.receiverId)
-     });
-     batch.update(doc(db, 'users', data.receiverId), {
-         followers: arrayUnion(data.senderId)
-     });
-     
-     // Delete the follow_request notification
-     const qNotif = query(
-       collection(db, 'notifications'),
-       where('followRequestId', '==', requestId)
-     );
-     const snapNotif = await getDocs(qNotif);
-     snapNotif.forEach(d => batch.delete(d.ref));
+       // Atomic update: accept request, add follower
+       const batch = writeBatch(db);
+       batch.update(reqRef, { status: 'accepted' });
+       batch.update(doc(db, 'users', data.senderId), {
+           following: arrayUnion(data.receiverId)
+       });
+       batch.update(doc(db, 'users', data.receiverId), {
+           followers: arrayUnion(data.senderId)
+       });
+       
+       // Delete the follow_request notification
+       const qNotif = query(
+         collection(db, 'notifications'),
+         where('followRequestId', '==', requestId)
+       );
+       const snapNotif = await getDocs(qNotif);
+       snapNotif.forEach(d => batch.delete(d.ref));
 
-     await batch.commit();
+       await batch.commit();
 
-     // Create success notification for the sender
-     await addDoc(collection(db, 'notifications'), {
-       recipientId: data.senderId,
-       senderId: userProfile.uid,
-       senderName: userProfile.displayName,
-       senderUsername: userProfile.username,
-       senderPhoto: userProfile.photoURL || null,
-       senderVerified: userProfile.isVerified || userProfile.username === 'Rulio',
-       senderPremiumTier: userProfile.premiumTier || null,
-       type: 'follow', // Now they are following!
-       read: false,
-       createdAt: serverTimestamp()
-     });
+       // Create success notification for the sender
+       await addDoc(collection(db, 'notifications'), {
+         recipientId: data.senderId,
+         senderId: userProfile.uid,
+         senderName: userProfile.displayName,
+         senderUsername: userProfile.username,
+         senderPhoto: userProfile.photoURL || null,
+         senderVerified: userProfile.isVerified || userProfile.username === 'Rulio',
+         senderPremiumTier: userProfile.premiumTier || null,
+         type: 'follow', // Now they are following!
+         read: false,
+         createdAt: serverTimestamp()
+       });
 
-     // Trigger push notification
-     await sendPushNotification(
-       data.senderId,
-       'Solicitação aceita',
-       `${userProfile.displayName} aceitou sua solicitação para seguir.`
-     );
+       // Trigger push notification
+       await sendPushNotification(
+         data.senderId,
+         'Solicitação aceita',
+         `${userProfile.displayName} aceitou sua solicitação para seguir.`
+       );
+       showToast("Solicitação de seguidor aceita!", "success");
+     } catch (error: any) {
+       showToast("Erro ao aceitar solicitação: " + (error.message || error), "error");
+       throw error;
+     }
   };
 
   const declineFollowRequest = async (requestId: string) => {
       if (!currentUser) throw new Error("User not authenticated");
-      const reqRef = doc(db, 'followRequests', requestId);
-      const batch = writeBatch(db);
-      batch.update(reqRef, { status: 'declined' });
-      
-      // Delete the follow_request notification
-      const qNotif = query(
-        collection(db, 'notifications'),
-        where('followRequestId', '==', requestId)
-      );
-      const snapNotif = await getDocs(qNotif);
-      snapNotif.forEach(d => batch.delete(d.ref));
-      
-      await batch.commit();
+      try {
+        const reqRef = doc(db, 'followRequests', requestId);
+        const batch = writeBatch(db);
+        batch.update(reqRef, { status: 'declined' });
+        
+        // Delete the follow_request notification
+        const qNotif = query(
+          collection(db, 'notifications'),
+          where('followRequestId', '==', requestId)
+        );
+        const snapNotif = await getDocs(qNotif);
+        snapNotif.forEach(d => batch.delete(d.ref));
+        
+        await batch.commit();
+        showToast("Solicitação de seguidor recusada.", "info");
+      } catch (error: any) {
+        showToast("Erro ao recusar solicitação: " + (error.message || error), "error");
+        throw error;
+      }
   };
 
   const reportContent = async (type: 'post' | 'user' | 'comment', targetId: string, reason: string, details?: string) => {
@@ -924,7 +1022,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         status: 'pending',
         createdAt: serverTimestamp()
       });
-    } catch (error) {
+      showToast("Conteúdo denunciado com sucesso! Obrigado pela colaboração.", "success");
+    } catch (error: any) {
+      showToast("Erro ao enviar denúncia: " + (error.message || error), "error");
       handleFirestoreError(error, OperationType.CREATE, 'reports');
     }
   };
@@ -942,7 +1042,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         status: 'pending',
         createdAt: serverTimestamp()
       });
-    } catch (error) {
+      showToast("Sua solicitação de verificação foi enviada!", "success");
+    } catch (error: any) {
+      showToast("Erro ao solicitar verificação: " + (error.message || error), "error");
       handleFirestoreError(error, OperationType.CREATE, 'verificationRequests');
     }
   };
@@ -1078,7 +1180,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await updateDoc(targetUserRef, {
         followers: arrayRemove(currentUser.uid)
       });
-    } catch (error) {
+      showToast("Você deixou de seguir este usuário.", "info");
+    } catch (error: any) {
+      showToast("Erro ao deixar de seguir: " + (error.message || error), "error");
       handleFirestoreError(error, OperationType.UPDATE, `users/${targetUid}`);
     }
   };
@@ -1091,7 +1195,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await updateDoc(userRef, {
         circleMembers: arrayUnion(targetUid)
       });
-    } catch (error) {
+      showToast("Usuário adicionado à sua Roda!", "success");
+    } catch (error: any) {
+      showToast("Erro ao adicionar à Roda: " + (error.message || error), "error");
       handleFirestoreError(error, OperationType.UPDATE, `users/${currentUser.uid}`);
     }
   };
@@ -1103,7 +1209,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await updateDoc(userRef, {
         circleMembers: arrayRemove(targetUid)
       });
-    } catch (error) {
+      showToast("Usuário removido da sua Roda.", "info");
+    } catch (error: any) {
+      showToast("Erro ao remover da Roda: " + (error.message || error), "error");
       handleFirestoreError(error, OperationType.UPDATE, `users/${currentUser.uid}`);
     }
   };
@@ -1115,7 +1223,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await updateDoc(userRef, {
         mutedUsers: arrayRemove(targetUid)
       });
-    } catch (error) {
+      showToast("Removido o silenciamento do usuário.", "info");
+    } catch (error: any) {
+      showToast("Erro ao desmutar usuário: " + (error.message || error), "error");
       handleFirestoreError(error, OperationType.UPDATE, `users/${currentUser.uid}`);
     }
   };
@@ -1127,7 +1237,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await updateDoc(userRef, {
         mutedUsers: arrayUnion(targetUid)
       });
-    } catch (error) {
+      showToast("Usuário silenciado com sucesso.", "info");
+    } catch (error: any) {
+      showToast("Erro ao silenciar usuário: " + (error.message || error), "error");
       handleFirestoreError(error, OperationType.UPDATE, `users/${currentUser.uid}`);
     }
   };
@@ -1154,7 +1266,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           followers: newFollowers
         });
       }
-    } catch (error) {
+      showToast("Usuário bloqueado com sucesso.", "info");
+    } catch (error: any) {
+      showToast("Erro ao bloquear usuário: " + (error.message || error), "error");
       handleFirestoreError(error, OperationType.UPDATE, `users/${currentUser.uid}`);
     }
   };
@@ -1166,7 +1280,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await updateDoc(userRef, {
         blockedUsers: arrayRemove(targetUid)
       });
-    } catch (error) {
+      showToast("Usuário desbloqueado com sucesso.", "info");
+    } catch (error: any) {
+      showToast("Erro ao desbloquear usuário: " + (error.message || error), "error");
       handleFirestoreError(error, OperationType.UPDATE, `users/${currentUser.uid}`);
     }
   };
@@ -1178,7 +1294,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await updateDoc(userRef, {
         bookmarks: arrayUnion(postId)
       });
-    } catch (error) {
+      showToast("Postagem salva nos itens salvos!", "success");
+    } catch (error: any) {
+      showToast("Erro ao salvar postagem: " + (error.message || error), "error");
       handleFirestoreError(error, OperationType.UPDATE, `users/${currentUser.uid}`);
     }
   };
@@ -1190,7 +1308,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await updateDoc(userRef, {
         bookmarks: arrayRemove(postId)
       });
-    } catch (error) {
+      showToast("Postagem removida dos itens salvos.", "info");
+    } catch (error: any) {
+      showToast("Erro ao remover dos itens salvos: " + (error.message || error), "error");
       handleFirestoreError(error, OperationType.UPDATE, `users/${currentUser.uid}`);
     }
   };
@@ -1202,7 +1322,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await updateDoc(userRef, {
         pinnedPostIds: arrayUnion(postId)
       });
-    } catch (error) {
+      showToast("Postagem fixada no seu perfil!", "success");
+    } catch (error: any) {
+      showToast("Erro ao fixar postagem: " + (error.message || error), "error");
       handleFirestoreError(error, OperationType.UPDATE, `users/${currentUser.uid}`);
     }
   };
@@ -1214,7 +1336,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await updateDoc(userRef, {
         pinnedPostIds: arrayRemove(postId)
       });
-    } catch (error) {
+      showToast("Postagem desfixada do seu perfil.", "info");
+    } catch (error: any) {
+      showToast("Erro ao desfixar postagem: " + (error.message || error), "error");
       handleFirestoreError(error, OperationType.UPDATE, `users/${currentUser.uid}`);
     }
   };
@@ -1228,7 +1352,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         creatorCategory: category,
         monetizationEnabled: true
       });
-    } catch (error) {
+      showToast("Parabéns! Modo Criador ativado com sucesso!", "success");
+    } catch (error: any) {
+      showToast("Erro ao ativar modo criador: " + (error.message || error), "error");
       handleFirestoreError(error, OperationType.UPDATE, `users/${currentUser.uid}`);
     }
   };
@@ -1240,7 +1366,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await updateDoc(userRef, {
         mutedWords: arrayUnion(word.toLowerCase())
       });
-    } catch (error) {
+      showToast(`Palavra "${word}" foi silenciada em seu feed.`, "info");
+    } catch (error: any) {
+      showToast("Erro ao silenciar palavra: " + (error.message || error), "error");
       handleFirestoreError(error, OperationType.UPDATE, `users/${currentUser.uid}`);
     }
   };
@@ -1252,7 +1380,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await updateDoc(userRef, {
         mutedWords: arrayRemove(word.toLowerCase())
       });
-    } catch (error) {
+      showToast(`Palavra "${word}" removida do silenciamento.`, "info");
+    } catch (error: any) {
+      showToast("Erro ao remover palavra silenciada: " + (error.message || error), "error");
       handleFirestoreError(error, OperationType.UPDATE, `users/${currentUser.uid}`);
     }
   };
@@ -1278,11 +1408,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             });
           }
         }
+        showToast("Permissão de notificações concedida!", "success");
         return true;
       }
       return false;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error requesting notification permission:', error);
+      showToast("Erro ao ativar notificações: " + (error.message || error), "error");
       return false;
     }
   };
@@ -1304,7 +1436,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           badges: arrayUnion(itemId.replace('badge_', ''))
         });
       }
-    } catch (error) {
+      showToast("Item adquirido com sucesso!", "success");
+    } catch (error: any) {
+      showToast("Erro ao adquirir item: " + (error.message || error), "error");
       handleFirestoreError(error, OperationType.UPDATE, `users/${currentUser.uid}`);
     }
   };
@@ -1397,12 +1531,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     trackProfileView,
     sendChatMessage,
     setTypingStatus,
-    purchaseItem
+    purchaseItem,
+    showToast
   };
 
   return (
     <AuthContext.Provider value={value}>
       {!loading && children}
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isOpen={toast.isOpen}
+        onClose={() => setToast(prev => ({ ...prev, isOpen: false }))}
+      />
     </AuthContext.Provider>
   );
 }

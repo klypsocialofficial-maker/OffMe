@@ -7,6 +7,7 @@ import cors from "cors";
 import fs from "fs";
 import admin from 'firebase-admin';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { WebSocketServer, WebSocket } from "ws";
 
 // Load firebase config for the project ID
 let firebaseConfig: any = {};
@@ -86,6 +87,26 @@ async function checkScheduledPosts() {
   }
 }
 
+// Memory-cached total registered user count for real-time WebSocket dashboard aggregation
+let cachedTotalUsers = 42;
+
+async function refreshCachedTotalUsers() {
+  if (!admin.apps.length) return;
+  try {
+    const db = firebaseConfig.firestoreDatabaseId 
+      ? getFirestore(firebaseConfig.firestoreDatabaseId)
+      : getFirestore();
+    const snap = await db.collection('users').count().get();
+    const count = snap.data().count;
+    if (typeof count === 'number') {
+      cachedTotalUsers = count;
+      console.log(`[Cache] Refreshed total user count: ${cachedTotalUsers}`);
+    }
+  } catch (error) {
+    console.error("Error refreshing cached user count:", error);
+  }
+}
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
@@ -142,10 +163,71 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
+  const httpServer = app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
     // Check for scheduled posts every 5 minutes
     setInterval(checkScheduledPosts, 5 * 60 * 1000);
+
+    // Initial load and periodic refresh of users counter
+    refreshCachedTotalUsers();
+    setInterval(refreshCachedTotalUsers, 3 * 60 * 1000); // 3-minute refresh
+  });
+
+  // Setup WebSocket Server for active user telemetry and real-time counter sync
+  const wss = new WebSocketServer({ noServer: true });
+
+  const broadcastStats = () => {
+    const payload = JSON.stringify({
+      type: 'stats',
+      activeCount: wss.clients.size,
+      totalCount: cachedTotalUsers
+    });
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(payload);
+      }
+    });
+  };
+
+  wss.on('connection', (ws: any) => {
+    // Send immediate initial response upon handshake
+    ws.send(JSON.stringify({
+      type: 'stats',
+      activeCount: wss.clients.size,
+      totalCount: cachedTotalUsers
+    }));
+
+    // Broadcast new updated counts to all open sockets
+    broadcastStats();
+
+    ws.on('close', () => {
+      broadcastStats();
+    });
+
+    ws.on('error', (err: any) => {
+      console.warn('[WebSocket] Active socket error:', err);
+    });
+  });
+
+  // Intercept and route upgrade requests to upgrade specific endpoints
+  httpServer.on('upgrade', (request, socket, head) => {
+    try {
+      const url = request.url || "";
+      const isWsPath = url.includes('/ws-active-users');
+      if (isWsPath) {
+        wss.handleUpgrade(request, socket, head, (ws) => {
+          wss.emit('connection', ws, request);
+        });
+      } else {
+        // Allow fallback to Vite's own internal dev server WS upgrading handler in development
+        if (process.env.NODE_ENV === "production") {
+          socket.destroy();
+        }
+      }
+    } catch (err) {
+      console.error('[WebSocket] Upgrade routing error:', err);
+      socket.destroy();
+    }
   });
 }
 
