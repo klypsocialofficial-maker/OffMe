@@ -389,8 +389,8 @@ export default function PostDetail() {
     }
   };
 
-  const handleShare = async (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleShare = async (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (!post) return;
     
     if (navigator.share) {
