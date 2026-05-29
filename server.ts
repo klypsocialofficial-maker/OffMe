@@ -148,12 +148,14 @@ async function startServer() {
   });
 
   // Vite middleware for development
+  let viteInstance: any = null;
   if (process.env.NODE_ENV !== "production") {
     const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
+    viteInstance = vite;
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
@@ -220,8 +222,12 @@ async function startServer() {
         });
       } else {
         // Allow fallback to Vite's own internal dev server WS upgrading handler in development
-        if (process.env.NODE_ENV === "production") {
-          socket.destroy();
+        if (viteInstance && viteInstance.ws) {
+          viteInstance.ws.handleUpgrade(request, socket, head);
+        } else {
+          if (process.env.NODE_ENV === "production") {
+            socket.destroy();
+          }
         }
       }
     } catch (err) {
