@@ -94,6 +94,16 @@ export default function Home() {
     displayedPostsRef.current = displayedPosts;
   }, [displayedPosts]);
 
+  const lastActiveTabRef = useRef(activeTab);
+
+  const followingString = useMemo(() => {
+    return (userProfile?.following || []).join(',');
+  }, [userProfile?.following]);
+
+  const mutedString = useMemo(() => {
+    return (userProfile?.mutedUsers || []).join(',');
+  }, [userProfile?.mutedUsers]);
+
   useEffect(() => {
     isInitialLoadRef.current = true;
     setDisplayedPosts([]);
@@ -191,7 +201,14 @@ export default function Home() {
     if (!db) return;
     
     if (isInitial) {
-      setIsFetching(true);
+      const tabChanged = lastActiveTabRef.current !== activeTab;
+      if (tabChanged) {
+        lastActiveTabRef.current = activeTab;
+      }
+      
+      if (displayedPostsRef.current.length === 0 || tabChanged) {
+        setIsFetching(true);
+      }
       setLastVisible(null);
       setHasMore(true);
       setNewPostsCount(0);
@@ -316,7 +333,7 @@ export default function Home() {
 
   useEffect(() => {
     fetchPosts(true);
-  }, [activeTab, db, userProfile?.following, refreshKey]);
+  }, [activeTab, db, followingString, mutedString, refreshKey]);
 
   // Listener for new posts to show update notification
   useEffect(() => {

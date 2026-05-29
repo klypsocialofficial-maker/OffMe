@@ -86,9 +86,9 @@ export default function EditProfileModal({ isOpen, onClose, userProfile, handleF
           reject(new Error('Canvas is empty'));
           return;
         }
-        const file = new File([blob], 'cropped.jpg', { type: 'image/jpeg' });
+        const file = new File([blob], 'cropped.webp', { type: 'image/webp' });
         resolve(file);
-      }, 'image/jpeg');
+      }, 'image/webp', 0.85);
     });
   };
 

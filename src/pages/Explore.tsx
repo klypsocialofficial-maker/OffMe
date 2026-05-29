@@ -81,6 +81,11 @@ export default function Explore() {
   const { openDrawer } = useOutletContext<{ openDrawer: () => void }>();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const followingString = React.useMemo(() => {
+    return (userProfile?.following || []).join(',');
+  }, [userProfile?.following]);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [suggestedUsers, setSuggestedUsers] = useState<any[]>([]);
@@ -519,7 +524,7 @@ export default function Explore() {
     };
 
     fetchAdvancedSuggestions();
-  }, [userProfile?.uid, userProfile?.following]);
+  }, [userProfile?.uid, followingString]);
 
   useEffect(() => {
     const cleanQuery = searchQuery.trim().replace(/^@/, '');
