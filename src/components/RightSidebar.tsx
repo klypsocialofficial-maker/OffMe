@@ -41,17 +41,17 @@ export default function RightSidebar() {
   useEffect(() => {
     if (!db) return;
     
-    // Fetch recent posts to extract real trending hashtags
+    // Fetch recent posts to extract real trending hashtags without index requirements
     const q = query(
       collection(db, 'posts'),
-      where('privacy', '==', 'public'),
       orderBy('createdAt', 'desc'),
-      limit(50)
+      limit(100)
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const hashtagCounts: Record<string, number> = {};
       
-      snapshot.docs.forEach(doc => {
+      const publicDocs = snapshot.docs.filter(d => d.data().privacy === 'public' || !d.data().privacy);
+      publicDocs.forEach(doc => {
         const content = doc.data().content || '';
         // Extract hashtags using regex
         const matches = content.match(/#[a-zA-Z0-9_À-ÿ]+/g);

@@ -209,19 +209,29 @@ export default function PostDetail() {
 
     const repliesQuery = query(
       collection(db, 'posts'),
-      where('threadId', '==', postId),
-      where('privacy', '==', 'public'),
-      orderBy('createdAt', 'asc')
+      where('threadId', '==', postId)
     );
 
     const unsubscribeReplies = onSnapshot(repliesQuery, (snapshot) => {
       const repliesData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
-      }) as any);
+      }) as any)
+      .sort((a, b) => {
+        const aTime = a.createdAt?.toMillis?.() || a.createdAt?.seconds * 1000 || 0;
+        const bTime = b.createdAt?.toMillis?.() || b.createdAt?.seconds * 1000 || 0;
+        return aTime - bTime;
+      });
       
-      // Filter out replies from muted users
-      const filteredReplies = repliesData.filter((reply: any) => !userProfile?.mutedUsers?.includes(reply.authorId));
+      // Filter out replies from muted users and check privacy in memory
+      const filteredReplies = repliesData.filter((reply: any) => {
+        if (reply.privacy && reply.privacy !== 'public') {
+          const isAuthor = userProfile?.uid && reply.authorId === userProfile.uid;
+          const isAudience = userProfile?.uid && reply.audience?.includes(userProfile.uid);
+          if (!isAuthor && !isAudience) return false;
+        }
+        return !userProfile?.mutedUsers?.includes(reply.authorId);
+      });
       setReplies(filteredReplies);
     }, (error) => {
       console.error("PostDetail unsubscribeReplies error: ", error);
@@ -229,18 +239,29 @@ export default function PostDetail() {
 
     const quotesQuery = query(
       collection(db, 'posts'),
-      where('quotedPostId', '==', postId),
-      where('privacy', '==', 'public'),
-      orderBy('createdAt', 'desc')
+      where('quotedPostId', '==', postId)
     );
 
     const unsubscribeQuotes = onSnapshot(quotesQuery, (snapshot) => {
       const quotesData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
-      }) as any);
+      }) as any)
+      .sort((a, b) => {
+        const aTime = a.createdAt?.toMillis?.() || a.createdAt?.seconds * 1000 || 0;
+        const bTime = b.createdAt?.toMillis?.() || b.createdAt?.seconds * 1000 || 0;
+        return bTime - aTime;
+      });
       
-      setQuotes(quotesData);
+      const filteredQuotes = quotesData.filter((quote: any) => {
+        if (quote.privacy && quote.privacy !== 'public') {
+          const isAuthor = userProfile?.uid && quote.authorId === userProfile.uid;
+          const isAudience = userProfile?.uid && quote.audience?.includes(userProfile.uid);
+          if (!isAuthor && !isAudience) return false;
+        }
+        return !userProfile?.mutedUsers?.includes(quote.authorId);
+      });
+      setQuotes(filteredQuotes);
     }, (error) => {
       console.error("PostDetail unsubscribeQuotes error: ", error);
     });
@@ -599,20 +620,25 @@ export default function PostDetail() {
 
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center space-x-3">
-              <div 
-                className={`w-12 h-12 rounded-full overflow-hidden flex-shrink-0 cursor-pointer shadow-sm ${post.authorId === 'anonymous' ? 'bg-gradient-to-br from-indigo-50 to-purple-100 border border-purple-200 flex items-center justify-center' : 'bg-gray-200'}`}
-                onClick={() => {
-                  if (post.authorId === 'anonymous') navigate('/anonymous-feed');
-                  else navigate(`/${post.authorUsername}`);
-                }}
-              >
-                {post.authorId === 'anonymous' ? (
-                  <Ghost className="w-6 h-6 text-indigo-400" />
-                ) : post.authorPhoto ? (
-                  <LazyImage src={post.authorPhoto} alt={post.authorName} className="w-full h-full" />
-                ) : (
-                  <LazyImage src={getDefaultAvatar(post.authorName, post.authorUsername)} alt={post.authorName} className="w-full h-full" />
+              <div className="relative flex flex-col items-center">
+                {parentPost && (
+                  <div className="w-[2px] bg-gray-200 absolute top-[-150px] bottom-12 left-1/2 -translate-x-1/2 z-0"></div>
                 )}
+                <div 
+                  className={`w-12 h-12 rounded-full overflow-hidden flex-shrink-0 cursor-pointer shadow-sm relative z-10 ${post.authorId === 'anonymous' ? 'bg-gradient-to-br from-indigo-50 to-purple-100 border border-purple-200 flex items-center justify-center' : 'bg-gray-200'}`}
+                  onClick={() => {
+                    if (post.authorId === 'anonymous') navigate('/anonymous-feed');
+                    else navigate(`/${post.authorUsername}`);
+                  }}
+                >
+                  {post.authorId === 'anonymous' ? (
+                    <Ghost className="w-6 h-6 text-indigo-400" />
+                  ) : post.authorPhoto ? (
+                    <LazyImage src={post.authorPhoto} alt={post.authorName} className="w-full h-full" />
+                  ) : (
+                    <LazyImage src={getDefaultAvatar(post.authorName, post.authorUsername)} alt={post.authorName} className="w-full h-full" />
+                  )}
+                </div>
               </div>
               <div className="min-w-0">
                 <div className="flex items-center space-x-1" onClick={() => {
@@ -1027,6 +1053,7 @@ export default function PostDetail() {
                 <div key={reply.id} className="group">
                   <PostCard 
                     post={reply}
+                    isThreadChild={true}
                     onLike={handleLikePost}
                     onRepost={handleRepost}
                     onDelete={handleDeletePost}

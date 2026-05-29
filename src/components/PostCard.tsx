@@ -355,6 +355,11 @@ function PostCard({
             )}
           </div>
           
+          {/* Thread Connector Line (Up) */}
+          {isThreadChild && (
+            <div className="w-[2px] bg-gray-200 absolute top-[-16px] bottom-10 left-1/2 -translate-x-1/2 z-0"></div>
+          )}
+
           {/* Thread Connector Line (Down) */}
           {isThreadParent && (
             <div className="w-[2px] bg-gray-200 absolute top-10 bottom-[-16px] left-1/2 -translate-x-1/2 z-0"></div>
@@ -664,7 +669,12 @@ function PostCard({
             className="flex items-center space-x-2 group/action hover:text-blue-500 transition-colors"
           >
             <div className="p-2 group-hover/action:bg-blue-50 rounded-full transition-colors">
-              <MessageCircle className="w-4.5 h-4.5" />
+              <motion.div
+                whileHover={{ scale: 1.15, rotate: -15 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 12 }}
+              >
+                <MessageCircle className="w-4.5 h-4.5" />
+              </motion.div>
             </div>
             <span className="text-sm">{effectivePost.repliesCount || 0}</span>
           </motion.button>
@@ -680,7 +690,13 @@ function PostCard({
             className={`flex items-center space-x-2 group/action transition-colors ${effectivePost.reposts?.includes(userProfile?.uid) ? 'text-green-500' : 'hover:text-green-500'}`}
           >
             <div className="p-2 group-hover/action:bg-green-50 rounded-full transition-colors relative">
-              <Repeat className="w-4.5 h-4.5" />
+              <motion.div
+                animate={effectivePost.reposts?.includes(userProfile?.uid) ? { rotate: 180, scale: 1.15 } : { rotate: 0, scale: 1 }}
+                whileHover={{ rotate: 120 }}
+                transition={{ type: 'spring', stiffness: 350, damping: 15 }}
+              >
+                <Repeat className="w-4.5 h-4.5" />
+              </motion.div>
             </div>
             <motion.span 
               key={effectivePost.repostsCount}
@@ -705,7 +721,15 @@ function PostCard({
               className={`flex items-center space-x-2 group/action transition-colors outline-none ${reactionColor}`}
             >
               <div className="p-2 group-hover/action:bg-red-50 dark:group-hover/action:bg-red-500/10 rounded-full transition-colors relative">
-                <ActiveReactionIcon className={`w-4.5 h-4.5 ${currentUserReaction ? 'fill-current' : ''}`} />
+                <motion.div
+                  key={currentUserReaction || 'no-reaction'}
+                  initial={{ scale: 0.8 }}
+                  animate={{ scale: 1 }}
+                  whileHover={{ scale: 1.15 }}
+                  transition={{ type: 'spring', stiffness: 450, damping: 12 }}
+                >
+                  <ActiveReactionIcon className={`w-4.5 h-4.5 ${currentUserReaction ? 'fill-current' : ''}`} />
+                </motion.div>
                 <AnimatePresence>
                   {showLikeAnimation && (
                     <>
@@ -771,7 +795,12 @@ function PostCard({
             className="flex items-center space-x-2 group/action hover:text-blue-500 transition-colors"
           >
             <div className="p-2 group-hover/action:bg-blue-50 rounded-full transition-colors">
-              <BarChart2 className="w-4.5 h-4.5" />
+              <motion.div
+                whileHover={{ scale: 1.2, rotate: 10 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+              >
+                <BarChart2 className="w-4.5 h-4.5" />
+              </motion.div>
             </div>
             <span className="text-sm">
               {effectivePost.viewCount || 0}
@@ -785,11 +814,18 @@ function PostCard({
             className={`flex items-center space-x-2 group/action transition-colors ${userProfile?.bookmarks?.includes(effectivePost.id) ? 'text-blue-500' : 'hover:text-blue-500'}`}
           >
             <div className="p-2 group-hover/action:bg-blue-50 rounded-full transition-colors">
-              {userProfile?.bookmarks?.includes(effectivePost.id) ? (
-                <BookmarkCheck className="w-4.5 h-4.5 fill-current" />
-              ) : (
-                <Bookmark className="w-4.5 h-4.5" />
-              )}
+              <motion.div
+                key={userProfile?.bookmarks?.includes(effectivePost.id) ? 'bookmarked' : 'unbookmarked'}
+                initial={{ scale: 0.8, y: -2 }}
+                animate={{ scale: 1, y: 0 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+              >
+                {userProfile?.bookmarks?.includes(effectivePost.id) ? (
+                  <BookmarkCheck className="w-4.5 h-4.5 fill-current" />
+                ) : (
+                  <Bookmark className="w-4.5 h-4.5" />
+                )}
+              </motion.div>
             </div>
           </motion.button>
 
@@ -800,7 +836,12 @@ function PostCard({
             className="flex items-center space-x-2 group/action hover:text-blue-500 transition-colors"
           >
             <div className="p-2 group-hover/action:bg-blue-50 rounded-full transition-colors">
-              <Send className="w-4.5 h-4.5" />
+              <motion.div
+                whileHover={{ scale: 1.2, x: 2, y: -2 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+              >
+                <Send className="w-4.5 h-4.5" />
+              </motion.div>
             </div>
           </motion.button>
         </div>

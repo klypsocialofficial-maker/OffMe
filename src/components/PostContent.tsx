@@ -37,7 +37,7 @@ export default function PostContent({ content, className = '', showPreview = tru
                   e.stopPropagation();
                   navigate(`/${username}`);
                 }}
-                className="text-blue-500 hover:underline cursor-pointer font-medium"
+                className="text-sky-500 hover:text-sky-600 hover:underline cursor-pointer font-semibold transition-colors duration-200"
               >
                 {part}
               </span>
@@ -53,7 +53,7 @@ export default function PostContent({ content, className = '', showPreview = tru
                   e.stopPropagation();
                   navigate(`/explore?q=${encodeURIComponent(part)}`);
                 }}
-                className="text-indigo-500 hover:underline cursor-pointer font-medium"
+                className="text-sky-500 hover:text-sky-600 hover:underline cursor-pointer font-semibold transition-colors duration-200"
               >
                 {part}
               </span>

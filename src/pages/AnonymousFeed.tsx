@@ -30,13 +30,19 @@ export default function AnonymousFeed() {
     // Assuming anonymous posts have authorId: 'anonymous'
     const q = query(
       collection(db, 'posts'),
-      where('authorId', '==', 'anonymous'),
-      where('privacy', '==', 'public'),
-      orderBy('createdAt', 'desc')
+      where('authorId', '==', 'anonymous')
     );
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      setPosts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      const postsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as any);
+      const filteredAndSorted = postsData
+        .filter((post: any) => post.privacy === 'public' || !post.privacy)
+        .sort((a: any, b: any) => {
+          const aTime = a.createdAt?.toMillis?.() || a.createdAt?.seconds * 1000 || 0;
+          const bTime = b.createdAt?.toMillis?.() || b.createdAt?.seconds * 1000 || 0;
+          return bTime - aTime;
+        });
+      setPosts(filteredAndSorted);
       setLoading(false);
     }, (error) => {
       console.error("Anonymous feed error:", error);

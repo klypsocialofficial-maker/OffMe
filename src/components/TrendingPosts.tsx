@@ -21,14 +21,15 @@ const TrendingPosts: React.FC<TrendingPostsProps> = ({ autoHide = false, isFullL
 
     const q = query(
       collection(db, 'posts'),
-      where('privacy', '==', 'public'),
       orderBy('likesCount', 'desc'),
-      limit(isFullList ? 20 : 5)
+      limit(isFullList ? 40 : 15)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setTrendingPosts(posts);
+      const posts = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }) as any)
+        .filter(post => post.privacy === 'public' || !post.privacy);
+      setTrendingPosts(posts.slice(0, isFullList ? 20 : 5));
     }, (error) => {
       console.error('Error fetching trending posts:', error);
     });

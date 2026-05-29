@@ -311,13 +311,9 @@ const RealTimeUserCounter = React.memo(function RealTimeUserCounter() {
               <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isWebSocketActive ? 'bg-emerald-400' : 'bg-amber-400'}`}></span>
               <span className={`relative inline-flex rounded-full h-3 w-3 ${isWebSocketActive ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
             </span>
-            <span className={`text-[10px] sm:text-xs font-black tracking-widest uppercase select-none flex items-center gap-1 ${isWebSocketActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+            <span className="text-[10px] font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-widest flex items-center gap-1 select-none">
               <Radio className="w-3.5 h-3.5" />
-              {isWebSocketActive ? 'Sincronizado via WebSocket' : 'Firestore Real-time (Ativo)'}
-            </span>
-            <span className="text-[9px] px-2 py-0.5 rounded-full font-bold bg-black/5 dark:bg-white/10 text-gray-500 dark:text-gray-400 flex items-center gap-1">
-              <Cpu className="w-2.5 h-2.5 text-blue-500 dark:text-purple-400" />
-              Isolamento de Render
+              Feed ao vivo
             </span>
           </div>
 

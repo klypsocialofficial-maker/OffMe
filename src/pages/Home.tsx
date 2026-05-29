@@ -236,78 +236,11 @@ export default function Home() {
     }
 
     try {
-      let q;
-      if (activeTab === 'following') {
-        const followingIds = userProfile?.following ? [...userProfile.following.slice(0, 30)] : [];
-        if (userProfile?.uid && !followingIds.includes(userProfile.uid)) {
-          followingIds.push(userProfile.uid);
-        }
-
-        if (followingIds.length > 0) {
-          // Fetch public posts from following
-          const qPublic = query(
-            collection(db, 'posts'),
-            where('authorId', 'in', followingIds),
-            where('privacy', '==', 'public'),
-            orderBy('createdAt', 'desc'),
-            limit(POSTS_PER_PAGE)
-          );
-
-          // Fetch circle posts where user is in audience (regardless of author, but we'll focus on followers)
-          const qCircle = query(
-            collection(db, 'posts'),
-            where('privacy', '==', 'circle'),
-            where('audience', 'array-contains', userProfile?.uid || 'none'),
-            orderBy('createdAt', 'desc'),
-            limit(5)
-          );
-
-          const [snapPublic, snapCircle] = await Promise.all([
-            getDocs(qPublic),
-            getDocs(qCircle)
-          ]);
-
-          const combinedPosts: any[] = [
-            ...snapPublic.docs.map(d => ({ id: d.id, ...d.data() })),
-            ...snapCircle.docs.map(d => ({ id: d.id, ...d.data() }))
-          ].sort((a: any, b: any) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
-
-          const newPosts = combinedPosts.filter(post => !userProfile?.mutedUsers?.includes(post.authorId));
-          
-          if (isInitial) {
-            setDisplayedPosts(newPosts);
-          } else {
-            setDisplayedPosts(prev => {
-              const existingIds = new Set(prev.map(p => p.id));
-              const filteredNew = newPosts.filter(p => !existingIds.has(p.id));
-              return [...prev, ...filteredNew];
-            });
-          }
-          
-          // Simplified pagination for this complex split query
-          setHasMore(snapPublic.docs.length === POSTS_PER_PAGE);
-          if (snapPublic.docs.length > 0) {
-            setLastVisible(snapPublic.docs[snapPublic.docs.length - 1]);
-          }
-          setIsFetching(false);
-          setIsLoadingMore(false);
-          return; // Exit early since we handled following
-        } else {
-          q = query(
-            collection(db, 'posts'),
-            where('authorId', '==', userProfile?.uid || 'none'),
-            orderBy('createdAt', 'desc'),
-            limit(POSTS_PER_PAGE)
-          );
-        }
-      } else {
-        q = query(
-          collection(db, 'posts'),
-          where('privacy', 'in', ['public']),
-          orderBy('createdAt', 'desc'),
-          limit(POSTS_PER_PAGE)
-        );
-      }
+      let q = query(
+        collection(db, 'posts'),
+        orderBy('createdAt', 'desc'),
+        limit(POSTS_PER_PAGE * 4)
+      );
 
       if (!isInitial && lastVisible) {
         q = query(q, startAfter(lastVisible));
@@ -322,22 +255,46 @@ export default function Home() {
         const lastDoc = snapshot.docs[snapshot.docs.length - 1];
         setLastVisible(lastDoc);
         
-        const newPosts = snapshot.docs.map(doc => ({
+        const allPosts = snapshot.docs.map(doc => ({
           id: doc.id,
           ...(doc.data() as any)
-        })).filter(post => !userProfile?.mutedUsers?.includes(post.authorId));
+        }));
+
+        // Filter client-side to avoid composite index requirements
+        const filteredPosts = allPosts.filter(post => {
+          // 1. Muted user filter
+          if (userProfile?.mutedUsers?.includes(post.authorId)) return false;
+
+          // 2. Privacy filter
+          if (post.privacy && post.privacy !== 'public') {
+            const isAuthor = userProfile?.uid && post.authorId === userProfile.uid;
+            const isAudience = userProfile?.uid && post.audience?.includes(userProfile.uid);
+            if (!isAuthor && !isAudience) return false;
+          }
+
+          // 3. Following filter (for "Following" tab)
+          if (activeTab === 'following') {
+            const followingIds = userProfile?.following ? [...userProfile.following] : [];
+            if (userProfile?.uid && !followingIds.includes(userProfile.uid)) {
+              followingIds.push(userProfile.uid);
+            }
+            if (!followingIds.includes(post.authorId)) return false;
+          }
+
+          return true;
+        });
 
         if (isInitial) {
-          setDisplayedPosts(newPosts);
+          setDisplayedPosts(filteredPosts);
         } else {
           setDisplayedPosts(prev => {
             const existingIds = new Set(prev.map(p => p.id));
-            const filteredNew = newPosts.filter(p => !existingIds.has(p.id));
+            const filteredNew = filteredPosts.filter(p => !existingIds.has(p.id));
             return [...prev, ...filteredNew];
           });
         }
         
-        setHasMore(snapshot.docs.length === POSTS_PER_PAGE);
+        setHasMore(snapshot.docs.length === POSTS_PER_PAGE * 4);
       }
     } catch (error) {
       console.error("Feed error:", error);
@@ -361,34 +318,37 @@ export default function Home() {
     const latestTimestamp = displayedPosts[0]?.createdAt;
     if (!latestTimestamp) return;
 
-    let q;
-    if (activeTab === 'following') {
-      const followingIds = userProfile?.following ? [...userProfile.following.slice(0, 30)] : [];
-      if (userProfile?.uid && !followingIds.includes(userProfile.uid)) {
-        followingIds.push(userProfile.uid);
-      }
-      
-      if (followingIds.length === 0) return;
-
-      q = query(
-        collection(db, 'posts'),
-        where('authorId', 'in', followingIds),
-        where('privacy', 'in', ['public', 'circle']),
-        where('createdAt', '>', latestTimestamp),
-        limit(20)
-      );
-    } else {
-      q = query(
-        collection(db, 'posts'),
-        where('privacy', '==', 'public'),
-        where('createdAt', '>', latestTimestamp),
-        limit(20)
-      );
-    }
+    const q = query(
+      collection(db, 'posts'),
+      where('createdAt', '>', latestTimestamp),
+      limit(40)
+    );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      // Filter out our own posts
-      const news = snapshot.docs.filter(doc => doc.data().authorId !== userProfile.uid);
+      // Filter in memory to avoid composite index requirements
+      const news = snapshot.docs.filter(doc => {
+        const postData = doc.data();
+        if (postData.authorId === userProfile.uid) return false;
+
+        // Privacy check
+        if (postData.privacy && postData.privacy !== 'public') {
+          const isAuthor = userProfile?.uid && postData.authorId === userProfile.uid;
+          const isAudience = userProfile?.uid && postData.audience?.includes(userProfile.uid);
+          if (!isAuthor && !isAudience) return false;
+        }
+
+        // Following check
+        if (activeTab === 'following') {
+          const followingIds = userProfile?.following ? [...userProfile.following] : [];
+          if (userProfile?.uid && !followingIds.includes(userProfile.uid)) {
+            followingIds.push(userProfile.uid);
+          }
+          if (!followingIds.includes(postData.authorId)) return false;
+        }
+
+        return true;
+      });
+
       setNewPostsCount(news.length);
     }, (error) => {
       if (error.code !== 'permission-denied') {
