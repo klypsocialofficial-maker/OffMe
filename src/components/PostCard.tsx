@@ -41,7 +41,7 @@ interface PostCardProps {
 
 const viewedPostsInSession = new Set<string>();
 
-export default function PostCard({
+function PostCard({
   post,
   isProfilePinned,
   isThreadChild,
@@ -853,3 +853,20 @@ export default function PostCard({
     </motion.article>
   );
 }
+
+const MemoizedPostCard = React.memo(PostCard, (prevProps, nextProps) => {
+  return (
+    prevProps.post?.id === nextProps.post?.id &&
+    prevProps.post?.likesCount === nextProps.post?.likesCount &&
+    prevProps.post?.repostsCount === nextProps.post?.repostsCount &&
+    prevProps.post?.repliesCount === nextProps.post?.repliesCount &&
+    prevProps.post?.viewsCount === nextProps.post?.viewsCount &&
+    prevProps.isProfilePinned === nextProps.isProfilePinned &&
+    prevProps.isThreadChild === nextProps.isThreadChild &&
+    prevProps.isThreadParent === nextProps.isThreadParent &&
+    JSON.stringify(prevProps.post?.likes) === JSON.stringify(nextProps.post?.likes) &&
+    JSON.stringify(prevProps.post?.reactions) === JSON.stringify(nextProps.post?.reactions)
+  );
+});
+
+export default MemoizedPostCard;

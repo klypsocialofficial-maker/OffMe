@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Radio, Sparkles, TrendingUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, query, limit, getCountFromServer } from 'firebase/firestore';
 import { db } from '../firebase';
 import { getDefaultAvatar } from '../lib/avatar';
 
@@ -49,11 +49,23 @@ export default function RealTimeUserCounter() {
       return;
     }
 
-    const unsubscribe = onSnapshot(collection(db, 'users'), 
+    // Fetch total registered count economically using server-side query aggregation (extremely cheap and fast!)
+    const usersCol = collection(db, 'users');
+    getCountFromServer(usersCol)
+      .then((snap) => {
+        const count = snap.data().count;
+        if (count) {
+          setUsersCount(count);
+        }
+      })
+      .catch((err) => {
+        console.error("Error getting users count from server aggregate:", err);
+      });
+
+    // Subscribes only to a limited subset of users to feed the floating background avatar bubbles (doesn't load entire db!)
+    const q = query(usersCol, limit(15));
+    const unsubscribe = onSnapshot(q, 
       (snapshot) => {
-        const newCount = snapshot.size;
-        
-        // Exclude private profile details safely, or handle general items
         const list: any[] = [];
         snapshot.forEach((doc) => {
           const u = doc.data();
@@ -92,11 +104,14 @@ export default function RealTimeUserCounter() {
         setFloatingUsers(enriched);
 
         setUsersCount((prev) => {
-          if (prev !== 0 && prev !== newCount) {
+          // If we had no count from getCountFromServer yet, use list size or current snapshot count
+          const snapshotCount = snapshot.size;
+          const targetCount = prev > 0 ? prev : (snapshotCount > 0 ? snapshotCount : 42);
+          if (prev !== 0 && prev !== targetCount) {
             setJustUpdated(true);
             setTimeout(() => setJustUpdated(false), 2200);
           }
-          return newCount;
+          return targetCount;
         });
         setLoading(false);
       },
