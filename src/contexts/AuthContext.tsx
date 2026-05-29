@@ -182,6 +182,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const migrationDoneRef = useRef<string | null>(null);
+  const streakCheckedRef = useRef<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info'; isOpen: boolean }>({
     message: '',
     type: 'info',
@@ -225,46 +226,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (docSnap.exists()) {
             const profileData = docSnap.data() as UserProfile;
             
-            // Handle Streak Tracking
-            const now = new Date();
-            const lastLogin = profileData.lastLoginAt?.toDate();
-            
-            if (!lastLogin) {
-              await updateDoc(docRef, { 
-                lastLoginAt: serverTimestamp(),
-                streakCount: 1 
-              });
-            } else {
-              const diffTime = Math.abs(now.getTime() - lastLogin.getTime());
-              const diffDays = diffTime / (1000 * 60 * 60 * 24);
-              
-              if (diffDays >= 1 && diffDays < 2) {
-                // Consecutive day
-                await updateDoc(docRef, { 
-                  lastLoginAt: serverTimestamp(),
-                  streakCount: (profileData.streakCount || 0) + 1,
-                  completedMissionIds: [], // Reset missions for new day
-                  missionProgress: {}       // Reset progress for new day
-                });
-                await awardPoints(user.uid, 50 * ((profileData.streakCount || 1)));
-              } else if (diffDays >= 2) {
-                // Streak broken
-                await updateDoc(docRef, { 
-                  lastLoginAt: serverTimestamp(),
-                  streakCount: 1,
-                  completedMissionIds: [], // Reset missions for new day
-                  missionProgress: {}       // Reset progress for new day
-                });
-              } else if (diffDays < 1 && now.getDate() !== lastLogin.getDate()) {
-                // Same day but different calendar day (e.g. 11pm and 1am)
-                await updateDoc(docRef, { 
-                  lastLoginAt: serverTimestamp(),
-                  streakCount: (profileData.streakCount || 0) + 1,
-                  completedMissionIds: [], // Reset missions for new day
-                  missionProgress: {}       // Reset progress for new day
-                });
-                await awardPoints(user.uid, 50);
-              }
+            // Handle Streak Tracking (Run once per user session to completely prevent infinite updating loops)
+            if (streakCheckedRef.current !== user.uid) {
+              streakCheckedRef.current = user.uid;
+              const handleStreakCheck = async () => {
+                try {
+                  const now = new Date();
+                  const lastLogin = profileData.lastLoginAt?.toDate();
+                  
+                  if (!lastLogin) {
+                    await updateDoc(docRef, { 
+                      lastLoginAt: serverTimestamp(),
+                      streakCount: 1 
+                    });
+                  } else {
+                    const diffTime = Math.abs(now.getTime() - lastLogin.getTime());
+                    const diffDays = diffTime / (1000 * 60 * 60 * 24);
+                    
+                    if (diffDays >= 1 && diffDays < 2) {
+                      // Consecutive day
+                      await updateDoc(docRef, { 
+                        lastLoginAt: serverTimestamp(),
+                        streakCount: (profileData.streakCount || 0) + 1,
+                        completedMissionIds: [], // Reset missions for new day
+                        missionProgress: {}       // Reset progress for new day
+                      });
+                      await awardPoints(user.uid, 50 * ((profileData.streakCount || 1)));
+                    } else if (diffDays >= 2) {
+                      // Streak broken
+                      await updateDoc(docRef, { 
+                        lastLoginAt: serverTimestamp(),
+                        streakCount: 1,
+                        completedMissionIds: [], // Reset missions for new day
+                        missionProgress: {}       // Reset progress for new day
+                      });
+                    } else if (diffDays < 1 && now.getDate() !== lastLogin.getDate()) {
+                      // Same day but different calendar day (e.g. 11pm and 1am)
+                      await updateDoc(docRef, { 
+                        lastLoginAt: serverTimestamp(),
+                        streakCount: (profileData.streakCount || 0) + 1,
+                        completedMissionIds: [], // Reset missions for new day
+                        missionProgress: {}       // Reset progress for new day
+                      });
+                      await awardPoints(user.uid, 50);
+                    }
+                  }
+                } catch (err) {
+                  console.error("Streak check error:", err);
+                }
+              };
+              handleStreakCheck();
             }
 
             setUserProfile(profileData);
@@ -322,6 +333,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         setUserProfile(null);
         setLoading(false);
+        migrationDoneRef.current = null;
+        streakCheckedRef.current = null;
         if (unsubscribeProfile) unsubscribeProfile();
       }
     });
