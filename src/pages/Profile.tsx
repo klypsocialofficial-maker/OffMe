@@ -1031,14 +1031,11 @@ export default function Profile() {
           )}
           <div className="flex items-center space-x-2">
             <Calendar className="w-4 h-4" />
-            <div className="flex items-center">
-              <span>
-                Entrou em {profileUser.createdAt 
-                  ? new Date(profileUser.createdAt.toDate()).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) 
-                  : new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
-              </span>
-              <MoreHorizontal className="w-3 h-3 ml-1" />
-            </div>
+            <span>
+              Entrou em {profileUser.createdAt 
+                ? new Date(profileUser.createdAt.toDate()).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) 
+                : new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+            </span>
           </div>
         </div>
 
