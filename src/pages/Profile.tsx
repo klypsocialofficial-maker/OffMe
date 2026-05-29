@@ -201,16 +201,14 @@ export default function Profile() {
     }
 
     if (activeTab === 'posts') {
-      // Fetch user's posts and reposted posts
+      // Fetch user's posts and reposted posts without compound field indexes
       const q1 = query(
         collection(db, 'posts'),
-        where('authorId', '==', profileUser.uid),
-        orderBy('createdAt', 'desc')
+        where('authorId', '==', profileUser.uid)
       );
       const q2 = query(
         collection(db, 'posts'),
-        where('reposts', 'array-contains', profileUser.uid),
-        orderBy('createdAt', 'desc')
+        where('reposts', 'array-contains', profileUser.uid)
       );
 
       let results1: any[] = [];
@@ -220,6 +218,13 @@ export default function Profile() {
         const merged = [...results1, ...results2];
         const unique = Array.from(new Map(merged.map(item => [item.id, item])).values());
         
+        // Sort in memory by createdAt descending
+        unique.sort((a: any, b: any) => {
+          const aTime = a.createdAt?.toMillis?.() || a.createdAt?.seconds * 1000 || 0;
+          const bTime = b.createdAt?.toMillis?.() || b.createdAt?.seconds * 1000 || 0;
+          return bTime - aTime;
+        });
+
         // Filter out replies for the main "Posts" tab and apply privacy rules
         const filtered = unique.filter((post: any) => {
           if (post.privacy === 'circle') {
@@ -264,15 +269,13 @@ export default function Profile() {
       if (activeTab === 'likes') {
         q = query(
           collection(db, 'posts'),
-          where('likes', 'array-contains', profileUser.uid),
-          orderBy('createdAt', 'desc')
+          where('likes', 'array-contains', profileUser.uid)
         );
       } else if (activeTab === 'anonymous') {
         q = query(
           collection(db, 'posts'),
           where('ownerId', '==', profileUser.uid),
-          where('isAnonymous', '==', true),
-          orderBy('createdAt', 'desc')
+          where('isAnonymous', '==', true)
         );
       } else if (activeTab === 'bookmarks') {
         if (!profileUser?.bookmarks || profileUser.bookmarks.length === 0) {
@@ -288,8 +291,7 @@ export default function Profile() {
       } else {
         q = query(
           collection(db, 'posts'),
-          where('authorId', '==', profileUser.uid),
-          orderBy('createdAt', 'desc')
+          where('authorId', '==', profileUser.uid)
         );
       }
 
@@ -298,6 +300,13 @@ export default function Profile() {
           id: doc.id,
           ...doc.data()
         }));
+
+        // Sort in memory by createdAt descending to avoid composite index requirement
+        results.sort((a: any, b: any) => {
+          const aTime = a.createdAt?.toMillis?.() || a.createdAt?.seconds * 1000 || 0;
+          const bTime = b.createdAt?.toMillis?.() || b.createdAt?.seconds * 1000 || 0;
+          return bTime - aTime;
+        });
 
         // Apply privacy filtering
         results = results.filter((post: any) => {

@@ -200,40 +200,10 @@ export default function Home() {
   const POSTS_PER_PAGE = 15;
 
   const fetchPosts = async (isInitial = true) => {
-    if (!db) return;
+    if (!db || isInitial) return;
     
-    if (isInitial) {
-      const tabChanged = lastActiveTabRef.current !== activeTab;
-      const refreshKeyChanged = lastRefreshKeyRef.current !== refreshKey;
-      
-      if (tabChanged) {
-        lastActiveTabRef.current = activeTab;
-      }
-      if (refreshKeyChanged) {
-        lastRefreshKeyRef.current = refreshKey;
-      }
-
-      const now = Date.now();
-      const lastFetch = lastFetchTimeRef.current[activeTab] || 0;
-      const hasContent = displayedPostsRef.current.length > 0;
-      
-      if (!tabChanged && !refreshKeyChanged && hasContent && (now - lastFetch < 15000)) {
-        // Skip background refetch to avoid flickering and infinite loading
-        return;
-      }
-      
-      lastFetchTimeRef.current[activeTab] = now;
-
-      if (displayedPostsRef.current.length === 0 || tabChanged) {
-        setIsFetching(true);
-      }
-      setLastVisible(null);
-      setHasMore(true);
-      setNewPostsCount(0);
-    } else {
-      if (isLoadingMore || !hasMore) return;
-      setIsLoadingMore(true);
-    }
+    if (isLoadingMore || !hasMore) return;
+    setIsLoadingMore(true);
 
     try {
       let q = query(
@@ -242,14 +212,13 @@ export default function Home() {
         limit(POSTS_PER_PAGE * 4)
       );
 
-      if (!isInitial && lastVisible) {
+      if (lastVisible) {
         q = query(q, startAfter(lastVisible));
       }
 
       const snapshot = await getDocs(q);
       
       if (snapshot.empty) {
-        if (isInitial) setDisplayedPosts([]);
         setHasMore(false);
       } else {
         const lastDoc = snapshot.docs[snapshot.docs.length - 1];
@@ -284,31 +253,88 @@ export default function Home() {
           return true;
         });
 
-        if (isInitial) {
-          setDisplayedPosts(filteredPosts);
-        } else {
-          setDisplayedPosts(prev => {
-            const existingIds = new Set(prev.map(p => p.id));
-            const filteredNew = filteredPosts.filter(p => !existingIds.has(p.id));
-            return [...prev, ...filteredNew];
-          });
-        }
+        setDisplayedPosts(prev => {
+          const existingIds = new Set(prev.map(p => p.id));
+          const filteredNew = filteredPosts.filter(p => !existingIds.has(p.id));
+          return [...prev, ...filteredNew];
+        });
         
         setHasMore(snapshot.docs.length === POSTS_PER_PAGE * 4);
       }
     } catch (error) {
       console.error("Feed error:", error);
-      if (isInitial) setDisplayedPosts([]);
       setHasMore(false);
     } finally {
-      setIsFetching(false);
       setIsLoadingMore(false);
     }
   };
 
   useEffect(() => {
-    fetchPosts(true);
-  }, [activeTab, db, followingString, mutedString, refreshKey]);
+    if (!db) return;
+
+    setIsFetching(true);
+    setLastVisible(null);
+    setHasMore(true);
+    setNewPostsCount(0);
+
+    const q = query(
+      collection(db, 'posts'),
+      orderBy('createdAt', 'desc'),
+      limit(POSTS_PER_PAGE * 4)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setIsFetching(false);
+      if (snapshot.empty) {
+        setDisplayedPosts([]);
+        setHasMore(false);
+      } else {
+        const lastDoc = snapshot.docs[snapshot.docs.length - 1];
+        setLastVisible(lastDoc);
+        
+        const allPosts = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...(doc.data() as any)
+        }));
+
+        // Filter client-side to avoid composite index requirements
+        const filteredPosts = allPosts.filter(post => {
+          // 1. Muted user filter
+          if (userProfile?.mutedUsers?.includes(post.authorId)) return false;
+
+          // 2. Privacy filter
+          if (post.privacy && post.privacy !== 'public') {
+            const isAuthor = userProfile?.uid && post.authorId === userProfile.uid;
+            const isAudience = userProfile?.uid && post.audience?.includes(userProfile.uid);
+            if (!isAuthor && !isAudience) return false;
+          }
+
+          // 3. Following filter (for "Following" tab)
+          if (activeTab === 'following') {
+            const followingIds = userProfile?.following ? [...userProfile.following] : [];
+            if (userProfile?.uid && !followingIds.includes(userProfile.uid)) {
+              followingIds.push(userProfile.uid);
+            }
+            if (!followingIds.includes(post.authorId)) return false;
+          }
+
+          return true;
+        });
+
+        setDisplayedPosts(filteredPosts);
+        setHasMore(snapshot.docs.length === POSTS_PER_PAGE * 4);
+      }
+    }, (error) => {
+      console.error("Feed snapshot error:", error);
+      setDisplayedPosts([]);
+      setHasMore(false);
+      setIsFetching(false);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [activeTab, db, followingString, mutedString, refreshKey, userProfile?.uid]);
 
   // Listener for new posts to show update notification
   useEffect(() => {
