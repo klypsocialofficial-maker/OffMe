@@ -642,18 +642,7 @@ export default function CreatePostModal({
                     autoFocus
                   />
                   
-                  {content.length > 5 && (
-                    <button 
-                      onClick={async () => {
-                         const suggestion = await suggestPostContent(content);
-                         setContent(suggestion);
-                      }}
-                      className="flex items-center space-x-1 text-xs font-bold text-purple-600 bg-purple-50 px-3 py-1 rounded-full mb-2 hover:bg-purple-100"
-                    >
-                      <Ghost className="w-3 h-3" />
-                      <span>Melhorar com IA</span>
-                    </button>
-                  )}
+
 
 
                   {sharedMusic && (

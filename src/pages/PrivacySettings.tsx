@@ -95,22 +95,63 @@ export default function PrivacySettings() {
         <section>
           <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4 px-1">Sua atividade no OffMe</h2>
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-zinc-900 rounded-2xl border border-gray-100 dark:border-zinc-800">
-              <div className="flex items-center space-x-4">
-                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full">
-                  <Lock className="w-5 h-5" />
-                </div>
+            <div className="p-4 bg-gray-50 dark:bg-zinc-900 rounded-2xl border border-gray-100 dark:border-zinc-800 space-y-4">
+              <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-bold dark:text-white">Conta privada</h3>
-                  <p className="text-xs text-gray-500">Apenas seus seguidores podem ver seus posts.</p>
+                  <h3 className="font-bold dark:text-white text-sm">Status do Perfil</h3>
+                  <p className="text-xs text-gray-500">Defina quem pode interagir e ver suas publicações.</p>
                 </div>
+                {loading && (
+                  <div className="border-2 border-blue-500 border-t-transparent w-4 h-4 rounded-full animate-spin"></div>
+                )}
               </div>
-              <button
-                onClick={() => updateSetting('privateProfile', !settings.privateProfile)}
-                className={`w-12 h-6 rounded-full transition-colors relative ${settings.privateProfile ? 'bg-blue-500' : 'bg-gray-300 dark:bg-zinc-700'}`}
-              >
-                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${settings.privateProfile ? 'left-7' : 'left-1'}`} />
-              </button>
+              
+              <div className="bg-black/5 dark:bg-zinc-800/50 p-1 rounded-xl flex relative">
+                <button
+                  type="button"
+                  onClick={() => updateSetting('privateProfile', false)}
+                  className={`flex-1 py-2.5 text-xs font-bold rounded-lg flex items-center justify-center space-x-2 transition-all relative z-10 ${!settings.privateProfile ? 'text-black dark:text-white font-black' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400'}`}
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>Perfil Público</span>
+                  {!settings.privateProfile && (
+                    <motion.div
+                      layoutId="activePrivacy"
+                      className="absolute inset-0 bg-white dark:bg-zinc-850 rounded-lg shadow-sm border border-black/5 dark:border-white/5 -z-10"
+                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                    />
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateSetting('privateProfile', true)}
+                  className={`flex-1 py-2.5 text-xs font-bold rounded-lg flex items-center justify-center space-x-2 transition-all relative z-10 ${settings.privateProfile ? 'text-black dark:text-white font-black' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400'}`}
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>Perfil Privado</span>
+                  {settings.privateProfile && (
+                    <motion.div
+                      layoutId="activePrivacy"
+                      className="absolute inset-0 bg-white dark:bg-zinc-850 rounded-lg shadow-sm border border-black/5 dark:border-white/5 -z-10"
+                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                    />
+                  )}
+                </button>
+              </div>
+
+              <div className="text-xs text-gray-500 bg-white dark:bg-zinc-950 p-3 rounded-xl border border-black/5 dark:border-white/5 transition-all">
+                {settings.privateProfile ? (
+                  <p className="flex items-start space-x-2 leading-relaxed">
+                    <span className="text-blue-500 font-bold shrink-0">🔒</span>
+                    <span>Ao tornar seu perfil <strong>Privado</strong>, somente pessoas que você aprovar poderão seguir você e ver seus posts ou curtidas. Seus seguidores existentes não são afetados.</span>
+                  </p>
+                ) : (
+                  <p className="flex items-start space-x-2 leading-relaxed">
+                    <span className="text-blue-500 font-bold shrink-0">🌍</span>
+                    <span>No modo <strong>Público</strong>, qualquer visitante ou membro do OffMe pode seguir sua conta selvagemmente, visualizar seus posts, reposts, curtidas e mídias livremente.</span>
+                  </p>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-zinc-900 rounded-2xl border border-gray-100 dark:border-zinc-800">
