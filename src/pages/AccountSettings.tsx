@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, User, Mail, Lock, Save, AlertCircle, CheckCircle, Trash2, ShieldCheck, Clock, ShieldAlert, FileText, Send } from 'lucide-react';
+import { ArrowLeft, User, Mail, Lock, Save, AlertCircle, CheckCircle, Trash2, ShieldCheck, Clock, ShieldAlert, FileText, Send, Laptop } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { auth } from '../firebase';
@@ -273,6 +273,24 @@ export default function AccountSettings() {
                 <p className="font-bold text-sm text-gray-900">Termos de uso</p>
                 <p className="text-xs text-gray-500">Última atualização em 12 de Out 2023</p>
               </div>
+            </div>
+
+            <div 
+              onClick={() => navigate('/settings/devices')}
+              className="flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100/70 cursor-pointer rounded-2xl border border-gray-100 transition-all group"
+            >
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center border border-black/5 shadow-sm">
+                  <Laptop className="w-5 h-5 text-indigo-500 group-hover:scale-110 transition-transform" />
+                </div>
+                <div>
+                  <p className="font-bold text-sm text-gray-900">Dispositivos Conectados</p>
+                  <p className="text-xs text-gray-500">Locais, horários e sessões ativas</p>
+                </div>
+              </div>
+              <span className="text-xs font-black uppercase tracking-widest text-indigo-500 hover:text-indigo-600">
+                Gerenciar
+              </span>
             </div>
           </div>
         </section>

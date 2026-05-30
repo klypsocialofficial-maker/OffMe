@@ -248,12 +248,33 @@
         "createdAt": { "type": "timestamp" }
       },
       "required": ["title", "userId", "requirement", "currentProgress", "status"]
+    },
+    "Session": {
+      "title": "Session",
+      "description": "An active or historical device/session connected to the user's account.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The session's unique ID." },
+        "browser": { "type": "string", "description": "The browser name." },
+        "os": { "type": "string", "description": "The operating system." },
+        "userAgent": { "type": "string", "description": "The browser full user agent string." },
+        "ip": { "type": "string", "description": "The IP address." },
+        "location": { "type": "string", "description": "The location details." },
+        "loginAt": { "type": "timestamp", "description": "The date/time the session was initiated." },
+        "lastActive": { "type": "timestamp", "description": "The date/time of the last active state." },
+        "isCurrent": { "type": "boolean", "description": "Whether this is the current active browser session." }
+      },
+      "required": ["id", "browser", "os", "ip", "location"]
     }
   },
   "firestore": {
     "/users/{userId}": {
       "schema": { "$ref": "#/entities/User" },
       "description": "Stores user profiles."
+    },
+    "/users/{userId}/sessions/{sessionId}": {
+      "schema": { "$ref": "#/entities/Session" },
+      "description": "Stores active or historical connected devices for a user."
     },
     "/posts/{postId}": {
       "schema": { "$ref": "#/entities/Post" },

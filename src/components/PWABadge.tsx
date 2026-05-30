@@ -290,23 +290,7 @@ export default function PWABadge() {
   }
 
   if (offlineReady) {
-    return (
-      <div className="fixed bottom-24 sm:bottom-8 left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 sm:right-8 z-[100] p-4 bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-100 flex items-center space-x-4">
-        <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-          <CheckCircle2 className="w-5 h-5 text-green-600" />
-        </div>
-        <div>
-          <p className="font-bold text-gray-900">App pronto!</p>
-          <p className="text-sm text-gray-500">Disponível para uso offline.</p>
-        </div>
-        <button 
-          className="p-2 text-gray-400 hover:text-black transition-colors" 
-          onClick={() => close()}
-        >
-          <X className="w-5 h-5" />
-        </button>
-      </div>
-    );
+    return null;
   }
 
   return null;

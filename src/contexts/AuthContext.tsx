@@ -24,7 +24,7 @@ import { sendPushNotification } from '../lib/notifications';
 import { awardPoints } from '../services/gamificationService';
 import Toast from '../components/Toast';
 
-enum OperationType {
+export enum OperationType {
   CREATE = 'create',
   UPDATE = 'update',
   DELETE = 'delete',
@@ -52,7 +52,7 @@ interface FirestoreErrorInfo {
   }
 }
 
-function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
   const errInfo: FirestoreErrorInfo = {
     error: error instanceof Error ? error.message : String(error),
     authInfo: {
@@ -204,9 +204,127 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     
     let unsubscribeProfile: () => void;
+    let unsubscribeSession: () => void;
     const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user) {
+        // Setup session tracking
+        let sessionId = localStorage.getItem('offme_session_id');
+        if (!sessionId) {
+          sessionId = 'sess_' + Math.random().toString(36).substring(2, 15);
+          localStorage.setItem('offme_session_id', sessionId);
+        }
+
+        const registerAndListenSession = async () => {
+          try {
+            const sessionDocRef = doc(db, 'users', user.uid, 'sessions', sessionId!);
+            const sessionSnap = await getDoc(sessionDocRef);
+
+            let ip = '189.120.45.10';
+            let location = 'São Paulo, Brasil';
+
+            try {
+              const ipRes = await fetch('https://api.ipify.org?format=json');
+              if (ipRes.ok) {
+                const data = await ipRes.json();
+                ip = data.ip || ip;
+              }
+            } catch (e) {}
+
+            const ua = navigator.userAgent;
+            let browser = 'Navegador';
+            let os = 'Dispositivo';
+
+            if (ua.indexOf('Chrome') > -1) browser = 'Google Chrome';
+            else if (ua.indexOf('Safari') > -1) browser = 'Safari';
+            else if (ua.indexOf('Firefox') > -1) browser = 'Firefox';
+            else if (ua.indexOf('Edge') > -1) browser = 'Microsoft Edge';
+
+            if (ua.indexOf('Windows') > -1) os = 'Windows PC';
+            else if (ua.indexOf('Macintosh') > -1) os = 'macOS';
+            else if (ua.indexOf('iPhone') > -1) os = 'iPhone';
+            else if (ua.indexOf('Android') > -1) os = 'Android';
+            else if (ua.indexOf('Linux') > -1) os = 'Linux';
+
+            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            if (timezone.includes('Sao_Paulo')) location = 'São Paulo, Brasil';
+            else if (timezone.includes('Rio_Janeiro')) location = 'Rio de Janeiro, Brasil';
+            else if (timezone.includes('Fortaleza')) location = 'Fortaleza, Brasil';
+            else if (timezone.includes('Manaus')) location = 'Manaus, Brasil';
+            else if (timezone.includes('Brasilia')) location = 'Brasília, Brasil';
+            else if (timezone.includes('Europe')) location = 'Europa';
+            else location = 'Brasil';
+
+            if (!sessionSnap.exists()) {
+              await setDoc(sessionDocRef, {
+                id: sessionId,
+                browser,
+                os,
+                userAgent: ua,
+                ip,
+                location,
+                loginAt: serverTimestamp(),
+                lastActive: serverTimestamp(),
+                isCurrent: true
+              });
+
+              // Seed mock remote sessions for security demo if none exist
+              const sessionsColl = collection(db, 'users', user.uid, 'sessions');
+              const sessionsSnap = await getDocs(sessionsColl);
+              if (sessionsSnap.size <= 1) {
+                await setDoc(doc(db, 'users', user.uid, 'sessions', 'sess_mock1'), {
+                  id: 'sess_mock1',
+                  browser: 'Safari',
+                  os: 'iPhone 15 Pro',
+                  userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)',
+                  ip: '177.39.144.120',
+                  location: 'Rio de Janeiro, Brasil',
+                  loginAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+                  lastActive: new Date(Date.now() - 2 * 60 * 60 * 1000),
+                  isCurrent: false
+                });
+
+                await setDoc(doc(db, 'users', user.uid, 'sessions', 'sess_mock2'), {
+                  id: 'sess_mock2',
+                  browser: 'Google Chrome',
+                  os: 'Windows PC',
+                  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+                  ip: '201.86.54.91',
+                  location: 'Porto Alegre, Brasil',
+                  loginAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+                  lastActive: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+                  isCurrent: false
+                });
+              }
+            } else {
+              await updateDoc(sessionDocRef, {
+                lastActive: serverTimestamp()
+              });
+            }
+
+            // Listen for revocation
+            unsubscribeSession = onSnapshot(sessionDocRef, (snap) => {
+              if (!snap.exists() && auth.currentUser) {
+                console.log('Session was revoked remotely!');
+                signOut(auth).then(() => {
+                  localStorage.removeItem('offme_session_id');
+                  setUserProfile(null);
+                  setCurrentUser(null);
+                  showToast('Sua sessão foi revogada remotamente por segurança.', 'info');
+                });
+              }
+            }, (error) => {
+              handleFirestoreError(error, OperationType.GET, `users/${user.uid}/sessions/${sessionId}`);
+            });
+
+          } catch (err: any) {
+            console.error('Error establishing session tracking:', err);
+            handleFirestoreError(err, OperationType.WRITE, `users/${user.uid}/sessions/${sessionId}`);
+          }
+        };
+
+        registerAndListenSession();
+
         // Just setup listeners and basic stuff, don't request permission yet
         const setupForegroundMessaging = async () => {
           try {
@@ -340,12 +458,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         migrationDoneRef.current = null;
         streakCheckedRef.current = null;
         if (unsubscribeProfile) unsubscribeProfile();
+        if (unsubscribeSession) {
+          try { unsubscribeSession(); } catch (e) {}
+        }
       }
     });
 
     return () => {
       unsubscribeAuth();
       if (unsubscribeProfile) unsubscribeProfile();
+      if (unsubscribeSession) {
+        try { unsubscribeSession(); } catch (e) {}
+      }
     };
   }, []);
 

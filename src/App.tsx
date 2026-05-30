@@ -27,6 +27,7 @@ import Settings from './pages/Settings';
 import AccountSettings from './pages/AccountSettings';
 import DisplaySettings from './pages/DisplaySettings';
 import PrivacySettings from './pages/PrivacySettings';
+import ConnectedDevices from './pages/ConnectedDevices';
 import CreatorStudio from './pages/CreatorStudio';
 import Circle from './pages/Circle';
 import Shop from './pages/Shop';
@@ -228,6 +229,7 @@ export default function App() {
             <Route path="missions" element={<Missions />} />
             <Route path="settings" element={<Settings />} />
             <Route path="settings/account" element={<AccountSettings />} />
+            <Route path="settings/devices" element={<ConnectedDevices />} />
             <Route path="settings/privacy" element={<PrivacySettings />} />
             <Route path="settings/display" element={<DisplaySettings />} />
             <Route path="anonymous-feed" element={<AnonymousFeed />} />
