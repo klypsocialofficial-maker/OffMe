@@ -9,6 +9,15 @@ import admin from 'firebase-admin';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { WebSocketServer, WebSocket } from "ws";
 
+// Import API handlers statically so esbuild compiles and bundles them cleanly
+import createCheckoutSession from "./api/create-checkout-session";
+import metadata from "./api/metadata";
+import replyToMessage from "./api/reply-to-message";
+import sendPushNotification from "./api/send-push-notification";
+import smartSummary from "./api/smart-summary";
+import suggestPost from "./api/suggest-post";
+import webhook from "./api/webhook";
+
 // Load firebase config for the project ID
 let firebaseConfig: any = {};
 try {
@@ -118,12 +127,44 @@ async function startServer() {
     }
   }));
 
-  // Check for api directory and statically load handlers if possible
+  // Statically Register core API endpoints to survive esbuild production builds
+  const staticApiHandlers: Record<string, any> = {
+    "create-checkout-session": createCheckoutSession,
+    "metadata": metadata,
+    "reply-to-message": replyToMessage,
+    "send-push-notification": sendPushNotification,
+    "smart-summary": smartSummary,
+    "suggest-post": suggestPost,
+    "webhook": webhook
+  };
+
+  for (const [name, handler] of Object.entries(staticApiHandlers)) {
+    const routePath = `/api/${name}`;
+    app.all(routePath, async (req, res) => {
+      try {
+        if (typeof handler === 'function') {
+          await handler(req, res);
+        } else {
+          res.status(500).json({ error: 'Invalid static API handler' });
+        }
+      } catch (e) {
+        console.error(`Error executing static API route ${routePath}:`, e);
+        res.status(500).json({ error: 'Internal Server Error' });
+      }
+    });
+    console.log(`Registered Static API Route: ${routePath}`);
+  }
+
+  // Dynamic fallback pattern for any newly added development files
   const apiDir = path.join(process.cwd(), 'api');
   if (fs.existsSync(apiDir)) {
     const files = fs.readdirSync(apiDir).filter((f) => f.endsWith('.ts') || f.endsWith('.js'));
     for (const file of files) {
-      const routePath = `/api/${file.replace(/\.(ts|js)$/, '')}`;
+      const name = file.replace(/\.(ts|js)$/, '');
+      if (staticApiHandlers[name]) {
+        continue; // Handled statically
+      }
+      const routePath = `/api/${name}`;
       app.all(routePath, async (req, res) => {
         try {
           const module = await import(`./api/${file}`);
@@ -138,7 +179,7 @@ async function startServer() {
           res.status(500).json({ error: 'Internal Server Error' });
         }
       });
-      console.log(`Registered API Route: ${routePath}`);
+      console.log(`Registered Fallback API Route: ${routePath}`);
     }
   }
 

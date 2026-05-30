@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { User as UserIcon, Image as ImageIcon, X, BarChart2, Film, Ghost, Clock, Users, Plus, Calendar, Music } from 'lucide-react';
 import { addDoc, collection, serverTimestamp, doc, updateDoc, increment, query, where, getDocs, Timestamp, limit } from 'firebase/firestore';
 import { db } from '../firebase';
-import { uploadToImgBB } from '../lib/imgbb';
+import { uploadToImgBB, optimizeImage } from '../lib/imgbb';
 import { awardPoints, trackMissionProgress } from '../services/gamificationService';
 import { motion, AnimatePresence } from 'motion/react';
 import VerifiedBadge from './VerifiedBadge';
@@ -52,6 +52,13 @@ export default function CreatePostModal({
   const [content, setContent] = useState('');
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [imageStats, setImageStats] = useState<{
+    originalName: string;
+    originalSize: number;
+    optimizedSize: number;
+    savedPercent: number;
+  }[]>([]);
+  const [compressing, setCompressing] = useState(false);
   const [altText, setAltText] = useState('');
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -158,22 +165,75 @@ export default function CreatePostModal({
     return () => document.body.classList.remove('modal-open');
   }, [isOpen]);
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const newFiles = Array.from(e.target.files);
       if (imageFiles.length + newFiles.length > 4) {
         alert('Você pode adicionar no máximo 4 imagens.');
         return;
       }
-      setImageFiles(prev => [...prev, ...newFiles]);
-      setImagePreviews(prev => [...prev, ...newFiles.map(file => URL.createObjectURL(file as Blob))]);
+      
+      setCompressing(true);
       setGifUrl(null); // Clear GIF if image is uploaded
+
+      try {
+        const optimizedResults = await Promise.all(
+          newFiles.map(async (file) => {
+            try {
+              const res = await optimizeImage(file);
+              return {
+                file: res.file,
+                preview: URL.createObjectURL(res.file),
+                stat: {
+                  originalName: file.name,
+                  originalSize: res.originalSize,
+                  optimizedSize: res.optimizedSize,
+                  savedPercent: res.savedPercent
+                }
+              };
+            } catch (err) {
+              console.error("Compression error:", err);
+              // Fallback
+              return {
+                file,
+                preview: URL.createObjectURL(file),
+                stat: {
+                  originalName: file.name,
+                  originalSize: file.size,
+                  optimizedSize: file.size,
+                  savedPercent: 0
+                }
+              };
+            }
+          })
+        );
+
+        setImageFiles(prev => [...prev, ...optimizedResults.map(r => r.file)]);
+        setImagePreviews(prev => [...prev, ...optimizedResults.map(r => r.preview)]);
+        setImageStats(prev => [...prev, ...optimizedResults.map(r => r.stat)]);
+      } catch (overallErr) {
+        console.error("Batch compression failed, adding fallback:", overallErr);
+        setImageFiles(prev => [...prev, ...newFiles]);
+        setImagePreviews(prev => [...prev, ...newFiles.map(file => URL.createObjectURL(file))]);
+        setImageStats(prev => [
+          ...prev, 
+          ...newFiles.map(f => ({
+            originalName: f.name,
+            originalSize: f.size,
+            optimizedSize: f.size,
+            savedPercent: 0
+          }))
+        ]);
+      } finally {
+        setCompressing(false);
+      }
     }
   };
 
   const removeImage = (index: number) => {
     setImageFiles(prev => prev.filter((_, i) => i !== index));
     setImagePreviews(prev => prev.filter((_, i) => i !== index));
+    setImageStats(prev => prev.filter((_, i) => i !== index));
   };
 
   const removeGif = () => {
@@ -671,30 +731,65 @@ export default function CreatePostModal({
                     className="hidden"
                   />
                   
+                  {compressing && (
+                    <div className="flex items-center space-x-2 py-3 px-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl mb-4 animate-pulse">
+                      <div className="w-5 h-5 border-2 border-t-transparent border-black dark:border-white rounded-full animate-spin" />
+                      <span className="text-xs font-medium text-gray-500 dark:text-zinc-400">Otimizando e comprimindo imagens...</span>
+                    </div>
+                  )}
+
                   {imagePreviews.length > 0 && (
                     <div className="space-y-3 mt-2 mb-4">
                       <div className={`grid gap-2 ${imagePreviews.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
                         {imagePreviews.map((preview, index) => (
-                          <div key={index} className="relative rounded-2xl overflow-hidden border border-gray-100 shadow-sm group aspect-square">
+                          <div key={index} className="relative rounded-2xl overflow-hidden border border-gray-100 dark:border-zinc-800 shadow-sm group aspect-square">
                             <button
+                              type="button"
                               onClick={() => removeImage(index)}
                               className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-md transition-all scale-90 group-hover:scale-100 z-10"
                             >
                               <X className="w-3 h-3" />
                             </button>
                             <img src={preview} alt={`Preview ${index}`} className="w-full h-full object-cover" />
+                            {imageStats[index] && imageStats[index].savedPercent > 0 && (
+                              <div className="absolute bottom-2 left-2 bg-black/75 backdrop-blur-md text-[10px] text-white px-2.5 py-1.5 rounded-xl font-bold flex items-center space-x-1.5 shadow-lg border border-white/10 select-none">
+                                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                <span>Otimizado: -{imageStats[index].savedPercent}%</span>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
+
+                      {imageStats.length > 0 && imageStats.some(s => s.savedPercent > 0) && (
+                        <div className="p-3 bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-100/50 dark:border-emerald-900/40 rounded-2xl flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-300">
+                          <div className="flex items-center space-x-2.5">
+                            <div className="bg-emerald-100 dark:bg-emerald-900/60 p-1.5 rounded-full text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                              </svg>
+                            </div>
+                            <div>
+                              <span className="font-bold block text-xs">Compressão Inteligente Ativa</span>
+                              <p className="text-[10px] text-emerald-600/80 dark:text-emerald-400/80 mt-0.5 font-medium">
+                                Reduziu de {(imageStats.reduce((acc, cur) => acc + cur.originalSize, 0) / (1024 * 1024)).toFixed(2)} MB para {(imageStats.reduce((acc, cur) => acc + cur.optimizedSize, 0) / (1024 * 1024)).toFixed(2)} MB.
+                              </p>
+                            </div>
+                          </div>
+                          <div className="bg-emerald-100 dark:bg-emerald-900/50 px-2 py-1 rounded-lg font-black text-[10px] text-emerald-800 dark:text-emerald-300 select-none">
+                            -{Math.round((1 - (imageStats.reduce((acc, cur) => acc + cur.optimizedSize, 0) / imageStats.reduce((acc, cur) => acc + cur.originalSize, 0))) * 100)}% PESO
+                          </div>
+                        </div>
+                      )}
                       
-                      <div className="bg-gray-50 p-3 rounded-2xl border border-black/5">
-                        <label className="text-[10px] font-black uppercase text-gray-400 mb-1 block">Acessibilidade (Alt Text)</label>
+                      <div className="bg-gray-50 dark:bg-zinc-900 p-3 rounded-2xl border border-black/5 dark:border-zinc-800">
+                        <label className="text-[10px] font-black uppercase text-gray-400 dark:text-zinc-500 mb-1 block">Acessibilidade (Alt Text)</label>
                         <input 
                           type="text" 
                           value={altText}
                           onChange={(e) => setAltText(e.target.value)}
                           placeholder="Descreva a(s) imagem(ns) para quem não pode ver..."
-                          className="w-full bg-transparent outline-none text-sm border-b border-gray-200 focus:border-blue-500 py-1 transition-colors"
+                          className="w-full bg-transparent outline-none text-sm border-b border-gray-200 dark:border-zinc-800 dark:text-white focus:border-blue-500 dark:focus:border-blue-400 py-1 transition-colors"
                         />
                       </div>
                     </div>

@@ -6,12 +6,14 @@ import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { motion } from 'motion/react';
 import UserListModal from '../components/UserListModal';
+import TwoFactorModal from '../components/TwoFactorModal';
 
 export default function PrivacySettings() {
   const navigate = useNavigate();
   const { userProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [isBlockedModalOpen, setIsBlockedModalOpen] = useState(false);
+  const [is2faModalOpen, setIs2faModalOpen] = useState(false);
   const [mutedWord, setMutedWord] = useState('');
   const [mutedWords, setMutedWords] = useState<string[]>([]);
   const [settings, setSettings] = useState({
@@ -168,14 +170,28 @@ export default function PrivacySettings() {
               <ChevronRight className="w-5 h-5 text-gray-400" />
             </button>
 
-            <button className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-zinc-900 rounded-2xl border border-gray-100 dark:border-zinc-800 hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+            <button 
+              onClick={() => setIs2faModalOpen(true)}
+              className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-zinc-900 rounded-2xl border border-gray-100 dark:border-zinc-800 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+            >
               <div className="flex items-center space-x-4">
-                <div className="p-2 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full">
+                <div className={`p-2 rounded-full ${userProfile?.twoFactorEnabled ? 'bg-emerald-100 dark:bg-emerald-990/30 text-emerald-600 dark:text-emerald-400' : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'}`}>
                   <Shield className="w-5 h-5" />
                 </div>
                 <div className="text-left">
-                  <h3 className="font-bold dark:text-white">Autenticação em duas etapas</h3>
-                  <p className="text-xs text-gray-500">Adicione uma camada extra de segurança.</p>
+                  <div className="flex items-center space-x-2">
+                    <h3 className="font-bold dark:text-white">Autenticação em duas etapas</h3>
+                    {userProfile?.twoFactorEnabled && (
+                      <span className="text-[9px] px-1.5 py-0.5 bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-400 font-bold uppercase rounded-md tracking-wider">
+                        Ativa
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    {userProfile?.twoFactorEnabled 
+                      ? 'Sua conta está protegida por PIN.' 
+                      : 'Adicione uma camada extra de segurança.'}
+                  </p>
                 </div>
               </div>
               <ChevronRight className="w-5 h-5 text-gray-400" />
@@ -240,6 +256,12 @@ export default function PrivacySettings() {
         title="Contas bloqueadas"
         uids={userProfile?.blockedUsers || []}
         isBlockedList
+      />
+
+      <TwoFactorModal 
+        isOpen={is2faModalOpen}
+        onClose={() => setIs2faModalOpen(false)}
+        userProfile={userProfile}
       />
     </div>
   );

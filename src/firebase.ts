@@ -18,9 +18,13 @@ try {
   auth = getAuth(app);
   
   if (firebaseConfig.firestoreDatabaseId) {
-    db = initializeFirestore(app, {}, firebaseConfig.firestoreDatabaseId);
+    db = initializeFirestore(app, {
+      experimentalForceLongPolling: true,
+    }, firebaseConfig.firestoreDatabaseId);
   } else {
-    db = getFirestore(app);
+    db = initializeFirestore(app, {
+      experimentalForceLongPolling: true,
+    });
   }
   
   storage = getStorage(app);

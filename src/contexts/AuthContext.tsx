@@ -108,6 +108,10 @@ interface UserProfile {
   sensitiveContent?: boolean;
   discoverability?: boolean;
   directMessages?: 'everyone' | 'following' | 'none';
+  twoFactorEnabled?: boolean;
+  twoFactorPIN?: string;
+  twoFactorBackupCodes?: string[];
+  twoFactorCreatedAt?: any;
   streakCount?: number;
   lastLoginAt?: any;
   inventory?: string[];
