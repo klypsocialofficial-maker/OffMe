@@ -80,7 +80,10 @@ export default defineConfig(({mode}) => {
       },
     },
     server: {
-      hmr: false,
+      hmr: {
+        protocol: 'wss',
+        clientPort: 443,
+      },
     },
   };
 });

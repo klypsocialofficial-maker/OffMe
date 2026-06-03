@@ -191,12 +191,25 @@ async function startServer() {
     res.json({ status: "ok" });
   });
 
+  const httpServer = app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+    // Check for scheduled posts every 5 minutes
+    setInterval(checkScheduledPosts, 5 * 60 * 1000);
+
+    // Initial load and periodic refresh of users counter
+    refreshCachedTotalUsers();
+    setInterval(refreshCachedTotalUsers, 3 * 60 * 1000); // 3-minute refresh
+  });
+
   // Vite middleware for development
   let viteInstance: any = null;
   if (process.env.NODE_ENV !== "production") {
     const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: { 
+        middlewareMode: true,
+        hmr: { server: httpServer }
+      },
       appType: "spa",
     });
     viteInstance = vite;
@@ -208,16 +221,6 @@ async function startServer() {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
-
-  const httpServer = app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-    // Check for scheduled posts every 5 minutes
-    setInterval(checkScheduledPosts, 5 * 60 * 1000);
-
-    // Initial load and periodic refresh of users counter
-    refreshCachedTotalUsers();
-    setInterval(refreshCachedTotalUsers, 3 * 60 * 1000); // 3-minute refresh
-  });
 
   // Setup WebSocket Server for active user telemetry and real-time counter sync
   const wss = new WebSocketServer({ noServer: true });
@@ -264,16 +267,8 @@ async function startServer() {
         wss.handleUpgrade(request, socket, head, (ws) => {
           wss.emit('connection', ws, request);
         });
-      } else {
-        // Allow fallback to Vite's own internal dev server WS upgrading handler in development
-        if (viteInstance && viteInstance.ws) {
-          viteInstance.ws.handleUpgrade(request, socket, head);
-        } else {
-          if (process.env.NODE_ENV === "production") {
-            socket.destroy();
-          }
-        }
       }
+      // Note: Vite's HMR listener handles other upgrades automatically if configured
     } catch (err) {
       console.error('[WebSocket] Upgrade routing error:', err);
       socket.destroy();
