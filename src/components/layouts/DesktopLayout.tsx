@@ -66,18 +66,7 @@ export default function DesktopLayout({
             const isActive = location.pathname === item.path;
             
             if (item.isAction) {
-              return (
-                <button
-                  key={item.path}
-                  onClick={() => openCreateModal()}
-                  className="w-full flex items-center justify-center xl:justify-start space-x-3 px-3 py-2.5 rounded-full transition-all text-gray-900 hover:bg-gray-100 group"
-                >
-                  <div className="relative">
-                    <item.icon className="w-6 h-6" />
-                  </div>
-                  <span className={`text-lg hidden xl:block ${isActive ? 'font-black' : 'font-medium'}`}>{item.label}</span>
-                </button>
-              );
+              return null;
             }
 
             // Double click handling for Home
