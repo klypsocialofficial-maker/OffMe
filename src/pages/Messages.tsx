@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, User as UserIcon, Send, MoreHorizontal, Trash2, Archive, Flame, Plus } from 'lucide-react';
+import { Mail, Trash2, Archive, Flame, Plus } from 'lucide-react';
 import VerifiedBadge from '../components/VerifiedBadge';
 import LazyImage from '../components/LazyImage';
 import ConfirmModal from '../components/ConfirmModal';
@@ -7,7 +7,7 @@ import NewChatModal from '../components/NewChatModal';
 import Toast from '../components/Toast';
 import { useAuth } from '../contexts/AuthContext';
 import { useOutletContext, useNavigate } from 'react-router-dom';
-import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { getDefaultAvatar } from '../lib/avatar';
 

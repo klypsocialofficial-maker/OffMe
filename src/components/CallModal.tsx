@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useCall } from '../contexts/CallContext';
 import { useAuth } from '../contexts/AuthContext';
 import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff, PhoneCall } from 'lucide-react';
@@ -9,7 +9,28 @@ export default function CallModal() {
   const { currentUser } = useAuth();
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const [callDuration, setCallDuration] = useState(0);
   
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (currentCall?.status === 'in-progress') {
+      interval = setInterval(() => {
+        setCallDuration(prev => prev + 1);
+      }, 1000);
+    } else {
+      setCallDuration(0);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [currentCall?.status]);
+
+  const formatDuration = (seconds: number) => {
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  };
+
   useEffect(() => {
     if (localVideoRef.current && localStream) {
       localVideoRef.current.srcObject = localStream;
@@ -33,36 +54,44 @@ export default function CallModal() {
   const displayInfo = isReceiver ? currentCall.callerInfo : currentCall.receiverInfo;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/90 backdrop-blur-sm">
-      <div className={`relative w-full max-w-md ${isVideo && !isRinging ? 'h-[80vh] bg-black' : 'bg-white rounded-3xl p-6 text-center shadow-2xl'} flex flex-col justify-between overflow-hidden shadow-2xl rounded-3xl sm:h-auto`}>
+    <div className={`fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/90 backdrop-blur-sm ${isVideo && !isRinging ? 'p-0' : 'p-4'}`}>
+      <div className={`relative w-full flex flex-col justify-between overflow-hidden shadow-2xl ${
+        isVideo && !isRinging 
+          ? 'h-full max-w-none rounded-none bg-black' 
+          : 'max-w-md bg-white rounded-3xl p-6 text-center sm:h-auto'
+      }`}>
         
         {/* Ringing / Calling UI */}
         {(isRinging || (!isRinging && !isVideo)) && (
-          <div className={`flex flex-col items-center justify-center flex-1 ${isVideo && !isRinging ? 'absolute inset-0 z-10' : ''}`}>
+          <div className="flex flex-col items-center justify-center flex-1 my-8">
             
             <div className="relative mb-6">
               <img 
                 src={displayInfo?.photoURL || getDefaultAvatar(displayInfo?.displayName || 'Unknown', displayInfo?.username || 'user')} 
                 alt="Profile"
-                className="w-24 h-24 rounded-full border-4 border-white shadow-lg object-cover"
+                className="w-28 h-28 sm:w-32 sm:h-32 rounded-full border-4 border-white shadow-xl object-cover"
               />
               {isRinging && (
-                <div className="absolute inset-0 rounded-full animate-ping border-2 border-black opacity-20"></div>
+                <div className="absolute inset-0 rounded-full animate-ping border-2 border-black opacity-20 duration-1000"></div>
               )}
             </div>
             
-            <h2 className={`text-2xl font-black ${isVideo && !isRinging ? 'text-white' : 'text-gray-900'}`}>
+            <h2 className="text-3xl font-black text-gray-900 tracking-tight">
               {displayInfo?.displayName || 'Desconhecido'}
             </h2>
-            <p className={`text-sm mt-1 ${isVideo && !isRinging ? 'text-gray-300' : 'text-gray-500'}`}>
+            <p className="text-sm mt-1 text-gray-500 font-medium">
               @{displayInfo?.username || 'user'}
             </p>
             
-            <p className={`mt-4 font-bold text-lg animate-pulse ${isVideo && !isRinging ? 'text-white' : 'text-gray-900'}`}>
-              {isRinging 
-                ? (isReceiver ? 'Recebendo chamada...' : 'Chamando...') 
-                : 'Em chamada'}
-            </p>
+            {isRinging ? (
+              <p className="mt-6 font-bold text-xl animate-pulse text-gray-800">
+                {isReceiver ? 'Recebendo chamada...' : 'Chamando...'}
+              </p>
+            ) : (
+              <p className="mt-6 font-bold text-xl text-gray-900 font-mono tracking-widest">
+                {formatDuration(callDuration)}
+              </p>
+            )}
 
             {/* If it's an active audio call, show the remote audio element */}
             {!isRinging && !isVideo && (
@@ -73,16 +102,26 @@ export default function CallModal() {
 
         {/* Video Call UI */}
         {!isRinging && isVideo && (
-           <div className="absolute inset-0 bg-black">
+           <div className="absolute inset-0 bg-black flex flex-col">
              {/* Remote Video (Full Screen) */}
              <video 
                ref={remoteVideoRef} 
                autoPlay 
                playsInline 
-               className="w-full h-full object-cover"
+               className="absolute inset-0 w-full h-full object-cover border-none"
              />
+             
+             {/* Gradient Overlay for Top Info */}
+             <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-black/60 to-transparent z-10 pointer-events-none" />
+             
+             {/* Video Call Info Overlay */}
+             <div className="absolute top-8 left-6 z-20 text-white drop-shadow-md">
+               <h2 className="text-2xl font-bold tracking-tight">{displayInfo?.displayName}</h2>
+               <p className="text-lg font-medium font-mono mt-1 opacity-90">{formatDuration(callDuration)}</p>
+             </div>
+
              {/* Local Video (Floating) */}
-             <div className="absolute top-4 right-4 w-24 h-36 bg-gray-800 rounded-xl overflow-hidden border-2 border-white/20 shadow-xl z-20">
+             <div className="absolute top-8 right-6 w-28 h-40 sm:w-36 sm:h-52 bg-gray-900 rounded-2xl overflow-hidden shadow-2xl z-20 border border-white/20">
                <video 
                  ref={localVideoRef} 
                  autoPlay 
@@ -95,53 +134,65 @@ export default function CallModal() {
         )}
 
         {/* Controls */}
-        <div className={`relative z-20 flex justify-center gap-6 mt-8 ${isVideo && !isRinging ? 'pb-8 pt-4 bg-gradient-to-t from-black/80 to-transparent absolute bottom-0 inset-x-0' : ''}`}>
+        <div className={`relative z-20 flex justify-center items-center gap-6 ${
+          isVideo && !isRinging 
+            ? 'pb-10 pt-24 bg-gradient-to-t from-black/80 via-black/40 to-transparent absolute bottom-0 inset-x-0' 
+            : 'mt-8'
+        }`}>
           
           {isRinging && isReceiver ? (
             <>
               {/* Answer Button */}
               <button 
                 onClick={answerCall}
-                className="w-16 h-16 bg-green-500 text-white rounded-full flex items-center justify-center hover:bg-green-600 transition-transform hover:scale-105 shadow-lg shadow-green-500/30"
+                className="w-16 h-16 sm:w-20 sm:h-20 bg-green-500 text-white rounded-full flex items-center justify-center hover:bg-green-600 transition-transform active:scale-95 hover:scale-105 shadow-xl shadow-green-500/30"
               >
-                <PhoneCall className="w-7 h-7" />
+                <PhoneCall className="w-8 h-8 sm:w-10 sm:h-10" />
               </button>
               {/* Reject Button */}
               <button 
                 onClick={rejectCall}
-                className="w-16 h-16 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-transform hover:scale-105 shadow-lg shadow-red-500/30"
+                className="w-16 h-16 sm:w-20 sm:h-20 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-transform active:scale-95 hover:scale-105 shadow-xl shadow-red-500/30"
               >
-                <PhoneOff className="w-7 h-7" />
+                <PhoneOff className="w-8 h-8 sm:w-10 sm:h-10" />
               </button>
             </>
           ) : (
             <>
               {/* Ongoing Call Controls / or Caller waiting Controls */}
               {(!isRinging || (isRinging && !isReceiver)) && (
-                <>
+                <div className={`flex items-center gap-6 sm:gap-8 ${isVideo && !isRinging ? 'px-8 py-4 bg-white/10 backdrop-blur-xl rounded-full border border-white/20' : ''}`}>
                   <button 
                     onClick={toggleMute}
-                    className={`w-14 h-14 rounded-full flex items-center justify-center transition-transform hover:scale-105 ${isMuted ? 'bg-white/90 text-black' : 'bg-black/20 text-white backdrop-blur-md border border-white/20'}`}
+                    className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center transition-transform active:scale-95 hover:scale-105 ${
+                      isMuted 
+                        ? 'bg-white text-black' 
+                        : isVideo && !isRinging ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                    }`}
                   >
-                    {isMuted ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
+                    {isMuted ? <MicOff className="w-6 h-6 sm:w-7 sm:h-7" /> : <Mic className="w-6 h-6 sm:w-7 sm:h-7" />}
                   </button>
                   
                   {isVideo && (
                     <button 
                       onClick={toggleVideo}
-                      className={`w-14 h-14 rounded-full flex items-center justify-center transition-transform hover:scale-105 ${isVideoOff ? 'bg-white/90 text-black' : 'bg-black/20 text-white backdrop-blur-md border border-white/20'}`}
+                      className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center transition-transform active:scale-95 hover:scale-105 ${
+                        isVideoOff 
+                          ? 'bg-white text-black' 
+                          : isVideo && !isRinging ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                      }`}
                     >
-                      {isVideoOff ? <VideoOff className="w-6 h-6" /> : <Video className="w-6 h-6" />}
+                      {isVideoOff ? <VideoOff className="w-6 h-6 sm:w-7 sm:h-7" /> : <Video className="w-6 h-6 sm:w-7 sm:h-7" />}
                     </button>
                   )}
 
                   <button 
                     onClick={endCall}
-                    className="w-14 h-14 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-transform hover:scale-105 shadow-lg shadow-red-500/30"
+                    className="w-16 h-16 sm:w-20 sm:h-20 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-transform active:scale-95 hover:scale-105 shadow-xl shadow-red-500/30"
                   >
-                    <PhoneOff className="w-6 h-6" />
+                    <PhoneOff className="w-8 h-8 sm:w-10 sm:h-10" />
                   </button>
-                </>
+                </div>
               )}
             </>
           )}

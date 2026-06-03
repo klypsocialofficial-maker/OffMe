@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
-import { collection, doc, addDoc, updateDoc, onSnapshot, query, where, getDocs, deleteDoc } from 'firebase/firestore';
+import { collection, doc, addDoc, updateDoc, onSnapshot, query, where } from 'firebase/firestore';
 import { useAuth } from './AuthContext';
 
 interface CallProviderProps {
