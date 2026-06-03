@@ -733,7 +733,7 @@ export default function PostDetail() {
                   else navigate(`/${post.authorUsername}`);
                 }}>
                   <div className="font-bold text-[16px] truncate cursor-pointer hover:underline text-gray-900">{post.authorName}</div>
-                  {(post.authorVerified || post.authorUsername === 'Rulio') && <VerifiedBadge tier={post.authorPremiumTier} />}
+                  {(post.authorVerified || post.authorUsername === 'Rulio') && <VerifiedBadge tier={post.authorUsername === 'Rulio' ? 'black' : post.authorPremiumTier} />}
                   {post.authorPrivate && <Lock className="w-3 h-3 text-gray-400" />}
                 </div>
                 <div className="text-gray-500 text-[15px]">@{post.authorUsername}</div>

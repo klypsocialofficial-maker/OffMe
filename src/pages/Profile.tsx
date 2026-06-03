@@ -893,7 +893,7 @@ export default function Profile() {
                 <Lock className="w-4 h-4 opacity-60" />
               )}
               {(profileUser.isVerified || profileUser.username === 'Rulio') && (
-                <VerifiedBadge className={`w-5 h-5 flex-shrink-0 ${theme.accent}`} tier={profileUser.premiumTier} />
+                <VerifiedBadge className={`w-5 h-5 flex-shrink-0 ${theme.accent}`} tier={profileUser.username === 'Rulio' ? 'black' : profileUser.premiumTier} />
               )}
             </div>
             <p className="opacity-60 text-sm sm:text-base">@{profileUser.username}</p>
@@ -1282,7 +1282,7 @@ export default function Profile() {
                         <div>
                           <div className="flex items-center space-x-1">
                             <p className="font-bold text-sm">{user.displayName}</p>
-                            {(user.isVerified || user.username === 'Rulio') && <VerifiedBadge className="w-3 h-3" tier={user.premiumTier} />}
+                            {(user.isVerified || user.username === 'Rulio') && <VerifiedBadge className="w-3 h-3" tier={user.username === 'Rulio' ? 'black' : user.premiumTier} />}
                           </div>
                           <p className="text-xs text-gray-500">@{user.username}</p>
                         </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
-import { User as UserIcon, MoreHorizontal, Trash2, Edit2, Send, MessageCircle, Repeat, Heart, Ghost, VolumeX, UserX, ShieldAlert, Bookmark, BookmarkCheck, Pin, PinOff, Users, BarChart2, Gift, Lock, Music, Play, Pause, ExternalLink, Share } from 'lucide-react';
+import { User as UserIcon, MoreHorizontal, Trash2, Edit2, Send, MessageCircle, Repeat, Heart, Ghost, VolumeX, UserX, ShieldAlert, Bookmark, BookmarkCheck, Pin, PinOff, Users, BarChart2, Gift, Lock, Music, Play, Pause, ExternalLink, Share, Shield, Crown } from 'lucide-react';
 import { formatRelativeTime } from '../lib/dateUtils';
 import { doc, updateDoc, increment } from 'firebase/firestore';
 import VerifiedBadge from './VerifiedBadge';
@@ -251,7 +251,7 @@ function PostCard({
 
   // Increment view count on mount with debounce/session tracking
   useEffect(() => {
-    if (!db || !effectivePost.id || post.type === 'repost') return;
+    if (!db || !effectivePost.id || post.type === 'repost' || post.isAd) return;
 
     if (viewedPostsInSession.has(effectivePost.id)) return;
 
@@ -268,7 +268,7 @@ function PostCard({
     }, 1500);
 
     return () => clearTimeout(timer);
-  }, [effectivePost.id, post.type, db]);
+  }, [effectivePost.id, post.type, post.isAd, db]);
 
   const isPinned = isProfilePinned === true;
 
@@ -420,7 +420,10 @@ function PostCard({
               )}
               {post.authorId !== 'anonymous' && (( (post.type === 'repost' ? post.originalPostAuthorVerified : post.authorVerified) || 
                  (post.type === 'repost' ? post.originalPostAuthorUsername : post.authorUsername) === 'Rulio') && (
-                <VerifiedBadge className="w-4 h-4 flex-shrink-0" tier={post.type === 'repost' ? post.originalPostAuthorPremiumTier : post.authorPremiumTier} />
+                <VerifiedBadge 
+                  className="w-4 h-4 flex-shrink-0" 
+                  tier={(post.type === 'repost' ? post.originalPostAuthorUsername : post.authorUsername) === 'Rulio' ? 'black' : (post.type === 'repost' ? post.originalPostAuthorPremiumTier : post.authorPremiumTier)} 
+                />
               ))}
               <span className="text-gray-500 truncate">@{post.type === 'repost' ? post.originalPostAuthorUsername : post.authorUsername}</span>
               <span className="text-gray-500">·</span>
