@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, Image as ImageIcon, User as UserIcon, Trash2, Check, CheckCheck, Mic, Flame, X, Smile, Sticker as StickerIcon } from 'lucide-react';
+import { ArrowLeft, Send, Image as ImageIcon, User as UserIcon, Trash2, Check, CheckCheck, Mic, Flame, X, Smile, Sticker as StickerIcon, Phone, Video } from 'lucide-react';
 import { sendPushNotification } from '../lib/notifications';
 import VerifiedBadge from '../components/VerifiedBadge';
 import LazyImage from '../components/LazyImage';
 import { useAuth } from '../contexts/AuthContext';
+import { useCall } from '../contexts/CallContext';
 import { getDefaultAvatar } from '../lib/avatar';
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, getDoc, updateDoc, deleteDoc, writeBatch, increment, limit, where } from 'firebase/firestore';
 import { db, auth } from '../firebase';
@@ -71,6 +72,7 @@ export default function Chat() {
   const { conversationId } = useParams();
   const navigate = useNavigate();
   const { userProfile, blockUser, unblockUser, sendChatMessage, setTypingStatus } = useAuth();
+  const { startCall } = useCall();
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
@@ -391,6 +393,31 @@ export default function Chat() {
                 </div>
               </div>
             </div>
+          </div>
+          {/* Call actions */}
+          <div className="flex items-center space-x-1 sm:space-x-2 mr-2">
+            <button 
+              onClick={() => {
+                if (otherParticipantId) {
+                  startCall(otherParticipantId, 'audio', otherParticipantInfo);
+                }
+              }}
+              className="p-2.5 text-blue-500 bg-blue-50 hover:bg-blue-100 rounded-full transition-colors shadow-sm"
+              aria-label="Chamada de áudio"
+            >
+              <Phone className="w-5 h-5 fill-current" />
+            </button>
+            <button 
+              onClick={() => {
+                if (otherParticipantId) {
+                  startCall(otherParticipantId, 'video', otherParticipantInfo);
+                }
+              }}
+              className="p-2.5 text-indigo-500 bg-indigo-50 hover:bg-indigo-100 rounded-full transition-colors shadow-sm"
+              aria-label="Chamada de vídeo"
+            >
+              <Video className="w-5 h-5 fill-current" />
+            </button>
           </div>
         </div>
       </div>

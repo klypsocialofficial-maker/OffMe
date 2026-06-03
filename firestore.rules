@@ -181,6 +181,23 @@ service cloud.firestore {
       }
     }
 
+    match /calls {
+      allow list: if isAuthenticated();
+      match /{callId} {
+        // Users can read any call they are participating in
+        allow read: if isAdmin() || (isAuthenticated() && (resource.data.callerId == request.auth.uid || resource.data.receiverId == request.auth.uid));
+        // Caller creates the call
+        allow create: if isAuthenticated() && request.resource.data.callerId == request.auth.uid;
+        // Both caller and receiver can update the call
+        allow update: if isAuthenticated() && (resource.data.callerId == request.auth.uid || resource.data.receiverId == request.auth.uid);
+        allow delete: if isAdmin() || (isAuthenticated() && (resource.data.callerId == request.auth.uid || resource.data.receiverId == request.auth.uid));
+        
+        match /{allSegments=**} {
+          allow read, write: if isAdmin() || isAuthenticated();
+        }
+      }
+    }
+
     match /reports {
       allow list: if isAdmin();
       

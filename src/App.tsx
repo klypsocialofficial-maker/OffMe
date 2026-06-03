@@ -42,6 +42,8 @@ import AdminPanel from './pages/AdminPanel';
 import { seedMissions } from './services/missionsService';
 
 import { Shield, Lock, ArrowRight, AlertCircle, RefreshCw, LogOut } from 'lucide-react';
+import { CallProvider } from './contexts/CallContext';
+import CallModal from './components/CallModal';
 import { db } from './firebase';
 import { doc, updateDoc, arrayRemove } from 'firebase/firestore';
 
@@ -208,7 +210,10 @@ export default function App() {
             path="/" 
             element={
               <PrivateRoute>
-                <Layout />
+                <CallProvider>
+                  <CallModal />
+                  <Layout />
+                </CallProvider>
               </PrivateRoute>
             } 
           >
