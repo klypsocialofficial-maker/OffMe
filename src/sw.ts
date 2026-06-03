@@ -60,7 +60,7 @@ try {
     })
   );
 } catch (e) {
-  console.log('Error registering NavigationRoute', e);
+  // Registration failed
 }
 
 // This allows the web app to control the service worker and skip waiting
@@ -93,7 +93,7 @@ if (firebase) {
   const messaging = firebase.messaging();
 
   messaging.onBackgroundMessage((payload: any) => {
-    console.log('[sw.ts] Received background message ', payload);
+    // Background message received
 
     // If Firebase already showed a notification because 'notification' payload exists,
     // do not show it again manually to avoid duplicates.

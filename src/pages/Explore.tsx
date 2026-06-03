@@ -1012,115 +1012,53 @@ export default function Explore() {
                   exit={{ opacity: 0, x: -20 }}
                   transition={{ duration: 0.2 }}
                 >
-                  {/* Trending Hashtags - Now visible on top for all tabs when not searching */}
-                  <div className="px-4 mb-6">
-                    <div className="flex items-center justify-between mb-3">
-                      <h2 className="text-lg font-black italic tracking-tighter flex items-center space-x-2">
-                        <TrendingUp className="w-5 h-5 text-blue-600" />
-                        <span>Hashtags em alta</span>
-                      </h2>
-                    </div>
-                    <div className="flex overflow-x-auto no-scrollbar gap-2 pb-2">
-                      {trendingHashtags.length > 0 ? trendingHashtags.map((trend) => (
-                        <button 
-                          key={trend.tag}
-                          onClick={() => {
-                            const hashtag = trend.tag.startsWith('#') ? trend.tag : `#${trend.tag.toLowerCase()}`;
-                            setSearchQuery(hashtag);
-                            setSearchTab('posts');
-                            // Navigate to search with tag to trigger refetch
-                            navigate(`?q=${encodeURIComponent(hashtag)}`);
-                            
-                            // Visual feedback for click
-                            if (typeof window !== 'undefined' && window.scrollTo) {
-                              window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }
-                          }}
-                          className="flex-shrink-0 px-4 py-2 bg-white dark:bg-white/5 rounded-2xl border border-black/5 dark:border-white/10 shadow-sm hover:shadow-md hover:bg-gray-50 dark:hover:bg-white/10 transition-all flex items-center space-x-2 group active:scale-95"
-                        >
-                          <div className="w-6 h-6 rounded-full bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center">
-                            <Hash className="w-3.5 h-3.5 text-blue-500 group-hover:scale-110 transition-transform" />
-                          </div>
-                          <div className="flex flex-col items-start leading-tight">
-                            <span className="text-sm font-black text-gray-800 dark:text-gray-100">#{trend.tag.toLowerCase()}</span>
-                            <span className="text-[10px] text-gray-500 font-medium">{trend.posts}</span>
-                          </div>
-                        </button>
-                      )) : (
-                        <div className="flex space-x-2">
-                          {[1, 2, 3].map(i => (
-                            <div key={i} className="w-24 h-10 bg-gray-100 dark:bg-white/5 rounded-2xl animate-pulse" />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {activeTab === 'foryou' || activeTab === 'trending' ? (
-                    <>
-                      <div className="mb-0">
-                        <TrendingPosts isFullList={activeTab === 'trending'} />
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center p-12 text-center">
-                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                        <Hash className="w-8 h-8 text-gray-300" />
-                      </div>
-                      <h3 className="font-bold text-gray-900">Seção {CATEGORIES.find(c => c.id === activeTab)?.label}</h3>
-                      <p className="text-gray-500 text-sm mt-1">
-                        Esta área será preenchida com conteúdo relevante de {CATEGORIES.find(c => c.id === activeTab)?.label.toLowerCase()}.
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Suggestions (Always show at bottom of For You) */}
                   {activeTab === 'foryou' && (
-                    <>
-                      <div className="mt-8 px-4">
+                    <div className="space-y-6">
+                      {/* Suggested Users */}
+                      <div className="px-4">
                         <div className="flex items-center justify-between mb-4">
-                          <h2 className="text-xl font-black italic tracking-tighter">Pessoas que você pode conhecer</h2>
+                          <h2 className="text-xl font-black italic tracking-tighter">Pessoas para você seguir</h2>
                         </div>
                         
                         {loadingSuggestions ? (
-                          <div className="space-y-3">
+                          <div className="flex space-x-3 overflow-x-hidden">
                             {[1,2,3].map(i => (
-                              <div key={i} className="h-20 bg-gray-100 rounded-2xl animate-pulse" />
+                              <div key={i} className="min-w-[140px] h-32 bg-gray-100 rounded-3xl animate-pulse" />
                             ))}
                           </div>
                         ) : suggestedUsers.length > 0 ? (
-                          <div className="flex overflow-x-auto no-scrollbar gap-4 pb-4">
+                          <div className="flex overflow-x-auto no-scrollbar gap-3 pb-2 -mx-4 px-4">
                             {suggestedUsers.map((user) => (
                               <motion.div 
                                 key={`suggested-card-${user.id}`}
-                                className="w-48 flex-shrink-0 bg-white p-5 rounded-3xl border border-black/5 shadow-sm text-center flex flex-col items-center group cursor-pointer hover:shadow-md transition-all"
+                                className="w-[140px] flex-shrink-0 bg-white p-4 rounded-3xl border border-black/5 shadow-sm text-center flex flex-col items-center group cursor-pointer hover:shadow-md hover:border-black/10 transition-all"
                                 onClick={() => navigate(`/${user.username}`)}
                               >
-                                <div className="w-20 h-20 rounded-full bg-gray-200 overflow-hidden mb-3 border-4 border-white shadow-sm ring-1 ring-black/5">
+                                <div className="w-16 h-16 rounded-full bg-gray-200 overflow-hidden mb-2 border-2 border-white shadow-sm ring-1 ring-black/5">
                                   {user.photoURL ? (
                                     <LazyImage src={user.photoURL} alt={user.displayName} className="w-full h-full group-hover:scale-110 transition-transform" />
                                   ) : (
                                     <LazyImage src={getDefaultAvatar(user.displayName, user.username)} alt={user.displayName} className="w-full h-full group-hover:scale-110 transition-transform" />
                                   )}
                                 </div>
-                                <div className="min-w-0 w-full mb-3">
-                                  <div className="flex items-center justify-center space-x-1">
-                                    <p className="font-bold text-black truncate text-sm">{user.displayName}</p>
+                                <div className="min-w-0 w-full mb-3 flex-1 flex flex-col items-center justify-center">
+                                  <div className="flex items-center justify-center space-x-1 w-full relative">
+                                    <p className="font-bold text-black truncate text-sm max-w-full leading-tight">{user.displayName}</p>
                                     {(user.isVerified || user.username === 'Rulio') && (
                                       <VerifiedBadge tier={user.premiumTier} className="w-3 h-3 flex-shrink-0" />
                                     )}
                                   </div>
-                                  <p className="text-gray-500 text-xs truncate">@{user.username}</p>
+                                  <p className="text-gray-500 text-[10px] truncate w-full">@{user.username}</p>
                                 </div>
                                 <button 
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleFollowClick(user);
                                   }}
-                                  className={`w-full py-2 rounded-xl text-xs font-black transition-all active:scale-95 ${
+                                  className={`w-full py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
                                     userProfile?.following?.includes(user.id)
                                       ? 'bg-gray-100 text-gray-600'
-                                      : 'bg-black text-white'
+                                      : 'bg-black text-white hover:bg-gray-800'
                                   }`}
                                 >
                                   {userProfile?.following?.includes(user.id) ? 'Seguindo' : 'Seguir'}
@@ -1131,30 +1069,139 @@ export default function Explore() {
                         ) : null}
                       </div>
 
-                      <div className="mt-8 px-4">
-                        <h2 className="text-xl font-black tracking-tight mb-4">Navegar por Categorias</h2>
+                      {/* Trending Preview */}
+                      <div>
+                        <TrendingPosts isFullList={false} />
+                      </div>
+
+                      {/* Trending Hashtags */}
+                      <div className="px-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <h2 className="text-lg font-black italic tracking-tighter flex items-center space-x-2">
+                            <TrendingUp className="w-5 h-5 text-blue-600" />
+                            <span>Hashtags do momento</span>
+                          </h2>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {trendingHashtags.length > 0 ? trendingHashtags.map((trend) => (
+                            <button 
+                              key={trend.tag}
+                              onClick={() => {
+                                const hashtag = trend.tag.startsWith('#') ? trend.tag : `#${trend.tag.toLowerCase()}`;
+                                setSearchQuery(hashtag);
+                                setSearchTab('posts');
+                                navigate(`?q=${encodeURIComponent(hashtag)}`);
+                                if (typeof window !== 'undefined' && window.scrollTo) {
+                                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                                }
+                              }}
+                              className="px-4 py-2 bg-white rounded-2xl border border-black/5 shadow-sm hover:shadow-md hover:border-black/10 transition-all flex items-center space-x-2 active:scale-95 group"
+                            >
+                              <span className="text-sm font-black text-gray-800">#{trend.tag.toLowerCase()}</span>
+                              <span className="text-[10px] text-gray-500 font-medium bg-gray-100 px-1.5 py-0.5 rounded-md group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">{trend.posts}</span>
+                            </button>
+                          )) : (
+                            <div className="flex space-x-2">
+                              {[1, 2, 3].map(i => (
+                                <div key={i} className="w-24 h-10 bg-gray-100 rounded-2xl animate-pulse" />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Categories */}
+                      <div className="px-4">
+                        <h2 className="text-lg font-black italic tracking-tight mb-3">Navegar por Categorias</h2>
                         <div className="grid grid-cols-2 gap-3">
-                          {CATEGORIES.filter(c => c.id !== 'foryou').map((cat, i) => (
+                          {CATEGORIES.filter(c => c.id !== 'foryou').map((cat) => (
                             <button
                               key={`cat-card-${cat.id}`}
                               onClick={() => setActiveTab(cat.id)}
-                              className="relative h-24 rounded-2xl overflow-hidden group border border-black/5 shadow-sm"
+                              className="relative h-24 rounded-2xl overflow-hidden group border border-black/5 shadow-sm active:scale-95 transition-transform"
                             >
-                              <LazyImage 
-                                src={`https://picsum.photos/seed/${cat.id}/300/200`} 
-                                alt={cat.label} 
-                                className="w-full h-full opacity-60 group-hover:opacity-100 transition-opacity"
-                              />
-                              <div className="absolute inset-0 bg-slate-900/40 group-hover:bg-slate-900/20 transition-colors" />
-                              <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
-                                <cat.icon className="w-6 h-6 mb-1 opacity-80" />
-                                <span className="text-xs font-black uppercase tracking-widest">{cat.label}</span>
+                              <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-black group-hover:scale-105 transition-transform duration-500" />
+                              <div className="absolute inset-0 flex flex-col items-center justify-center text-white z-10">
+                                <cat.icon className="w-6 h-6 mb-1 opacity-90 drop-shadow-md" />
+                                <span className="text-xs font-black uppercase tracking-widest drop-shadow-md">{cat.label}</span>
                               </div>
                             </button>
                           ))}
                         </div>
                       </div>
-                    </>
+                    </div>
+                  )}
+
+                  {activeTab === 'trending' && (
+                    <div className="space-y-6">
+                      <div className="px-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <h2 className="text-xl font-black italic tracking-tighter flex items-center space-x-2">
+                            <TrendingUp className="w-6 h-6 text-blue-600" />
+                            <span>Hashtags em alta</span>
+                          </h2>
+                        </div>
+                        <div className="flex overflow-x-auto no-scrollbar gap-2 pb-2 -mx-4 px-4">
+                          {trendingHashtags.length > 0 ? trendingHashtags.map((trend) => (
+                            <button 
+                              key={trend.tag}
+                              onClick={() => {
+                                const hashtag = trend.tag.startsWith('#') ? trend.tag : `#${trend.tag.toLowerCase()}`;
+                                setSearchQuery(hashtag);
+                                setSearchTab('posts');
+                                navigate(`?q=${encodeURIComponent(hashtag)}`);
+                                if (typeof window !== 'undefined' && window.scrollTo) {
+                                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                                }
+                              }}
+                              className="flex-shrink-0 px-4 py-3 bg-white rounded-2xl border border-black/5 shadow-sm hover:shadow-md transition-all flex items-center space-x-3 active:scale-95 group"
+                            >
+                              <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center group-hover:bg-blue-100 transition-colors">
+                                <Hash className="w-4 h-4 text-blue-500" />
+                              </div>
+                              <div className="flex flex-col items-start leading-tight">
+                                <span className="text-sm font-black text-gray-800">#{trend.tag.toLowerCase()}</span>
+                                <span className="text-[10px] text-gray-500 font-medium">{trend.posts}</span>
+                              </div>
+                            </button>
+                          )) : (
+                            <div className="flex space-x-2">
+                              {[1, 2, 3].map(i => (
+                                <div key={i} className="w-32 h-14 bg-gray-100 rounded-2xl animate-pulse" />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <TrendingPosts isFullList={true} />
+                      </div>
+                    </div>
+                  )}
+
+                  {(activeTab === 'news' || activeTab === 'sports' || activeTab === 'tech') && (
+                    <div className="flex flex-col items-center justify-center p-12 text-center bg-white mx-4 rounded-3xl border border-black/5 shadow-sm">
+                      <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6">
+                        {React.createElement(CATEGORIES.find(c => c.id === activeTab)?.icon || Hash, { className: "w-10 h-10 text-gray-300" })}
+                      </div>
+                      <h3 className="text-xl font-black italic tracking-tight text-gray-900 mb-2">
+                        Explorar {CATEGORIES.find(c => c.id === activeTab)?.label}
+                      </h3>
+                      <p className="text-gray-500 text-sm mb-6 max-w-[250px]">
+                        Busque pelas últimas atualizações usando a hashtag dedicada.
+                      </p>
+                      <button 
+                        onClick={() => {
+                          const tag = activeTab === 'news' ? '#noticias' : activeTab === 'sports' ? '#esportes' : '#tecnologia';
+                          setSearchQuery(tag);
+                          setSearchTab('posts');
+                          navigate(`?q=${encodeURIComponent(tag)}`);
+                        }}
+                        className="px-6 py-3 bg-black text-white rounded-xl font-bold text-sm shadow-lg hover:shadow-xl active:scale-95 transition-all"
+                      >
+                        Ver Posts
+                      </button>
+                    </div>
                   )}
                 </motion.div>
               </AnimatePresence>

@@ -147,9 +147,7 @@ export const uploadToImgBB = async (file: File): Promise<string> => {
   try {
     const result = await optimizeImage(file);
     optimizedFile = result.file;
-    console.log(`[MediaManager] Imagem compactada: ${(result.originalSize / 1024).toFixed(1)}KB -> ${(result.optimizedSize / 1024).toFixed(1)}KB (-${result.savedPercent}%)`);
   } catch (webpError) {
-    console.warn('[MediaManager] Falha na compressão inteligente, subindo arquivo bruto:', webpError);
   }
 
   const formData = new FormData();

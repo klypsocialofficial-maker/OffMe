@@ -15,23 +15,20 @@ export default function PWABadge() {
     updateServiceWorker,
   } = useRegisterSW({
     onRegistered(r) {
-      console.log('SW Registered: ', r);
       if (r) {
         registrationRef.current = r;
         // Check for updates every 3 minutes
         setInterval(() => {
-          r.update().catch(err => console.log('Periodic auto check failed:', err));
+          r.update().catch(() => {});
         }, 3 * 60 * 1000);
       }
     },
-    onRegisterError(error) {
-      console.log('SW registration error', error);
+    onRegisterError() {
     },
   });
 
   useEffect(() => {
     const handleCheckUpdate = () => {
-      console.log('Manually checking for PWA update...');
       if (registrationRef.current) {
         setCheckingUpdate(true);
         registrationRef.current.update().then(() => {
@@ -44,8 +41,7 @@ export default function PWABadge() {
               setTimeout(() => setShowUpToDate(false), 3000);
             }
           }, 2000);
-        }).catch(err => {
-          console.error('Update check failed:', err);
+        }).catch(() => {
           setCheckingUpdate(false);
         });
       }
@@ -53,8 +49,7 @@ export default function PWABadge() {
 
     const handleVisibilityAndFocusCheck = () => {
       if (document.visibilityState === 'visible' && registrationRef.current) {
-        console.log('App focused or tab became active. Checking for PWA updates...');
-        registrationRef.current.update().catch(err => console.log('Focus-triggered update check failed:', err));
+        registrationRef.current.update().catch(() => {});
       }
     };
 
@@ -68,8 +63,6 @@ export default function PWABadge() {
       window.removeEventListener('focus', handleVisibilityAndFocusCheck);
     };
   }, [needRefresh]);
-
-  console.log('PWA Status - offlineReady:', offlineReady, 'needRefresh:', needRefresh);
 
   const [showChangelog, setShowChangelog] = useState(true); // Default true now to show news
   const [isUpdating, setIsUpdating] = useState(false);
@@ -108,7 +101,7 @@ export default function PWABadge() {
   // Request Notification Permissions on Mount
   useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission().catch(err => console.log('Notification permission dynamic request failed:', err));
+      Notification.requestPermission().catch(() => {});
     }
   }, []);
 

@@ -62,7 +62,6 @@ export const seedMissions = async () => {
     const snapshot = await getDocs(missionsCol);
     
     if (snapshot.empty) {
-      console.log('Seeding default missions...');
       for (const m of DEFAULT_MISSIONS) {
         const newDocRef = doc(missionsCol);
         await setDoc(newDocRef, {
@@ -70,11 +69,10 @@ export const seedMissions = async () => {
           createdAt: serverTimestamp()
         });
       }
-      console.log('Missions seeded successfully.');
     }
   } catch (error) {
     if (error && (error as any).code === 'permission-denied') {
-      console.log('Security Rules: Seeding missions is only allowed for Admin users.');
+      // Ignore
     } else {
       console.error('Error seeding missions:', error);
     }
