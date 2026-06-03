@@ -25,13 +25,16 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { posts } = req.body;
-
-  if (!posts || !Array.isArray(posts)) {
-    return res.status(400).json({ error: 'Posts must be provided as an array.' });
-  }
+  let posts: any[] = [];
 
   try {
+    const body = req.body || {};
+    posts = body.posts;
+
+    if (!posts || !Array.isArray(posts)) {
+      return res.status(400).json({ error: 'Posts must be provided as an array.' });
+    }
+
     const ai = getGemini();
 
     const postsText = posts

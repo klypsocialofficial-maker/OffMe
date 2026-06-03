@@ -6,7 +6,6 @@ import { auth } from '../firebase';
 import { sendEmailVerification } from 'firebase/auth';
 import { motion, AnimatePresence } from 'motion/react';
 import ConfirmModal from '../components/ConfirmModal';
-import VerificationRequestModal from '../components/VerificationRequestModal';
 import { formatFullDate } from '../lib/dateUtils';
 
 export default function AccountSettings() {
@@ -21,7 +20,6 @@ export default function AccountSettings() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
   const [showViolations, setShowViolations] = useState(false);
   const [resendingEmail, setResendingEmail] = useState(false);
 
@@ -442,10 +440,6 @@ export default function AccountSettings() {
         confirmText="Sim, deletar conta"
         cancelText="Cancelar"
         type="danger"
-      />
-      <VerificationRequestModal 
-        isOpen={isVerificationModalOpen}
-        onClose={() => setIsVerificationModalOpen(false)}
       />
       </div>
     </div>

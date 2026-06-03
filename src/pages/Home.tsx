@@ -16,7 +16,6 @@ import ConfirmModal from '../components/ConfirmModal';
 import PostCard from '../components/PostCard';
 import LazyImage from '../components/LazyImage';
 import PostSkeleton from '../components/PostSkeleton';
-import PremiumAdCard from '../components/PremiumAdCard';
 import { handleMentions, sendPushNotification, notifyFollowers } from '../lib/notifications';
 import { uploadToImgBB } from '../lib/imgbb';
 import { awardPoints } from '../services/gamificationService';
@@ -920,7 +919,6 @@ export default function Home() {
                 <>
                   {filteredPosts.map((post, index) => (
                     <React.Fragment key={post.id}>
-                      {index === 2 && <PremiumAdCard />}
                       <PostCard
                         post={post}
                         onLike={handleLikePost}

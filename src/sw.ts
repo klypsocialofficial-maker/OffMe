@@ -3,7 +3,7 @@
 import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
 import { clientsClaim } from 'workbox-core';
 import { registerRoute, NavigationRoute } from 'workbox-routing';
-import { NetworkFirst, CacheFirst, StaleWhileRevalidate } from 'workbox-strategies';
+import { NetworkFirst, CacheFirst, StaleWhileRevalidate, NetworkOnly } from 'workbox-strategies';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 import { ExpirationPlugin } from 'workbox-expiration';
 import * as navigationPreload from 'workbox-navigation-preload';
@@ -15,6 +15,12 @@ declare const self: ServiceWorkerGlobalScope & {
 // PWA Logic v0.0.0.13
 cleanupOutdatedCaches();
 precacheAndRoute(self.__WB_MANIFEST);
+
+// Always route API calls directly to the network to avoid interception
+registerRoute(
+  ({ url }) => url.pathname.startsWith('/api/'),
+  new NetworkOnly()
+);
 
 // Cache Google Fonts
 registerRoute(

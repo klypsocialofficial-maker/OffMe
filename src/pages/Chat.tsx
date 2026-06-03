@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, Image as ImageIcon, User as UserIcon, Trash2, Check, CheckCheck, Phone, Video, PhoneIncoming, Mic, Flame, X, Smile, Sticker as StickerIcon } from 'lucide-react';
+import { ArrowLeft, Send, Image as ImageIcon, User as UserIcon, Trash2, Check, CheckCheck, Mic, Flame, X, Smile, Sticker as StickerIcon } from 'lucide-react';
 import { sendPushNotification } from '../lib/notifications';
 import VerifiedBadge from '../components/VerifiedBadge';
 import LazyImage from '../components/LazyImage';
@@ -9,7 +9,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { getDefaultAvatar } from '../lib/avatar';
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, getDoc, updateDoc, deleteDoc, writeBatch, increment, limit, where } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import CallOverlay from '../components/CallOverlay';
 import ConfirmModal from '../components/ConfirmModal';
 import { uploadToImgBB } from '../lib/imgbb';
 import { GiphyFetch } from '@giphy/js-fetch-api';
@@ -80,12 +79,6 @@ export default function Chat() {
   const [isTyping, setIsTyping] = useState(false);
   const [otherUserTyping, setOtherUserTyping] = useState(false);
   const [deleteConfirmModal, setDeleteConfirmModal] = useState<{ isOpen: boolean, messageId: string }>({ isOpen: false, messageId: '' });
-  const [activeCall, setActiveCall] = useState<{
-    id?: string;
-    type: 'audio' | 'video';
-    isIncoming: boolean;
-    callerId: string;
-  } | null>(null);
   
   // Media states
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -257,37 +250,6 @@ export default function Chat() {
     };
   }, [conversationId, userProfile?.uid, navigate]);
 
-  useEffect(() => {
-    if (!conversationId || !db || !userProfile?.uid) return;
-
-    const q = query(
-      collection(db, 'conversations', conversationId, 'calls'),
-      orderBy('createdAt', 'desc'),
-      limit(1)
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      if (!snapshot.empty) {
-        const callDoc = snapshot.docs[0];
-        const callData = callDoc.data();
-        
-        // If it's a ringing call and we are the callee
-        if (callData.status === 'calling' && callData.calleeId === userProfile.uid) {
-          setActiveCall({
-            id: callDoc.id,
-            type: callData.type,
-            isIncoming: true,
-            callerId: callData.callerId
-          });
-        } else if (callData.status === 'ended' && activeCall?.id === callDoc.id) {
-          setActiveCall(null);
-        }
-      }
-    });
-
-    return unsubscribe;
-  }, [conversationId, userProfile?.uid, activeCall?.id]);
-
   const handleTyping = () => {
     if (!conversationId || !userProfile?.uid || !db) return;
 
@@ -429,23 +391,6 @@ export default function Chat() {
                 </div>
               </div>
             </div>
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <button 
-              onClick={() => !isBlocked && setActiveCall({ type: 'audio', isIncoming: false, callerId: userProfile?.uid || '' })}
-              disabled={isBlocked}
-              className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition-colors disabled:opacity-30"
-            >
-              <Phone className="w-5 h-5" />
-            </button>
-            <button 
-              onClick={() => !isBlocked && setActiveCall({ type: 'video', isIncoming: false, callerId: userProfile?.uid || '' })}
-              disabled={isBlocked}
-              className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition-colors disabled:opacity-30"
-            >
-              <Video className="w-5 h-5" />
-            </button>
           </div>
         </div>
       </div>
@@ -777,20 +722,6 @@ export default function Chat() {
           </div>
         )}
       </div>
-
-      {activeCall && conversationId && userProfile?.uid && otherParticipantId && (
-        <CallOverlay
-          conversationId={conversationId}
-          currentUserId={userProfile.uid}
-          otherUserId={otherParticipantId}
-          otherUserName={otherParticipantInfo?.displayName || 'Usuário'}
-          otherUserPhoto={otherParticipantInfo?.photoURL || null}
-          callType={activeCall.type}
-          isIncoming={activeCall.isIncoming}
-          callDocId={activeCall.id}
-          onEndCall={() => setActiveCall(null)}
-        />
-      )}
 
       <ConfirmModal
         isOpen={deleteConfirmModal.isOpen}

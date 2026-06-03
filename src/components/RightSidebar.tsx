@@ -9,7 +9,6 @@ import LazyImage from './LazyImage';
 import { getDefaultAvatar } from '../lib/avatar';
 import Toast from './Toast';
 import ConfirmModal from './ConfirmModal';
-import MissionWidget from './MissionWidget';
 import SmartSummary from './SmartSummary';
 
 export default function RightSidebar() {
@@ -215,8 +214,6 @@ export default function RightSidebar() {
       </div>
 
       <SmartSummary />
-
-      {userProfile && <MissionWidget userId={userProfile.uid} />}
 
       {/* Premium Banner */}
       <div className="bg-gray-50 rounded-2xl p-4 space-y-2 border border-gray-100">

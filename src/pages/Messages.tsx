@@ -65,7 +65,8 @@ export default function Messages() {
   const { userProfile } = useAuth();
   const { openDrawer } = useOutletContext<{ openDrawer: () => void }>();
   const navigate = useNavigate();
-  const [conversations, setConversations] = useState<any[]>([]);
+  const [rawConversations, setRawConversations] = useState<any[]>([]);
+  const [viewingArchived, setViewingArchived] = useState(false);
   const [loading, setLoading] = useState(true);
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
@@ -89,7 +90,6 @@ export default function Messages() {
     setToast({ message, type, isOpen: true });
   };
 
-  // ... (dentro do useEffect, filtrar as conversas)
   useEffect(() => {
     if (!userProfile?.uid || !db) return;
 
@@ -99,26 +99,11 @@ export default function Messages() {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      let results = snapshot.docs.map(doc => ({
+      const results = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
-      
-      // Filtrar, buscar e ordenar
-      results = results
-        .filter((conv: any) => {
-          const otherParticipantId = conv.participants.find((id: string) => id !== userProfile?.uid);
-          const otherParticipantInfo = conv.participantInfo?.[otherParticipantId];
-          const matchesSearch = !searchTerm || (otherParticipantInfo?.displayName || '').toLowerCase().includes(searchTerm.toLowerCase());
-          return conv.archived !== true && !userProfile?.mutedUsers?.includes(otherParticipantId) && matchesSearch;
-        })
-        .sort((a: any, b: any) => {
-          const timeA = typeof a.updatedAt?.toMillis === 'function' ? a.updatedAt.toMillis() : 0;
-          const timeB = typeof b.updatedAt?.toMillis === 'function' ? b.updatedAt.toMillis() : 0;
-          return timeB - timeA;
-        });
-        
-      setConversations(results);
+      setRawConversations(results);
       setLoading(false);
     }, (error) => {
       if (error.code !== 'permission-denied') {
@@ -128,7 +113,26 @@ export default function Messages() {
     });
 
     return unsubscribe;
-  }, [userProfile?.uid, searchTerm]);
+  }, [userProfile?.uid]);
+
+  const conversations = React.useMemo(() => {
+    return rawConversations
+      .filter((conv: any) => {
+        const otherParticipantId = conv.participants.find((id: string) => id !== userProfile?.uid);
+        const otherParticipantInfo = conv.participantInfo?.[otherParticipantId];
+        const matchesSearch = !searchTerm || (otherParticipantInfo?.displayName || '').toLowerCase().includes(searchTerm.toLowerCase());
+        
+        const isArchived = conv.archived === true;
+        const correctArchiveState = viewingArchived ? isArchived : !isArchived;
+
+        return correctArchiveState && !userProfile?.mutedUsers?.includes(otherParticipantId) && matchesSearch;
+      })
+      .sort((a: any, b: any) => {
+        const timeA = typeof a.updatedAt?.toMillis === 'function' ? a.updatedAt.toMillis() : 0;
+        const timeB = typeof b.updatedAt?.toMillis === 'function' ? b.updatedAt.toMillis() : 0;
+        return timeB - timeA;
+      });
+  }, [rawConversations, userProfile?.uid, searchTerm, viewingArchived]);
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -147,10 +151,11 @@ export default function Messages() {
     });
   };
 
-  const handleArchive = async (e: React.MouseEvent, id: string) => {
+  const handleToggleArchive = async (e: React.MouseEvent, id: string, currentlyArchived: boolean) => {
     e.stopPropagation();
     try {
-      await updateDoc(doc(db, 'conversations', id), { archived: true });
+      await updateDoc(doc(db, 'conversations', id), { archived: !currentlyArchived });
+      showToast(!currentlyArchived ? 'Conversa arquivada' : 'Conversa desarquivada', 'success');
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `conversations/${id}`);
     }
@@ -174,8 +179,22 @@ export default function Messages() {
             <Mail className="w-5 h-5" />
           </button>
         </div>
-        <div className="px-4 pb-4">
+        <div className="px-4 pb-2">
              <input type="text" placeholder="Buscar conversas..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-gray-100 rounded-full px-4 py-2 text-sm outline-none" />
+        </div>
+        <div className="px-4 pb-3 flex space-x-2">
+          <button 
+            onClick={() => setViewingArchived(false)}
+            className={`flex-1 py-1.5 text-xs font-bold rounded-full transition-all ${!viewingArchived ? 'bg-black text-white shadow-sm' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'}`}
+          >
+            Caixa de Entrada
+          </button>
+          <button 
+            onClick={() => setViewingArchived(true)}
+            className={`flex-1 py-1.5 text-xs font-bold rounded-full transition-all ${viewingArchived ? 'bg-black text-white shadow-sm' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'}`}
+          >
+            Arquivadas
+          </button>
         </div>
       </div>
       <div className="flex-1 overflow-y-auto">
@@ -236,10 +255,18 @@ export default function Messages() {
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <button onClick={(e) => handleDelete(e, conversation.id)} className="p-2 hover:bg-red-100 rounded-full text-red-500">
+                        <button 
+                          onClick={(e) => handleDelete(e, conversation.id)} 
+                          className="p-2 hover:bg-red-100 rounded-full text-red-500 transition-colors"
+                          title="Apagar conversa"
+                        >
                           <Trash2 className="w-4 h-4" />
                         </button>
-                        <button onClick={(e) => handleArchive(e, conversation.id)} className="p-2 hover:bg-gray-100 rounded-full text-gray-500">
+                        <button 
+                          onClick={(e) => handleToggleArchive(e, conversation.id, conversation.archived === true)} 
+                          className={`p-2 rounded-full transition-colors ${conversation.archived === true ? 'bg-blue-50 text-blue-600 hover:bg-blue-100' : 'hover:bg-gray-100 text-gray-500'}`}
+                          title={conversation.archived === true ? "Desarquivar conversa" : "Arquivar conversa"}
+                        >
                           <Archive className="w-4 h-4" />
                         </button>
                       </div>
@@ -248,15 +275,24 @@ export default function Messages() {
             })}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center p-12 text-center text-gray-500 mt-10">
-            <p className="text-3xl font-bold text-black mb-4">Bem-vindo à sua caixa de entrada!</p>
-            <p className="mb-8">Envie uma mensagem, compartilhe posts e converse de forma privada.</p>
-            <button 
-              onClick={() => navigate('/explore')}
-              className="bg-black text-white px-8 py-3 rounded-full font-bold hover:bg-gray-800 transition-colors"
-            >
-              Nova mensagem
-            </button>
+          <div className="flex flex-col items-center justify-center p-12 text-center text-gray-500 mt-12">
+            <Archive className="w-16 h-16 text-gray-300 mb-4 animate-pulse-slow" />
+            <h3 className="text-xl font-bold text-black mb-2">
+              {viewingArchived ? 'Nenhuma conversa arquivada' : 'Bem-vindo à sua caixa de entrada!'}
+            </h3>
+            <p className="text-sm max-w-[280px] mx-auto text-gray-500 mb-6 font-medium">
+              {viewingArchived 
+                ? 'Aqui você verá as conversas que decidiu arquivar para organizar sua caixa de entrada.' 
+                : 'Envie uma mensagem, compartilhe posts e converse de forma privada.'}
+            </p>
+            {!viewingArchived && (
+              <button 
+                onClick={() => navigate('/explore')}
+                className="bg-black text-white px-8 py-3 rounded-full font-bold hover:bg-gray-800 transition-colors"
+              >
+                Nova mensagem
+              </button>
+            )}
           </div>
         )}
       </div>

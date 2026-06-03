@@ -101,29 +101,17 @@ function PostCard({
       if (typeof navigator !== 'undefined' && navigator.vibrate) {
         navigator.vibrate(50);
       }
-    }, 600);
+    }, 500);
   };
 
   const handleLikePointerUp = (e: React.PointerEvent) => {
     stopPropagation(e);
     if (reactionTimerRef.current === 'PICKER_OPEN') {
-      reactionTimerRef.current = null;
       return;
     }
-    
     if (reactionTimerRef.current) {
       clearTimeout(reactionTimerRef.current);
       reactionTimerRef.current = null;
-      
-      // Regular click logic
-      if (!currentUserReaction) {
-        handleSelectReaction('heart');
-      } else {
-        onLike(effectivePost, currentUserReaction);
-        if (typeof navigator !== 'undefined' && navigator.vibrate) {
-          navigator.vibrate(10);
-        }
-      }
     }
   };
 
@@ -132,6 +120,34 @@ function PostCard({
       clearTimeout(reactionTimerRef.current);
     }
     reactionTimerRef.current = null;
+  };
+
+  const handleLikeClick = (e: React.MouseEvent) => {
+    stopPropagation(e);
+    
+    if (reactionTimerRef.current === 'PICKER_OPEN') {
+      reactionTimerRef.current = null;
+      return;
+    }
+    
+    if (reactionTimerRef.current) {
+      clearTimeout(reactionTimerRef.current);
+      reactionTimerRef.current = null;
+    }
+
+    if (showReactionPicker) {
+      setShowReactionPicker(false);
+      return;
+    }
+
+    if (!currentUserReaction) {
+      handleSelectReaction('heart');
+    } else {
+      onLike(effectivePost, currentUserReaction);
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(10);
+      }
+    }
   };
 
   const currentUserReaction = effectivePost.reactions?.[userProfile?.uid];
@@ -151,23 +167,17 @@ function PostCard({
       if (typeof navigator !== 'undefined' && navigator.vibrate) {
         navigator.vibrate(50);
       }
-    }, 600);
+    }, 500);
   };
 
   const handleRepostPointerUp = (e: React.PointerEvent) => {
     stopPropagation(e);
     if (repostTimerRef.current === 'QUOTED') {
-      repostTimerRef.current = null;
       return;
     }
-    
     if (repostTimerRef.current) {
       clearTimeout(repostTimerRef.current);
       repostTimerRef.current = null;
-      if (typeof navigator !== 'undefined' && navigator.vibrate) {
-        navigator.vibrate(15);
-      }
-      onRepost(effectivePost);
     }
   };
 
@@ -176,6 +186,25 @@ function PostCard({
       clearTimeout(repostTimerRef.current);
     }
     repostTimerRef.current = null;
+  };
+
+  const handleRepostClick = (e: React.MouseEvent) => {
+    stopPropagation(e);
+    
+    if (repostTimerRef.current === 'QUOTED') {
+      repostTimerRef.current = null;
+      return;
+    }
+    
+    if (repostTimerRef.current) {
+      clearTimeout(repostTimerRef.current);
+      repostTimerRef.current = null;
+    }
+
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(15);
+    }
+    onRepost(effectivePost);
   };
 
   const handleShare = async (e: React.MouseEvent) => {
@@ -685,7 +714,7 @@ function PostCard({
             onPointerDown={handleRepostPointerDown}
             onPointerUp={handleRepostPointerUp}
             onPointerCancel={handleRepostPointerCancel}
-            onClick={stopPropagation}
+            onClick={handleRepostClick}
             onContextMenu={(e) => e.preventDefault()}
             className={`flex items-center space-x-2 group/action transition-colors ${effectivePost.reposts?.includes(userProfile?.uid) ? 'text-green-500' : 'hover:text-green-500'}`}
           >
@@ -715,7 +744,7 @@ function PostCard({
               onPointerDown={handleLikePointerDown}
               onPointerUp={handleLikePointerUp}
               onPointerCancel={handleLikePointerCancel}
-              onClick={stopPropagation}
+              onClick={handleLikeClick}
               onContextMenu={(e) => e.preventDefault()}
               style={{ touchAction: 'manipulation', WebkitTouchCallout: 'none', userSelect: 'none' }}
               className={`flex items-center space-x-2 group/action transition-colors outline-none ${reactionColor}`}

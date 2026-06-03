@@ -1,11 +1,17 @@
 export const generateSmartSummary = async (posts: any[]): Promise<string> => {
   try {
+    // Keep only essential fields to stay well under size limits and prevent connection issues
+    const lightweightPosts = (posts || []).map((p: any) => ({
+      authorUsername: p?.authorUsername || (p?.author && typeof p.author === 'object' ? p.author.username : '') || 'anonimo',
+      content: p?.content || '',
+    }));
+
     const response = await fetch('/api/smart-summary', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ posts }),
+      body: JSON.stringify({ posts: lightweightPosts }),
     });
 
     if (!response.ok) {

@@ -313,6 +313,89 @@ export default function PostDetail() {
     });
   };
 
+  // Reconstruct nested conversation/replies tree
+  const replyTree = React.useMemo(() => {
+    if (!postId || !replies.length) return [];
+    
+    // Create map of parentId -> replies
+    const repliesMap: { [key: string]: any[] } = {};
+    replies.forEach(r => {
+      const parentId = r.replyToId || postId;
+      if (!repliesMap[parentId]) repliesMap[parentId] = [];
+      repliesMap[parentId].push(r);
+    });
+
+    const sortChronological = (a: any, b: any) => {
+      const aTime = a.createdAt?.toDate?.().getTime() || a.createdAt?.toMillis?.() || 0;
+      const bTime = b.createdAt?.toDate?.().getTime() || b.createdAt?.toMillis?.() || 0;
+      return aTime - bTime;
+    };
+
+    const buildNode = (reply: any): any => {
+      const children = repliesMap[reply.id] || [];
+      return {
+        ...reply,
+        children: children.sort(sortChronological).map(buildNode)
+      };
+    };
+
+    const directReplies = repliesMap[postId] || [];
+    // Sort direct replies by descending (newest first)
+    directReplies.sort((a, b) => {
+      const aTime = a.createdAt?.toDate?.().getTime() || a.createdAt?.toMillis?.() || 0;
+      const bTime = b.createdAt?.toDate?.().getTime() || b.createdAt?.toMillis?.() || 0;
+      return bTime - aTime;
+    });
+
+    return directReplies.map(buildNode);
+  }, [replies, postId]);
+
+  const renderReplyNode = (node: any, depth: number = 0): React.ReactNode => {
+    const hasChildren = node.children && node.children.length > 0;
+    const maxIndentDepth = 3;
+    const indentLevel = Math.min(depth, maxIndentDepth);
+    
+    return (
+      <div key={node.id} className="relative mt-1">
+        <div className="group">
+          <PostCard 
+            post={node}
+            isThreadChild={depth > 0}
+            isThreadParent={hasChildren}
+            onLike={handleLikePost}
+            onRepost={handleRepost}
+            onDelete={handleDeletePost}
+            onEdit={(p) => { setEditingPost(p); setEditContent(p.content); }}
+            onShare={(p) => { setSelectedSharePost(p); setIsShareModalOpen(true); }}
+            onReply={(p) => { setReplyToPost(p); setIsCreateModalOpen(true); }}
+            onQuote={(p) => { setQuotePost(p); setIsCreateModalOpen(true); }}
+            onImageClick={openImageViewer}
+            canEdit={canEditPost}
+          />
+        </div>
+
+        {hasChildren && (
+          <div 
+            className={`
+              relative 
+              border-l-[2px] border-dashed border-gray-100 hover:border-gray-200
+              transition-colors duration-200
+              ${indentLevel === 0 ? 'ml-7 md:ml-8 pl-4 md:pl-6' : ''}
+              ${indentLevel === 1 ? 'ml-6 md:ml-7 pl-3 md:pl-5' : ''}
+              ${indentLevel === 2 ? 'ml-5 md:ml-6 pl-2 md:pl-4' : ''}
+              ${indentLevel >= 3 ? 'ml-3 pl-2' : ''}
+              -mt-1.5 pb-2
+            `}
+          >
+            <div className="space-y-1">
+              {node.children.map((child: any) => renderReplyNode(child, depth + 1))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const handleDeletePost = async (id: string) => {
     if (!db || !userProfile) return;
     setActiveMenuPostId(null);
@@ -1034,46 +1117,19 @@ export default function PostDetail() {
           <div className="text-gray-500 text-[17px]">Postar sua resposta...</div>
         </div>
 
-        {/* Replies List (Flat Order) */}
+        {/* Replies List (Nested Thread View) */}
         <div className="divide-y divide-gray-100 pb-20">
-          {replies.length === 0 ? (
+          {replyTree.length === 0 ? (
             <div className="py-20 text-center">
               <p className="text-gray-500 font-bold">Nenhuma resposta encontrada.</p>
               <p className="text-gray-400 text-sm">Seja o primeiro a comentar!</p>
             </div>
           ) : (
-            replies
-              .filter(r => r.replyToId === postId)
-              .sort((a, b) => {
-                const dateA = a.createdAt?.toDate?.().getTime() || 0;
-                const dateB = b.createdAt?.toDate?.().getTime() || 0;
-                return dateB - dateA;
-              })
-              .map(reply => (
-                <div key={reply.id} className="group">
-                  <PostCard 
-                    post={reply}
-                    isThreadChild={true}
-                    onLike={handleLikePost}
-                    onRepost={handleRepost}
-                    onDelete={handleDeletePost}
-                    onEdit={(p) => { setEditingPost(p); setEditContent(p.content); }}
-                    onShare={(p) => { setSelectedSharePost(p); setIsShareModalOpen(true); }}
-                    onReply={(p) => { setReplyToPost(p); setIsCreateModalOpen(true); }}
-                    onQuote={(p) => { setQuotePost(p); setIsCreateModalOpen(true); }}
-                    onImageClick={openImageViewer}
-                    canEdit={canEditPost}
-                  />
-                  {replies.some(r => r.replyToId === reply.id) && (
-                    <div className="px-4 pb-4 -mt-2">
-                       <button onClick={() => navigate(`/post/${reply.id}`)} className="text-blue-500 hover:underline text-sm font-medium flex items-center space-x-1">
-                         <MessageCircle className="w-4 h-4" />
-                         <span>Mostrar esta conversa</span>
-                       </button>
-                    </div>
-                  )}
-                </div>
-              ))
+            replyTree.map(replyNode => (
+              <div key={replyNode.id} className="border-b border-gray-50/50 last:border-0">
+                {renderReplyNode(replyNode, 0)}
+              </div>
+            ))
           )}
         </div>
       </div>

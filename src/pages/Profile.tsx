@@ -14,7 +14,6 @@ import ImageViewer from '../components/ImageViewer';
 import SharePostModal from '../components/SharePostModal';
 import PostCard from '../components/PostCard';
 import BadgeDisplay from '../components/BadgeDisplay';
-import GamerCard from '../components/GamerCard';
 import LazyImage from '../components/LazyImage';
 import UserListModal from '../components/UserListModal';
 import { handleMentions, sendPushNotification } from '../lib/notifications';
@@ -120,7 +119,6 @@ export default function Profile() {
 
   const [isScrolled, setIsScrolled] = useState(false);
   const [showMore, setShowMore] = useState(false);
-  const [isGamerCardOpen, setIsGamerCardOpen] = useState(false);
   const [isUserListModalOpen, setIsUserListModalOpen] = useState(false);
   const [userListTitle, setUserListTitle] = useState('');
   const [userListUids, setUserListUids] = useState<string[]>([]);
@@ -862,20 +860,6 @@ export default function Profile() {
           >
             <LazyImage src={profileUser.photoURL || getDefaultAvatar(profileUser.displayName, profileUser.username)} alt={profileUser.displayName} className="w-full h-full" />
           </div>
-          
-          {/* Level Star Badge */}
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsGamerCardOpen(true);
-            }}
-            className="absolute -bottom-1 -right-1 bg-gradient-to-tr from-yellow-400 to-orange-400 p-2 rounded-full border-4 border-white shadow-lg text-black hover:scale-110 active:scale-90 transition-all z-20"
-          >
-            <Star className="w-4 h-4 fill-black" />
-            <div className="absolute -top-1 -right-1 bg-black text-white text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-white">
-              {profileUser.level || 1}
-            </div>
-          </button>
         </div>
       </div>
 
@@ -1375,44 +1359,6 @@ export default function Profile() {
         isOpen={toast.isOpen}
         onClose={() => setToast(prev => ({ ...prev, isOpen: false }))}
       />
-
-      {/* Gamer Card Modal */}
-      <AnimatePresence>
-        {isGamerCardOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsGamerCardOpen(false)}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            />
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative w-full max-w-sm"
-            >
-              <div className="absolute -top-12 right-0">
-                <button 
-                  onClick={() => setIsGamerCardOpen(false)}
-                  className="p-2 bg-white/10 text-white rounded-full hover:bg-white/20 transition-colors"
-                >
-                  <Plus className="w-6 h-6 rotate-45" />
-                </button>
-              </div>
-              <GamerCard 
-                level={profileUser.level} 
-                points={profileUser.points} 
-                displayName={profileUser.displayName} 
-              />
-              <div className="mt-4 text-center">
-                <p className="text-white/60 text-xs font-medium">Toque fora para fechar</p>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
       <ConfirmModal 
         isOpen={confirmModal.isOpen}
