@@ -18,6 +18,7 @@ import smartSummary from "./api/smart-summary";
 import suggestPost from "./api/suggest-post";
 import webhook from "./api/webhook";
 import activatePremium from "./api/activate-premium";
+import sendAuthEmail from "./api/send-auth-email";
 
 // Load firebase config for the project ID
 let firebaseConfig: any = {};
@@ -138,7 +139,8 @@ async function startServer() {
     "smart-summary": smartSummary,
     "suggest-post": suggestPost,
     "webhook": webhook,
-    "activate-premium": activatePremium
+    "activate-premium": activatePremium,
+    "send-auth-email": sendAuthEmail
   };
 
   for (const [name, handler] of Object.entries(staticApiHandlers)) {

@@ -537,7 +537,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const sendVerificationEmail = async () => {
     if (!auth?.currentUser) throw new Error("No user logged in");
     try {
-      await sendEmailVerification(auth.currentUser);
+      const email = auth.currentUser.email;
+      if (!email) throw new Error("No email found for user");
+      
+      const response = await fetch('/api/send-auth-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, type: 'verify' })
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to send verification email');
+      }
       showToast("E-mail de verificação enviado! Verifique sua caixa de entrada.", "success");
     } catch (error: any) {
       showToast("Erro ao enviar e-mail de verificação: " + (error.message || error), "error");
@@ -653,7 +664,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const resetPassword = async (email: string) => {
     if (!auth) throw new Error("Firebase not initialized");
     try {
-      await sendPasswordResetEmail(auth, email);
+      const response = await fetch('/api/send-auth-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, type: 'reset' })
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to send reset email');
+      }
       showToast("E-mail de redefinição de senha enviado com sucesso!", "success");
     } catch (error: any) {
       showToast("Erro ao enviar e-mail de redefinição: " + (error.message || error), "error");

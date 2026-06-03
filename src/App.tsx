@@ -10,6 +10,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
 import ForgotPassword from './pages/ForgotPassword';
+import AuthAction from './pages/AuthAction';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import Explore from './pages/Explore';
@@ -206,6 +207,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/auth/action" element={<AuthAction />} />
           <Route 
             path="/" 
             element={
@@ -244,6 +246,7 @@ export default function App() {
             <Route path="anonymous-feed" element={<AnonymousFeed />} />
             <Route path="admin" element={<AdminPanel />} />
           </Route>
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         <InstallPrompt />
         <PWABadge />
