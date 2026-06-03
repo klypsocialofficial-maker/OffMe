@@ -70,6 +70,11 @@ self.addEventListener('message', (event) => {
   }
 });
 
+// Force skip waiting on install so updates apply automatically
+self.addEventListener('install', () => {
+  void self.skipWaiting();
+});
+
 clientsClaim();
 
 // Firebase Messaging Logic
