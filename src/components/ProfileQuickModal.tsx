@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Mail, Edit2, User, LogOut } from 'lucide-react';
+import { Mail, Edit2, User, LogOut, Bell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import LazyImage from './LazyImage';
 import { getDefaultAvatar } from '../lib/avatar';
@@ -102,7 +102,19 @@ export default function ProfileQuickModal({ isOpen, onClose, userProfile, openEd
             </div>
             
             <div className="p-2 border-t border-gray-50 bg-gray-50/30">
-               <p className="text-[10px] text-center font-black uppercase tracking-widest text-gray-400 py-1">Ações Rapidas</p>
+               <p className="text-[10px] text-center font-black uppercase tracking-widest text-gray-400 py-1 mb-1">Ações Rapidas</p>
+               <button
+                onClick={() => {
+                  onClose();
+                  navigate('/notifications');
+                }}
+                className="w-full flex items-center space-x-3 px-4 py-3 hover:bg-gray-100/50 rounded-2xl transition-colors text-left"
+              >
+                <div className="bg-black text-white p-1.5 rounded-lg">
+                  <Bell className="w-4 h-4" />
+                </div>
+                <span className="font-bold text-sm">Notificações</span>
+              </button>
             </div>
           </motion.div>
         </>
