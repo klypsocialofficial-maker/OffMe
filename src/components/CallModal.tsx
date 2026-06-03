@@ -71,19 +71,19 @@ export default function CallModal() {
           <div className="absolute top-0 inset-x-0 h-40 bg-gradient-to-b from-black/60 to-transparent z-10 pointer-events-none" />
           
           {/* Video Call Info Overlay */}
-          <div className="absolute top-safe pt-12 left-6 z-20 text-white drop-shadow-md pointer-events-none">
+          <div className="absolute top-12 left-6 z-20 text-white drop-shadow-md pointer-events-none">
             <h2 className="text-3xl font-bold tracking-tight">{displayInfo?.displayName}</h2>
             <p className="text-lg font-medium font-mono mt-1 opacity-90">{formatDuration(callDuration)}</p>
           </div>
 
           {/* Local Video (Floating) */}
-          <div className="absolute top-safe mt-12 right-6 w-28 h-40 sm:w-36 sm:h-52 bg-gray-900 rounded-2xl overflow-hidden shadow-2xl z-20 border border-white/20">
+          <div className="absolute top-12 right-6 w-28 h-40 sm:w-36 sm:h-52 bg-gray-900 rounded-2xl overflow-hidden shadow-2xl z-20 border border-white/20">
             <video 
               ref={localVideoRef} 
               autoPlay 
               playsInline 
               muted 
-              className="w-full h-full object-cover scale-x-[-1]"
+              className="w-full h-full object-cover"
             />
           </div>
 

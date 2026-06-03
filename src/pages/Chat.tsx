@@ -148,23 +148,20 @@ export default function Chat() {
     
     try {
       setUploadingMedia(true);
-      const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
-      const { storage } = await import('../firebase');
       
-      if (!storage) throw new Error("Storage not initialized");
-
-      const audioName = `audio_${Date.now()}.webm`;
-      const audioRef = ref(storage, `chats/${conversationId}/${userProfile.uid}/${audioName}`);
+      const reader = new FileReader();
+      const base64Audio = await new Promise<string>((resolve, reject) => {
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(saveRecording);
+      });
       
-      await uploadBytes(audioRef, saveRecording);
-      const audioUrl = await getDownloadURL(audioRef);
-      
-      await sendChatMessage(conversationId, '', undefined, audioUrl);
+      await sendChatMessage(conversationId, '', undefined, base64Audio);
       setSaveRecording(null);
       setRecordingTime(0);
       setTimeout(scrollToBottom, 500);
     } catch (error) {
-      console.error("Error uploading audio:", error);
+      console.error("Error sending audio:", error);
     } finally {
       setUploadingMedia(false);
     }
@@ -714,7 +711,7 @@ export default function Chat() {
                   >
                     <Smile className="w-5 h-5" />
                   </button>
-                  <form onSubmit={handleSendMessage} className="flex-1 flex items-center">
+                  <form onSubmit={handleSendMessage} className="flex-1 flex items-center mr-1">
                     <input
                       type="text"
                       value={newMessage}
@@ -723,27 +720,31 @@ export default function Chat() {
                         handleTyping();
                       }}
                       placeholder="Mensagem..."
-                      className="flex-1 bg-transparent outline-none py-2 text-sm ml-2"
+                      className="flex-1 bg-transparent outline-none py-2 text-sm mx-2"
                     />
-                    <button 
-                      type="submit" 
-                      disabled={(!newMessage.trim() && !selectedImage) || uploadingMedia}
-                      className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition-colors disabled:opacity-30 flex-shrink-0 relative"
-                    >
-                      {uploadingMedia ? (
-                        <div className="w-5 h-5 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
-                      ) : (
-                          <Send className="w-5 h-5" />
-                      )}
-                    </button>
+                    {(!newMessage.trim() && !selectedImage && !uploadingMedia) ? (
+                      <button 
+                        type="button"
+                        onClick={startRecording}
+                        className="p-2 text-gray-500 hover:text-blue-500 hover:bg-blue-50 rounded-full transition-colors flex-shrink-0"
+                      >
+                        <Mic className="w-5 h-5" />
+                      </button>
+                    ) : (
+                      <button 
+                        type="submit" 
+                        disabled={uploadingMedia}
+                        className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition-colors disabled:opacity-30 flex-shrink-0 relative"
+                      >
+                        {uploadingMedia ? (
+                          <div className="w-5 h-5 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+                        ) : (
+                            <Send className="w-5 h-5" />
+                        )}
+                      </button>
+                    )}
                   </form>
                 </div>
-                <button 
-                  onClick={startRecording}
-                  className="p-3 bg-gray-100 dark:bg-slate-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-slate-700 rounded-full transition-colors"
-                >
-                  <Mic className="w-5 h-5" />
-                </button>
               </>
             )}
           </div>
