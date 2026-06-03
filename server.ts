@@ -17,6 +17,7 @@ import sendPushNotification from "./api/send-push-notification";
 import smartSummary from "./api/smart-summary";
 import suggestPost from "./api/suggest-post";
 import webhook from "./api/webhook";
+import activatePremium from "./api/activate-premium";
 
 // Load firebase config for the project ID
 let firebaseConfig: any = {};
@@ -136,7 +137,8 @@ async function startServer() {
     "send-push-notification": sendPushNotification,
     "smart-summary": smartSummary,
     "suggest-post": suggestPost,
-    "webhook": webhook
+    "webhook": webhook,
+    "activate-premium": activatePremium
   };
 
   for (const [name, handler] of Object.entries(staticApiHandlers)) {

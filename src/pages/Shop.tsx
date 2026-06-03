@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ShoppingBag, 
@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import LazyImage from '../components/LazyImage';
 import Toast from '../components/Toast';
 
@@ -152,34 +153,117 @@ const SHOP_ITEMS = [
 
 export default function Shop() {
   const navigate = useNavigate();
-  const { userProfile, purchaseItem } = useAuth();
+  const { userProfile, purchaseItem, equipItem } = useAuth();
+  const { theme, setTheme } = useTheme();
   const [activeCategory, setActiveCategory] = useState('all');
   const [buyingId, setBuyingId] = useState<string | null>(null);
+  const [equippingId, setEquippingId] = useState<string | null>(null);
   const [totalPoints, setTotalPoints] = useState(userProfile?.points || 0);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error'; isOpen: boolean }>({
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info'; isOpen: boolean }>({
     message: '',
     type: 'success',
     isOpen: false
   });
 
+  useEffect(() => {
+    if (userProfile) {
+      setTotalPoints(userProfile.points || 0);
+    }
+  }, [userProfile?.points]);
+
   const filteredItems = SHOP_ITEMS.filter(item => 
     activeCategory === 'all' || item.category === activeCategory
   );
 
+  const handleEquip = async (item: typeof SHOP_ITEMS[0]) => {
+    if (!userProfile) return;
+    setEquippingId(item.id);
+    try {
+      if (item.category === 'frames') {
+        await equipItem(item.id, 'frames');
+      } else if (item.category === 'themes') {
+        const themeId = item.id.replace('theme_', '') as any;
+        const isCurrentlyEquipped = userProfile.equippedTheme === item.id;
+        
+        await equipItem(item.id, 'themes');
+        setTheme(isCurrentlyEquipped ? 'dark' : themeId);
+      }
+    } catch (err: any) {
+      setToast({ message: err.message || 'Erro ao equipar', type: 'error', isOpen: true });
+    } finally {
+      setEquippingId(null);
+    }
+  };
+
   const handlePurchase = async (item: typeof SHOP_ITEMS[0]) => {
     if (!userProfile) return;
-    if (userProfile.inventory?.includes(item.id)) {
+    if (item.id !== 'mystery_box_small' && userProfile.inventory?.includes(item.id)) {
       setToast({ message: 'Você já possui este item!', type: 'error', isOpen: true });
+      return;
+    }
+
+    if (totalPoints < item.price) {
+      setToast({ message: 'Pontos insuficientes!', type: 'error', isOpen: true });
       return;
     }
     
     setBuyingId(item.id);
     try {
-      await purchaseItem(item.id, item.price);
-      setToast({ message: `Sucesso! Você adquiriu ${item.name}`, type: 'success', isOpen: true });
-      setTotalPoints(p => p - item.price);
+      if (item.id === 'mystery_box_small') {
+        const rollableItems = SHOP_ITEMS.filter(x => 
+          x.id !== 'mystery_box_small' && 
+          x.price <= 25000 && 
+          !userProfile.inventory?.includes(x.id)
+        );
+
+        if (rollableItems.length === 0) {
+          setToast({ message: 'Você já possui todos os itens colecionáveis comuns! Estornamos seus pontos.', type: 'info', isOpen: true });
+          return;
+        }
+
+        const rolledItem = rollableItems[Math.floor(Math.random() * rollableItems.length)];
+        await purchaseItem(rolledItem.id, item.price);
+        setToast({ 
+          message: `Surpresa! O baú continha o item: ${rolledItem.name}! 🎉`, 
+          type: 'success', 
+          isOpen: true 
+        });
+      } else {
+        await purchaseItem(item.id, item.price);
+        setToast({ message: `Sucesso! Você adquiriu ${item.name}`, type: 'success', isOpen: true });
+      }
     } catch (err: any) {
       setToast({ message: err.message || 'Erro ao processar compra', type: 'error', isOpen: true });
+    } finally {
+      setBuyingId(null);
+    }
+  };
+
+  const hasCrystalFounder = userProfile?.inventory?.includes('crystal_founder');
+
+  const handlePurchaseCrystalFounder = async () => {
+    if (!userProfile) return;
+    if (hasCrystalFounder) {
+      setToast({ message: 'Você já possui a Edição Crystal Founder equipada no seu perfil!', type: 'info', isOpen: true });
+      return;
+    }
+    if (!userProfile.isPremium) {
+      setToast({ message: 'Essa edição é exclusiva para membros OffMe+ Premium!', type: 'error', isOpen: true });
+      return;
+    }
+    if (totalPoints < 50000) {
+      setToast({ message: 'Pontos insuficientes! São necessários 50.000 pontos.', type: 'error', isOpen: true });
+      return;
+    }
+
+    setBuyingId('crystal_founder');
+    try {
+      await purchaseItem('crystal_founder', 50000);
+      await purchaseItem('badge_early_adopter', 0);
+      await purchaseItem('theme_dark_gold', 0);
+      setToast({ message: 'Sensacional! Você adquiriu a Edição Crystal Founder! Badge e Tema de Luxo Real liberados! 🎉', type: 'success', isOpen: true });
+    } catch (err: any) {
+      setToast({ message: err.message || 'Erro ao comprar Edição', type: 'error', isOpen: true });
     } finally {
       setBuyingId(null);
     }
@@ -250,8 +334,25 @@ export default function Shop() {
               <h2 className="text-5xl sm:text-8xl font-black italic tracking-tighter mb-4 leading-[0.9]">CRYSTAL<br />FOUNDER</h2>
               <p className="text-gray-300 max-w-md font-medium text-sm sm:text-lg mb-8 leading-relaxed">Mostre que você construiu a fundação desta comunidade. Inclui badge animada e tema exclusivo.</p>
               <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
-                <button className="px-10 py-4 bg-white text-black rounded-2xl font-black italic tracking-tight hover:bg-gray-100 active:scale-95 transition-all shadow-xl shadow-white/10 flex items-center justify-center space-x-2 group/btn">
-                   <span>Adquirir Edição</span>
+                <button 
+                  onClick={handlePurchaseCrystalFounder}
+                  disabled={hasCrystalFounder || buyingId === 'crystal_founder'}
+                  className={`px-10 py-4 rounded-2xl font-black italic tracking-tight active:scale-95 transition-all shadow-xl flex items-center justify-center space-x-2 group/btn ${
+                    hasCrystalFounder 
+                    ? 'bg-green-500/15 text-green-400 border border-green-500/30' 
+                    : 'bg-white text-black hover:bg-gray-100 shadow-white/10'
+                  }`}
+                >
+                  {buyingId === 'crystal_founder' ? (
+                    <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                  ) : hasCrystalFounder ? (
+                    <>
+                      <CheckCircle2 className="w-5 h-5" />
+                      <span>Adquirido</span>
+                    </>
+                  ) : (
+                    <span>Adquirir Edição</span>
+                  )}
                 </button>
                 <div className="px-6 py-4 bg-white/10 backdrop-blur-xl rounded-2xl flex items-center justify-center space-x-3 border border-white/10">
                   <Lock className="w-4 h-4 text-gray-400" />
@@ -305,29 +406,57 @@ export default function Shop() {
                       </div>
                     </div>
                     
-                    <button
-                      onClick={() => handlePurchase(item)}
-                      disabled={hasItem || buyingId === item.id}
-                      className={`h-14 px-6 rounded-2xl font-black italic tracking-tight transition-all active:scale-95 flex items-center space-x-3 overflow-hidden group/btn ${
-                        hasItem 
-                        ? 'bg-green-500/10 text-green-500 border border-green-500/20' 
-                        : 'bg-white text-black hover:bg-yellow-50 shadow-lg shadow-white/5'
-                      }`}
-                    >
-                      {buyingId === item.id ? (
-                        <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                      ) : hasItem ? (
-                        <>
-                          <CheckCircle2 className="w-5 h-5" />
-                          <span className="text-sm">Adquirido</span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="text-sm">Comprar</span>
-                          <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
-                        </>
-                      )}
-                    </button>
+                    {hasItem && (item.category === 'frames' || item.category === 'themes') ? (
+                      <button
+                        onClick={() => handleEquip(item)}
+                        disabled={equippingId === item.id}
+                        className={`h-14 px-6 rounded-2xl font-black italic tracking-tight transition-all active:scale-95 flex items-center space-x-3 overflow-hidden group/btn ${
+                          (item.category === 'frames' && userProfile?.equippedFrame === item.id) ||
+                          (item.category === 'themes' && userProfile?.equippedTheme === item.id)
+                          ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20'
+                          : 'bg-white/10 text-white border border-white/10 hover:bg-white/20'
+                        }`}
+                      >
+                        {equippingId === item.id ? (
+                          <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                        ) : ((item.category === 'frames' && userProfile?.equippedFrame === item.id) ||
+                             (item.category === 'themes' && userProfile?.equippedTheme === item.id)) ? (
+                          <>
+                            <CheckCircle2 className="w-5 h-5" />
+                            <span className="text-sm">Equipado</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-sm">Equipar</span>
+                            <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                          </>
+                        )}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handlePurchase(item)}
+                        disabled={(hasItem && item.id !== 'mystery_box_small') || buyingId === item.id}
+                        className={`h-14 px-6 rounded-2xl font-black italic tracking-tight transition-all active:scale-95 flex items-center space-x-3 overflow-hidden group/btn ${
+                          hasItem && item.id !== 'mystery_box_small'
+                          ? 'bg-green-500/10 text-green-500 border border-green-500/20' 
+                          : 'bg-white text-black hover:bg-yellow-50 shadow-lg shadow-white/5'
+                        }`}
+                      >
+                        {buyingId === item.id ? (
+                          <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                        ) : (hasItem && item.id !== 'mystery_box_small') ? (
+                          <>
+                            <CheckCircle2 className="w-5 h-5" />
+                            <span className="text-sm">Adquirido</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-sm">Comprar</span>
+                            <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                          </>
+                        )}
+                      </button>
+                    )}
                   </div>
                 </motion.div>
               );

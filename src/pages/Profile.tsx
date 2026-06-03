@@ -382,7 +382,7 @@ export default function Profile() {
       
       if (!isLiked) {
         // Award points for liking
-        await awardPoints(userProfile.uid, 5);
+        await awardPoints(userProfile.uid, 5, 'like');
       }
       
       if (!isLiked && post.authorId !== userProfile.uid) {
@@ -477,7 +477,7 @@ export default function Profile() {
         showToast('Repostado com sucesso!', 'success');
         
         // Award points for reposting
-        await awardPoints(userProfile.uid, 10);
+        await awardPoints(userProfile.uid, 10, 'share');
 
         if (targetPost.authorId !== userProfile.uid) {
           await addDoc(collection(db, 'notifications'), {
@@ -675,14 +675,18 @@ export default function Profile() {
 
   const canEditPost = (post: any) => {
     if (post.authorId !== userProfile?.uid) return false;
-    if ((userProfile as any)?.isPremium) return true;
+    
+    const tier = userProfile?.premiumTier;
+    if (tier === 'gold' || tier === 'black') return true; // Unlimited
+    
+    const editLimitMinutes = tier === 'silver' ? 60 : 15; // 60 mins for silver, 15 mins for free
     
     if (!post.createdAt) return true;
     
     const postTime = post.createdAt.toDate ? post.createdAt.toDate().getTime() : new Date().getTime();
     const now = new Date().getTime();
     const diffMinutes = (now - postTime) / (1000 * 60);
-    return diffMinutes <= 3;
+    return diffMinutes <= editLimitMinutes;
   };
 
   const handleEditPost = async (postId: string) => {
@@ -854,11 +858,25 @@ export default function Profile() {
 
         {/* Profile Photo (Overlapping) */}
         <div className="absolute -bottom-12 left-4 sm:left-8 z-10 group/avatar">
-          <div 
-            className={`w-24 h-24 sm:w-32 sm:h-32 rounded-[2rem] border-4 border-white overflow-hidden shadow-2xl cursor-zoom-in transform transition-transform active:scale-95 ${theme.card}`}
-            onClick={() => profileUser.photoURL && openImageViewer(profileUser.photoURL, `Avatar de ${profileUser.displayName}`)}
-          >
-            <LazyImage src={profileUser.photoURL || getDefaultAvatar(profileUser.displayName, profileUser.username)} alt={profileUser.displayName} className="w-full h-full" />
+          <div className="relative">
+            {profileUser.equippedFrame === 'frame_neon_blue' && (
+              <div className="absolute -inset-1.5 rounded-[2.2rem] bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500 animate-pulse blur-[4px] -z-10" />
+            )}
+            {profileUser.equippedFrame === 'frame_gold_leaf' && (
+              <div className="absolute -inset-1.5 rounded-[2.2rem] bg-gradient-to-r from-yellow-300 via-amber-500 to-yellow-600 animate-pulse blur-[3px] -z-10" />
+            )}
+            <div 
+              className={`w-24 h-24 sm:w-32 sm:h-32 rounded-[2rem] border-4 overflow-hidden shadow-2xl cursor-zoom-in transform transition-transform active:scale-95 ${
+                profileUser.equippedFrame === 'frame_neon_blue' 
+                ? 'border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.5)]' 
+                : profileUser.equippedFrame === 'frame_gold_leaf'
+                ? 'border-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.5)]'
+                : 'border-white'
+              } ${theme.card}`}
+              onClick={() => profileUser.photoURL && openImageViewer(profileUser.photoURL, `Avatar de ${profileUser.displayName}`)}
+            >
+              <LazyImage src={profileUser.photoURL || getDefaultAvatar(profileUser.displayName, profileUser.username)} alt={profileUser.displayName} className="w-full h-full" />
+            </div>
           </div>
         </div>
       </div>

@@ -13,6 +13,7 @@ import { getDefaultAvatar } from '../lib/avatar';
 import { collection, query, where, onSnapshot, limit, addDoc, serverTimestamp, getDocs, doc, updateDoc, arrayUnion, arrayRemove, orderBy, getDoc, deleteDoc, deleteField } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { rankSuggestedUsers } from '../lib/gemini';
+import { awardPoints } from '../services/gamificationService';
 
 enum OperationType {
   CREATE = 'create',
@@ -164,6 +165,10 @@ export default function Explore() {
           likesCount: isLiked ? (targetPost.likesCount || 0) : (targetPost.likesCount || 0) + 1,
           likes: arrayUnion(userProfile.uid)
         });
+
+        if (!isLiked) {
+          await awardPoints(userProfile.uid, 5, 'like');
+        }
       }
 
       setPostsResults(prev => prev.map(p => {
@@ -223,6 +228,8 @@ export default function Explore() {
           originalPostAuthorUsername: post.authorUsername,
           createdAt: serverTimestamp()
         });
+
+        await awardPoints(userProfile.uid, 10, 'share');
       }
     } catch (error) {
        console.error("Error reposting:", error);

@@ -1,4 +1,4 @@
-import { Award, Zap, Heart, MessageCircle, UserPlus, Star, Clock, Flame } from 'lucide-react';
+import { Award, Zap, Heart, MessageCircle, UserPlus, Star, Clock, Flame, ShieldCheck, Trophy } from 'lucide-react';
 
 export interface Badge {
   id: string;
@@ -73,5 +73,37 @@ export const BADGES: Badge[] = [
     icon: Zap,
     color: 'text-yellow-400',
     requirement: 'Atividade intensa em curto período.'
+  },
+  {
+    id: 'early_adopter',
+    label: 'Early Adopter',
+    description: 'Esteve presente desde a fundação da comunidade.',
+    icon: Star,
+    color: 'text-amber-400',
+    requirement: 'Adquirido na OffMe Store.'
+  },
+  {
+    id: 'flame',
+    label: 'Fogo nos Posts',
+    description: 'Para quem agita o feed e as conversas.',
+    icon: Flame,
+    color: 'text-orange-500',
+    requirement: 'Adquirido na OffMe Store.'
+  },
+  {
+    id: 'verified_plus',
+    label: 'Verificado Plus',
+    description: 'Selo exclusivo para os criadores de maior elite.',
+    icon: ShieldCheck,
+    color: 'text-cyan-400',
+    requirement: 'Adquirido na OffMe Store.'
+  },
+  {
+    id: 'diamond',
+    label: 'Diamante Bruto',
+    description: 'Raridade máxima na comunidade.',
+    icon: Trophy,
+    color: 'text-blue-500',
+    requirement: 'Adquirido na OffMe Store.'
   }
 ];

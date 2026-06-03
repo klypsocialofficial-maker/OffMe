@@ -19,6 +19,7 @@ import Profile from './pages/Profile';
 import PostDetail from './pages/PostDetail';
 import Trending from './pages/Trending';
 import Premium from './pages/Premium';
+import PremiumCheckoutSimulation from './pages/PremiumCheckoutSimulation';
 import Bookmarks from './pages/Bookmarks';
 import Communities from './pages/Communities';
 import CommunityDetail from './pages/CommunityDetail';
@@ -221,6 +222,7 @@ export default function App() {
             <Route path="post/:postId" element={<PostDetail />} />
             <Route path="trending" element={<Trending />} />
             <Route path="premium" element={<Premium />} />
+            <Route path="premium-checkout-simulation" element={<PremiumCheckoutSimulation />} />
             <Route path="leaderboard" element={<Leaderboard />} />
             <Route path="bookmarks" element={<Bookmarks />} />
             <Route path="circle" element={<Circle />} />

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Home as HomeIcon, Search, Bell, Mail, User as UserIcon, Bookmark, List, Zap as ZapIcon, Settings, Plus, Users, Star, ShoppingBag } from 'lucide-react';
+import { useTheme } from '../contexts/ThemeContext';
+import { LogOut, Home as HomeIcon, Search, Bell, Mail, User as UserIcon, Bookmark, List, Zap as ZapIcon, Settings, Plus, Users, Star, ShoppingBag, Trophy, Target, Sparkles, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import VerifiedBadge from './VerifiedBadge';
 import CreatePostModal from './CreatePostModal';
@@ -44,9 +45,19 @@ import ProfileQuickModal from './ProfileQuickModal';
 
 export default function Layout() {
   const { userProfile, logout } = useAuth();
+  const { theme, setTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const { platform, isIOS, isAndroid, isDesktop } = usePlatform();
+  
+  useEffect(() => {
+    if (userProfile?.equippedTheme) {
+      const themeId = userProfile.equippedTheme.replace('theme_', '') as any;
+      if (theme !== themeId) {
+        setTheme(themeId);
+      }
+    }
+  }, [userProfile?.equippedTheme, theme, setTheme]);
   
   const navItems = [
     { path: '/', icon: HomeIcon, label: 'Início' },
@@ -77,6 +88,96 @@ export default function Layout() {
   const [isAnonymousDefault, setIsAnonymousDefault] = useState(false);
   const [viewerImage, setViewerImage] = useState<{ src: string; alt: string } | null>(null);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
+
+  // --- REAL-TIME MISSION ALERTS STATE ---
+  const [missionsList, setMissionsList] = useState<any[]>([]);
+  const [missionAlerts, setMissionAlerts] = useState<any[]>([]);
+  const prevCompletedIdsRef = React.useRef<string[] | null>(null);
+
+  // 1. Listen for missions changes in database to always have titles and rewards
+  useEffect(() => {
+    if (!db) return;
+    const q = query(collection(db, 'missions'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const results = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setMissionsList(results);
+    }, (err) => {
+      console.error("Error listening missions in Layout:", err);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Helper trigger to append alerts and remove them after 6 seconds
+  const triggerMissionAlert = (alert: any) => {
+    setMissionAlerts(prev => [...prev, alert]);
+    setTimeout(() => {
+      setMissionAlerts(prev => prev.filter(a => a.id !== alert.id));
+    }, 6000);
+  };
+
+  // 2. Real-time detection of mission completion
+  useEffect(() => {
+    if (!userProfile?.uid || missionsList.length === 0) {
+      prevCompletedIdsRef.current = null;
+      return;
+    }
+
+    const currentCompletedIds = userProfile.completedMissionIds || [];
+
+    // On initial load, record the current completed set without triggering alerts
+    if (prevCompletedIdsRef.current === null) {
+      prevCompletedIdsRef.current = currentCompletedIds;
+      return;
+    }
+
+    // Capture IDs newly present in currentCompletedIds but not in prevCompletedIds
+    const newlyCompleted = currentCompletedIds.filter(
+      id => !prevCompletedIdsRef.current!.includes(id)
+    );
+
+    if (newlyCompleted.length > 0) {
+      newlyCompleted.forEach(missionId => {
+        const mission = missionsList.find(m => m.id === missionId);
+        if (mission) {
+          triggerMissionAlert({
+            id: 'complete_' + missionId + '_' + Date.now(),
+            type: 'completion',
+            title: mission.title,
+            reward: mission.reward,
+            description: `Você concluiu a missão diária "${mission.title}" e faturou +${mission.reward} XP!`
+          });
+        }
+      });
+    }
+
+    prevCompletedIdsRef.current = currentCompletedIds;
+  }, [userProfile?.completedMissionIds, missionsList]);
+
+  // 3. One-per-day real-time check for daily missions availability
+  useEffect(() => {
+    if (!userProfile?.uid || missionsList.length === 0) return;
+
+    const todayStr = new Date().toDateString();
+    const storedDate = sessionStorage.getItem(`klyp_notified_missions_${userProfile.uid}`);
+
+    if (storedDate !== todayStr) {
+      // Show the "New daily missions available" alert once per browser session per day
+      // Wait a short delay on mount so it feels integrated
+      const timer = setTimeout(() => {
+        triggerMissionAlert({
+          id: 'available_' + Date.now(),
+          type: 'available',
+          title: 'Desafios do Dia Disponíveis 🎯',
+          description: 'Novas missões diárias estão prontas para você! Complete-as para subir de nível e faturar pontos.'
+        });
+        sessionStorage.setItem(`klyp_notified_missions_${userProfile.uid}`, todayStr);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [userProfile?.uid, missionsList]);
 
   const openCreateModal = (replyTo: any = null, quotePost: any = null, isAnonymous: boolean = false, sharedMusic: any = null) => {
     setReplyToPost(replyTo);
@@ -296,6 +397,62 @@ export default function Layout() {
         userProfile={userProfile}
         openEditProfileModal={openEditProfileModal}
       />
+
+      {/* Real-time floating mission alerts overlay */}
+      <div className="fixed top-4 right-4 left-4 sm:left-auto sm:w-[380px] z-[9999] pointer-events-none space-y-3">
+        <AnimatePresence>
+          {missionAlerts.map((alert) => (
+            <motion.div
+              key={alert.id}
+              initial={{ opacity: 0, y: -30, scale: 0.9, filter: 'blur(4px)' }}
+              animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, scale: 0.85, x: 50, transition: { duration: 0.2 } }}
+              transition={{ type: "spring", stiffness: 350, damping: 25 }}
+              className="pointer-events-auto bg-black text-white p-4 rounded-3xl shadow-2xl border border-white/10 flex items-start space-x-3 backdrop-blur-md bg-opacity-95 overflow-hidden relative group"
+            >
+              {/* Shine effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-shine pointer-events-none" />
+              
+              <div className="flex-shrink-0 mt-0.5">
+                {alert.type === 'completion' ? (
+                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-400 to-orange-500 text-white flex items-center justify-center shadow-lg shadow-amber-500/20">
+                    <Trophy className="w-5 h-5 fill-current animate-bounce" />
+                  </div>
+                ) : (
+                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-400 to-indigo-500 text-white flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                    <Target className="w-5 h-5 animate-pulse" />
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 pr-4">
+                <h4 className="font-extrabold text-sm tracking-tight flex items-center space-x-1">
+                  <span>{alert.title}</span>
+                  {alert.type === 'completion' && <Sparkles className="w-4 h-4 text-amber-300 fill-current" />}
+                </h4>
+                <p className="text-gray-300 text-xs mt-1 leading-normal font-medium">{alert.description}</p>
+                <button
+                  onClick={() => {
+                    navigate('/missions');
+                    setMissionAlerts(prev => prev.filter(a => a.id !== alert.id));
+                  }}
+                  className="mt-2 text-[11px] font-black uppercase tracking-wider text-amber-400 hover:text-amber-300 transition-colors"
+                >
+                  {alert.type === 'completion' ? 'Ver progresso →' : 'Ver desafios →'}
+                </button>
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMissionAlerts(prev => prev.filter(a => a.id !== alert.id));
+                }}
+                className="absolute top-3 right-3 p-1 rounded-full text-gray-400 hover:text-white transition-colors hover:bg-white/10"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

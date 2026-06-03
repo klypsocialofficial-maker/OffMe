@@ -165,6 +165,78 @@ body {
   border-color: rgba(255, 255, 255, 0.1);
 }
 
+/* Cyberpunk Theme Mode */
+.cyberpunk body {
+  background: #0d0118 !important;
+  color: #00f0ff !important;
+  background-image: radial-gradient(#2a0845 1px, transparent 1px) !important;
+  background-size: 24px 24px !important;
+}
+
+.cyberpunk .bg-white,
+.cyberpunk .bg-gray-50,
+.cyberpunk .bg-slate-50,
+.cyberpunk .liquid-glass-card {
+  background-color: #16022b !important;
+  border-color: rgba(255, 0, 85, 0.3) !important;
+  color: #00f0ff !important;
+}
+
+.cyberpunk .text-gray-900,
+.cyberpunk h1,
+.cyberpunk h2,
+.cyberpunk h3,
+.cyberpunk h4 {
+  color: #00f0ff !important;
+}
+
+.cyberpunk p,
+.cyberpunk span:not(.text-amber-400):not(.text-cyan-400),
+.cyberpunk .text-gray-500 {
+  color: #ff0055 !important;
+}
+
+.cyberpunk .border-black\/5,
+.cyberpunk .border-gray-100 {
+  border-color: rgba(255, 0, 85, 0.25) !important;
+}
+
+/* Luxo Real (Dark Gold) Theme Mode */
+.dark_gold body {
+  background: #0a0905 !important;
+  color: #d4af37 !important;
+  background-image: radial-gradient(#201a0a 1px, transparent 1px) !important;
+  background-size: 32px 32px !important;
+}
+
+.dark_gold .bg-white,
+.dark_gold .bg-gray-50,
+.dark_gold .bg-slate-50,
+.dark_gold .liquid-glass-card {
+  background-color: #14120c !important;
+  border-color: rgba(212, 175, 55, 0.3) !important;
+  color: #f3e5ab !important;
+}
+
+.dark_gold .text-gray-900,
+.dark_gold h1,
+.dark_gold h2,
+.dark_gold h3,
+.dark_gold h4 {
+  color: #f3e5ab !important;
+}
+
+.dark_gold p,
+.dark_gold span:not(.text-amber-400):not(.text-cyan-400),
+.dark_gold .text-gray-500 {
+  color: rgba(212, 175, 55, 0.75) !important;
+}
+
+.dark_gold .border-black\/5,
+.dark_gold .border-gray-100 {
+  border-color: rgba(212, 175, 55, 0.15) !important;
+}
+
 /* iOS PWA Specific Tweaks */
 @supports (padding: env(safe-area-inset-top)) {
   .ios-safe-top {

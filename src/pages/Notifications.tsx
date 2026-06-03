@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, User as UserIcon, Heart, UserPlus, MessageCircle, Repeat, AtSign } from 'lucide-react';
+import { Bell, User as UserIcon, Heart, UserPlus, MessageCircle, Repeat, AtSign, Trophy, Award, Zap } from 'lucide-react';
 import LazyImage from '../components/LazyImage';
 import VerifiedBadge from '../components/VerifiedBadge';
 import { useAuth } from '../contexts/AuthContext';
@@ -236,7 +236,9 @@ export default function Notifications() {
                       animate={{ opacity: 1, scale: 1 }}
                       layout
                       onClick={() => {
-                        if (notification.postId) {
+                        if (notification.type === 'mission_completed') {
+                          navigate('/missions');
+                        } else if (notification.postId) {
                           navigate(`/post/${notification.postId}`);
                         } else if (notification.type === 'follow' && notification.senderUsername) {
                           navigate(`/${notification.senderUsername}`); 
@@ -253,19 +255,26 @@ export default function Notifications() {
                         {notification.type === 'reply' && <MessageCircle className="w-6 h-6 text-green-500" />}
                         {notification.type === 'repost' && <Repeat className="w-6 h-6 text-green-600" />}
                         {notification.type === 'mention' && <AtSign className="w-6 h-6 text-purple-500" />}
+                        {notification.type === 'mission_completed' && <Trophy className="w-6 h-6 text-amber-500 fill-current" />}
                       </div>
                       <div className="flex-1">
                         <div className="flex justify-between items-start mb-2">
                           <button 
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (notification.senderUsername) {
+                              if (notification.type === 'mission_completed') {
+                                navigate('/missions');
+                              } else if (notification.senderUsername) {
                                 navigate(`/${notification.senderUsername}`);
                               }
                             }}
-                            className="w-10 h-10 rounded-full bg-gray-100 overflow-hidden flex-shrink-0 active:scale-95 transition-transform border border-white/40 shadow-sm"
+                            className="w-10 h-10 rounded-full bg-gray-100 overflow-hidden flex-shrink-0 active:scale-95 transition-transform border border-white/40 shadow-sm flex items-center justify-center text-center"
                           >
-                            {notification.senderPhoto ? (
+                            {notification.type === 'mission_completed' ? (
+                              <div className="w-full h-full bg-gradient-to-tr from-amber-400 to-orange-500 flex items-center justify-center text-white">
+                                <Award className="w-5 h-5 fill-current" />
+                              </div>
+                            ) : notification.senderPhoto ? (
                               <LazyImage src={notification.senderPhoto} alt={notification.senderName} className="w-full h-full" />
                             ) : (
                               <LazyImage src={getDefaultAvatar(notification.senderName, notification.senderUsername)} alt={notification.senderName} className="w-full h-full" />
@@ -275,30 +284,39 @@ export default function Notifications() {
                             <div className="w-2.5 h-2.5 bg-blue-500 rounded-full mt-1.5 shadow-[0_0_8px_rgba(59,130,246,0.6)] animate-pulse" />
                           )}
                         </div>
-                        <p className="text-gray-900 leading-tight">
-                          <span className="flex items-baseline space-x-1 flex-wrap">
-                            <span 
-                              className="font-bold hover:underline cursor-pointer"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (notification.senderUsername) {
-                                  navigate(`/${notification.senderUsername}`);
-                                }
-                              }}
-                            >
-                              {notification.senderName}
+                        {notification.type === 'mission_completed' ? (
+                          <div className="text-gray-900 leading-tight">
+                            <span className="font-extrabold text-amber-600 block mb-1">Missão Concluída! 🎉</span>
+                            <span className="text-gray-600 font-medium text-sm">
+                              Você concluiu o desafio diário <span className="font-extrabold text-black">"{notification.title}"</span> e faturou <span className="font-extrabold text-amber-600">+{notification.reward} XP / pontos</span> de recompensa!
                             </span>
-                            {(notification.senderVerified || notification.senderUsername === 'Rulio') && <VerifiedBadge tier={notification.senderPremiumTier} className="w-3.5 h-3.5" />}
-                            <span className="text-gray-600 font-medium">
-                              {notification.type === 'like' && 'curtiu seu post'}
-                              {notification.type === 'follow' && 'começou a seguir você'}
-                              {notification.type === 'follow_request' && 'quer seguir você'}
-                              {notification.type === 'reply' && 'respondeu ao seu post'}
-                              {notification.type === 'repost' && 'repostou seu post'}
-                              {notification.type === 'mention' && 'mencionou você'}
+                          </div>
+                        ) : (
+                          <p className="text-gray-900 leading-tight">
+                            <span className="flex items-baseline space-x-1 flex-wrap">
+                              <span 
+                                className="font-bold hover:underline cursor-pointer"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (notification.senderUsername) {
+                                    navigate(`/${notification.senderUsername}`);
+                                  }
+                                }}
+                              >
+                                {notification.senderName}
+                              </span>
+                              {(notification.senderVerified || notification.senderUsername === 'Rulio') && <VerifiedBadge tier={notification.senderPremiumTier} className="w-3.5 h-3.5" />}
+                              <span className="text-gray-600 font-medium">
+                                {notification.type === 'like' && 'curtiu seu post'}
+                                {notification.type === 'follow' && 'começou a seguir você'}
+                                {notification.type === 'follow_request' && 'quer seguir você'}
+                                {notification.type === 'reply' && 'respondeu ao seu post'}
+                                {notification.type === 'repost' && 'repostou seu post'}
+                                {notification.type === 'mention' && 'mencionou você'}
+                              </span>
                             </span>
-                          </span>
-                        </p>
+                          </p>
+                        )}
                         {notification.type === 'follow_request' && (
                           <div className="flex items-center space-x-2 mt-3">
                             <button

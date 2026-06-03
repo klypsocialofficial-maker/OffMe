@@ -98,6 +98,13 @@ service cloud.firestore {
         allow read: if true;
         allow create, delete: if isAdmin();
         allow update: if isAdmin() || (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'membersCount']));
+
+        match /messages/{messageId} {
+          allow list: if true;
+          allow read: if true;
+          allow create: if isAuthenticated() && request.resource.data.senderId == request.auth.uid;
+          allow update, delete: if isAdmin() || (isAuthenticated() && resource.data.senderId == request.auth.uid);
+        }
       }
     }
 
@@ -140,11 +147,11 @@ service cloud.firestore {
           resource.data.get('senderId', '') == request.auth.uid
         ));
         
-        // Criar uma notificação exige que o remetente seja o mesmo que o usuário autenticado
-        // E só pode ser criada para outros, nunca para si mesmo
-        allow create: if isAuthenticated() && 
-                      request.resource.data.get('senderId', '') == request.auth.uid &&
-                      request.resource.data.get('recipientId', '') != request.auth.uid;
+        // Criar uma notificação exige que o remetente seja o mesmo que o usuário autenticado, ou seja uma auto-notificação de missão concluída
+        allow create: if isAuthenticated() && (
+          (request.resource.data.get('senderId', '') == request.auth.uid && request.resource.data.get('recipientId', '') != request.auth.uid) ||
+          (request.resource.data.get('type', '') == 'mission_completed' && request.resource.data.get('recipientId', '') == request.auth.uid && request.resource.data.get('senderId', '') == 'system')
+        );
         
         // Permitir atualização se for o destinatário ou se for o remetente atualizando apenas seus próprios dados (senderName, senderPhoto)
         allow update: if isAdmin() || (isAuthenticated() && (
@@ -203,6 +210,16 @@ service cloud.firestore {
       match /{adId} {
         allow read: if true;
         allow write: if isAdmin();
+      }
+    }
+
+    match /gifts {
+      allow list: if isAuthenticated() && (resource.data.receiverId == request.auth.uid || resource.data.senderId == request.auth.uid);
+      
+      match /{giftId} {
+        allow read: if isAuthenticated() && (resource.data.receiverId == request.auth.uid || resource.data.senderId == request.auth.uid);
+        allow create: if isAuthenticated() && request.resource.data.senderId == request.auth.uid;
+        allow update, delete: if isAdmin();
       }
     }
   }

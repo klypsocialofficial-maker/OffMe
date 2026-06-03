@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import LazyImage from '../components/LazyImage';
 import Toast from '../components/Toast';
 import { useNavigate } from 'react-router-dom';
+import { seedMissions } from '../services/missionsService';
 
 export default function Missions() {
   const { userProfile } = useAuth();
@@ -24,6 +25,10 @@ export default function Missions() {
   const showToast = (message: string, type: 'info' | 'success' | 'error' = 'info') => {
     setToast({ message, type, isOpen: true });
   };
+
+  useEffect(() => {
+    seedMissions();
+  }, []);
 
   useEffect(() => {
     if (!db) return;

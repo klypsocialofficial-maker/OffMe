@@ -479,7 +479,7 @@ export default function Home() {
       showToast(`Agora você segue @${authorName}`, 'success');
       
       // Award points for following
-      await awardPoints(userProfile.uid, 5);
+      await awardPoints(userProfile.uid, 5, 'follow');
       
       // Create notification if following
       if (!isFollowing) {
@@ -555,7 +555,7 @@ export default function Home() {
         });
         
         if (!isLiked) {
-          await awardPoints(userProfile.uid, 5);
+          await awardPoints(userProfile.uid, 5, 'like');
         }
       }
       
@@ -673,7 +673,7 @@ export default function Home() {
         showToast('Repostado com sucesso!', 'success');
         
         // Award points for reposting
-        await awardPoints(userProfile.uid, 10);
+        await awardPoints(userProfile.uid, 10, 'share');
 
         if (targetPost.authorId !== userProfile.uid) {
           await addDoc(collection(db, 'notifications'), {
@@ -709,8 +709,10 @@ export default function Home() {
   const canEditPost = (post: any) => {
     if (post.authorId !== userProfile?.uid && post.ownerId !== userProfile?.uid) return false;
 
-    const isPremium = (userProfile as any)?.isPremium;
-    const editLimitMinutes = isPremium ? PREMIUM_EDIT_TIME_MINUTES : BASE_EDIT_TIME_MINUTES;
+    const tier = userProfile?.premiumTier;
+    if (tier === 'gold' || tier === 'black') return true; // Unlimited
+    
+    const editLimitMinutes = tier === 'silver' ? 60 : 15; // 60 mins for silver, 15 mins for free
     
     // If createdAt is null, it's a pending local write, so it was just created
     if (!post.createdAt) return true;

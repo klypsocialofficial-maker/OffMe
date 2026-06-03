@@ -115,6 +115,8 @@ interface UserProfile {
   streakCount?: number;
   lastLoginAt?: any;
   inventory?: string[];
+  equippedFrame?: string;
+  equippedTheme?: string;
   completedMissionIds?: string[];
   missionProgress?: Record<string, number>;
   violations?: {
@@ -168,6 +170,7 @@ interface AuthContextType {
   sendChatMessage: (conversationId: string, text: string, imageUrl?: string, audioUrl?: string) => Promise<void>;
   setTypingStatus: (conversationId: string, isTyping: boolean) => Promise<void>;
   purchaseItem: (itemId: string, cost: number) => Promise<void>;
+  equipItem: (itemId: string, category: 'frames' | 'themes') => Promise<void>;
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
 }
 
@@ -1584,6 +1587,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const equipItem = async (itemId: string, category: 'frames' | 'themes') => {
+    if (!currentUser || !userProfile) throw new Error("Não autenticado");
+    const userRef = doc(db, 'users', currentUser.uid);
+    try {
+      const field = category === 'frames' ? 'equippedFrame' : 'equippedTheme';
+      const isEquipped = category === 'frames'
+        ? userProfile.equippedFrame === itemId
+        : userProfile.equippedTheme === itemId;
+
+      await updateDoc(userRef, {
+        [field]: isEquipped ? '' : itemId
+      });
+
+      showToast(isEquipped ? "Item desequipado!" : "Item equipado com sucesso!", "success");
+    } catch (error: any) {
+      showToast("Erro ao equipar item: " + (error.message || error), "error");
+      handleFirestoreError(error, OperationType.UPDATE, `users/${currentUser.uid}`);
+    }
+  };
+
   useEffect(() => {
     if (!currentUser) return;
     
@@ -1673,6 +1696,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     sendChatMessage,
     setTypingStatus,
     purchaseItem,
+    equipItem,
     showToast
   };
 

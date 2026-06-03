@@ -30,8 +30,8 @@ import {
   Bar
 } from 'recharts';
 import { db } from '../firebase';
-import { collection, query, where, getDocs, orderBy, limit, Timestamp } from 'firebase/firestore';
-import { useAuth } from '../contexts/AuthContext';
+import { collection, query, where, getDocs, orderBy, limit, Timestamp, onSnapshot } from 'firebase/firestore';
+import { useAuth, handleFirestoreError, OperationType } from '../contexts/AuthContext';
 import LazyImage from '../components/LazyImage';
 
 export default function CreatorStudio() {
@@ -52,164 +52,190 @@ export default function CreatorStudio() {
   const [activeWeeklyMetric, setActiveWeeklyMetric] = useState<'views' | 'engagement' | 'postsCount' | 'gifts'>('views');
 
   useEffect(() => {
-    const fetchAnalytics = async () => {
-      if (!userProfile?.uid) return;
-      setLoading(true);
+    if (!userProfile?.uid) return;
+    setLoading(true);
+
+    let giftsLoaded = false;
+    let postsLoaded = false;
+    let currentGifts: any[] = [];
+    let currentPosts: any[] = [];
+
+    const handleDataUpdate = (gifts: any[], posts: any[]) => {
+      const giftCount = gifts.length;
       
-      try {
-        // Fetch all gifts
-        const giftsQuery = query(
-          collection(db, 'gifts'),
-          where('receiverId', '==', userProfile.uid)
-        );
-        const giftsSnap = await getDocs(giftsQuery);
-        const allGifts = giftsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const giftCount = allGifts.length;
+      // Top posts for display
+      const top = [...posts]
+        .sort((a: any, b: any) => ((b.likesCount || 0) + (b.repostsCount || 0)) - ((a.likesCount || 0) + (a.repostsCount || 0)))
+        .slice(0, 5);
+      setTopPosts(top);
 
-        // Fetch all user posts to aggregate data
-        const allPostsQuery = query(
-          collection(db, 'posts'),
-          where('authorId', '==', userProfile.uid),
-          orderBy('createdAt', 'desc')
-        );
-        const allPostsSnap = await getDocs(allPostsQuery);
-        const allPosts = allPostsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      // Aggregate stats
+      let impressions = 0;
+      let engagement = 0;
+      
+      // Prepare chart data (last 7 days)
+      const last7Days: any[] = [];
+      const now = new Date();
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(now.getDate() - i);
+        const dayName = d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
+        last7Days.push({ 
+          name: dayName.charAt(0).toUpperCase() + dayName.slice(1), 
+          date: d.toDateString(),
+          followers: 0,
+          engagement: 0,
+          views: 0
+        });
+      }
 
-        // Top posts for display
-        const top = [...allPosts]
-          .sort((a: any, b: any) => ((b.likesCount || 0) + (b.repostsCount || 0)) - ((a.likesCount || 0) + (a.repostsCount || 0)))
-          .slice(0, 5);
-        setTopPosts(top);
+      const getPostDate = (p: any): Date | null => {
+        if (!p.createdAt) return null;
+        if (p.createdAt instanceof Date) return p.createdAt;
+        if (p.createdAt.toDate) return p.createdAt.toDate();
+        if (typeof p.createdAt.seconds === 'number') return new Date(p.createdAt.seconds * 1000);
+        return new Date(p.createdAt);
+      };
 
-        // Aggregate stats
-        let impressions = 0;
-        let engagement = 0;
+      const getGiftDate = (g: any): Date | null => {
+        if (!g.createdAt) return null;
+        if (g.createdAt instanceof Date) return g.createdAt;
+        if (g.createdAt.toDate) return g.createdAt.toDate();
+        if (typeof g.createdAt.seconds === 'number') return new Date(g.createdAt.seconds * 1000);
+        return new Date(g.createdAt);
+      };
+
+      // Prepare historical weekly data (last 4 weeks, chronologically ordered)
+      const weeksList: any[] = [];
+      for (let i = 3; i >= 0; i--) {
+        const startDate = new Date();
+        startDate.setDate(now.getDate() - (i + 1) * 7);
+        startDate.setHours(0, 0, 0, 0);
         
-        // Prepare chart data (last 7 days)
-        const last7Days: any[] = [];
-        const now = new Date();
-        for (let i = 6; i >= 0; i--) {
-          const d = new Date();
-          d.setDate(now.getDate() - i);
-          const dayName = d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
-          last7Days.push({ 
-            name: dayName.charAt(0).toUpperCase() + dayName.slice(1), 
-            date: d.toDateString(),
-            followers: 0, // We don't have historical follower data, so we'll use post count or engagement as proxy
-            engagement: 0,
-            views: 0
-          });
-        }
+        const endDate = new Date();
+        endDate.setDate(now.getDate() - i * 7);
+        endDate.setHours(23, 59, 59, 999);
+        
+        const startLabel = startDate.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
+        const endLabel = endDate.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
+        
+        weeksList.push({
+          id: `week-${i}`,
+          index: i,
+          label: i === 0 ? 'Esta Semana' : i === 1 ? 'Semana Passada' : `Há ${i} semanas`,
+          range: `${startLabel} - ${endLabel}`,
+          startDate,
+          endDate,
+          views: 0,
+          likes: 0,
+          reposts: 0,
+          replies: 0,
+          engagement: 0,
+          gifts: 0,
+          postsCount: 0
+        });
+      }
 
-        const getPostDate = (p: any): Date | null => {
-          if (!p.createdAt) return null;
-          if (p.createdAt instanceof Date) return p.createdAt;
-          if (p.createdAt.toDate) return p.createdAt.toDate();
-          if (typeof p.createdAt.seconds === 'number') return new Date(p.createdAt.seconds * 1000);
-          return new Date(p.createdAt);
-        };
+      posts.forEach((p: any) => {
+        impressions += (p.viewCount || 0);
+        engagement += (p.likesCount || 0) + (p.repostsCount || 0) + (p.repliesCount || 0);
 
-        const getGiftDate = (g: any): Date | null => {
-          if (!g.createdAt) return null;
-          if (g.createdAt instanceof Date) return g.createdAt;
-          if (g.createdAt.toDate) return g.createdAt.toDate();
-          if (typeof g.createdAt.seconds === 'number') return new Date(g.createdAt.seconds * 1000);
-          return new Date(g.createdAt);
-        };
+        const postDate = getPostDate(p);
+        if (postDate) {
+          const dayIndex = last7Days.findIndex(day => day.date === postDate.toDateString());
+          if (dayIndex !== -1) {
+            last7Days[dayIndex].engagement += (p.likesCount || 0) + (p.repostsCount || 0);
+            last7Days[dayIndex].views += (p.viewCount || 0);
+          }
 
-        // Prepare historical weekly data (last 4 weeks, chronologically ordered)
-        const weeksList: any[] = [];
-        for (let i = 3; i >= 0; i--) {
-          const startDate = new Date();
-          startDate.setDate(now.getDate() - (i + 1) * 7);
-          startDate.setHours(0, 0, 0, 0);
-          
-          const endDate = new Date();
-          endDate.setDate(now.getDate() - i * 7);
-          endDate.setHours(23, 59, 59, 999);
-          
-          const startLabel = startDate.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
-          const endLabel = endDate.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
-          
-          weeksList.push({
-            id: `week-${i}`,
-            index: i,
-            label: i === 0 ? 'Esta Semana' : i === 1 ? 'Semana Passada' : `Há ${i} semanas`,
-            range: `${startLabel} - ${endLabel}`,
-            startDate,
-            endDate,
-            views: 0,
-            likes: 0,
-            reposts: 0,
-            replies: 0,
-            engagement: 0,
-            gifts: 0,
-            postsCount: 0
-          });
-        }
-
-        allPosts.forEach((p: any) => {
-          impressions += (p.viewCount || 0);
-          engagement += (p.likesCount || 0) + (p.repostsCount || 0) + (p.repliesCount || 0);
-
-          const postDate = getPostDate(p);
-          if (postDate) {
-            const dayIndex = last7Days.findIndex(day => day.date === postDate.toDateString());
-            if (dayIndex !== -1) {
-              last7Days[dayIndex].engagement += (p.likesCount || 0) + (p.repostsCount || 0);
-              last7Days[dayIndex].views += (p.viewCount || 0);
+          weeksList.forEach((week) => {
+            if (postDate >= week.startDate && postDate <= week.endDate) {
+              week.views += (p.viewCount || 0);
+              week.likes += (p.likesCount || 0);
+              week.reposts += (p.repostsCount || 0);
+              week.replies += (p.repliesCount || 0);
+              week.engagement += (p.likesCount || 0) + (p.repostsCount || 0) + (p.repliesCount || 0);
+              week.postsCount += 1;
             }
+          });
+        }
+      });
 
-            weeksList.forEach((week) => {
-              if (postDate >= week.startDate && postDate <= week.endDate) {
-                week.views += (p.viewCount || 0);
-                week.likes += (p.likesCount || 0);
-                week.reposts += (p.repostsCount || 0);
-                week.replies += (p.repliesCount || 0);
-                week.engagement += (p.likesCount || 0) + (p.repostsCount || 0) + (p.repliesCount || 0);
-                week.postsCount += 1;
-              }
-            });
-          }
-        });
+      gifts.forEach((g: any) => {
+        const giftDate = getGiftDate(g);
+        if (giftDate) {
+          weeksList.forEach((week) => {
+            if (giftDate >= week.startDate && giftDate <= week.endDate) {
+              week.gifts += 1;
+            }
+          });
+        }
+      });
 
-        allGifts.forEach((g: any) => {
-          const giftDate = getGiftDate(g);
-          if (giftDate) {
-            weeksList.forEach((week) => {
-              if (giftDate >= week.startDate && giftDate <= week.endDate) {
-                week.gifts += 1;
-              }
-            });
-          }
-        });
+      setStats({
+        totalImpressions: impressions,
+        totalEngagement: engagement,
+        followerGrowth: userProfile?.followers?.length || 0,
+        pointsEarned: userProfile?.points || 0,
+        totalGifts: giftCount
+      });
 
-        setStats({
-          totalImpressions: impressions,
-          totalEngagement: engagement,
-          followerGrowth: userProfile.followers?.length || 0,
-          pointsEarned: userProfile.points || 0,
-          totalGifts: giftCount
-        });
-
-        // Map to chart format
-        const finalChartData = last7Days.map(day => ({
-          name: day.name,
-          views: day.views,
-          engagement: day.engagement
-        }));
-        setChartData(finalChartData);
-        setWeeklyData(weeksList);
-
-      } catch (error) {
-        console.error("Error fetching studio data:", error);
-      } finally {
+      // Map to chart format
+      const finalChartData = last7Days.map(day => ({
+        name: day.name,
+        views: day.views,
+        engagement: day.engagement
+      }));
+      setChartData(finalChartData);
+      setWeeklyData(weeksList);
+      
+      if (giftsLoaded && postsLoaded) {
         setLoading(false);
       }
     };
 
-    fetchAnalytics();
-  }, [userProfile?.uid]);
+    const giftsQuery = query(
+      collection(db, 'gifts'),
+      where('receiverId', '==', userProfile.uid)
+    );
+
+    const unsubscribeGifts = onSnapshot(giftsQuery, (giftsSnap) => {
+      currentGifts = giftsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      giftsLoaded = true;
+      handleDataUpdate(currentGifts, currentPosts);
+    }, (error) => {
+      console.error("Error fetching gifts in real-time:", error);
+      handleFirestoreError(error, OperationType.GET, 'gifts');
+      giftsLoaded = true;
+      if (giftsLoaded && postsLoaded) {
+        setLoading(false);
+      }
+    });
+
+    const allPostsQuery = query(
+      collection(db, 'posts'),
+      where('authorId', '==', userProfile.uid),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribePosts = onSnapshot(allPostsQuery, (allPostsSnap) => {
+      currentPosts = allPostsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      postsLoaded = true;
+      handleDataUpdate(currentGifts, currentPosts);
+    }, (error) => {
+      console.error("Error fetching posts in real-time:", error);
+      handleFirestoreError(error, OperationType.GET, 'posts');
+      postsLoaded = true;
+      if (giftsLoaded && postsLoaded) {
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      unsubscribeGifts();
+      unsubscribePosts();
+    };
+  }, [userProfile?.uid, userProfile?.followers?.length, userProfile?.points]);
 
   if (!userProfile?.isCreator) {
     return (

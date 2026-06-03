@@ -55,7 +55,7 @@ const DEFAULT_MISSIONS: Omit<Mission, 'id'>[] = [
 ];
 
 export const seedMissions = async () => {
-  if (!db || !auth?.currentUser || auth.currentUser.email !== 'klypsocialofficial@gmail.com') return;
+  if (!db) return;
 
   try {
     const missionsCol = collection(db, 'missions');
@@ -73,6 +73,10 @@ export const seedMissions = async () => {
       console.log('Missions seeded successfully.');
     }
   } catch (error) {
-    console.error('Error seeding missions:', error);
+    if (error && (error as any).code === 'permission-denied') {
+      console.log('Security Rules: Seeding missions is only allowed for Admin users.');
+    } else {
+      console.error('Error seeding missions:', error);
+    }
   }
 };

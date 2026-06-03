@@ -67,7 +67,23 @@ export const trackMissionProgress = async (userId: string, type: string, amount:
             completedMissionIds: arrayUnion(mission.id),
             points: (userData.points || 0) + (mission.reward || 0)
           });
-          // Could trigger a notification here
+          
+          // Trigger a persisted notification for mission completion
+          try {
+            await addDoc(collection(db, 'notifications'), {
+              recipientId: userId,
+              senderId: 'system',
+              senderName: 'Klyp Missões',
+              senderUsername: 'klypmissions',
+              type: 'mission_completed',
+              title: mission.title,
+              reward: mission.reward,
+              read: false,
+              createdAt: serverTimestamp()
+            });
+          } catch (notifErr) {
+            console.error('Error creating mission completed notification:', notifErr);
+          }
         }
       }
     }

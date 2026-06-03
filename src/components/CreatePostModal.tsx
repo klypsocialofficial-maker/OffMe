@@ -397,7 +397,8 @@ export default function CreatePostModal({
         const newPostRef = await addDoc(collection(db, 'posts'), postData);
         
         if (!isAnonymous && userProfile) {
-          await awardPoints(userProfile.uid, 5, 'post');
+          const missionType = replyTo ? 'reply' : 'post';
+          await awardPoints(userProfile.uid, 5, missionType);
         }
 
         // Handle mentions and notifications

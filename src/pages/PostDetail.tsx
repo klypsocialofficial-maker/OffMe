@@ -419,14 +419,18 @@ export default function PostDetail() {
 
   const canEditPost = (post: any) => {
     if (post.authorId !== userProfile?.uid && post.ownerId !== userProfile?.uid) return false;
-    if ((userProfile as any)?.isPremium) return true;
+    
+    const tier = userProfile?.premiumTier;
+    if (tier === 'gold' || tier === 'black') return true; // Unlimited
+    
+    const editLimitMinutes = tier === 'silver' ? 60 : 15; // 60 mins for silver, 15 mins for free
     
     if (!post.createdAt) return true;
     
     const postTime = post.createdAt.toDate ? post.createdAt.toDate().getTime() : new Date().getTime();
     const now = new Date().getTime();
     const diffMinutes = (now - postTime) / (1000 * 60);
-    return diffMinutes <= 3;
+    return diffMinutes <= editLimitMinutes;
   };
 
   const handleEditPost = async (id: string) => {
@@ -581,7 +585,7 @@ export default function PostDetail() {
         showToast('Repostado com sucesso!', 'success');
         
         // Award points for reposting
-        await awardPoints(userProfile.uid, 10);
+        await awardPoints(userProfile.uid, 10, 'share');
 
         if (targetPost.authorId !== userProfile.uid) {
           await addDoc(collection(db, 'notifications'), {
