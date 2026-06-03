@@ -6,8 +6,9 @@ import path from "path";
 import cors from "cors";
 import fs from "fs";
 import admin from 'firebase-admin';
-import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { Timestamp } from 'firebase-admin/firestore';
 import { WebSocketServer, WebSocket } from "ws";
+import { getFirebaseAdmin } from "./api/firebase-admin-helper";
 
 // Import API handlers statically so esbuild compiles and bundles them cleanly
 import createCheckoutSession from "./api/create-checkout-session";
@@ -70,15 +71,11 @@ if (!admin.apps.length) {
 }
 
 async function checkScheduledPosts() {
-  if (!admin.apps.length) return;
-  
-  // Use the specific database ID if it exists in the config (Enterprise Firestore)
-  const db = firebaseConfig.firestoreDatabaseId 
-    ? getFirestore(firebaseConfig.firestoreDatabaseId)
-    : getFirestore();
-  const now = Timestamp.now();
-  
   try {
+    const { db } = getFirebaseAdmin();
+    if (!db) return;
+    const now = Timestamp.now();
+    
     const q = db.collection('posts')
       .where('status', '==', 'scheduled')
       .where('scheduledAt', '<=', now);
@@ -107,11 +104,9 @@ async function checkScheduledPosts() {
 let cachedTotalUsers = 42;
 
 async function refreshCachedTotalUsers() {
-  if (!admin.apps.length) return;
   try {
-    const db = firebaseConfig.firestoreDatabaseId 
-      ? getFirestore(firebaseConfig.firestoreDatabaseId)
-      : getFirestore();
+    const { db } = getFirebaseAdmin();
+    if (!db) return;
     const snap = await db.collection('users').count().get();
     const count = snap.data().count;
     if (typeof count === 'number') {
