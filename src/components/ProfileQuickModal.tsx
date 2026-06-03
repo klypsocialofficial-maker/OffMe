@@ -68,7 +68,7 @@ export default function ProfileQuickModal({ isOpen, onClose, userProfile, openEd
                 <div className="min-w-0">
                   <div className="flex items-center space-x-1">
                     <p className="font-black text-sm truncate">{userProfile.displayName}</p>
-                    {(userProfile.isVerified || userProfile.username === 'Rulio') && <VerifiedBadge className="w-3 h-3" tier={userProfile.premiumTier} />}
+                    {(userProfile?.isVerified || userProfile?.username === 'Rulio') && <VerifiedBadge className="w-3 h-3" tier={userProfile?.username === 'Rulio' ? 'black' : userProfile?.premiumTier} />}
                   </div>
                   <p className="text-gray-500 text-xs truncate">@{userProfile.username}</p>
                 </div>

@@ -186,7 +186,7 @@ export default function AndroidLayout({
                   </div>
                 <div className="flex items-center space-x-1">
                   <h2 className="font-bold text-lg text-gray-900">{userProfile?.displayName}</h2>
-                  {(userProfile?.isVerified || userProfile?.username === 'Rulio') && <VerifiedBadge className="w-4 h-4" tier={userProfile?.premiumTier} />}
+                  {(userProfile?.isVerified || userProfile?.username === 'Rulio') && <VerifiedBadge className="w-4 h-4" tier={userProfile?.username === 'Rulio' ? 'black' : userProfile?.premiumTier} />}
                 </div>
                 <p className="text-gray-500 text-sm">@{userProfile?.username}</p>
               </div>

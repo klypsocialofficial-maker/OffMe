@@ -159,7 +159,7 @@ export default function Circle() {
                         <div>
                           <div className="flex items-center space-x-1">
                             <p className="font-bold text-sm tracking-tight">{user.displayName}</p>
-                            {user.isVerified && <VerifiedBadge tier={user.premiumTier} className="w-[14px] h-[14px]" />}
+                            {(user.isVerified || user.username === 'Rulio') && <VerifiedBadge tier={user.username === 'Rulio' ? 'black' : user.premiumTier} className="w-[14px] h-[14px]" />}
                           </div>
                           <p className="text-xs text-gray-500">@{user.username}</p>
                         </div>
@@ -208,7 +208,7 @@ export default function Circle() {
                           <div>
                             <div className="flex items-center space-x-1">
                               <p className="font-bold text-sm tracking-tight">{user.displayName}</p>
-                              {user.isVerified && <VerifiedBadge tier={user.premiumTier} className="w-[14px] h-[14px]" />}
+                              {(user.isVerified || user.username === 'Rulio') && <VerifiedBadge tier={user.username === 'Rulio' ? 'black' : user.premiumTier} className="w-[14px] h-[14px]" />}
                             </div>
                             <p className="text-xs text-gray-500">@{user.username}</p>
                           </div>

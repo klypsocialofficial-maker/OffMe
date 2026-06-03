@@ -50,7 +50,8 @@ export default function QuotedPost({ post }: QuotedPostProps) {
   const displayContent = quotedData?.content || post.quotedPostContent;
   const displayUsername = quotedData?.authorUsername;
   const displayPhoto = quotedData?.authorPhoto;
-  const displayVerified = quotedData?.authorVerified;
+  const displayVerified = quotedData?.authorVerified || displayUsername === 'Rulio';
+  const displayVerifiedTier = displayUsername === 'Rulio' ? 'black' : quotedData?.authorPremiumTier;
   const displayImages = quotedData?.imageUrls || [];
 
   return (
@@ -69,7 +70,7 @@ export default function QuotedPost({ post }: QuotedPostProps) {
         />
         <div className="flex items-center space-x-1 min-w-0">
           <span className="font-bold text-xs truncate">{displayAuthor}</span>
-          {displayVerified && <VerifiedBadge />}
+          {displayVerified && <VerifiedBadge tier={displayVerifiedTier} />}
           {displayUsername && (
             <span className="text-xs text-gray-500 truncate">@{displayUsername}</span>
           )}

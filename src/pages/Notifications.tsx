@@ -305,7 +305,7 @@ export default function Notifications() {
                               >
                                 {notification.senderName}
                               </span>
-                              {(notification.senderVerified || notification.senderUsername === 'Rulio') && <VerifiedBadge tier={notification.senderPremiumTier} className="w-3.5 h-3.5" />}
+                              {(notification.senderVerified || notification.senderUsername === 'Rulio') && <VerifiedBadge tier={notification.senderUsername === 'Rulio' ? 'black' : notification.senderPremiumTier} className="w-3.5 h-3.5" />}
                               <span className="text-gray-600 font-medium">
                                 {notification.type === 'like' && 'curtiu seu post'}
                                 {notification.type === 'follow' && 'começou a seguir você'}
