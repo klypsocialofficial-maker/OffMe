@@ -339,24 +339,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
               onMessage(messaging, (payload) => {
                 console.log('Foreground message received:', payload);
-                if (payload.notification) {
-                  showToast(payload.notification.title || "Nova notificação", "success");
-                }
               });
-              
-              // Only automatically request token if permission is already granted
-              if (Notification.permission === 'granted' && 'serviceWorker' in navigator) {
-                 const registration = await navigator.serviceWorker.ready;
-                 const token = await getToken(messaging, {
-                    vapidKey: 'BFsixg_JwwMY4m3yMoZC9b-D4LIRsNcepSkQGkzCgBsnkdbGMmXdtjDCEbrgYYfSULAkTjo3WnPnHbXthoO69b0',
-                    serviceWorkerRegistration: registration
-                 }).catch(err => { console.error('Failed to get token on init', err); return null; });
-                 
-                 if (token) {
-                   const userRef = doc(db, 'users', user.uid);
-                   await updateDoc(userRef, { fcmTokens: arrayUnion(token) }).catch(console.error);
-                 }
-              }
             }
           } catch (error) {
             console.error('Error setup foreground messaging:', error);

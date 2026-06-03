@@ -20,9 +20,8 @@
         
         console.error = function(...args) {
           if (args[0] && typeof args[0] === 'string' && (
-            args[0].includes('[vite] failed to connect to websocket') ||
-            args[0].includes('WebSocket connection to') ||
-            args[0].includes('[vite] failed to connect')
+            args[0].includes('[vite]') ||
+            args[0].includes('WebSocket')
           )) {
             return;
           }
@@ -31,8 +30,8 @@
 
         console.warn = function(...args) {
           if (args[0] && typeof args[0] === 'string' && (
-            args[0].includes('[vite] failed to connect to websocket') ||
-            args[0].includes('WebSocket connection to')
+            args[0].includes('[vite]') ||
+            args[0].includes('WebSocket')
           )) {
             return;
           }
@@ -47,6 +46,15 @@
             e.preventDefault();
           }
         }, true);
+
+        window.addEventListener('unhandledrejection', function(e) {
+          if (e.reason && (
+            (e.reason.message && (e.reason.message.includes('WebSocket') || e.reason.message.includes('[vite]'))) ||
+            (typeof e.reason === 'string' && (e.reason.includes('WebSocket') || e.reason.includes('[vite]')))
+          )) {
+            e.preventDefault();
+          }
+        });
       })();
     </script>
 
@@ -56,23 +64,6 @@
     <!-- Google AdSense Script -->
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4327519756355647" crossorigin="anonymous"></script>
     
-    <!-- Primary Meta Tags -->
-    <meta name="title" content="OffMe - Conecte-se, interaja e descubra" />
-    <meta name="description" content="OffMe é a sua plataforma social para compartilhar pensamentos, fotos e se conectar com comunidades de forma rápida e segura." />
-
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content="OffMe - Conecte-se, interaja e descubra" />
-    <meta property="og:description" content="OffMe é a sua plataforma social para compartilhar pensamentos, fotos e se conectar com comunidades de forma rápida e segura." />
-    <meta property="og:image" content="/logo.svg" />
-    <meta property="og:site_name" content="OffMe" />
-
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:title" content="OffMe - Conecte-se, interaja e descubra" />
-    <meta property="twitter:description" content="OffMe é a sua plataforma social para compartilhar pensamentos, fotos e se conectar com comunidades de forma rápida e segura." />
-    <meta property="twitter:image" content="/logo.svg" />
-
     <title>OffMe</title>
   </head>
   <body>

@@ -3,11 +3,10 @@ import { Settings as SettingsIcon, ArrowLeft, Bell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { requestNotificationPermission } from '../hooks/usePushNotifications';
 import { useAuth } from '../contexts/AuthContext';
-import SWDebug from '../components/SWDebug';
 
 export default function Settings() {
   const navigate = useNavigate();
-  const { userProfile, showToast } = useAuth();
+  const { userProfile } = useAuth();
   const [notificationsEnabled, setNotificationsEnabled] = useState(Notification.permission === 'granted');
 
   const toggleNotifications = async () => {
@@ -76,7 +75,6 @@ export default function Settings() {
         </div>
         <div 
           onClick={() => {
-            showToast('Verificando atualizações...', 'info');
             window.dispatchEvent(new CustomEvent('check-pwa-update'));
           }}
           className="p-4 bg-white rounded-xl shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors"
@@ -84,9 +82,6 @@ export default function Settings() {
           <h3 className="font-black italic tracking-tighter">Verificar atualizações</h3>
           <p className="text-sm text-gray-500">Toque aqui para verificar se há uma nova versão do OffMe disponível.</p>
         </div>
-        
-        {/* PWA Debug Utility */}
-        <SWDebug />
       </div>
     </div>
   );

@@ -37,7 +37,6 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 }
 
 import { usePlatform } from '../hooks/usePlatform';
-import { usePushNotifications } from '../hooks/usePushNotifications';
 import DesktopLayout from './layouts/DesktopLayout';
 import AndroidLayout from './layouts/AndroidLayout';
 import BetaLayout from './layouts/BetaLayout';
@@ -50,9 +49,6 @@ export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { platform, isIOS, isAndroid, isDesktop } = usePlatform();
-  
-  // Request notifications permission and get token
-  usePushNotifications();
   
   useEffect(() => {
     if (userProfile?.equippedTheme) {

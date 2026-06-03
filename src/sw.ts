@@ -12,7 +12,7 @@ declare const self: ServiceWorkerGlobalScope & {
   __WB_MANIFEST: any;
 };
 
-// PWA Logic v0.0.0.16
+// PWA Logic v0.0.0.15
 cleanupOutdatedCaches();
 precacheAndRoute(self.__WB_MANIFEST);
 
@@ -68,11 +68,6 @@ self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
-});
-
-// Force skip waiting on install so updates apply automatically
-self.addEventListener('install', () => {
-  void self.skipWaiting();
 });
 
 clientsClaim();
