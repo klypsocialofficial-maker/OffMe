@@ -19,11 +19,11 @@ try {
   
   if (firebaseConfig.firestoreDatabaseId) {
     db = initializeFirestore(app, {
-      experimentalForceLongPolling: true,
+      experimentalAutoDetectLongPolling: true,
     }, firebaseConfig.firestoreDatabaseId);
   } else {
     db = initializeFirestore(app, {
-      experimentalForceLongPolling: true,
+      experimentalAutoDetectLongPolling: true,
     });
   }
   
