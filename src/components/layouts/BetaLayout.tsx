@@ -180,23 +180,19 @@ export default function BetaLayout({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={closeDrawer}
-              className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-50 sm:hidden"
+              className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-[90] sm:hidden"
             />
             <motion.div
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed top-2 left-2 bottom-2 w-[85%] max-w-[320px] bg-white/80 backdrop-blur-[50px] z-50 sm:hidden shadow-[0_20px_50px_rgba(0,0,0,0.2)] flex flex-col rounded-[32px] border border-white/40 overflow-hidden"
+              className="fixed top-0 left-0 bottom-0 w-[85%] max-w-[320px] bg-white/90 backdrop-blur-[50px] z-[100] sm:hidden shadow-[20px_0_50px_rgba(0,0,0,0.15)] flex flex-col rounded-r-[32px] border-r border-white/40 overflow-hidden"
             >
               <div className="absolute inset-0 rounded-[32px] bg-gradient-to-br from-white/30 to-white/5 pointer-events-none" />
               
               {/* Header with Profile Info */}
               <div className="relative pt-[max(env(safe-area-inset-top),20px)] border-b border-black/5 z-10">
-                {/* Beta Badge */}
-                <div className="absolute top-[max(env(safe-area-inset-top),20px)] right-6 z-20">
-                  <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest bg-blue-100/50 px-2 py-1 rounded-lg border border-blue-200/50 shadow-sm backdrop-blur-sm">BETA</span>
-                </div>
                 
                 {/* Full-width Banner area */}
                 <div className="relative h-28 w-full bg-gray-200 overflow-hidden">
@@ -248,13 +244,13 @@ export default function BetaLayout({
                       key={item.path}
                       to={item.path} 
                       onClick={closeDrawer} 
-                      className={`flex items-center px-4 py-4 text-base font-bold rounded-2xl transition-all active:scale-[0.96] ${
+                      className={`flex items-center px-4 py-3 text-[15px] font-bold rounded-2xl transition-all active:scale-[0.96] ${
                         isActive 
                         ? 'bg-black text-white shadow-lg shadow-black/20' 
                         : 'text-gray-800 hover:bg-black/5'
                       }`}
                     >
-                      <item.icon className={`mr-4 w-5.5 h-5.5 ${isActive ? 'stroke-[2.5px]' : 'stroke-[2px]'}`} /> 
+                      <item.icon className={`mr-3 w-5 h-5 ${isActive ? 'stroke-[2.5px]' : 'stroke-[2px]'}`} /> 
                       {item.label}
                     </Link>
                   );
