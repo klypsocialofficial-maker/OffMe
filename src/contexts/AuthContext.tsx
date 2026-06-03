@@ -17,7 +17,8 @@ import {
   RecaptchaVerifier,
   signInWithPhoneNumber,
   ConfirmationResult,
-  sendEmailVerification
+  sendEmailVerification,
+  sendPasswordResetEmail
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot, serverTimestamp, collection, query, where, getDocs, updateDoc, arrayUnion, arrayRemove, deleteDoc, addDoc, writeBatch, limit, increment } from 'firebase/firestore';
 import { sendPushNotification } from '../lib/notifications';
@@ -142,6 +143,7 @@ interface AuthContextType {
   updateUserEmail: (email: string) => Promise<void>;
   updateUserPassword: (password: string) => Promise<void>;
   updateUserUsername: (username: string) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
   deleteAccount: () => Promise<void>;
   followUser: (targetUid: string) => Promise<void>;
   unfollowUser: (targetUid: string) => Promise<void>;
@@ -832,6 +834,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       showToast("Login realizado com sucesso!", "success");
     } catch (error: any) {
       showToast("Erro ao realizar login: " + (error.message || error), "error");
+      throw error;
+    }
+  };
+
+  const resetPassword = async (email: string) => {
+    if (!auth) throw new Error("Firebase not initialized");
+    try {
+      await sendPasswordResetEmail(auth, email);
+      showToast("E-mail de redefinição de senha enviado com sucesso!", "success");
+    } catch (error: any) {
+      showToast("Erro ao enviar e-mail de redefinição: " + (error.message || error), "error");
       throw error;
     }
   };
@@ -1665,6 +1678,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     logout,
     signUpWithEmail,
     loginWithEmail,
+    resetPassword,
     updateUserEmail,
     updateUserPassword,
     updateUserUsername,

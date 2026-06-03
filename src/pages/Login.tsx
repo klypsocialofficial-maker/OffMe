@@ -143,7 +143,7 @@ export default function Login() {
             </div>
 
             <div className="text-sm">
-              <Link to="/forgot-password" disable-link="true" className="font-semibold text-black hover:underline opacity-50 cursor-not-allowed">
+              <Link to="/forgot-password" className="font-semibold text-black hover:underline">
                 Esqueceu a senha?
               </Link>
             </div>
