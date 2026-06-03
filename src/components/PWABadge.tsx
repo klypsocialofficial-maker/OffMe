@@ -98,13 +98,6 @@ export default function PWABadge() {
     }, 200);
   };
 
-  // Request Notification Permissions on Mount
-  useEffect(() => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission().catch(() => {});
-    }
-  }, []);
-
   // Sync / Fire push notification when update is captured outside spotlight
   useEffect(() => {
     if (needRefresh) {

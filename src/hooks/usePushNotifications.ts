@@ -29,10 +29,6 @@ export const requestNotificationPermission = async (userId: string) => {
 };
 
 export const usePushNotifications = () => {
-  const { userProfile } = useAuth();
-
-  useEffect(() => {
-    if (!userProfile?.uid) return;
-    requestNotificationPermission(userProfile.uid);
-  }, [userProfile?.uid]);
+  // Use explicitly requested permissions from PermissionPrompt or Settings
+  // Do not try to request permission automatically on mount
 };
