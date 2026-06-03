@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { doc, onSnapshot, collection, query, where, orderBy, serverTimestamp, addDoc, deleteDoc, updateDoc, arrayRemove, arrayUnion, getDocs, limit } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { User as UserIcon, ArrowLeft, MoreHorizontal, Trash2, Edit2, BarChart2, Heart, Repeat, MessageCircle, Send, Bookmark, BookmarkCheck, Ghost, Lock, Music, Play, Pause, ExternalLink, Pin, PinOff, VolumeX, UserX, Gift, ShieldAlert } from 'lucide-react';
+import { User as UserIcon, ArrowLeft, MoreHorizontal, Trash2, Edit2, BarChart2, Heart, Repeat, MessageCircle, Send, Bookmark, BookmarkCheck, Ghost, Lock, Music, Play, Pause, ExternalLink, Pin, PinOff, VolumeX, UserX, Gift, ShieldAlert, Share } from 'lucide-react';
 import VerifiedBadge from '../components/VerifiedBadge';
 import PostContent from '../components/PostContent';
 import QuotedPost from '../components/QuotedPost';
@@ -1107,7 +1107,7 @@ export default function PostDetail() {
                 <Bookmark className={`w-5.5 h-5.5 ${userProfile?.bookmarks?.includes(post.id) ? 'fill-current' : ''}`} />
               </button>
               <button onClick={handleShare} className="p-3 text-gray-500 hover:text-blue-500 hover:bg-blue-50 rounded-full transition-all">
-                <Send className="w-5.5 h-5.5" />
+                {navigator.share ? <Share className="w-5.5 h-5.5" /> : <Send className="w-5.5 h-5.5" />}
               </button>
             </div>
           </div>

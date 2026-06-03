@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
-import { User as UserIcon, MoreHorizontal, Trash2, Edit2, Send, MessageCircle, Repeat, Heart, Ghost, VolumeX, UserX, ShieldAlert, Bookmark, BookmarkCheck, Pin, PinOff, Users, BarChart2, Gift, Lock, Music, Play, Pause, ExternalLink } from 'lucide-react';
+import { User as UserIcon, MoreHorizontal, Trash2, Edit2, Send, MessageCircle, Repeat, Heart, Ghost, VolumeX, UserX, ShieldAlert, Bookmark, BookmarkCheck, Pin, PinOff, Users, BarChart2, Gift, Lock, Music, Play, Pause, ExternalLink, Share } from 'lucide-react';
 import { formatRelativeTime } from '../lib/dateUtils';
 import { doc, updateDoc, increment } from 'firebase/firestore';
 import VerifiedBadge from './VerifiedBadge';
@@ -595,8 +595,8 @@ function PostCard({
                     onClick={handleShare}
                     className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
                   >
-                    <Send className="w-4 h-4" />
-                    <span>Compartilhar link</span>
+                    {navigator.share ? <Share className="w-4 h-4" /> : <Send className="w-4 h-4" />}
+                    <span>{navigator.share ? 'Compartilhar' : 'Compartilhar link'}</span>
                   </button>
               </div>
             )}
@@ -869,7 +869,7 @@ function PostCard({
                 whileHover={{ scale: 1.2, x: 2, y: -2 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 10 }}
               >
-                <Send className="w-4.5 h-4.5" />
+                {navigator.share ? <Share className="w-4.5 h-4.5" /> : <Send className="w-4.5 h-4.5" />}
               </motion.div>
             </div>
           </motion.button>
