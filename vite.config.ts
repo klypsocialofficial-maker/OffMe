@@ -14,7 +14,7 @@ export default defineConfig(({mode}) => {
         strategies: 'injectManifest',
         srcDir: 'src',
         filename: 'sw.ts',
-        registerType: 'autoUpdate',
+        registerType: 'prompt',
         includeAssets: ['logo.svg', 'apple-touch-icon.png', 'ghost.svg', 'favicon.ico'],
         injectManifest: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],

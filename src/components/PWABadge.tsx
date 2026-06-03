@@ -3,7 +3,7 @@ import { useRegisterSW } from 'virtual:pwa-register/react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronRight, Sparkles, CheckCircle2, X } from 'lucide-react';
 
-const APP_VERSION = '0.0.0.12';
+const APP_VERSION = '0.0.0.14';
 
 export default function PWABadge() {
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
@@ -18,10 +18,10 @@ export default function PWABadge() {
       console.log('SW Registered: ', r);
       if (r) {
         registrationRef.current = r;
-        // Check for updates every hour
+        // Check for updates every 3 minutes
         setInterval(() => {
-          r.update();
-        }, 60 * 60 * 1000);
+          r.update().catch(err => console.log('Periodic auto check failed:', err));
+        }, 3 * 60 * 1000);
       }
     },
     onRegisterError(error) {
@@ -50,8 +50,23 @@ export default function PWABadge() {
         });
       }
     };
+
+    const handleVisibilityAndFocusCheck = () => {
+      if (document.visibilityState === 'visible' && registrationRef.current) {
+        console.log('App focused or tab became active. Checking for PWA updates...');
+        registrationRef.current.update().catch(err => console.log('Focus-triggered update check failed:', err));
+      }
+    };
+
     window.addEventListener('check-pwa-update' as any, handleCheckUpdate);
-    return () => window.removeEventListener('check-pwa-update' as any, handleCheckUpdate);
+    document.addEventListener('visibilitychange', handleVisibilityAndFocusCheck);
+    window.addEventListener('focus', handleVisibilityAndFocusCheck);
+
+    return () => {
+      window.removeEventListener('check-pwa-update' as any, handleCheckUpdate);
+      document.removeEventListener('visibilitychange', handleVisibilityAndFocusCheck);
+      window.removeEventListener('focus', handleVisibilityAndFocusCheck);
+    };
   }, [needRefresh]);
 
   console.log('PWA Status - offlineReady:', offlineReady, 'needRefresh:', needRefresh);
@@ -90,6 +105,40 @@ export default function PWABadge() {
     }, 200);
   };
 
+  // Request Notification Permissions on Mount
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().catch(err => console.log('Notification permission dynamic request failed:', err));
+    }
+  }, []);
+
+  // Sync / Fire push notification when update is captured outside spotlight
+  useEffect(() => {
+    if (needRefresh) {
+      if (document.visibilityState !== 'visible') {
+        if ('Notification' in window && Notification.permission === 'granted') {
+          try {
+            const notif = new Notification("Nova versão no OffMe!", {
+              body: "Melhorias de segurança de dados (LGPD) e performance prontas para rodar! Toque para aplicar.",
+              icon: "/logo.svg",
+              badge: "/logo.svg",
+              tag: "pwa-update",
+              requireInteraction: true
+            });
+            notif.onclick = () => {
+              window.focus();
+              handleUpdate();
+            };
+          } catch (e) {
+            console.error('Failed to trigger background push notification:', e);
+          }
+        }
+      } else {
+        console.log('App is focused. Foreground sliding banner will render on screen.');
+      }
+    }
+  }, [needRefresh]);
+
   if (!offlineReady && !needRefresh && !showUpToDate && !checkingUpdate) return null;
 
   if (checkingUpdate) {
@@ -104,8 +153,8 @@ export default function PWABadge() {
   if (needRefresh) {
     return (
       <AnimatePresence>
-        <div data-pwa-needs-refresh="true" className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-          {isUpdating ? (
+        {isUpdating ? (
+          <div data-pwa-needs-refresh="true" className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
             <motion.div 
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -125,7 +174,7 @@ export default function PWABadge() {
                       
                       {/* Logo */}
                       <div className="relative z-10 w-full h-full rotate-3 p-4">
-                        <img src="/logo.svg" alt="OffMe" className="w-full h-full drop-shadow-2xl" />
+                        <img src="/logo.svg" alt="OffMe" className="w-full h-full drop-shadow-2xl" referrerPolicy="no-referrer" />
                       </div>
                       
                       {/* Circular Progress */}
@@ -172,92 +221,105 @@ export default function PWABadge() {
                 )}
               </AnimatePresence>
             </motion.div>
-          ) : (
+          </div>
+        ) : (
+          /* Custom in-app floating banner push notification */
+          <div data-pwa-needs-refresh="true" className="fixed top-[calc(16px+env(safe-area-inset-top))] left-4 right-4 md:left-auto md:right-4 md:w-96 z-[250]">
             <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl relative"
+              initial={{ y: -120, opacity: 0, scale: 0.9 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: -120, opacity: 0, scale: 0.9 }}
+              transition={{ type: "spring", damping: 18, stiffness: 120 }}
+              className="bg-white dark:bg-zinc-950 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.18)] border border-gray-100 dark:border-zinc-800 p-5 relative overflow-hidden"
             >
-              {/* Decorative background */}
-              <div className="absolute top-0 right-0 w-40 h-40 bg-blue-50 rounded-full -mr-20 -mt-20 blur-3xl opacity-60" />
-              <div className="absolute bottom-0 left-0 w-40 h-40 bg-purple-50 rounded-full -ml-20 -mb-20 blur-3xl opacity-60" />
+              {/* Decorative top accent gradient */}
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-500 via-indigo-550 to-purple-600 animate-pulse" />
               
-              <div className="relative z-10 p-8 flex flex-col items-center text-center">
-                <div className="w-20 h-20 rotate-3 p-2">
-                  <img src="/logo.svg" alt="OffMe" className="w-full h-full drop-shadow-2xl" />
+              <div className="flex items-start space-x-3.5 mb-3">
+                <div className="w-12 h-12 bg-gray-50 dark:bg-zinc-900 rounded-xl flex-shrink-0 flex items-center justify-center p-1.5 border border-black/5 dark:border-white/5 shadow-inner">
+                  <img src="/logo.svg" alt="OffMe" className="w-full h-full drop-shadow-md animate-bounce" referrerPolicy="no-referrer" />
                 </div>
-                
-                <h3 className="font-black text-2xl text-gray-900 mb-3 leading-tight">
-                  Nova atualização disponível!
-                </h3>
-                <p className="text-gray-500 mb-6 font-medium">
-                  Confira as melhorias e novidades desta versão.
-                </p>
-                
-                <div className="w-full mb-6">
-                  <button 
-                    onClick={() => setShowChangelog(!showChangelog)}
-                    className="flex items-center justify-center space-x-2 w-full py-3 px-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors text-sm font-bold text-gray-700"
-                  >
-                    <Sparkles className="w-4 h-4 text-amber-500" />
-                    <span>O que mudou?</span>
-                    <ChevronRight className={`w-4 h-4 transition-transform ${showChangelog ? 'rotate-90' : ''}`} />
-                  </button>
-                  
-                  <AnimatePresence>
-                    {showChangelog && (
-                      <motion.div 
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden"
-                      >
-                        <ul className="text-left mt-4 space-y-3 text-sm text-gray-600 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                          <li className="flex items-start">
-                            <div className="w-1.5 h-1.5 rounded-full bg-black mt-1.5 mr-2 flex-shrink-0" />
-                            <span className="font-bold">v0.0.0.08:</span>
-                          </li>
-                          <li className="flex items-start pl-4">
-                            <div className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 mr-2 flex-shrink-0" />
-                            <span>Novas animações de reação com efeitos de "bolhas" e partículas.</span>
-                          </li>
-                          <li className="flex items-start pl-4">
-                            <div className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 mr-2 flex-shrink-0" />
-                            <span>Feedback tátil (vibração) em todas as interações principais.</span>
-                          </li>
-                          <li className="flex items-start pl-4">
-                            <div className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 mr-2 flex-shrink-0" />
-                            <span>Seletor de reações com animação fluida e design modernizado.</span>
-                          </li>
-                          <li className="flex items-start">
-                            <div className="w-1.5 h-1.5 rounded-full bg-black mt-1.5 mr-2 flex-shrink-0" />
-                            <span className="font-bold">v0.0.0.07:</span>
-                          </li>
-                        </ul>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                <div className="text-left flex-1 min-w-0">
+                  <span className="text-[9px] font-black tracking-widest text-indigo-500 bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded-full border border-indigo-100 dark:border-indigo-900">
+                    NOTIFICAÇÃO • ATUALIZAÇÃO
+                  </span>
+                  <h3 className="font-extrabold text-gray-950 dark:text-white text-sm mt-1.5 leading-none">
+                    OffMe Atualizado!
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-zinc-400 font-medium">
+                    A versão {APP_VERSION} está pronta.
+                  </p>
                 </div>
+                <button 
+                  onClick={() => close()}
+                  className="p-1 hover:bg-gray-100 dark:hover:bg-zinc-900 rounded-full text-gray-400 dark:text-zinc-500 hover:text-black dark:hover:text-white transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Collapsible Changelog */}
+              <div className="w-full mb-4">
+                <button 
+                  onClick={() => setShowChangelog(!showChangelog)}
+                  className="flex items-center justify-between w-full py-2.5 px-3 bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-850 rounded-xl transition-colors text-xs font-bold text-gray-700 dark:text-zinc-300"
+                >
+                  <div className="flex items-center space-x-2">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Ver o que mudou</span>
+                  </div>
+                  <ChevronRight className={`w-3.5 h-3.5 transition-transform ${showChangelog ? 'rotate-95' : ''}`} />
+                </button>
                 
-                <div className="flex flex-col gap-3 w-full">
-                  <button 
-                    className="w-full py-4 bg-black text-white rounded-2xl font-black text-lg hover:bg-gray-900 transition-all active:scale-95 shadow-lg shadow-black/20" 
-                    onClick={handleUpdate}
-                  >
-                    Atualizar Agora
-                  </button>
-                  <button 
-                    className="w-full py-3 text-gray-500 font-bold hover:text-black transition-colors" 
-                    onClick={() => close()}
-                  >
-                    Talvez depois
-                  </button>
-                </div>
+                <AnimatePresence>
+                  {showChangelog && (
+                    <motion.div 
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <ul className="text-left mt-3 space-y-2 text-xs text-gray-600 dark:text-zinc-400 bg-gray-50/50 dark:bg-zinc-900/50 p-3 rounded-xl border border-gray-100/50 dark:border-zinc-800/50 max-h-[140px] overflow-y-auto">
+                        <li className="flex items-start">
+                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 mr-2 flex-shrink-0" />
+                          <span className="font-bold text-gray-900 dark:text-zinc-200">v{APP_VERSION}:</span>
+                        </li>
+                        <li className="flex items-start pl-4 text-[11px] leading-relaxed">
+                          <div className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 mr-2 flex-shrink-0" />
+                          <span>Notificações inteligentes integradas em segundo plano se você estiver fora do app.</span>
+                        </li>
+                        <li className="flex items-start pl-4 text-[11px] leading-relaxed">
+                          <div className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 mr-2 flex-shrink-0" />
+                          <span>Visualizadores instantâneos em foco (push inside) sem interromper suas conversas.</span>
+                        </li>
+                        <li className="flex items-start pl-4 text-[11px] leading-relaxed">
+                          <div className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 mr-2 flex-shrink-0" />
+                          <span>Múltiplos testes dinâmicos de auto-atualização ao recuperar foco da aba.</span>
+                        </li>
+                      </ul>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2 w-full mt-2">
+                <button 
+                  className="flex-1 py-3 bg-black dark:bg-white text-white dark:text-black rounded-xl font-extrabold text-xs hover:scale-[1.02] active:scale-95 transition-all text-center shadow-lg shadow-black/10 dark:shadow-white/5" 
+                  onClick={handleUpdate}
+                >
+                  🚀 Atualizar Agora
+                </button>
+                <button 
+                  className="py-3 px-4 bg-gray-100 dark:bg-zinc-850 hover:bg-gray-200 dark:hover:bg-zinc-800 text-gray-650 dark:text-zinc-300 rounded-xl font-bold text-xs transition-colors" 
+                  onClick={() => close()}
+                >
+                  Mais tarde
+                </button>
               </div>
             </motion.div>
-          )}
-        </div>
+          </div>
+        )}
       </AnimatePresence>
     );
   }
