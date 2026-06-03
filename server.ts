@@ -32,36 +32,41 @@ try {
 }
 
 // Initialize Firebase Admin with credentials if available to bypass PERMISSION_DENIED
-try {
-  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-  if (serviceAccountKey) {
-    admin.initializeApp({
-      credential: admin.credential.cert(JSON.parse(serviceAccountKey)),
-      databaseURL: firebaseConfig.projectId ? `https://${firebaseConfig.projectId}.firebaseio.com` : undefined
-    });
-    console.log("Firebase Admin successfully initialized via key.");
-  } else if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-      }),
-      databaseURL: firebaseConfig.projectId ? `https://${firebaseConfig.projectId}.firebaseio.com` : undefined
-    });
-    console.log("Firebase Admin successfully initialized via environment variables.");
-  } else if (firebaseConfig.projectId) {
-    admin.initializeApp({
-      projectId: firebaseConfig.projectId,
-      databaseURL: `https://${firebaseConfig.projectId}.firebaseio.com`
-    });
-    console.log(`Firebase Admin initialized for project (without credential): ${firebaseConfig.projectId}`);
-  } else {
-    admin.initializeApp();
-    console.log("Firebase Admin initialized with default settings.");
+if (!admin.apps.length) {
+  try {
+    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+    if (serviceAccountKey) {
+      admin.initializeApp({
+        credential: admin.credential.cert(JSON.parse(serviceAccountKey)),
+        databaseURL: firebaseConfig.projectId ? `https://${firebaseConfig.projectId}.firebaseio.com` : undefined
+      });
+      console.log("Firebase Admin successfully initialized via key.");
+    } else if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+      admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId: process.env.FIREBASE_PROJECT_ID,
+          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+          privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+        }),
+        databaseURL: firebaseConfig.projectId ? `https://${firebaseConfig.projectId}.firebaseio.com` : undefined
+      });
+      console.log("Firebase Admin successfully initialized via environment variables.");
+    } else {
+      const projectId = firebaseConfig.projectId || process.env.FIREBASE_PROJECT_ID || process.env.GCLOUD_PROJECT;
+      if (projectId) {
+        admin.initializeApp({
+          projectId: projectId,
+          databaseURL: `https://${projectId}.firebaseio.com`
+        });
+        console.log(`Firebase Admin initialized for project (without credential): ${projectId}`);
+      } else {
+        admin.initializeApp();
+        console.log("Firebase Admin initialized with default settings.");
+      }
+    }
+  } catch (error) {
+    console.error("Firebase Admin could not be initialized automatically. Authentication operations may fail.", error);
   }
-} catch (error) {
-  console.warn("Firebase Admin could not be initialized automatically. Scheduled posts might not work.", error);
 }
 
 async function checkScheduledPosts() {

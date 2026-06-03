@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import admin from 'firebase-admin';
 import axios from 'axios';
+import { getFirebaseAdmin } from './firebase-admin-helper';
 
 export default async function sendAuthEmail(req: Request, res: Response) {
   try {
@@ -10,6 +10,14 @@ export default async function sendAuthEmail(req: Request, res: Response) {
       return res.status(400).json({ error: "Missing email or type" });
     }
     
+    let fbAdmin;
+    try {
+      fbAdmin = getFirebaseAdmin();
+    } catch (error) {
+      console.error("Firebase Admin could not be initialized automatically in API handler:", error);
+      return res.status(500).json({ error: "O Firebase Admin não foi inicializado corretamente." });
+    }
+
     const actionCodeSettings = {
       url: `https://offme.fun/auth/action`,
       handleCodeInApp: false,
@@ -20,7 +28,16 @@ export default async function sendAuthEmail(req: Request, res: Response) {
     let content = "";
     
     if (type === 'reset') {
-      const generatedLink = await admin.auth().generatePasswordResetLink(email, actionCodeSettings);
+      let generatedLink;
+      try {
+        generatedLink = await fbAdmin.auth.generatePasswordResetLink(email, actionCodeSettings);
+      } catch (authErr: any) {
+        console.error("Auth Error generating link:", authErr);
+        if (authErr.message && authErr.message.includes('credential')) {
+           return res.status(500).json({ error: "Para gerar links personalizados, você precisa configurar as variáveis FIREBASE_PRIVATE_KEY e FIREBASE_CLIENT_EMAIL na Vercel." });
+        }
+        throw authErr;
+      }
       const urlParams = new URL(generatedLink).searchParams;
       link = `https://offme.fun/auth/action?mode=resetPassword&oobCode=${urlParams.get('oobCode')}`;
       
@@ -31,9 +48,9 @@ export default async function sendAuthEmail(req: Request, res: Response) {
           <p>Olá,</p>
           <p>Recebemos uma solicitação para redefinir a senha da sua conta.</p>
           <p>Clique no link abaixo para criar uma nova senha:</p>
-          <p><a href="${link}" style="display:inline-block; padding: 10px 20px; background-color: #3b82f6; color: #fff; text-decoration: none; border-radius: 5px;">Redefinir Senha</a></p>
+          <p><a href="\${link}" style="display:inline-block; padding: 10px 20px; background-color: #3b82f6; color: #fff; text-decoration: none; border-radius: 5px;">Redefinir Senha</a></p>
           <p>Ou copie e cole o link no seu navegador:</p>
-          <p style="word-break: break-all; color: #666;">${link}</p>
+          <p style="word-break: break-all; color: #666;">\${link}</p>
           <p>Se você não solicitou, por favor ignore este e-mail.</p>
         </div>
         <style>
@@ -42,7 +59,16 @@ export default async function sendAuthEmail(req: Request, res: Response) {
         </style>
       `;
     } else if (type === 'verify') {
-      const generatedLink = await admin.auth().generateEmailVerificationLink(email, actionCodeSettings);
+      let generatedLink;
+      try {
+        generatedLink = await fbAdmin.auth.generateEmailVerificationLink(email, actionCodeSettings);
+      } catch (authErr: any) {
+        console.error("Auth Error generating link:", authErr);
+        if (authErr.message && authErr.message.includes('credential')) {
+           return res.status(500).json({ error: "Para gerar links personalizados, você precisa configurar as variáveis FIREBASE_PRIVATE_KEY e FIREBASE_CLIENT_EMAIL na Vercel." });
+        }
+        throw authErr;
+      }
       const urlParams = new URL(generatedLink).searchParams;
       link = `https://offme.fun/auth/action?mode=verifyEmail&oobCode=${urlParams.get('oobCode')}`;
       

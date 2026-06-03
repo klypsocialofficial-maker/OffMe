@@ -1,34 +1,5 @@
 import Stripe from 'stripe';
-import { initializeApp, cert, getApps } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
-
-// Lazy initialization of Firebase Admin
-function getFirebaseAdmin() {
-  if (!getApps().length) {
-    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-    
-    if (serviceAccountKey) {
-      try {
-        const serviceAccount = JSON.parse(serviceAccountKey);
-        initializeApp({
-          credential: cert(serviceAccount)
-        });
-      } catch (e) {
-        console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY:', e);
-      }
-    } else if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
-      initializeApp({
-        credential: cert({
-          projectId: process.env.FIREBASE_PROJECT_ID,
-          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-          privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-        })
-      });
-    }
-  }
-  
-  return getApps().length > 0 ? getFirestore() : null;
-}
+import { getFirebaseAdmin } from './firebase-admin-helper';
 
 // Disable Vercel's default body parser to get the raw body for Stripe signature verification
 export const config = {
@@ -76,7 +47,7 @@ export default async function handler(req: any, res: any) {
     const userId = session.client_reference_id;
     const tier = session.metadata?.tier || 'gold';
 
-    const db = getFirebaseAdmin();
+    const { db } = getFirebaseAdmin();
 
     if (userId && db) {
       try {

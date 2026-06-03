@@ -1,55 +1,5 @@
-import { getApps, initializeApp, cert } from 'firebase-admin/app';
-import { getFirestore, FieldValue } from 'firebase-admin/firestore';
-import fs from 'fs';
-import path from 'path';
-
-// Lazy initialization of Firebase Admin
-function getFirebaseAdmin() {
-  let firebaseConfig: any = {};
-  try {
-    const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
-    if (fs.existsSync(configPath)) {
-      firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-    }
-  } catch (e) {
-    console.warn("Could not load firebase-applet-config.json inside api handler", e);
-  }
-
-  if (!getApps().length) {
-    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-    if (serviceAccountKey) {
-      try {
-        const serviceAccount = JSON.parse(serviceAccountKey);
-        initializeApp({
-          credential: cert(serviceAccount),
-          databaseURL: firebaseConfig.projectId ? `https://${firebaseConfig.projectId}.firebaseio.com` : undefined
-        });
-      } catch (e) {
-        console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY:', e);
-      }
-    } else if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
-      initializeApp({
-        credential: cert({
-          projectId: process.env.FIREBASE_PROJECT_ID,
-          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-          privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-        }),
-        databaseURL: firebaseConfig.projectId ? `https://${firebaseConfig.projectId}.firebaseio.com` : undefined
-      });
-    } else if (firebaseConfig.projectId) {
-      initializeApp({
-        projectId: firebaseConfig.projectId,
-        databaseURL: `https://${firebaseConfig.projectId}.firebaseio.com`
-      });
-    } else {
-      initializeApp();
-    }
-  }
-
-  return firebaseConfig.firestoreDatabaseId 
-    ? getFirestore(firebaseConfig.firestoreDatabaseId)
-    : getFirestore();
-}
+import { FieldValue } from 'firebase-admin/firestore';
+import { getFirebaseAdmin } from './firebase-admin-helper';
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
@@ -73,7 +23,7 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const db = getFirebaseAdmin();
+    const { db } = getFirebaseAdmin();
     if (!db) {
       throw new Error("Could not initialize Firebase database connections.");
     }
