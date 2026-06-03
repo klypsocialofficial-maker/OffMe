@@ -48,6 +48,10 @@ export default function PWABadge() {
           console.error('Update check failed:', err);
           setCheckingUpdate(false);
         });
+      } else {
+        console.warn('SW not registered, cannot check for updates');
+        setShowUpToDate(true);
+        setTimeout(() => setShowUpToDate(false), 3000);
       }
     };
 

@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 export default function Settings() {
   const navigate = useNavigate();
-  const { userProfile } = useAuth();
+  const { userProfile, showToast } = useAuth();
   const [notificationsEnabled, setNotificationsEnabled] = useState(Notification.permission === 'granted');
 
   const toggleNotifications = async () => {
@@ -75,6 +75,7 @@ export default function Settings() {
         </div>
         <div 
           onClick={() => {
+            showToast('Verificando atualizações...', 'info');
             window.dispatchEvent(new CustomEvent('check-pwa-update'));
           }}
           className="p-4 bg-white rounded-xl shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors"
