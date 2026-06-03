@@ -321,7 +321,7 @@ export default function Messages() {
       {/* Floating Action Button */}
       <button
         onClick={() => setIsNewChatModalOpen(true)}
-        className="fixed bottom-[80px] sm:bottom-6 right-4 sm:right-auto sm:ml-[calc(100%-80px)] xl:ml-[calc(600px-80px)] z-40 bg-black text-white p-4 rounded-full shadow-lg shadow-black/20 hover:scale-105 active:scale-95 transition-transform"
+        className="fixed bottom-[100px] mb-[env(safe-area-inset-bottom)] sm:mb-0 sm:bottom-6 right-4 sm:right-auto sm:ml-[calc(100%-80px)] xl:ml-[calc(600px-80px)] z-40 bg-black text-white p-4 rounded-full shadow-lg shadow-black/20 hover:scale-105 active:scale-95 transition-transform"
       >
         <Plus className="w-6 h-6 stroke-[3px]" />
       </button>
