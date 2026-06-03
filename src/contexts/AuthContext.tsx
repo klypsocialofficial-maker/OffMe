@@ -671,22 +671,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const resetPassword = async (email: string) => {
     if (!auth) throw new Error("Firebase not initialized");
     try {
-      const response = await fetch('/api/send-auth-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, type: 'reset' })
-      });
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorMsg = 'Failed to send reset email';
-        try {
-          const errorData = JSON.parse(errorText);
-          errorMsg = errorData.error || errorMsg;
-        } catch {
-          errorMsg = errorText || errorMsg;
-        }
-        throw new Error(errorMsg);
-      }
+      await sendPasswordResetEmail(auth, email);
       showToast("E-mail de redefinição de senha enviado com sucesso!", "success");
     } catch (error: any) {
       showToast("Erro ao enviar e-mail de redefinição: " + (error.message || error), "error");
