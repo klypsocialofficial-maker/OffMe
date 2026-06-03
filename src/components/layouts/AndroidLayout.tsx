@@ -71,7 +71,7 @@ export default function AndroidLayout({
       {location.pathname !== '/premium' && !(location.pathname.startsWith('/messages/') && location.pathname !== '/messages') && (
         <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/70 backdrop-blur-md border-t border-white/20 shadow-lg">
           <nav className="flex justify-around items-center h-16 relative px-2">
-            {[navItems[0], navItems[1], navItems[2], navItems[3], navItems[5]].map((item) => {
+            {[navItems[0], navItems[1], navItems[3], navItems[4], navItems[5]].map((item) => {
               const isActive = location.pathname === item.path;
               
               if (item.isAction) {

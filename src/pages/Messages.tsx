@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, User as UserIcon, Send, MoreHorizontal, Trash2, Archive, Flame } from 'lucide-react';
+import { Mail, User as UserIcon, Send, MoreHorizontal, Trash2, Archive, Flame, Plus } from 'lucide-react';
 import VerifiedBadge from '../components/VerifiedBadge';
 import LazyImage from '../components/LazyImage';
 import ConfirmModal from '../components/ConfirmModal';
+import NewChatModal from '../components/NewChatModal';
 import Toast from '../components/Toast';
 import { useAuth } from '../contexts/AuthContext';
 import { useOutletContext, useNavigate } from 'react-router-dom';
@@ -80,6 +81,7 @@ export default function Messages() {
     onConfirm: () => {}
   });
   const [searchTerm, setSearchTerm] = useState('');
+  const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'info' | 'success' | 'error'; isOpen: boolean }>({
     message: '',
     type: 'info',
@@ -175,9 +177,11 @@ export default function Messages() {
             </button>
             <h1 className="text-xl font-black tracking-tight">Mensagens</h1>
           </div>
-          <button className="p-2 hover:bg-black/5 rounded-full transition-colors">
-            <Mail className="w-5 h-5" />
-          </button>
+          <div className="flex items-center space-x-2">
+            <button className="p-2 hover:bg-black/5 rounded-full transition-colors">
+              <Mail className="w-5 h-5" />
+            </button>
+          </div>
         </div>
         <div className="px-4 pb-2">
              <input type="text" placeholder="Buscar conversas..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-gray-100 rounded-full px-4 py-2 text-sm outline-none" />
@@ -303,12 +307,24 @@ export default function Messages() {
         title={confirmModal.title}
         message={confirmModal.message}
       />
+      <NewChatModal 
+        isOpen={isNewChatModalOpen}
+        onClose={() => setIsNewChatModalOpen(false)}
+      />
       <Toast 
         message={toast.message}
         type={toast.type}
         isOpen={toast.isOpen}
         onClose={() => setToast(prev => ({ ...prev, isOpen: false }))}
       />
+      
+      {/* Floating Action Button */}
+      <button
+        onClick={() => setIsNewChatModalOpen(true)}
+        className="fixed bottom-[80px] sm:bottom-6 right-4 sm:right-auto sm:ml-[calc(100%-80px)] xl:ml-[calc(600px-80px)] z-40 bg-black text-white p-4 rounded-full shadow-lg shadow-black/20 hover:scale-105 active:scale-95 transition-transform"
+      >
+        <Plus className="w-6 h-6 stroke-[3px]" />
+      </button>
     </div>
   );
 }

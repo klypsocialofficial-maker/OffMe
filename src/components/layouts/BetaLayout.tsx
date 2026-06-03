@@ -74,7 +74,7 @@ export default function BetaLayout({
             {/* Inner background highlight */}
             <div className="absolute inset-0 rounded-[32px] bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
             
-            {[navItems[0], navItems[1], navItems[2], navItems[3], navItems[5]].map((item) => {
+            {[navItems[0], navItems[1], navItems[3], navItems[4], navItems[5]].map((item) => {
               const isActive = location.pathname === item.path;
               
               if (item.isAction) {
