@@ -546,8 +546,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ email, type: 'verify' })
       });
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to send verification email');
+        const errorText = await response.text();
+        let errorMsg = 'Failed to send verification email';
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMsg = errorData.error || errorMsg;
+        } catch {
+          errorMsg = errorText || errorMsg;
+        }
+        throw new Error(errorMsg);
       }
       showToast("E-mail de verificação enviado! Verifique sua caixa de entrada.", "success");
     } catch (error: any) {
@@ -670,8 +677,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ email, type: 'reset' })
       });
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to send reset email');
+        const errorText = await response.text();
+        let errorMsg = 'Failed to send reset email';
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMsg = errorData.error || errorMsg;
+        } catch {
+          errorMsg = errorText || errorMsg;
+        }
+        throw new Error(errorMsg);
       }
       showToast("E-mail de redefinição de senha enviado com sucesso!", "success");
     } catch (error: any) {

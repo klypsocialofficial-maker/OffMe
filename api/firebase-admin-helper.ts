@@ -59,8 +59,11 @@ export function getFirebaseAdmin() {
     }
   }
 
-  const db = firebaseConfig.firestoreDatabaseId 
-    ? getFirestore(firebaseConfig.firestoreDatabaseId)
+  const apps = getApps();
+  const defaultApp = apps.length > 0 ? apps[0] : undefined;
+
+  const db = firebaseConfig.firestoreDatabaseId && defaultApp
+    ? getFirestore(defaultApp, firebaseConfig.firestoreDatabaseId)
     : getFirestore();
 
   return {

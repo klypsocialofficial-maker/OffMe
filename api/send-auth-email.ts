@@ -48,9 +48,9 @@ export default async function sendAuthEmail(req: Request, res: Response) {
           <p>Olá,</p>
           <p>Recebemos uma solicitação para redefinir a senha da sua conta.</p>
           <p>Clique no link abaixo para criar uma nova senha:</p>
-          <p><a href="\${link}" style="display:inline-block; padding: 10px 20px; background-color: #3b82f6; color: #fff; text-decoration: none; border-radius: 5px;">Redefinir Senha</a></p>
+          <p><a href="${link}" style="display:inline-block; padding: 10px 20px; background-color: #3b82f6; color: #fff; text-decoration: none; border-radius: 5px;">Redefinir Senha</a></p>
           <p>Ou copie e cole o link no seu navegador:</p>
-          <p style="word-break: break-all; color: #666;">\${link}</p>
+          <p style="word-break: break-all; color: #666;">${link}</p>
           <p>Se você não solicitou, por favor ignore este e-mail.</p>
         </div>
         <style>
