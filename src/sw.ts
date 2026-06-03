@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
 
-import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
+import { precacheAndRoute, cleanupOutdatedCaches, createHandlerBoundToURL } from 'workbox-precaching';
 import { clientsClaim } from 'workbox-core';
 import { registerRoute, NavigationRoute } from 'workbox-routing';
 import { NetworkFirst, CacheFirst, StaleWhileRevalidate, NetworkOnly } from 'workbox-strategies';
@@ -12,7 +12,7 @@ declare const self: ServiceWorkerGlobalScope & {
   __WB_MANIFEST: any;
 };
 
-// PWA Logic v0.0.0.13
+// PWA Logic v0.0.0.15
 cleanupOutdatedCaches();
 precacheAndRoute(self.__WB_MANIFEST);
 
@@ -50,7 +50,18 @@ registerRoute(
   })
 );
 
-// Handle specific image providers like imgbb if needed separately, but request.destination === 'image' covers them.
+// SPA fallback for client-side routing
+try {
+  registerRoute(
+    new NavigationRoute(createHandlerBoundToURL('/index.html'), {
+      denylist: [
+        /^\/api\//,
+      ],
+    })
+  );
+} catch (e) {
+  console.log('Error registering NavigationRoute', e);
+}
 
 // This allows the web app to control the service worker and skip waiting
 self.addEventListener('message', (event) => {

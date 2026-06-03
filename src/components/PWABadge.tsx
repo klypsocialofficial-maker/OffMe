@@ -3,7 +3,7 @@ import { useRegisterSW } from 'virtual:pwa-register/react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronRight, Sparkles, CheckCircle2, X } from 'lucide-react';
 
-const APP_VERSION = '0.0.0.14';
+const APP_VERSION = '0.0.0.15';
 
 export default function PWABadge() {
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
@@ -283,6 +283,18 @@ export default function PWABadge() {
                         <li className="flex items-start">
                           <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 mr-2 flex-shrink-0" />
                           <span className="font-bold text-gray-900 dark:text-zinc-200">v{APP_VERSION}:</span>
+                        </li>
+                        <li className="flex items-start pl-4 text-[11px] leading-relaxed">
+                          <div className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 mr-2 flex-shrink-0" />
+                          <span>Correção do erro "404 NOT_FOUND" (Vercel) e roteamento de tela branca após atualizações PWA.</span>
+                        </li>
+                        <li className="flex items-start pl-4 text-[11px] leading-relaxed">
+                          <div className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 mr-2 flex-shrink-0" />
+                          <span>Adicionado roteamento nativo no aplicativo com compartilhamento via API (Web Share).</span>
+                        </li>
+                        <li className="flex items-start">
+                          <div className="w-1.5 h-1.5 rounded-full bg-black mt-1.5 mr-2 flex-shrink-0" />
+                          <span className="font-bold text-gray-900 dark:text-zinc-200">v0.0.0.14:</span>
                         </li>
                         <li className="flex items-start pl-4 text-[11px] leading-relaxed">
                           <div className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 mr-2 flex-shrink-0" />
