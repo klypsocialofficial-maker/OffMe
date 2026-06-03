@@ -3,7 +3,7 @@ import { useRegisterSW } from 'virtual:pwa-register/react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronRight, Sparkles, CheckCircle2, X } from 'lucide-react';
 
-const APP_VERSION = '0.0.0.15';
+const APP_VERSION = '0.0.0.16';
 
 export default function PWABadge() {
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
@@ -105,30 +105,33 @@ export default function PWABadge() {
     }, 200);
   };
 
-  // Request Notification Permissions on Mount
-  useEffect(() => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission().catch(err => console.log('Notification permission dynamic request failed:', err));
-    }
-  }, []);
-
   // Sync / Fire push notification when update is captured outside spotlight
   useEffect(() => {
     if (needRefresh) {
       if (document.visibilityState !== 'visible') {
         if ('Notification' in window && Notification.permission === 'granted') {
           try {
-            const notif = new Notification("Nova versão no OffMe!", {
-              body: "Melhorias de segurança de dados (LGPD) e performance prontas para rodar! Toque para aplicar.",
-              icon: "/logo.svg",
-              badge: "/logo.svg",
-              tag: "pwa-update",
-              requireInteraction: true
-            });
-            notif.onclick = () => {
-              window.focus();
-              handleUpdate();
-            };
+            if (registrationRef.current && registrationRef.current.showNotification) {
+               registrationRef.current.showNotification("Nova versão no OffMe!", {
+                  body: "Melhorias de segurança de dados (LGPD) e performance prontas para rodar! Toque para aplicar.",
+                  icon: "/logo.svg",
+                  badge: "/logo.svg",
+                  tag: "pwa-update",
+                  requireInteraction: true
+               });
+            } else {
+               const notif = new Notification("Nova versão no OffMe!", {
+                 body: "Melhorias de segurança de dados (LGPD) e performance prontas para rodar! Toque para aplicar.",
+                 icon: "/logo.svg",
+                 badge: "/logo.svg",
+                 tag: "pwa-update",
+                 requireInteraction: true
+               });
+               notif.onclick = () => {
+                 window.focus();
+                 handleUpdate();
+               };
+            }
           } catch (e) {
             console.error('Failed to trigger background push notification:', e);
           }
@@ -283,6 +286,14 @@ export default function PWABadge() {
                         <li className="flex items-start">
                           <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 mr-2 flex-shrink-0" />
                           <span className="font-bold text-gray-900 dark:text-zinc-200">v{APP_VERSION}:</span>
+                        </li>
+                        <li className="flex items-start pl-4 text-[11px] leading-relaxed">
+                          <div className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 mr-2 flex-shrink-0" />
+                          <span>Notificações push PWA corrigidas, tanto para mensagens quanto para atualizações.</span>
+                        </li>
+                        <li className="flex items-start">
+                          <div className="w-1.5 h-1.5 rounded-full bg-black mt-1.5 mr-2 flex-shrink-0" />
+                          <span className="font-bold text-gray-900 dark:text-zinc-200">v0.0.0.15:</span>
                         </li>
                         <li className="flex items-start pl-4 text-[11px] leading-relaxed">
                           <div className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 mr-2 flex-shrink-0" />
