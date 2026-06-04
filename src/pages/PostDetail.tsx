@@ -8,6 +8,7 @@ import VerifiedBadge from '../components/VerifiedBadge';
 import PostContent from '../components/PostContent';
 import QuotedPost from '../components/QuotedPost';
 import Poll from '../components/Poll';
+import ReactionPicker, { REACTION_TYPES } from '../components/ReactionPicker';
 import { motion, AnimatePresence } from 'motion/react';
 import { formatRelativeTime } from '../lib/dateUtils';
 import { sendPushNotification } from '../lib/notifications';
@@ -85,6 +86,9 @@ export default function PostDetail() {
   const [post, setPost] = useState<any>(null);
   const [parentPost, setParentPost] = useState<any>(null);
   const repostTimerRef = React.useRef<any>(null);
+  const [showReactionPicker, setShowReactionPicker] = useState(false);
+  const [showLikeAnimation, setShowLikeAnimation] = useState(false);
+  const reactionTimerRef = React.useRef<any>(null);
 
   const stopPropagation = (e: React.MouseEvent | React.PointerEvent) => e.stopPropagation();
 
@@ -119,6 +123,82 @@ export default function PostDetail() {
       clearTimeout(repostTimerRef.current);
     }
     repostTimerRef.current = null;
+  };
+
+  const handleSelectReaction = (rid: string) => {
+    handleLikePost(post, rid);
+    setShowReactionPicker(false);
+    setShowLikeAnimation(true);
+    
+    // Add vibration for reaction selection
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(20);
+    }
+    
+    setTimeout(() => setShowLikeAnimation(false), 1000);
+  };
+
+  const handleLikePointerDown = (e: React.PointerEvent) => {
+    stopPropagation(e);
+    // Immediate haptic feedback that the press has started
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(10);
+    }
+    
+    reactionTimerRef.current = setTimeout(() => {
+      setShowReactionPicker(true);
+      reactionTimerRef.current = 'PICKER_OPEN';
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate([50, 30, 50]);
+      }
+    }, 300); // Reduced delay to 300ms for snappier feel
+  };
+
+  const handleLikePointerUp = (e: React.PointerEvent) => {
+    stopPropagation(e);
+    if (reactionTimerRef.current === 'PICKER_OPEN') {
+      return;
+    }
+    if (reactionTimerRef.current) {
+      clearTimeout(reactionTimerRef.current);
+      reactionTimerRef.current = null;
+    }
+  };
+
+  const handleLikePointerCancel = () => {
+    if (reactionTimerRef.current && reactionTimerRef.current !== 'PICKER_OPEN') {
+      clearTimeout(reactionTimerRef.current);
+    }
+    reactionTimerRef.current = null;
+  };
+
+  const handleLikeClick = (e: React.MouseEvent) => {
+    stopPropagation(e);
+    
+    if (reactionTimerRef.current === 'PICKER_OPEN') {
+      reactionTimerRef.current = null;
+      return;
+    }
+    
+    if (reactionTimerRef.current) {
+      clearTimeout(reactionTimerRef.current);
+      reactionTimerRef.current = null;
+    }
+
+    if (showReactionPicker) {
+      setShowReactionPicker(false);
+      return;
+    }
+
+    const currentUserReaction = post.reactions?.[userProfile?.uid];
+    if (!currentUserReaction) {
+      handleSelectReaction('heart');
+    } else {
+      handleLikePost(post, currentUserReaction);
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(10);
+      }
+    }
   };
 
   const handleBookmark = async (e: React.MouseEvent) => {
@@ -1094,12 +1174,33 @@ export default function PostDetail() {
               >
                 <Repeat className={`w-5.5 h-5.5 ${post.reposts?.includes(userProfile?.uid) ? 'stroke-[2.5px]' : ''}`} />
               </button>
-              <button 
-                onClick={() => handleLikePost(post)}
-                className={`p-3 transition-all rounded-full ${post.likes?.includes(userProfile?.uid) ? 'text-red-500' : 'text-gray-500 hover:text-red-500 hover:bg-red-50'}`}
-              >
-                <Heart className={`w-5.5 h-5.5 ${post.likes?.includes(userProfile?.uid) ? 'fill-current' : ''}`} />
-              </button>
+              <div className="relative group/like">
+                <button 
+                  onPointerDown={handleLikePointerDown}
+                  onPointerUp={handleLikePointerUp}
+                  onPointerCancel={handleLikePointerCancel}
+                  onClick={handleLikeClick}
+                  className={`p-3 transition-all rounded-full ${post.reactions?.[userProfile?.uid] ? 'text-red-500' : 'text-gray-500 hover:text-red-500 hover:bg-red-50'}`}
+                >
+                  {(() => {
+                    const currentUserReaction = post.reactions?.[userProfile?.uid];
+                    const ActiveReactionIcon = currentUserReaction 
+                      ? (REACTION_TYPES.find(r => r.id === currentUserReaction)?.icon || Heart)
+                      : Heart;
+                    return <ActiveReactionIcon className={`w-5.5 h-5.5 ${currentUserReaction ? 'fill-current' : ''}`} />;
+                  })()}
+                </button>
+                <AnimatePresence>
+                  {showReactionPicker && (
+                    <div 
+                      className="absolute bottom-full left-0 z-50"
+                      onPointerLeave={() => setShowReactionPicker(false)}
+                    >
+                      <ReactionPicker onSelect={handleSelectReaction} />
+                    </div>
+                  )}
+                </AnimatePresence>
+              </div>
               <button 
                 onClick={handleBookmark}
                 className={`p-3 transition-all rounded-full ${userProfile?.bookmarks?.includes(post.id) ? 'text-blue-500' : 'text-gray-500 hover:text-blue-500 hover:bg-blue-50'}`}

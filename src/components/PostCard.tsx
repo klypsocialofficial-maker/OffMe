@@ -59,6 +59,7 @@ function PostCard({
   const navigate = useNavigate();
   const { userProfile, muteUser, unmuteUser, blockUser, unblockUser, bookmarkPost, unbookmarkPost, pinPost, unpinPost } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [floatingMenu, setFloatingMenu] = useState<{isOpen: boolean, x: number, y: number} | null>(null);
   
   const effectivePost = post.type === 'repost' ? { ...post, id: post.repostedPostId } : post;
 
@@ -77,6 +78,32 @@ function PostCard({
   const [showLikeAnimation, setShowLikeAnimation] = useState(false);
   const repostTimerRef = React.useRef<any>(null);
   const reactionTimerRef = React.useRef<any>(null);
+  const longPressTimerRef = React.useRef<any>(null);
+
+  const handleCardPointerDown = (e: React.PointerEvent) => {
+    if ((e.target as HTMLElement).closest('button, a, input, [role="button"]')) return;
+
+    longPressTimerRef.current = setTimeout(() => {
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(20);
+      }
+      setFloatingMenu({ isOpen: true, x: e.clientX, y: e.clientY });
+    }, 500);
+  };
+
+  const handleCardPointerUp = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  const handleCardPointerCancel = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
 
   const stopPropagation = (e: React.MouseEvent | React.PointerEvent) => e.stopPropagation();
 
@@ -95,13 +122,18 @@ function PostCard({
 
   const handleLikePointerDown = (e: React.PointerEvent) => {
     stopPropagation(e);
+    // Immediate haptic feedback that the press has started
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(10);
+    }
+    
     reactionTimerRef.current = setTimeout(() => {
       setShowReactionPicker(true);
       reactionTimerRef.current = 'PICKER_OPEN';
       if (typeof navigator !== 'undefined' && navigator.vibrate) {
-        navigator.vibrate(50);
+        navigator.vibrate([50, 30, 50]);
       }
-    }, 500);
+    }, 300); // Reduced delay to 300ms for snappier feel
   };
 
   const handleLikePointerUp = (e: React.PointerEvent) => {
@@ -300,8 +332,48 @@ function PostCard({
       viewport={{ once: true, margin: "-10% 0px -10% 0px" }}
       transition={{ duration: 0.4, ease: "easeOut" }}
       onClick={() => navigate(`/post/${effectivePost.id}`)}
+      onPointerDown={handleCardPointerDown}
+      onPointerUp={handleCardPointerUp}
+      onPointerCancel={handleCardPointerCancel}
       className="group relative p-4 bg-white border-b border-gray-100 hover:bg-gray-50/70 transition-colors duration-200 ease-out cursor-pointer flex flex-col"
     >
+      {floatingMenu && floatingMenu.isOpen && (
+        <div 
+          className="fixed z-[1000] bg-white rounded-xl shadow-2xl border border-gray-100 py-2 w-48"
+          style={{ top: floatingMenu.y, left: floatingMenu.x }}
+          onClick={(e) => { e.stopPropagation(); setFloatingMenu(null); }}
+        >
+          <button 
+            onClick={handleBookmark}
+            className="w-full text-left px-4 py-2.5 text-gray-700 hover:bg-gray-50 flex items-center space-x-3 text-sm"
+          >
+            <Bookmark className="w-4 h-4" />
+            <span>{userProfile?.bookmarks?.includes(effectivePost.id) ? 'Remover dos salvos' : 'Salvar post'}</span>
+          </button>
+          
+          <button 
+            onClick={async (e) => {
+              stopPropagation(e);
+              await muteUser(post.authorId);
+              setFloatingMenu(null);
+            }}
+            className="w-full text-left px-4 py-2.5 text-gray-700 hover:bg-gray-50 flex items-center space-x-3 text-sm"
+          >
+            <VolumeX className="w-4 h-4" />
+            <span>Mutar @{post.authorUsername}</span>
+          </button>
+
+          <button 
+             onClick={handleShare}
+             className="w-full text-left px-4 py-2.5 text-gray-700 hover:bg-gray-50 flex items-center space-x-3 text-sm"
+          >
+            <Share className="w-4 h-4" />
+            <span>Compartilhar</span>
+          </button>
+
+          <div className="absolute inset-0 z-[-1]" onClick={() => setFloatingMenu(null)} />
+        </div>
+      )}
       {/* Repost Header */}
       {post.type === 'repost' && (
         <div 
