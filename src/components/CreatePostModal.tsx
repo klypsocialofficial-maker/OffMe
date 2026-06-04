@@ -50,6 +50,7 @@ export default function CreatePostModal({
   sharedMusic = null
 }: CreatePostModalProps) {
   const [content, setContent] = useState('');
+  const [gifUrl, setGifUrl] = useState<string | null>(null);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [imageStats, setImageStats] = useState<{
@@ -74,10 +75,6 @@ export default function CreatePostModal({
     altText?: string
   }[]>([]);
 
-  useEffect(() => {
-    setIsAnonymous(isAnonymousDefault || !userProfile);
-  }, [isAnonymousDefault, userProfile, isOpen]);
-
   // Poll state
   const [showPoll, setShowPoll] = useState(false);
   const [pollOptions, setPollOptions] = useState<string[]>(['', '']);
@@ -85,7 +82,6 @@ export default function CreatePostModal({
   // GIF state
   const [showGifPicker, setShowGifPicker] = useState(false);
   const [gifSearch, setGifSearch] = useState('');
-  const [gifUrl, setGifUrl] = useState<string | null>(null);
   const [scheduledAt, setScheduledAt] = useState<string>('');
   const [showSchedule, setShowSchedule] = useState(false);
   const [mentionSuggestions, setMentionSuggestions] = useState<any[]>([]);
@@ -95,6 +91,84 @@ export default function CreatePostModal({
   const [cursorPosition, setCursorPosition] = useState(0);
 
   const textInputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Draft autosave states and helpers
+  const [isDraftLoaded, setIsDraftLoaded] = useState(false);
+
+  const getDraftKey = () => {
+    if (replyTo) {
+      return `klyp_post_composer_draft_reply_${replyTo.id}`;
+    }
+    if (quotePost) {
+      return `klyp_post_composer_draft_quote_${quotePost.id}`;
+    }
+    if (communityId) {
+      return `klyp_post_composer_draft_community_${communityId}`;
+    }
+    return 'klyp_post_composer_draft';
+  };
+
+  // Load draft when modal is opened
+  useEffect(() => {
+    if (isOpen) {
+      const key = getDraftKey();
+      const savedDraft = localStorage.getItem(key);
+      if (savedDraft) {
+        try {
+          const parsed = JSON.parse(savedDraft);
+          setContent(parsed.content || '');
+          if (parsed.isAnonymous !== undefined) {
+            setIsAnonymous(parsed.isAnonymous);
+          } else {
+            setIsAnonymous(isAnonymousDefault || !userProfile);
+          }
+          if (parsed.postAudience) setPostAudience(parsed.postAudience);
+          setGifUrl(parsed.gifUrl || null);
+          setShowPoll(parsed.showPoll || false);
+          setPollOptions(parsed.pollOptions || ['', '']);
+          setAltText(parsed.altText || '');
+        } catch (e) {
+          console.error('Error parsing draft:', e);
+          setIsAnonymous(isAnonymousDefault || !userProfile);
+        }
+      } else {
+        setContent('');
+        setIsAnonymous(isAnonymousDefault || !userProfile);
+        setPostAudience('public');
+        setGifUrl(null);
+        setShowPoll(false);
+        setPollOptions(['', '']);
+        setAltText('');
+      }
+      setIsDraftLoaded(true);
+    } else {
+      setIsDraftLoaded(false);
+    }
+  }, [isOpen, replyTo, quotePost, communityId, isAnonymousDefault, userProfile]);
+
+  // Save/Update draft as the user types or updates options
+  useEffect(() => {
+    if (!isOpen || !isDraftLoaded) return;
+
+    const key = getDraftKey();
+    const hasAnyContent = content.trim() || gifUrl || showPoll || (imageFiles && imageFiles.length > 0);
+    
+    if (!hasAnyContent) {
+      localStorage.removeItem(key);
+      return;
+    }
+
+    const draft = {
+      content,
+      isAnonymous,
+      postAudience,
+      gifUrl,
+      showPoll,
+      pollOptions,
+      altText
+    };
+    localStorage.setItem(key, JSON.stringify(draft));
+  }, [isOpen, isDraftLoaded, content, isAnonymous, postAudience, gifUrl, showPoll, pollOptions, altText, imageFiles]);
 
   useEffect(() => {
     const handleAutocomplete = async () => {
@@ -441,6 +515,10 @@ export default function CreatePostModal({
         currentReplyToUsername = authorUsername;
         currentReplyToVerified = authorVerified;
       }
+
+      // Clear autosaved draft on successful post submission
+      const key = getDraftKey();
+      localStorage.removeItem(key);
 
       setContent('');
       setImageFiles([]);
