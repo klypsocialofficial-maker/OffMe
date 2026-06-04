@@ -1024,6 +1024,7 @@ export default function Profile() {
           </div>
         )}
 
+
         <BadgeDisplay badges={profileUser.badges} />
 
         {/* Metadata Grid */}

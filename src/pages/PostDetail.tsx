@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, onSnapshot, collection, query, where, orderBy, serverTimestamp, addDoc, deleteDoc, updateDoc, arrayRemove, arrayUnion, getDocs, limit } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where, orderBy, serverTimestamp, addDoc, deleteDoc, updateDoc, arrayRemove, arrayUnion, getDocs, limit, deleteField } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { User as UserIcon, ArrowLeft, MoreHorizontal, Trash2, Edit2, BarChart2, Heart, Repeat, MessageCircle, Send, Bookmark, BookmarkCheck, Ghost, Lock, Music, Play, Pause, ExternalLink, Pin, PinOff, VolumeX, UserX, Gift, ShieldAlert, Share } from 'lucide-react';
+import { User as UserIcon, ArrowLeft, MoreHorizontal, Trash2, Edit2, BarChart2, Heart, Repeat, MessageCircle, Send, Bookmark, BookmarkCheck, Ghost, Lock, Music, Play, Pause, ExternalLink, Pin, PinOff, VolumeX, UserX, Gift, ShieldAlert, Share, Flag } from 'lucide-react';
 import VerifiedBadge from '../components/VerifiedBadge';
 import PostContent from '../components/PostContent';
 import QuotedPost from '../components/QuotedPost';
@@ -531,23 +531,34 @@ export default function PostDetail() {
     }
   };
 
-  const handleLikePost = async (postToLike: any) => {
+  const handleLikePost = async (postToLike: any, reactionId: string = 'heart') => {
     if (!userProfile?.uid || !db) return;
     
     // Redirect interaction to the original post if it's a repost
     const targetPost = postToLike.type === 'repost' ? { id: postToLike.repostedPostId, ...postToLike } : postToLike;
-    const isLiked = targetPost.likes?.includes(userProfile.uid);
+    const existingReaction = targetPost.reactions?.[userProfile.uid];
+    const isLiked = !!existingReaction;
     const postRef = doc(db, 'posts', targetPost.id);
     
     try {
-      await updateDoc(postRef, {
-        likes: isLiked ? arrayRemove(userProfile.uid) : arrayUnion(userProfile.uid),
-        likesCount: isLiked ? Math.max(0, (targetPost.likesCount || 0) - 1) : (targetPost.likesCount || 0) + 1
-      });
-      
-      if (!isLiked) {
-        // Award points for liking and track mission
-        await awardPoints(userProfile.uid, 5, 'like');
+      if (isLiked && existingReaction === reactionId) {
+        // Toggle off if clicking the same reaction
+        await updateDoc(postRef, {
+          [`reactions.${userProfile.uid}`]: deleteField(),
+          likesCount: Math.max(0, (targetPost.likesCount || 0) - 1),
+          likes: arrayRemove(userProfile.uid)
+        });
+      } else {
+        // Add or change reaction
+        await updateDoc(postRef, {
+          [`reactions.${userProfile.uid}`]: reactionId,
+          likesCount: isLiked ? (targetPost.likesCount || 0) : (targetPost.likesCount || 0) + 1,
+          likes: arrayUnion(userProfile.uid)
+        });
+        
+        if (!isLiked) {
+          await awardPoints(userProfile.uid, 5, 'like');
+        }
       }
       
       if (!isLiked && postToLike.authorId !== userProfile.uid) {
@@ -1209,6 +1220,13 @@ export default function PostDetail() {
               </button>
               <button onClick={handleShare} className="p-3 text-gray-500 hover:text-blue-500 hover:bg-blue-50 rounded-full transition-all">
                 {navigator.share ? <Share className="w-5.5 h-5.5" /> : <Send className="w-5.5 h-5.5" />}
+              </button>
+              <button 
+                onClick={() => setIsReportModalOpen(true)}
+                className="p-3 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
+                title="Denunciar"
+              >
+                <Flag className="w-5.5 h-5.5" />
               </button>
             </div>
           </div>

@@ -1009,6 +1009,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         status: 'pending',
         createdAt: serverTimestamp()
       });
+
+      // Directly update the targeted document to flag it if it's a post
+      if (type === 'post') {
+        const postRef = doc(db, 'posts', targetId);
+        await updateDoc(postRef, {
+          isFlagged: true,
+          flaggedAt: serverTimestamp(),
+          flaggedBy: arrayUnion(currentUser.uid),
+          flaggedReason: reason
+        });
+      } else if (type === 'user') {
+        const userRef = doc(db, 'users', targetId);
+        await updateDoc(userRef, {
+          isFlagged: true,
+          flaggedAt: serverTimestamp(),
+          flaggedBy: arrayUnion(currentUser.uid),
+          flaggedReason: reason
+        });
+      }
+
       showToast("Conteúdo denunciado com sucesso! Obrigado pela colaboração.", "success");
     } catch (error: any) {
       showToast("Erro ao enviar denúncia: " + (error.message || error), "error");

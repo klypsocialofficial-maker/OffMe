@@ -41,7 +41,10 @@ service cloud.firestore {
         allow read: if true;
         allow create: if isOwner(userId);
         allow update: if isAdmin() || 
-                      (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isVerified', 'premiumTier', 'isPremium']));
+                      (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isVerified', 'premiumTier', 'isPremium'])) ||
+                      (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isFlagged', 'flaggedAt', 'flaggedBy', 'flaggedReason'])) ||
+                      (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followers'])) ||
+                      (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['following']));
         allow delete: if isAdmin();
 
         match /sessions/{sessionId} {
@@ -85,7 +88,8 @@ service cloud.firestore {
                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reposts', 'repostsCount']) ||
                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['repliesCount']) ||
                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount']) ||
-                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['poll'])
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['poll']) ||
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isFlagged', 'flaggedAt', 'flaggedBy', 'flaggedReason'])
                       ));
         
         allow delete: if isDocOwner() || isAdmin();
