@@ -42,9 +42,11 @@ service cloud.firestore {
         allow create: if isOwner(userId);
         allow update: if isAdmin() || 
                       (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isVerified', 'premiumTier', 'isPremium'])) ||
-                      (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isFlagged', 'flaggedAt', 'flaggedBy', 'flaggedReason'])) ||
-                      (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followers'])) ||
-                      (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['following']));
+                      (isAuthenticated() && !isOwner(userId) && (
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followers']) ||
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['following']) ||
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isFlagged', 'flaggedAt', 'flaggedBy', 'flaggedReason'])
+                      ));
         allow delete: if isAdmin();
 
         match /sessions/{sessionId} {
