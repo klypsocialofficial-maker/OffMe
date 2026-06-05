@@ -9,11 +9,21 @@ import VerifiedBadge from './VerifiedBadge';
 import LazyImage from './LazyImage';
 import { GiphyFetch } from '@giphy/js-fetch-api';
 import { getDefaultAvatar } from '../lib/avatar';
+import { triggerHaptic } from '../hooks/useHaptic';
 import { Grid } from '@giphy/react-components';
 import { handleMentions, sendPushNotification, notifyFollowers } from '../lib/notifications';
 import { suggestPostContent } from '../services/aiService';
+import { useOfflineDrafts } from '../hooks/useOfflineDrafts';
 
 const gf = new GiphyFetch('rJC35Qp0ILjTI6mBlDGRcKCNnCucBBYn');
+
+const FILTER_STYLES: Record<string, string> = {
+  none: '',
+  sepia: 'sepia(0.85)',
+  grayscale: 'grayscale(1)',
+  contrast: 'contrast(1.65)',
+  bleach: 'contrast(1.4) saturate(0.6)'
+};
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -49,10 +59,12 @@ export default function CreatePostModal({
   communityName,
   sharedMusic = null
 }: CreatePostModalProps) {
+  const { addDraft } = useOfflineDrafts();
   const [content, setContent] = useState('');
   const [gifUrl, setGifUrl] = useState<string | null>(null);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [imageFilters, setImageFilters] = useState<string[]>([]);
   const [imageStats, setImageStats] = useState<{
     originalName: string;
     originalSize: number;
@@ -71,6 +83,7 @@ export default function CreatePostModal({
     content: string, 
     imageFiles: File[], 
     imagePreviews: string[], 
+    imageFilters: string[],
     gifUrl: string | null, 
     altText?: string
   }[]>([]);
@@ -108,6 +121,18 @@ export default function CreatePostModal({
     return 'klyp_post_composer_draft';
   };
 
+  const base64ToFile = (base64: string, filename: string): File => {
+    const arr = base64.split(',');
+    const mime = arr[0].match(/:(.*?);/)![1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], filename, { type: mime });
+  };
+
   // Load draft when modal is opened
   useEffect(() => {
     if (isOpen) {
@@ -127,6 +152,21 @@ export default function CreatePostModal({
           setShowPoll(parsed.showPoll || false);
           setPollOptions(parsed.pollOptions || ['', '']);
           setAltText(parsed.altText || '');
+
+          if (parsed.images && parsed.images.length > 0) {
+            try {
+              const restoredFiles = parsed.images.map((img: any) => base64ToFile(img.base64, img.name));
+              setImageFiles(restoredFiles);
+              setImagePreviews(parsed.images.map((img: any) => img.base64));
+              setImageFilters(parsed.images.map((img: any) => img.filter || 'none'));
+            } catch (imgErr) {
+              console.error("Error restoring draft images:", imgErr);
+            }
+          } else {
+            setImageFiles([]);
+            setImagePreviews([]);
+            setImageFilters([]);
+          }
         } catch (e) {
           console.error('Error parsing draft:', e);
           setIsAnonymous(isAnonymousDefault || !userProfile);
@@ -139,6 +179,9 @@ export default function CreatePostModal({
         setShowPoll(false);
         setPollOptions(['', '']);
         setAltText('');
+        setImageFiles([]);
+        setImagePreviews([]);
+        setImageFilters([]);
       }
       setIsDraftLoaded(true);
     } else {
@@ -285,6 +328,7 @@ export default function CreatePostModal({
         setImageFiles(prev => [...prev, ...optimizedResults.map(r => r.file)]);
         setImagePreviews(prev => [...prev, ...optimizedResults.map(r => r.preview)]);
         setImageStats(prev => [...prev, ...optimizedResults.map(r => r.stat)]);
+        setImageFilters(prev => [...prev, ...optimizedResults.map(() => 'none')]);
       } catch (overallErr) {
         console.error("Batch compression failed, adding fallback:", overallErr);
         setImageFiles(prev => [...prev, ...newFiles]);
@@ -298,6 +342,7 @@ export default function CreatePostModal({
             savedPercent: 0
           }))
         ]);
+        setImageFilters(prev => [...prev, ...newFiles.map(() => 'none')]);
       } finally {
         setCompressing(false);
       }
@@ -308,6 +353,7 @@ export default function CreatePostModal({
     setImageFiles(prev => prev.filter((_, i) => i !== index));
     setImagePreviews(prev => prev.filter((_, i) => i !== index));
     setImageStats(prev => prev.filter((_, i) => i !== index));
+    setImageFilters(prev => prev.filter((_, i) => i !== index));
   };
 
   const removeGif = () => {
@@ -362,10 +408,12 @@ export default function CreatePostModal({
 
   const handleAddThreadPost = () => {
     if (!content.trim() && imageFiles.length === 0 && !gifUrl) return;
-    setThreadPosts(prev => [...prev, { content, imageFiles, imagePreviews, gifUrl }]);
+    triggerHaptic('selection');
+    setThreadPosts(prev => [...prev, { content, imageFiles, imagePreviews, imageFilters, gifUrl }]);
     setContent('');
     setImageFiles([]);
     setImagePreviews([]);
+    setImageFilters([]);
     setGifUrl(null);
   };
 
@@ -382,6 +430,49 @@ export default function CreatePostModal({
     const canPostAnonymously = isAnonymous;
     if ((!userProfile && !canPostAnonymously) || !db) return;
 
+    if (!navigator.onLine) {
+      try {
+        setLoading(true);
+        await addDraft(
+          content,
+          isAnonymous,
+          postAudience,
+          imageFiles,
+          validPollOptions,
+          hasValidPoll,
+          gifUrl,
+          altText,
+          replyTo,
+          quotePost,
+          communityId,
+          communityName
+        );
+
+        const composerKey = getDraftKey();
+        localStorage.removeItem(composerKey);
+
+        setContent('');
+        setImageFiles([]);
+        setImagePreviews([]);
+        setImageFilters([]);
+        setGifUrl(null);
+        setThreadPosts([]);
+        setShowPoll(false);
+        setPollOptions(['', '']);
+        setAltText('');
+        
+        triggerHaptic('success');
+        window.dispatchEvent(new CustomEvent('applet:offline-post-saved'));
+        onClose();
+        return;
+      } catch (err: any) {
+        console.error("Failed to save offline draft:", err);
+        alert("Erro ao salvar rascunho offline: " + err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+
     try {
       setLoading(true);
       
@@ -396,7 +487,7 @@ export default function CreatePostModal({
       // Collect all posts in the thread
       const allPostsToPublish = [...threadPosts];
       if (hasCurrentContent) {
-        allPostsToPublish.push({ content, imageFiles, imagePreviews, gifUrl, altText });
+        allPostsToPublish.push({ content, imageFiles, imagePreviews, imageFilters, gifUrl, altText });
       }
       
       let currentReplyToId = replyTo?.id || null;
@@ -422,6 +513,7 @@ export default function CreatePostModal({
           content: postContent,
           hashtags,
           imageUrls,
+          imageFilters: postItem.imageFilters || [],
           altText: postItem.altText || '',
           authorId,
           authorName,
@@ -523,13 +615,16 @@ export default function CreatePostModal({
       setContent('');
       setImageFiles([]);
       setImagePreviews([]);
+      setImageFilters([]);
       setGifUrl(null);
       setThreadPosts([]);
       setShowPoll(false);
       setPollOptions(['', '']);
+      triggerHaptic('success');
       onClose();
     } catch (error: any) {
       console.error("Erro ao postar:", error);
+      triggerHaptic('error');
       alert("Erro ao postar: " + (error.message || "Erro desconhecido"));
       if (handleFirestoreError) {
         handleFirestoreError(error, OperationType.CREATE, 'posts');
@@ -613,6 +708,56 @@ export default function CreatePostModal({
                     <span className="hidden xs:inline">{isAnonymous ? 'Anônimo' : 'Modo Público'}</span>
                   </button>
                 )}
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const validPollOptions = pollOptions.filter(opt => opt.trim() !== '');
+                    const hasValidPoll = showPoll && validPollOptions.length >= 2;
+                    setLoading(true);
+                    try {
+                      await addDraft(
+                        content,
+                        isAnonymous,
+                        postAudience,
+                        imageFiles,
+                        validPollOptions,
+                        hasValidPoll,
+                        gifUrl,
+                        altText,
+                        replyTo,
+                        quotePost,
+                        communityId,
+                        communityName
+                      );
+                      
+                      const composerKey = getDraftKey();
+                      localStorage.removeItem(composerKey);
+
+                      setContent('');
+                      setImageFiles([]);
+                      setImagePreviews([]);
+                      setImageFilters([]);
+                      setGifUrl(null);
+                      setThreadPosts([]);
+                      setShowPoll(false);
+                      setPollOptions(['', '']);
+                      setAltText('');
+                      
+                      triggerHaptic('success');
+                      window.dispatchEvent(new CustomEvent('applet:draft-saved-manually'));
+                      onClose();
+                    } catch (err: any) {
+                      console.error("Failed to save draft:", err);
+                      alert("Erro ao salvar rascunho: " + err.message);
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  disabled={(!content.trim() && imageFiles.length === 0 && !gifUrl && threadPosts.length === 0) || loading}
+                  className="mr-2 text-zinc-500 hover:text-zinc-700 border border-zinc-200 hover:bg-zinc-50 px-3 py-1.5 rounded-full font-bold transition-all text-xs xs:text-sm"
+                >
+                  Salvar Rascunho
+                </button>
                 <button
                   onClick={handlePost}
                   disabled={(!content.trim() && imageFiles.length === 0 && !gifUrl && threadPosts.length === 0) || loading || content.length > 1000}
@@ -818,7 +963,12 @@ export default function CreatePostModal({
                             >
                               <X className="w-3 h-3" />
                             </button>
-                            <img src={preview} alt={`Preview ${index}`} className="w-full h-full object-cover" />
+                            <img 
+                              src={preview} 
+                              alt={`Preview ${index}`} 
+                              style={{ filter: FILTER_STYLES[imageFilters[index] || 'none'] }} 
+                              className="w-full h-full object-cover transition-all duration-300" 
+                            />
                             {imageStats[index] && imageStats[index].savedPercent > 0 && (
                               <div className="absolute bottom-2 left-2 bg-black/75 backdrop-blur-md text-[10px] text-white px-2.5 py-1.5 rounded-xl font-bold flex items-center space-x-1.5 shadow-lg border border-white/10 select-none">
                                 <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
@@ -827,6 +977,55 @@ export default function CreatePostModal({
                             )}
                           </div>
                         ))}
+                      </div>
+
+                      {/* CSS Photo Filter Presets Panel */}
+                      <div className="bg-gray-50 dark:bg-zinc-900/60 p-3.5 rounded-2xl border border-black/5 dark:border-zinc-800 shadow-sm">
+                        <label className="text-[10px] font-black uppercase tracking-wider text-gray-400 dark:text-zinc-500 mb-2.5 block">
+                          Filtros de Imagem (CSS Filters)
+                        </label>
+                        <div className="space-y-3">
+                          {imagePreviews.map((preview, index) => (
+                            <div key={index} className="flex items-center space-x-3 bg-white dark:bg-zinc-800/50 p-2 rounded-xl border border-gray-100 dark:border-zinc-805">
+                              <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 border border-gray-205">
+                                <img 
+                                  src={preview} 
+                                  style={{ filter: FILTER_STYLES[imageFilters[index] || 'none'] }} 
+                                  className="w-full h-full object-cover" 
+                                />
+                              </div>
+                              <div className="flex-1 overflow-x-auto flex items-center space-x-1.5 py-1 no-scrollbar scrollbar-none">
+                                {[
+                                  { key: 'none', label: 'Normal' },
+                                  { key: 'sepia', label: 'Sepia' },
+                                  { key: 'grayscale', label: 'P&B' },
+                                  { key: 'contrast', label: 'Contraste' },
+                                  { key: 'bleach', label: 'Bleach Bypass' }
+                                ].map((item) => (
+                                  <button
+                                    key={item.key}
+                                    type="button"
+                                    onClick={() => {
+                                      triggerHaptic('selection');
+                                      setImageFilters(prev => {
+                                        const updated = [...prev];
+                                        updated[index] = item.key;
+                                        return updated;
+                                      });
+                                    }}
+                                    className={`text-xs font-bold px-3 py-1.5 rounded-full transition-all border shrink-0 ${
+                                      (imageFilters[index] || 'none') === item.key
+                                        ? 'bg-blue-500 border-blue-500 text-white shadow-sm'
+                                        : 'bg-gray-50 hover:bg-gray-100 dark:bg-zinc-800 dark:hover:bg-zinc-700/80 border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-zinc-300'
+                                    }`}
+                                  >
+                                    {item.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
 
                       {imageStats.length > 0 && imageStats.some(s => s.savedPercent > 0) && (

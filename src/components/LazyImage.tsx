@@ -108,7 +108,7 @@ export default function LazyImage({ src, alt, className, aspectRatio, ...props }
               ? 'opacity-100 blur-0 scale-100' 
               : 'opacity-0 blur-md scale-105'
           }`}
-          style={{ transitionProperty: 'opacity, filter, transform' }}
+          style={{ transitionProperty: 'opacity, filter, transform', ...props.style }}
           {...props}
         />
       )}

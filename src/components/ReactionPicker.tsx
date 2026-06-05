@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Heart, CheckCircle2, Laugh, Zap, Star, Flame, Rocket, Ghost, PartyPopper } from 'lucide-react';
+import { triggerHaptic } from '../hooks/useHaptic';
 
 export const REACTION_TYPES = [
   { id: 'heart', icon: Heart, color: 'text-red-500', bg: 'bg-red-50', label: 'Amei' },
@@ -18,10 +19,8 @@ interface ReactionPickerProps {
 
 export default function ReactionPicker({ onSelect }: ReactionPickerProps) {
   const handleSelect = (id: string) => {
-    // Haptic feedback for PWA
-    if ('vibrate' in navigator) {
-      navigator.vibrate(40);
-    }
+    // Haptic feedback using the unified utility
+    triggerHaptic('medium');
     onSelect(id);
   };
 

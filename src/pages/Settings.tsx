@@ -1,18 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Settings as SettingsIcon, ArrowLeft, Bell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { requestNotificationPermission } from '../hooks/usePushNotifications';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function Settings() {
   const navigate = useNavigate();
   const { userProfile } = useAuth();
+  const { t } = useLanguage();
   const [notificationsEnabled, setNotificationsEnabled] = useState(Notification.permission === 'granted');
 
   const toggleNotifications = async () => {
     if (notificationsEnabled) {
       // Cannot programmatically disable notifications, tell user to do it in browser settings
-      alert('Para desativar as notificações, altere as permissões nas configurações do seu navegador.');
+      alert(t('settings.notifications.alert'));
     } else {
       if (userProfile?.uid) {
         const success = await requestNotificationPermission(userProfile.uid);
@@ -31,7 +33,7 @@ export default function Settings() {
             <ArrowLeft className="w-6 h-6" />
           </button>
           <SettingsIcon className="w-6 h-6" />
-          <h1 className="text-xl font-black italic tracking-tighter">Configurações</h1>
+          <h1 className="text-xl font-black italic tracking-tighter">{t('settings.title')}</h1>
         </div>
       </div>
       <div className="p-4 space-y-4">
@@ -39,8 +41,8 @@ export default function Settings() {
           <div className="flex items-center space-x-3">
             <Bell className="w-5 h-5 text-gray-500" />
             <div>
-              <h3 className="font-black italic tracking-tighter">Notificações Push</h3>
-              <p className="text-sm text-gray-500">Receba alertas de novas atividades.</p>
+              <h3 className="font-black italic tracking-tighter">{t('settings.notifications.title')}</h3>
+              <p className="text-sm text-gray-500">{t('settings.notifications.description')}</p>
             </div>
           </div>
           <button
@@ -49,29 +51,29 @@ export default function Settings() {
               notificationsEnabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            {notificationsEnabled ? 'Ativado' : 'Ativar'}
+            {notificationsEnabled ? t('settings.notifications.enabled') : t('settings.notifications.enable')}
           </button>
         </div>
         <div 
           onClick={() => navigate('/settings/account')}
           className="p-4 bg-white rounded-xl shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors"
         >
-          <h3 className="font-black italic tracking-tighter">Sua conta</h3>
-          <p className="text-sm text-gray-500">Veja informações sobre sua conta, altere seu e-mail, senha ou nome de usuário.</p>
+          <h3 className="font-black italic tracking-tighter">{t('settings.account.title')}</h3>
+          <p className="text-sm text-gray-500">{t('settings.account.description')}</p>
         </div>
         <div 
           onClick={() => navigate('/settings/privacy')}
           className="p-4 bg-white rounded-xl shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors"
         >
-          <h3 className="font-black italic tracking-tighter">Privacidade e segurança</h3>
-          <p className="text-sm text-gray-500">Gerencie as informações que você vê e compartilha no OffMe.</p>
+          <h3 className="font-black italic tracking-tighter">{t('settings.privacy.title')}</h3>
+          <p className="text-sm text-gray-500">{t('settings.privacy.description')}</p>
         </div>
         <div 
           onClick={() => navigate('/settings/display')}
           className="p-4 bg-white rounded-xl shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors"
         >
-          <h3 className="font-black italic tracking-tighter">Acessibilidade, exibição e idiomas</h3>
-          <p className="text-sm text-gray-500">Gerencie como o conteúdo do OffMe é exibido para você.</p>
+          <h3 className="font-black italic tracking-tighter">{t('settings.display.title')}</h3>
+          <p className="text-sm text-gray-500">{t('settings.display.description')}</p>
         </div>
         <div 
           onClick={() => {
@@ -79,8 +81,8 @@ export default function Settings() {
           }}
           className="p-4 bg-white rounded-xl shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors"
         >
-          <h3 className="font-black italic tracking-tighter">Verificar atualizações</h3>
-          <p className="text-sm text-gray-500">Toque aqui para verificar se há uma nova versão do OffMe disponível.</p>
+          <h3 className="font-black italic tracking-tighter">{t('settings.updates.title')}</h3>
+          <p className="text-sm text-gray-500">{t('settings.updates.description')}</p>
         </div>
       </div>
     </div>

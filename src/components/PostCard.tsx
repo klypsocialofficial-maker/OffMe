@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { User as UserIcon, MoreHorizontal, Trash2, Edit2, Send, MessageCircle, Repeat, Heart, Ghost, VolumeX, UserX, ShieldAlert, Bookmark, BookmarkCheck, Pin, PinOff, Users, BarChart2, Gift, Lock, Music, Play, Pause, ExternalLink, Share, Shield, Crown } from 'lucide-react';
 import { formatRelativeTime } from '../lib/dateUtils';
+import { triggerHaptic } from '../hooks/useHaptic';
 import { doc, updateDoc, increment } from 'firebase/firestore';
 import VerifiedBadge from './VerifiedBadge';
 import PostContent from './PostContent';
@@ -84,9 +85,7 @@ function PostCard({
     if ((e.target as HTMLElement).closest('button, a, input, [role="button"]')) return;
 
     longPressTimerRef.current = setTimeout(() => {
-      if (typeof navigator !== 'undefined' && navigator.vibrate) {
-        navigator.vibrate(20);
-      }
+      triggerHaptic('medium');
       setFloatingMenu({ isOpen: true, x: e.clientX, y: e.clientY });
     }, 500);
   };
@@ -113,9 +112,7 @@ function PostCard({
     setShowLikeAnimation(true);
     
     // Add vibration for reaction selection
-    if (typeof navigator !== 'undefined' && navigator.vibrate) {
-      navigator.vibrate(20);
-    }
+    triggerHaptic('medium');
     
     setTimeout(() => setShowLikeAnimation(false), 1000);
   };
@@ -123,16 +120,12 @@ function PostCard({
   const handleLikePointerDown = (e: React.PointerEvent) => {
     stopPropagation(e);
     // Immediate haptic feedback that the press has started
-    if (typeof navigator !== 'undefined' && navigator.vibrate) {
-      navigator.vibrate(10);
-    }
+    triggerHaptic('selection');
     
     reactionTimerRef.current = setTimeout(() => {
       setShowReactionPicker(true);
       reactionTimerRef.current = 'PICKER_OPEN';
-      if (typeof navigator !== 'undefined' && navigator.vibrate) {
-        navigator.vibrate([50, 30, 50]);
-      }
+      triggerHaptic('warning');
     }, 300); // Reduced delay to 300ms for snappier feel
   };
 
@@ -176,9 +169,7 @@ function PostCard({
       handleSelectReaction('heart');
     } else {
       onLike(effectivePost, currentUserReaction);
-      if (typeof navigator !== 'undefined' && navigator.vibrate) {
-        navigator.vibrate(10);
-      }
+      triggerHaptic('light');
     }
   };
 
@@ -196,9 +187,7 @@ function PostCard({
     repostTimerRef.current = setTimeout(() => {
       onQuote(effectivePost);
       repostTimerRef.current = 'QUOTED';
-      if (typeof navigator !== 'undefined' && navigator.vibrate) {
-        navigator.vibrate(50);
-      }
+      triggerHaptic('heavy');
     }, 500);
   };
 
@@ -233,9 +222,7 @@ function PostCard({
       repostTimerRef.current = null;
     }
 
-    if (typeof navigator !== 'undefined' && navigator.vibrate) {
-      navigator.vibrate(15);
-    }
+    triggerHaptic('medium');
     onRepost(effectivePost);
   };
 
@@ -266,9 +253,7 @@ function PostCard({
     stopPropagation(e);
     if (!userProfile?.uid) return;
     
-    if (typeof navigator !== 'undefined' && navigator.vibrate) {
-      navigator.vibrate(15);
-    }
+    triggerHaptic('medium');
     
     try {
       if (userProfile.bookmarks?.includes(effectivePost.id)) {
@@ -694,6 +679,7 @@ function PostCard({
           imageUrls={post.imageUrls} 
           onImageClick={onImageClick} 
           altText={post.altText}
+          imageFilters={post.imageFilters}
         />
 
         {/* Shared Music */}
@@ -765,9 +751,7 @@ function PostCard({
             whileTap={{ scale: 0.9 }}
             onClick={(e) => {
               stopPropagation(e);
-              if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                navigator.vibrate(15);
-              }
+              triggerHaptic('medium');
               onReply(effectivePost);
             }}
             className="flex items-center space-x-2 group/action hover:text-blue-500 transition-colors"

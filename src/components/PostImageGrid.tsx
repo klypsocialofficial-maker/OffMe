@@ -5,12 +5,28 @@ interface PostImageGridProps {
   imageUrls: string[];
   onImageClick: (src: string, alt: string) => void;
   altText?: string;
+  imageFilters?: string[];
 }
 
-export default function PostImageGrid({ imageUrls, onImageClick, altText }: PostImageGridProps) {
+const FILTER_STYLES: Record<string, string> = {
+  none: '',
+  sepia: 'sepia(0.85)',
+  grayscale: 'grayscale(1)',
+  contrast: 'contrast(1.65)',
+  bleach: 'contrast(1.4) saturate(0.6)'
+};
+
+export default function PostImageGrid({ imageUrls, onImageClick, altText, imageFilters }: PostImageGridProps) {
   if (!imageUrls || imageUrls.length === 0) return null;
 
   const stopPropagation = (e: React.MouseEvent) => e.stopPropagation();
+
+  const getFilterStyle = (index: number) => {
+    if (!imageFilters) return undefined;
+    const filterKey = imageFilters[index];
+    if (!filterKey || filterKey === 'none') return undefined;
+    return { filter: FILTER_STYLES[filterKey] || undefined };
+  };
 
   const renderGrid = () => {
     const count = imageUrls.length;
@@ -22,6 +38,7 @@ export default function PostImageGrid({ imageUrls, onImageClick, altText }: Post
             src={imageUrls[0]}
             alt={altText || "Post attachment"}
             className="w-full h-auto max-h-[512px] min-h-[200px] cursor-pointer"
+            style={getFilterStyle(0)}
             referrerPolicy="no-referrer"
             onClick={(e) => {
               stopPropagation(e);
@@ -41,6 +58,7 @@ export default function PostImageGrid({ imageUrls, onImageClick, altText }: Post
               src={url}
               alt={`Post attachment ${index}`}
               className="w-full h-full cursor-pointer"
+              style={getFilterStyle(index)}
               referrerPolicy="no-referrer"
               onClick={(e) => {
                 stopPropagation(e);
@@ -59,6 +77,7 @@ export default function PostImageGrid({ imageUrls, onImageClick, altText }: Post
             src={imageUrls[0]}
             alt="Post attachment 0"
             className="w-full h-full cursor-pointer row-span-2"
+            style={getFilterStyle(0)}
             referrerPolicy="no-referrer"
             onClick={(e) => {
               stopPropagation(e);
@@ -69,6 +88,7 @@ export default function PostImageGrid({ imageUrls, onImageClick, altText }: Post
             src={imageUrls[1]}
             alt="Post attachment 1"
             className="w-full h-full cursor-pointer"
+            style={getFilterStyle(1)}
             referrerPolicy="no-referrer"
             onClick={(e) => {
               stopPropagation(e);
@@ -79,6 +99,7 @@ export default function PostImageGrid({ imageUrls, onImageClick, altText }: Post
             src={imageUrls[2]}
             alt="Post attachment 2"
             className="w-full h-full cursor-pointer"
+            style={getFilterStyle(2)}
             referrerPolicy="no-referrer"
             onClick={(e) => {
               stopPropagation(e);
@@ -98,6 +119,7 @@ export default function PostImageGrid({ imageUrls, onImageClick, altText }: Post
               src={url}
               alt={`Post attachment ${index}`}
               className="w-full h-full cursor-pointer"
+              style={getFilterStyle(index)}
               referrerPolicy="no-referrer"
               onClick={(e) => {
                 stopPropagation(e);

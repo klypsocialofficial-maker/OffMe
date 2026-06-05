@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { LanguageProvider } from './contexts/LanguageContext';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
 import ForgotPassword from './pages/ForgotPassword';
@@ -23,6 +24,7 @@ import Trending from './pages/Trending';
 import Premium from './pages/Premium';
 import PremiumCheckoutSimulation from './pages/PremiumCheckoutSimulation';
 import Bookmarks from './pages/Bookmarks';
+import Drafts from './pages/Drafts';
 import Communities from './pages/Communities';
 import CommunityDetail from './pages/CommunityDetail';
 import Missions from './pages/Missions';
@@ -201,56 +203,59 @@ export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
-        <Router>
-          <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/auth/action" element={<AuthAction />} />
-          <Route 
-            path="/" 
-            element={
-              <PrivateRoute>
-                <CallProvider>
-                  <CallModal />
-                  <Layout />
-                </CallProvider>
-              </PrivateRoute>
-            } 
-          >
-            <Route index element={<Home />} />
-            <Route path="explore" element={<Explore />} />
-            <Route path="notifications" element={<Notifications />} />
-            <Route path="messages" element={<Messages />} />
-            <Route path="messages/:conversationId" element={<Chat />} />
-            <Route path="profile" element={<Profile />} />
-            <Route path=":username" element={<Profile />} />
-            <Route path="creator-studio" element={<CreatorStudio />} />
-            <Route path="shop" element={<Shop />} />
-            <Route path="post/:postId" element={<PostDetail />} />
-            <Route path="trending" element={<Trending />} />
-            <Route path="premium" element={<Premium />} />
-            <Route path="premium-checkout-simulation" element={<PremiumCheckoutSimulation />} />
-            <Route path="leaderboard" element={<Leaderboard />} />
-            <Route path="bookmarks" element={<Bookmarks />} />
-            <Route path="circle" element={<Circle />} />
-            <Route path="communities" element={<Communities />} />
-            <Route path="communities/:slug" element={<CommunityDetail />} />
-            <Route path="missions" element={<Missions />} />
-            <Route path="settings" element={<Settings />} />
-            <Route path="settings/account" element={<AccountSettings />} />
-            <Route path="settings/devices" element={<ConnectedDevices />} />
-            <Route path="settings/privacy" element={<PrivacySettings />} />
-            <Route path="settings/display" element={<DisplaySettings />} />
-            <Route path="anonymous-feed" element={<AnonymousFeed />} />
-            <Route path="admin" element={<AdminPanel />} />
-          </Route>
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-        <InstallPrompt />
-        <PWABadge />
-      </Router>
+        <LanguageProvider>
+          {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
+          <Router>
+            <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<SignUp />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/auth/action" element={<AuthAction />} />
+            <Route 
+              path="/" 
+              element={
+                <PrivateRoute>
+                  <CallProvider>
+                    <CallModal />
+                    <Layout />
+                  </CallProvider>
+                </PrivateRoute>
+              } 
+            >
+              <Route index element={<Home />} />
+              <Route path="explore" element={<Explore />} />
+              <Route path="notifications" element={<Notifications />} />
+              <Route path="messages" element={<Messages />} />
+              <Route path="messages/:conversationId" element={<Chat />} />
+              <Route path="profile" element={<Profile />} />
+              <Route path=":username" element={<Profile />} />
+              <Route path="creator-studio" element={<CreatorStudio />} />
+              <Route path="shop" element={<Shop />} />
+              <Route path="post/:postId" element={<PostDetail />} />
+              <Route path="trending" element={<Trending />} />
+              <Route path="premium" element={<Premium />} />
+              <Route path="premium-checkout-simulation" element={<PremiumCheckoutSimulation />} />
+              <Route path="leaderboard" element={<Leaderboard />} />
+              <Route path="bookmarks" element={<Bookmarks />} />
+              <Route path="drafts" element={<Drafts />} />
+              <Route path="circle" element={<Circle />} />
+              <Route path="communities" element={<Communities />} />
+              <Route path="communities/:slug" element={<CommunityDetail />} />
+              <Route path="missions" element={<Missions />} />
+              <Route path="settings" element={<Settings />} />
+              <Route path="settings/account" element={<AccountSettings />} />
+              <Route path="settings/devices" element={<ConnectedDevices />} />
+              <Route path="settings/privacy" element={<PrivacySettings />} />
+              <Route path="settings/display" element={<DisplaySettings />} />
+              <Route path="anonymous-feed" element={<AnonymousFeed />} />
+              <Route path="admin" element={<AdminPanel />} />
+            </Route>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+          <InstallPrompt />
+          <PWABadge />
+        </Router>
+      </LanguageProvider>
     </AuthProvider>
   </ThemeProvider>
   );

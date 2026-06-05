@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { triggerHaptic } from '../../hooks/useHaptic';
 import { motion, AnimatePresence } from 'motion/react';
 import { LogOut, User as UserIcon, Plus } from 'lucide-react';
 import VerifiedBadge from '../VerifiedBadge';
@@ -79,7 +80,7 @@ export default function AndroidLayout({
                   <button
                     key={item.path}
                     onClick={() => {
-                      if (navigator.vibrate) navigator.vibrate(20);
+                      triggerHaptic('medium');
                       openCreateModal();
                     }}
                     className="relative -top-4 p-4 rounded-2xl bg-black text-white shadow-xl active:scale-90 transition-transform"
@@ -91,7 +92,7 @@ export default function AndroidLayout({
 
               // Double click handling for Home
               const handleHomeClick = (e: React.MouseEvent) => {
-                if (navigator.vibrate) navigator.vibrate(10);
+                triggerHaptic('light');
                 if (item.path === '/') {
                   if (homeClickTimerRef.current) {
                     // Double click

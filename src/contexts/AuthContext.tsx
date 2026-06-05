@@ -119,6 +119,7 @@ interface UserProfile {
   equippedFrame?: string;
   equippedTheme?: string;
   completedMissionIds?: string[];
+  language?: string;
   missionProgress?: Record<string, number>;
   violations?: {
     id: string;
@@ -169,7 +170,7 @@ interface AuthContextType {
   requestVerification: (reason: string, category: string, documentUrl?: string) => Promise<void>;
   trackImpression: (postId: string) => Promise<void>;
   trackProfileView: (targetUid: string) => Promise<void>;
-  sendChatMessage: (conversationId: string, text: string, imageUrl?: string, audioUrl?: string) => Promise<void>;
+  sendChatMessage: (conversationId: string, text: string, imageUrl?: string, audioUrl?: string, replyTo?: any) => Promise<void>;
   setTypingStatus: (conversationId: string, isTyping: boolean) => Promise<void>;
   purchaseItem: (itemId: string, cost: number) => Promise<void>;
   equipItem: (itemId: string, category: 'frames' | 'themes') => Promise<void>;
@@ -1091,7 +1092,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const sendChatMessage = async (conversationId: string, text: string, imageUrl?: string, audioUrl?: string) => {
+  const sendChatMessage = async (conversationId: string, text: string, imageUrl?: string, audioUrl?: string, replyTo?: any) => {
     if (!currentUser || !userProfile) throw new Error("User not authenticated");
     try {
       const convRef = doc(db, 'conversations', conversationId);
@@ -1132,7 +1133,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         imageUrl: imageUrl || null,
         audioUrl: audioUrl || null,
         createdAt: serverTimestamp(),
-        read: false
+        read: false,
+        replyTo: replyTo || null
       });
       
       const otherId = convData.participants.find((id: string) => id !== currentUser.uid);

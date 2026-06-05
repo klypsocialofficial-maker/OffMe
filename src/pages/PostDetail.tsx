@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { doc, onSnapshot, collection, query, where, orderBy, serverTimestamp, addDoc, deleteDoc, updateDoc, arrayRemove, arrayUnion, getDocs, limit, deleteField } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { User as UserIcon, ArrowLeft, MoreHorizontal, Trash2, Edit2, BarChart2, Heart, Repeat, MessageCircle, Send, Bookmark, BookmarkCheck, Ghost, Lock, Music, Play, Pause, ExternalLink, Pin, PinOff, VolumeX, UserX, Gift, ShieldAlert, Share, Flag } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
+import { User as UserIcon, ArrowLeft, MoreHorizontal, Trash2, Edit2, BarChart2, Heart, Repeat, MessageCircle, Send, Bookmark, BookmarkCheck, Ghost, Lock, Music, Play, Pause, ExternalLink, Pin, PinOff, VolumeX, UserX, Gift, ShieldAlert, Share, Flag, Clock } from 'lucide-react';
 import VerifiedBadge from '../components/VerifiedBadge';
 import PostContent from '../components/PostContent';
 import QuotedPost from '../components/QuotedPost';
@@ -11,6 +12,7 @@ import Poll from '../components/Poll';
 import ReactionPicker, { REACTION_TYPES } from '../components/ReactionPicker';
 import { motion, AnimatePresence } from 'motion/react';
 import { formatRelativeTime } from '../lib/dateUtils';
+import { triggerHaptic } from '../hooks/useHaptic';
 import { sendPushNotification } from '../lib/notifications';
 import { awardPoints } from '../services/gamificationService';
 import { getDefaultAvatar } from '../lib/avatar';
@@ -79,9 +81,17 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
   throw new Error(JSON.stringify(errInfo));
 }
 
+const calculateReadingTime = (content?: string) => {
+  if (!content) return 1;
+  const words = content.trim().split(/\s+/).filter(Boolean).length;
+  const wpm = 200;
+  return Math.max(1, Math.ceil(words / wpm));
+};
+
 export default function PostDetail() {
   const { postId } = useParams();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const { userProfile, bookmarkPost, unbookmarkPost, pinPost, unpinPost, muteUser, unmuteUser, blockUser } = useAuth();
   const [post, setPost] = useState<any>(null);
   const [parentPost, setParentPost] = useState<any>(null);
@@ -98,9 +108,7 @@ export default function PostDetail() {
       setQuotePost(postToRepost);
       setIsCreateModalOpen(true);
       repostTimerRef.current = 'QUOTED';
-      if (typeof navigator !== 'undefined' && navigator.vibrate) {
-        navigator.vibrate(50);
-      }
+      triggerHaptic('heavy');
     }, 600);
   };
 
@@ -131,9 +139,7 @@ export default function PostDetail() {
     setShowLikeAnimation(true);
     
     // Add vibration for reaction selection
-    if (typeof navigator !== 'undefined' && navigator.vibrate) {
-      navigator.vibrate(20);
-    }
+    triggerHaptic('medium');
     
     setTimeout(() => setShowLikeAnimation(false), 1000);
   };
@@ -141,16 +147,12 @@ export default function PostDetail() {
   const handleLikePointerDown = (e: React.PointerEvent) => {
     stopPropagation(e);
     // Immediate haptic feedback that the press has started
-    if (typeof navigator !== 'undefined' && navigator.vibrate) {
-      navigator.vibrate(10);
-    }
+    triggerHaptic('selection');
     
     reactionTimerRef.current = setTimeout(() => {
       setShowReactionPicker(true);
       reactionTimerRef.current = 'PICKER_OPEN';
-      if (typeof navigator !== 'undefined' && navigator.vibrate) {
-        navigator.vibrate([50, 30, 50]);
-      }
+      triggerHaptic('warning');
     }, 300); // Reduced delay to 300ms for snappier feel
   };
 
@@ -195,9 +197,7 @@ export default function PostDetail() {
       handleSelectReaction('heart');
     } else {
       handleLikePost(post, currentUserReaction);
-      if (typeof navigator !== 'undefined' && navigator.vibrate) {
-        navigator.vibrate(10);
-      }
+      triggerHaptic('light');
     }
   };
 
@@ -205,6 +205,7 @@ export default function PostDetail() {
     stopPropagation(e);
     if (!userProfile?.uid || !post) return;
     
+    triggerHaptic('medium');
     try {
       if (userProfile.bookmarks?.includes(post.id)) {
         await unbookmarkPost(post.id);
@@ -261,6 +262,35 @@ export default function PostDetail() {
     setToast({ message, type, isOpen: true });
   };
 
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollHeight = document.documentElement.scrollHeight;
+      const clientHeight = document.documentElement.clientHeight;
+      const totalHeight = scrollHeight - clientHeight;
+      if (totalHeight > 0) {
+        const progress = (window.scrollY || document.documentElement.scrollTop) / totalHeight * 100;
+        setScrollProgress(Math.min(100, Math.max(0, progress)));
+      } else {
+        setScrollProgress(0);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll, { passive: true });
+    
+    handleScroll();
+    
+    const timeoutId = setTimeout(handleScroll, 150);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+      clearTimeout(timeoutId);
+    };
+  }, [post, replies, quotes]);
+
   useEffect(() => {
     const handleClickOutside = () => {
       setActiveMenuPostId(null);
@@ -283,7 +313,13 @@ export default function PostDetail() {
       }
       setLoading(false);
     }, (error) => {
-      console.error("PostDetail unsubscribePost error: ", error);
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.toLowerCase().includes('permission') || errMsg.toLowerCase().includes('insufficient')) {
+        console.warn("PostDetail: Permission denied or insufficient permissions to view post:", postId);
+      } else {
+        console.error("PostDetail unsubscribePost error: ", error);
+      }
+      setPost(null);
       setLoading(false);
     });
 
@@ -314,7 +350,12 @@ export default function PostDetail() {
       });
       setReplies(filteredReplies);
     }, (error) => {
-      console.error("PostDetail unsubscribeReplies error: ", error);
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.toLowerCase().includes('permission') || errMsg.toLowerCase().includes('insufficient')) {
+        console.warn("PostDetail: Permission denied to access replies for post:", postId);
+      } else {
+        console.error("PostDetail unsubscribeReplies error: ", error);
+      }
     });
 
     const quotesQuery = query(
@@ -343,7 +384,12 @@ export default function PostDetail() {
       });
       setQuotes(filteredQuotes);
     }, (error) => {
-      console.error("PostDetail unsubscribeQuotes error: ", error);
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.toLowerCase().includes('permission') || errMsg.toLowerCase().includes('insufficient')) {
+        console.warn("PostDetail: Permission denied to access quotes for post:", postId);
+      } else {
+        console.error("PostDetail unsubscribeQuotes error: ", error);
+      }
     });
 
     return () => {
@@ -351,7 +397,7 @@ export default function PostDetail() {
       unsubscribeReplies();
       unsubscribeQuotes();
     };
-  }, [postId, userProfile?.mutedUsers]);
+  }, [postId, userProfile?.uid, userProfile?.mutedUsers]);
 
   // Fetch parent post if this post is a reply
   useEffect(() => {
@@ -368,7 +414,12 @@ export default function PostDetail() {
         setParentPost(null);
       }
     }, (error) => {
-      console.error("PostDetail unsubscribeParent error: ", error);
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.toLowerCase().includes('permission') || errMsg.toLowerCase().includes('insufficient')) {
+        console.warn("PostDetail: Permission denied to access parent post:", post?.replyToId);
+      } else {
+        console.error("PostDetail unsubscribeParent error: ", error);
+      }
     });
 
     return () => unsubscribeParent();
@@ -742,6 +793,15 @@ export default function PostDetail() {
             <h1 className="text-xl font-black tracking-tight">{post.authorName}</h1>
             <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">Publicação</span>
           </div>
+        </div>
+        
+        {/* Scroll Progress Bar */}
+        <div className="absolute bottom-0 left-0 w-full h-[3px] bg-transparent overflow-hidden">
+          <div 
+            id="scroll-progress-indicator"
+            className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-blue-600 transition-all duration-75 ease-out rounded-r-sm shadow-[0_1px_4px_rgba(59,130,246,0.3)]"
+            style={{ width: `${scrollProgress}%` }}
+          />
         </div>
       </div>
 
@@ -1128,13 +1188,13 @@ export default function PostDetail() {
                   </div>
                 )}
                 {post.quotedPostId && <QuotedPost post={post} />}
-                {post.imageUrls && <PostImageGrid imageUrls={post.imageUrls} onImageClick={openImageViewer} />}
+                {post.imageUrls && <PostImageGrid imageUrls={post.imageUrls} onImageClick={openImageViewer} imageFilters={post.imageFilters} />}
                 {post.poll && <Poll post={post} handleFirestoreError={handleFirestoreError} OperationType={OperationType} />}
               </div>
             )}
 
             {/* Time & Stats */}
-            <div className="py-4 border-b border-gray-100 text-[15px] text-gray-500 flex space-x-1 items-center">
+            <div className="py-4 border-b border-gray-100 text-[15px] text-gray-500 flex space-x-1.5 items-center flex-wrap gap-y-1">
               <span>{post.createdAt?.toDate ? new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(post.createdAt.toDate()) : ''}</span>
               <span>·</span>
               <span>{post.createdAt?.toDate ? new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).format(post.createdAt.toDate()) : ''}</span>
@@ -1145,6 +1205,11 @@ export default function PostDetail() {
                   <span className="text-gray-500">Visualizações</span>
                 </>
               )}
+              <span>·</span>
+              <div className="flex items-center space-x-1 text-gray-500">
+                <Clock className="w-4 h-4 text-gray-400" />
+                <span>{t('post.reading_time').replace('{time}', calculateReadingTime(post.content).toString())}</span>
+              </div>
             </div>
 
             {/* Counters */}

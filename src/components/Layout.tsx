@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { LogOut, Home as HomeIcon, Search, Bell, Mail, User as UserIcon, Bookmark, List, Zap as ZapIcon, Settings, Plus, Users, Star, ShoppingBag, Trophy, Target, Sparkles, X } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
+import { LogOut, Home as HomeIcon, Search, Bell, Mail, User as UserIcon, Bookmark, List, Zap as ZapIcon, Settings, Plus, Users, Star, ShoppingBag, Trophy, Target, Sparkles, X, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import VerifiedBadge from './VerifiedBadge';
 import CreatePostModal from './CreatePostModal';
@@ -10,6 +11,7 @@ import ConfirmModal from './ConfirmModal';
 import ImageViewer from './ImageViewer';
 import RightSidebar from './RightSidebar';
 import PermissionPrompt from './PermissionPrompt';
+import Toast from './Toast';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 
@@ -46,6 +48,7 @@ import ProfileQuickModal from './ProfileQuickModal';
 export default function Layout() {
   const { userProfile, logout } = useAuth();
   const { theme, setTheme } = useTheme();
+  const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const { platform, isIOS, isAndroid, isDesktop } = usePlatform();
@@ -60,22 +63,27 @@ export default function Layout() {
   }, [userProfile?.equippedTheme, theme, setTheme]);
   
   const navItems = [
-    { path: '/', icon: HomeIcon, label: 'Início' },
-    { path: '/explore', icon: Search, label: 'Explorar' },
-    { path: `/${userProfile?.username || 'profile'}`, icon: UserIcon, label: 'Perfil', isProfile: true },
-    { path: '#create', icon: Plus, label: 'Postar', isAction: true },
-    { path: '/notifications', icon: Bell, label: 'Notificações' },
-    { path: '/messages', icon: Mail, label: 'Mensagens' },
-    { path: '/communities', icon: Users, label: 'Comunidades' },
-    { path: '/creator-studio', icon: Star, label: 'Criação' },
-    { path: '/missions', icon: ZapIcon, label: 'Missões' },
-    { path: '/shop', icon: ShoppingBag, label: 'Loja' },
-    { path: '/premium', icon: Star, label: 'Premium' },
-    { path: '/bookmarks', icon: Bookmark, label: 'Itens salvos' },
-    { path: '/circle', icon: Users, label: 'Círculo' },
-    { path: '/settings', icon: Settings, label: 'Configurações' },
+    { path: '/', icon: HomeIcon, label: t('nav.home') },
+    { path: '/explore', icon: Search, label: t('nav.explore') },
+    { path: `/${userProfile?.username || 'profile'}`, icon: UserIcon, label: t('nav.profile'), isProfile: true },
+    { path: '#create', icon: Plus, label: t('nav.post'), isAction: true },
+    { path: '/notifications', icon: Bell, label: t('nav.notifications') },
+    { path: '/messages', icon: Mail, label: t('nav.messages') },
+    { path: '/communities', icon: Users, label: t('nav.communities') },
+    { path: '/creator-studio', icon: Star, label: t('nav.creation') },
+    { path: '/missions', icon: ZapIcon, label: t('nav.missions') },
+    { path: '/shop', icon: ShoppingBag, label: t('nav.shop') },
+    { path: '/premium', icon: Star, label: t('nav.premium') },
+    { path: '/bookmarks', icon: Bookmark, label: t('nav.bookmarks') },
+    { path: '/drafts', icon: FileText, label: t('nav.drafts') || 'Rascunhos' },
+    { path: '/circle', icon: Users, label: t('nav.circle') },
+    { path: '/settings', icon: Settings, label: t('nav.settings') },
   ];
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'info' | 'error'>('info');
+  const [isToastOpen, setIsToastOpen] = useState(false);
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -257,6 +265,48 @@ export default function Layout() {
     }
   }, [unreadNotificationsCount, unreadMessagesCount]);
 
+  // Offline status and sync events listeners
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    const handleSynced = (e: any) => {
+      const count = e.detail?.count || 1;
+      setToastMessage(count === 1 
+        ? "Seu rascunho offline foi publicado com sucesso!" 
+        : `Seus ${count} rascunhos offline foram publicados com sucesso!`);
+      setToastType('success');
+      setIsToastOpen(true);
+    };
+
+    const handleOfflineSaved = () => {
+      setToastMessage('Você está offline. O seu post foi salvo nos rascunhos e será enviado automaticamente assim que a conexão voltar!');
+      setToastType('info');
+      setIsToastOpen(true);
+    };
+
+    const handleDraftSaved = () => {
+      setToastMessage('Rascunho salvo com sucesso na aba de rascunhos!');
+      setToastType('success');
+      setIsToastOpen(true);
+    };
+
+    window.addEventListener('applet:drafts-synced', handleSynced);
+    window.addEventListener('applet:offline-post-saved', handleOfflineSaved);
+    window.addEventListener('applet:draft-saved-manually', handleDraftSaved);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('applet:drafts-synced', handleSynced);
+      window.removeEventListener('applet:offline-post-saved', handleOfflineSaved);
+      window.removeEventListener('applet:draft-saved-manually', handleDraftSaved);
+    };
+  }, []);
+
   const openDrawer = () => setIsDrawerOpen(true);
   const closeDrawer = () => setIsDrawerOpen(false);
 
@@ -339,11 +389,29 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen text-gray-900 flex justify-center relative bg-white transition-colors duration-500 overflow-x-clip">
+      {!isOnline && (
+        <motion.div 
+          initial={{ opacity: 0, y: -50 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="fixed top-0 left-0 right-0 z-[1000] bg-gradient-to-r from-amber-500 to-orange-600 text-white text-center py-2 px-4 font-bold text-xs tracking-wider shadow-lg flex items-center justify-center space-x-2 border-b border-amber-400"
+        >
+          <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" />
+          <span>Você está no modo offline. Mostrando conteúdo salvo localmente.</span>
+        </motion.div>
+      )}
+      
       {/* Decorative background blobs - reduced opacity for light mode */}
       <div className="fixed top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-blue-400/5 blur-[120px] pointer-events-none animate-pulse" />
       <div className="fixed bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-purple-400/5 blur-[120px] pointer-events-none animate-pulse" style={{ animationDelay: '2s' }} />
       
       {renderLayout()}
+
+      <Toast 
+        message={toastMessage} 
+        type={toastType} 
+        isOpen={isToastOpen} 
+        onClose={() => setIsToastOpen(false)} 
+      />
 
       <CreatePostModal 
         isOpen={isCreateModalOpen} 

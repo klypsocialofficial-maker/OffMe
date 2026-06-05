@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore, initializeFirestore } from 'firebase/firestore';
+import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getMessaging, isSupported } from 'firebase/messaging';
 
@@ -17,14 +17,17 @@ try {
   app = initializeApp(firebaseConfig);
   auth = getAuth(app);
   
+  const cacheConfig = {
+    localCache: persistentLocalCache({
+      tabManager: persistentMultipleTabManager()
+    }),
+    experimentalAutoDetectLongPolling: true,
+  };
+
   if (firebaseConfig.firestoreDatabaseId) {
-    db = initializeFirestore(app, {
-      experimentalAutoDetectLongPolling: true,
-    }, firebaseConfig.firestoreDatabaseId);
+    db = initializeFirestore(app, cacheConfig, firebaseConfig.firestoreDatabaseId);
   } else {
-    db = initializeFirestore(app, {
-      experimentalAutoDetectLongPolling: true,
-    });
+    db = initializeFirestore(app, cacheConfig);
   }
   
   storage = getStorage(app);

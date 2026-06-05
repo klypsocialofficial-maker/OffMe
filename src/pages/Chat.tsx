@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, Image as ImageIcon, User as UserIcon, Trash2, Check, CheckCheck, Mic, Flame, X, Smile, Sticker as StickerIcon, Phone, Video } from 'lucide-react';
+import { ArrowLeft, Send, Image as ImageIcon, User as UserIcon, Trash2, Check, CheckCheck, Mic, Flame, X, Smile, Sticker as StickerIcon, Phone, Video, CornerUpLeft } from 'lucide-react';
+import { triggerHaptic } from '../hooks/useHaptic';
 import { sendPushNotification } from '../lib/notifications';
 import VerifiedBadge from '../components/VerifiedBadge';
 import LazyImage from '../components/LazyImage';
@@ -68,6 +69,215 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
   throw new Error(JSON.stringify(errInfo));
 }
 
+interface SwipeableMessageBubbleProps {
+  msg: any;
+  isMine: boolean;
+  showAvatar: boolean;
+  isSelected: boolean;
+  otherParticipantInfo: any;
+  userProfile: any;
+  onSelect: (msgId: string | null) => void;
+  onSwipeToReply: (msg: any) => void;
+  onDeleteInitiate: (msgId: string) => void;
+  navigate: (path: string) => void;
+}
+
+function SwipeableMessageBubble({
+  msg,
+  isMine,
+  showAvatar,
+  isSelected,
+  otherParticipantInfo,
+  userProfile,
+  onSelect,
+  onSwipeToReply,
+  onDeleteInitiate,
+  navigate,
+}: SwipeableMessageBubbleProps) {
+  const [dragOffset, setDragOffset] = useState(0);
+  const [isThresholdPassed, setIsThresholdPassed] = useState(false);
+  const hasVibrated = useRef(false);
+
+  return (
+    <div 
+      id={`msg-${msg.id}`} 
+      className={`flex flex-col w-full transition-all duration-300 origin-center ${isMine ? 'items-end' : 'items-start'}`}
+    >
+      <div className={`flex w-full relative ${isMine ? 'justify-end' : 'justify-start'}`}>
+        {!isMine && (
+          <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 mr-2 self-end mb-1">
+            {showAvatar ? (
+              otherParticipantInfo?.photoURL ? (
+                <LazyImage src={otherParticipantInfo.photoURL} alt={otherParticipantInfo.displayName} className="w-full h-full" />
+              ) : (
+                <LazyImage src={getDefaultAvatar(otherParticipantInfo?.displayName || 'Usuário', otherParticipantInfo?.username || '')} alt={otherParticipantInfo?.displayName} className="w-full h-full" />
+              )
+            ) : (
+              <div className="w-8 h-8" />
+            )}
+          </div>
+        )}
+
+        <div className={`relative ${isMine ? 'ml-auto' : ''} max-w-[75%]`}>
+          {/* Underlay Swipe to Reply Indicator */}
+          {!msg.isDeleted && (
+            <div 
+              className="absolute top-1/2 -translate-y-1/2 pointer-events-none flex items-center justify-center transition-all duration-100"
+              style={{
+                left: '-40px',
+                opacity: Math.max(0, Math.min(1, (dragOffset - 15) / 35)),
+                transform: `scale(${Math.max(0.6, Math.min(1.2, dragOffset / 50))}) translateY(-50%)`,
+                zIndex: 0
+              }}
+            >
+              <div className={`p-1.5 rounded-full transition-colors ${isThresholdPassed ? 'bg-blue-500 text-white shadow-md' : 'bg-gray-100 dark:bg-zinc-800 text-gray-400'}`}>
+                <CornerUpLeft className="w-4 h-4" />
+              </div>
+            </div>
+          )}
+
+          <motion.div
+            drag={!msg.isDeleted ? "x" : false}
+            dragConstraints={{ left: 0, right: 100 }}
+            dragElastic={{ left: 0.1, right: 0.3 }}
+            dragSnapToOrigin={true}
+            onDragStart={() => {
+              hasVibrated.current = false;
+            }}
+            onDrag={(event, info) => {
+              const xValue = info.offset.x;
+              setDragOffset(xValue);
+              if (xValue > 50) {
+                if (!hasVibrated.current) {
+                  triggerHaptic('light');
+                  hasVibrated.current = true;
+                }
+                setIsThresholdPassed(true);
+              } else {
+                setIsThresholdPassed(false);
+                if (xValue < 30) {
+                  hasVibrated.current = false;
+                }
+              }
+            }}
+            onDragEnd={(event, info) => {
+              setDragOffset(0);
+              setIsThresholdPassed(false);
+              hasVibrated.current = false;
+              if (info.offset.x > 50) {
+                triggerHaptic('medium');
+                onSwipeToReply(msg);
+              }
+            }}
+            onClick={(e) => {
+              if (isMine && !msg.isDeleted) {
+                e.stopPropagation();
+                onSelect(isSelected ? null : msg.id);
+              }
+            }}
+            className={`w-full rounded-2xl cursor-pointer transition-all ${
+              msg.imageUrl && !msg.text 
+                ? 'p-0 bg-transparent'
+                : 'px-4 py-2 ' + (
+                    isMine 
+                      ? msg.isDeleted 
+                        ? 'bg-gray-100 text-gray-400 italic rounded-br-sm border border-gray-200'
+                        : 'bg-blue-500 text-white rounded-br-sm hover:bg-blue-600 shadow-sm' 
+                      : msg.isDeleted
+                        ? 'bg-gray-50 text-gray-400 italic rounded-bl-sm border border-gray-100'
+                        : 'bg-gray-100 text-black rounded-bl-sm shadow-xs'
+                  )
+            } ${isSelected ? 'ring-2 ring-blue-300 ring-offset-2' : ''}`}
+          >
+            {/* Threaded / Replied-To message body in message bubble */}
+            {!msg.isDeleted && msg.replyTo && (
+              <div 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const parentMsgId = msg.replyTo.id;
+                  const targetElement = document.getElementById(`msg-${parentMsgId}`);
+                  if (targetElement) {
+                    targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // momentarily flash highlight
+                    targetElement.classList.add('bg-blue-50', 'dark:bg-blue-950/40', 'scale-[1.02]', 'ring-2', 'ring-blue-400/20');
+                    setTimeout(() => {
+                      targetElement.classList.remove('bg-blue-50', 'dark:bg-blue-950/40', 'scale-[1.02]', 'ring-2', 'ring-blue-400/20');
+                    }, 1200);
+                  }
+                }}
+                className={`mb-2 p-2 rounded-xl text-left border-l-4 cursor-pointer text-xs flex flex-col space-y-0.5 max-w-full overflow-hidden transition-opacity hover:opacity-90 ${
+                  isMine 
+                    ? 'bg-blue-600/30 border-blue-200 text-blue-100' 
+                    : 'bg-gray-200/60 border-gray-400 text-gray-600 dark:text-gray-300'
+                }`}
+              >
+                <span className="font-extrabold text-[10px] uppercase tracking-wider opacity-90">
+                  {msg.replyTo.senderName || 'Usuário'}
+                </span>
+                <span className="truncate max-w-full opacity-80 font-medium">
+                  {msg.replyTo.imageUrl && !msg.replyTo.text ? '📷 Foto' : msg.replyTo.audioUrl ? '🎤 Áudio' : msg.replyTo.text}
+                </span>
+              </div>
+            )}
+
+            {msg.imageUrl && (
+              <div className={`${msg.text ? 'mb-2' : ''} max-w-full overflow-hidden rounded-2xl`}>
+                 <LazyImage src={msg.imageUrl} alt="Mídia" className={`w-full object-cover max-h-80 ${msg.text ? 'rounded-xl' : 'rounded-2xl shadow-sm'}`} />
+              </div>
+            )}
+            {msg.audioUrl && (
+              <div className="py-1 min-w-[200px]">
+                <audio src={msg.audioUrl} controls className={`w-full max-h-10 ${isMine ? 'brightness-125 saturate-150' : ''}`} />
+              </div>
+            )}
+            {msg.text && (
+              msg.postId ? (
+                <div className="space-y-2 cursor-pointer" onClick={() => navigate(`/post/${msg.postId}`)}>
+                    <p className={`text-xs font-bold opacity-80 underline ${isMine ? 'text-blue-100' : 'text-blue-600'}`}>Post compartilhado</p>
+                    <p className="break-words text-sm font-medium">{msg.text || 'Clique para ver o post'}</p>
+                </div>
+              ) : (
+                <p className="break-words text-sm font-medium">{msg.text}</p>
+              )
+            )}
+            {isMine && !msg.isDeleted && (
+              <div className={`flex justify-end mt-1 items-center space-x-1 ${msg.imageUrl && !msg.text ? 'bg-black/20 backdrop-blur-md px-2 py-0.5 rounded-full absolute bottom-2 right-2' : ''}`}>
+                <span className="text-[10px] opacity-70">
+                  {msg.createdAt?.toDate ? new Date(msg.createdAt.toDate()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                </span>
+                {msg.read ? (
+                  <CheckCheck className={`w-3 h-3 ${msg.imageUrl && !msg.text ? 'text-white' : 'text-blue-200'}`} />
+                ) : (
+                  <Check className={`w-3 h-3 ${msg.imageUrl && !msg.text ? 'text-white' : 'text-blue-100'}`} />
+                )}
+              </div>
+            )}
+          </motion.div>
+        </div>
+      </div>
+
+      {isSelected && isMine && !msg.isDeleted && (
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-1 flex items-center space-x-2"
+        >
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              onDeleteInitiate(msg.id);
+            }}
+            className="flex items-center space-x-1 text-xs text-red-500 font-semibold bg-red-50 hover:bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-950/40 px-3 py-1 rounded-full transition-all border border-red-100/10"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Apagar para todos</span>
+          </button>
+        </motion.div>
+      )}
+    </div>
+  );
+}
+
 export default function Chat() {
   const { conversationId } = useParams();
   const navigate = useNavigate();
@@ -81,6 +291,7 @@ export default function Chat() {
   const [isTyping, setIsTyping] = useState(false);
   const [otherUserTyping, setOtherUserTyping] = useState(false);
   const [deleteConfirmModal, setDeleteConfirmModal] = useState<{ isOpen: boolean, messageId: string }>({ isOpen: false, messageId: '' });
+  const [replyingTo, setReplyingTo] = useState<any | null>(null);
   
   // Media states
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -307,8 +518,23 @@ export default function Chat() {
          finalMediaUrl = await uploadToImgBB(selectedImage);
       }
       
-      await sendChatMessage(conversationId, messageText, finalMediaUrl || undefined);
+      let replyPayload = null;
+      if (replyingTo) {
+        const isMine = replyingTo.senderId === userProfile?.uid;
+        const senderName = isMine ? 'Você' : (otherParticipantInfo?.displayName || 'Usuário');
+        replyPayload = {
+          id: replyingTo.id,
+          text: replyingTo.text || '',
+          senderId: replyingTo.senderId,
+          imageUrl: replyingTo.imageUrl || null,
+          audioUrl: replyingTo.audioUrl || null,
+          senderName: senderName
+        };
+      }
       
+      await sendChatMessage(conversationId, messageText, finalMediaUrl || undefined, undefined, replyPayload || null);
+      
+      setReplyingTo(null);
       setSelectedImage(null);
       setImagePreview(null);
       setShowGifPicker(false);
@@ -437,96 +663,18 @@ export default function Chat() {
               {showDate && (
                   <div className="text-center text-xs text-gray-400 py-2 font-medium">{msgDate}</div>
               )}
-              <div className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}>
-                <div className={`flex w-full ${isMine ? 'justify-end' : 'justify-start'}`}>
-                  {!isMine && (
-                    <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 mr-2 self-end mb-1">
-                      {showAvatar ? (
-                        otherParticipantInfo?.photoURL ? (
-                          <LazyImage src={otherParticipantInfo.photoURL} alt={otherParticipantInfo.displayName} className="w-full h-full" />
-                        ) : (
-                          <LazyImage src={getDefaultAvatar(otherParticipantInfo?.displayName || 'Usuário', otherParticipantInfo?.username || '')} alt={otherParticipantInfo?.displayName} className="w-full h-full" />
-                        )
-                      ) : (
-                        <div className="w-8 h-8" />
-                      )}
-                    </div>
-                  )}
-                  <div 
-                    onClick={(e) => {
-                      if (isMine && !msg.isDeleted) {
-                        e.stopPropagation();
-                        setSelectedMessageId(isSelected ? null : msg.id);
-                      }
-                    }}
-                    className={`max-w-[75%] rounded-2xl cursor-pointer transition-all ${
-                      msg.imageUrl && !msg.text 
-                        ? 'p-0 bg-transparent'
-                        : 'px-4 py-2 ' + (
-                            isMine 
-                              ? msg.isDeleted 
-                                ? 'bg-gray-100 text-gray-400 italic rounded-br-sm border border-gray-200'
-                                : 'bg-blue-500 text-white rounded-br-sm hover:bg-blue-600' 
-                              : msg.isDeleted
-                                ? 'bg-gray-50 text-gray-400 italic rounded-bl-sm border border-gray-100'
-                                : 'bg-gray-100 text-black rounded-bl-sm'
-                          )
-                    } ${isSelected ? 'ring-2 ring-blue-300 ring-offset-2' : ''}`}
-                  >
-                    {msg.imageUrl && (
-                      <div className={`${msg.text ? 'mb-2' : ''} max-w-full overflow-hidden rounded-2xl`}>
-                         <LazyImage src={msg.imageUrl} alt="Mídia" className={`w-full object-cover max-h-80 ${msg.text ? 'rounded-xl' : 'rounded-2xl shadow-sm'}`} />
-                      </div>
-                    )}
-                    {msg.audioUrl && (
-                      <div className="py-1 min-w-[200px]">
-                        <audio src={msg.audioUrl} controls className={`w-full max-h-10 ${isMine ? 'brightness-125 saturate-150' : ''}`} />
-                      </div>
-                    )}
-                    {msg.text && (
-                      msg.postId ? (
-                        <div className="space-y-2 cursor-pointer" onClick={() => navigate(`/post/${msg.postId}`)}>
-                            <p className="text-xs font-bold opacity-80 underline">Post compartilhado</p>
-                            <p className="break-words text-sm font-medium">{msg.text || 'Clique para ver o post'}</p>
-                        </div>
-                      ) : (
-                        <p className="break-words text-sm">{msg.text}</p>
-                      )
-                    )}
-                    {isMine && !msg.isDeleted && (
-                      <div className={`flex justify-end mt-1 items-center space-x-1 ${msg.imageUrl && !msg.text ? 'bg-black/20 backdrop-blur-md px-2 py-0.5 rounded-full absolute bottom-2 right-2' : ''}`}>
-                        <span className="text-[10px] opacity-70">
-                          {msg.createdAt?.toDate ? new Date(msg.createdAt.toDate()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
-                        </span>
-                        {msg.read ? (
-                          <CheckCheck className={`w-3 h-3 ${msg.imageUrl && !msg.text ? 'text-white' : 'text-blue-200'}`} />
-                        ) : (
-                          <Check className={`w-3 h-3 ${msg.imageUrl && !msg.text ? 'text-white' : 'text-blue-100'}`} />
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                {isSelected && isMine && !msg.isDeleted && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mt-1 flex items-center space-x-2"
-                  >
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeleteConfirmModal({ isOpen: true, messageId: msg.id });
-                      }}
-                      className="flex items-center space-x-1 text-xs text-red-500 font-medium hover:bg-red-50 px-2 py-1 rounded-full transition-colors"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                      <span>Apagar para todos</span>
-                    </button>
-                  </motion.div>
-                )}
-              </div>
+              <SwipeableMessageBubble
+                msg={msg}
+                isMine={isMine}
+                showAvatar={showAvatar}
+                isSelected={isSelected}
+                otherParticipantInfo={otherParticipantInfo}
+                userProfile={userProfile}
+                onSelect={setSelectedMessageId}
+                onSwipeToReply={setReplyingTo}
+                onDeleteInitiate={(msgId) => setDeleteConfirmModal({ isOpen: true, messageId: msgId })}
+                navigate={(path) => navigate(path)}
+              />
             </React.Fragment>
           );
         })}
@@ -558,6 +706,38 @@ export default function Chat() {
           accept="image/*" 
           onChange={handleImageChange}
         />
+
+        <AnimatePresence>
+          {replyingTo && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="bg-sky-50 dark:bg-sky-950/20 p-3 mb-2 rounded-2xl border border-sky-100 dark:border-sky-900/10 flex items-center justify-between"
+            >
+              <div className="flex items-center space-x-2 text-left min-w-0 pr-4">
+                <div className="pl-2 border-l-2 border-sky-400">
+                  <p className="text-xs font-black text-sky-600 dark:text-sky-400 flex items-center space-x-1">
+                    <CornerUpLeft className="w-3.5 h-3.5 mr-0.5" />
+                    <span>Respondendo a {replyingTo.senderId === userProfile?.uid ? 'Você' : (otherParticipantInfo?.displayName || 'Usuário')}</span>
+                  </p>
+                  <p className="text-xs text-sky-700/80 dark:text-sky-300/80 truncate font-semibold">
+                    {replyingTo.imageUrl && !replyingTo.text ? '📷 Foto' : replyingTo.audioUrl ? '🎤 Áudio' : replyingTo.text}
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => {
+                  triggerHaptic('light');
+                  setReplyingTo(null);
+                }}
+                className="p-1.5 hover:bg-sky-100 dark:hover:bg-sky-900/50 rounded-full transition-colors text-sky-500 hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <AnimatePresence>
           {imagePreview && (
