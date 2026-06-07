@@ -10,6 +10,7 @@ import PostCard from '../components/PostCard';
 import { useAuth } from '../contexts/AuthContext';
 import { useOutletContext, Link, useNavigate, useLocation } from 'react-router-dom';
 import { getDefaultAvatar } from '../lib/avatar';
+import { deletePostAndRelationships } from '../lib/postUtils';
 import { collection, query, where, onSnapshot, limit, addDoc, serverTimestamp, getDocs, doc, updateDoc, arrayUnion, arrayRemove, orderBy, getDoc, deleteDoc, deleteField } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { rankSuggestedUsers } from '../lib/gemini';
@@ -136,7 +137,7 @@ export default function Explore() {
   const handleDeletePost = async (postId: string) => {
     if (!db || !userProfile) return;
     try {
-      await deleteDoc(doc(db, 'posts', postId));
+      await deletePostAndRelationships(postId);
       showToast('Post apagado com sucesso', 'success');
       // Update local results
       setPostsResults(prev => prev.filter(p => p.id !== postId));

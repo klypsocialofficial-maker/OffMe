@@ -7,6 +7,7 @@ import PostCard from '../components/PostCard';
 import PostSkeleton from '../components/PostSkeleton';
 import { useAuth } from '../contexts/AuthContext';
 import Toast from '../components/Toast';
+import { deletePostAndRelationships } from '../lib/postUtils';
 
 export default function AnonymousFeed() {
   const navigate = useNavigate();
@@ -55,7 +56,7 @@ export default function AnonymousFeed() {
   const handleDeletePost = async (postId: string) => {
     if (!db || !userProfile) return;
     try {
-      await deleteDoc(doc(db, 'posts', postId));
+      await deletePostAndRelationships(postId);
       showToast('Post apagado com sucesso', 'success');
     } catch (error) {
       console.error("Error deleting anonymous post:", error);

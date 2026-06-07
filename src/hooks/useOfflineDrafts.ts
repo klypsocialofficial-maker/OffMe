@@ -25,6 +25,8 @@ export interface OfflineDraft {
     authorUsername: string;
     authorVerified: boolean;
     threadId: string | null;
+    authorId: string | null;
+    threadAuthorId: string | null;
   } | null;
   quotePost?: {
     id: string;
@@ -148,6 +150,8 @@ export function useOfflineDrafts() {
         authorUsername: replyTo.authorUsername || '',
         authorVerified: replyTo.authorVerified || false,
         threadId: replyTo.threadId || null,
+        authorId: replyTo.authorId || null,
+        threadAuthorId: replyTo.threadAuthorId || replyTo.authorId || null,
       } : null,
       quotePost: quotePost ? {
         id: quotePost.id,
@@ -256,7 +260,9 @@ export function useOfflineDrafts() {
           replyToId: draft.replyTo?.id || null,
           replyToUsername: draft.replyTo?.authorUsername || null,
           replyToVerified: draft.replyTo?.authorVerified || false,
+          replyToAuthorId: draft.replyTo?.authorId || null,
           threadId: draft.replyTo?.threadId || draft.replyTo?.id || null,
+          threadAuthorId: draft.replyTo?.threadAuthorId || draft.replyTo?.authorId || null,
           quotedPostId: draft.quotePost?.id || null,
           quotedPostContent: draft.quotePost?.content || null,
           quotedPostAuthor: draft.quotePost?.authorName || null,

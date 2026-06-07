@@ -19,6 +19,7 @@ import UserListModal from '../components/UserListModal';
 import { handleMentions, sendPushNotification } from '../lib/notifications';
 import { awardPoints } from '../services/gamificationService';
 import { getDefaultAvatar } from '../lib/avatar';
+import { deletePostAndRelationships } from '../lib/postUtils';
 import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, arrayRemove, arrayUnion, addDoc, serverTimestamp, deleteDoc, getDocs, limit } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { motion, AnimatePresence } from 'motion/react';
@@ -664,7 +665,7 @@ export default function Profile() {
   const handleDeletePost = async (postId: string) => {
     if (!db || !userProfile?.uid) return;
     try {
-      await deleteDoc(doc(db, 'posts', postId));
+      await deletePostAndRelationships(postId);
       setPosts(prev => prev.filter(p => p.id !== postId));
       setActiveMenuPostId(null);
       showToast('Post apagado com sucesso', 'success');

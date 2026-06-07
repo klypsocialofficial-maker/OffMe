@@ -95,7 +95,12 @@ service cloud.firestore {
                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isFlagged', 'flaggedAt', 'flaggedBy', 'flaggedReason'])
                       ));
         
-        allow delete: if isDocOwner() || isAdmin();
+        allow delete: if isDocOwner() || isAdmin() ||
+                      (isAuthenticated() && (
+                        (resource.data.get('type', '') == 'repost' && resource.data.get('originalPostAuthorId', '') == request.auth.uid) ||
+                        (resource.data.get('replyToAuthorId', '') == request.auth.uid) ||
+                        (resource.data.get('threadAuthorId', '') == request.auth.uid)
+                      ));
       }
     }
 

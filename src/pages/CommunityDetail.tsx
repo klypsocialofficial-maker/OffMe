@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { collection, query, where, orderBy, onSnapshot, getDocs, doc, updateDoc, arrayUnion, arrayRemove, limit, addDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { deletePostAndRelationships } from '../lib/postUtils';
 import PostCard from '../components/PostCard';
 import CreatePostModal from '../components/CreatePostModal';
 import LazyImage from '../components/LazyImage';
@@ -146,7 +147,7 @@ export default function CommunityDetail() {
   const handleDeletePost = async (postId: string) => {
     if (!db || !userProfile) return;
     try {
-      await deleteDoc(doc(db, 'posts', postId));
+      await deletePostAndRelationships(postId);
       showToast('Post apagado com sucesso', 'success');
     } catch (error) {
       console.error("Error deleting post:", error);

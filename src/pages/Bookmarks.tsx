@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { awardPoints } from '../services/gamificationService';
 import { sendPushNotification } from '../lib/notifications';
 import Toast from '../components/Toast';
+import { deletePostAndRelationships } from '../lib/postUtils';
 import ConfirmModal from '../components/ConfirmModal';
 import SharePostModal from '../components/SharePostModal';
 import ImageViewer from '../components/ImageViewer';
@@ -93,7 +94,7 @@ export default function Bookmarks() {
   const handleDeletePost = async (postId: string) => {
     if (!db || !userProfile) return;
     try {
-      await deleteDoc(doc(db, 'posts', postId));
+      await deletePostAndRelationships(postId);
     } catch (error) {
       console.error("Error deleting post:", error);
     }

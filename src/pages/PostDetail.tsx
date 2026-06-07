@@ -16,6 +16,7 @@ import { triggerHaptic } from '../hooks/useHaptic';
 import { sendPushNotification } from '../lib/notifications';
 import { awardPoints } from '../services/gamificationService';
 import { getDefaultAvatar } from '../lib/avatar';
+import { deletePostAndRelationships } from '../lib/postUtils';
 import CreatePostModal from '../components/CreatePostModal';
 import SharePostModal from '../components/SharePostModal';
 import ShareViaDMModal from '../components/ShareViaDMModal';
@@ -536,7 +537,7 @@ export default function PostDetail() {
       message: 'Tem certeza que deseja apagar este post? Esta ação não pode ser desfeita.',
       onConfirm: async () => {
         try {
-          await deleteDoc(doc(db, 'posts', id));
+          await deletePostAndRelationships(id);
           if (id === postId) {
             navigate('/', { replace: true });
           }

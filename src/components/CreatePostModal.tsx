@@ -494,6 +494,7 @@ export default function CreatePostModal({
       let currentReplyToUsername = replyTo?.authorUsername || null;
       let currentReplyToVerified = replyTo?.authorVerified || replyTo?.authorUsername === 'Rulio' || false;
       const mainThreadId = replyTo?.threadId || replyTo?.id || null;
+      const mainThreadAuthorId = replyTo?.threadAuthorId || replyTo?.authorId || null;
       
       // Process sequentially
       for (const [index, postItem] of allPostsToPublish.entries()) {
@@ -539,7 +540,9 @@ export default function CreatePostModal({
           replyToId: currentReplyToId,
           replyToUsername: currentReplyToUsername,
           replyToVerified: currentReplyToVerified,
+          replyToAuthorId: replyTo?.authorId || null,
           threadId: mainThreadId,
+          threadAuthorId: mainThreadAuthorId,
           // Only the first post in the thread can have the quote or poll logic (to avoid duplicating it)
           quotedPostId: index === allPostsToPublish.length - 1 ? (quotePost?.id || null) : null,
           quotedPostContent: index === allPostsToPublish.length - 1 ? (quotePost?.content || null) : null,

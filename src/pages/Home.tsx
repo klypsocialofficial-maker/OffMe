@@ -23,6 +23,7 @@ import PullToRefresh from '../components/PullToRefresh';
 import { motion, AnimatePresence } from 'motion/react';
 import { formatRelativeTime } from '../lib/dateUtils';
 import { getDefaultAvatar } from '../lib/avatar';
+import { deletePostAndRelationships } from '../lib/postUtils';
 
 enum OperationType {
   CREATE = 'create',
@@ -412,7 +413,7 @@ export default function Home() {
   const handleDeletePost = async (postId: string) => {
     if (!db || !userProfile) return;
     try {
-      await deleteDoc(doc(db, 'posts', postId));
+      await deletePostAndRelationships(postId);
       // Displayed posts will automatically update from onSnapshot
       setActiveMenuPostId(null);
       showToast('Post apagado com sucesso', 'success');
