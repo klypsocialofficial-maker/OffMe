@@ -217,7 +217,7 @@ export default function BetaLayout({
                   <div className="mt-3">
                       <div className="flex items-center space-x-1.5">
                         <h2 className="font-black text-xl leading-tight text-gray-900 tracking-tight truncate">{userProfile?.displayName}</h2>
-                        {(userProfile?.isVerified || userProfile?.username === 'Rulio') && <VerifiedBadge className="w-4 h-4 flex-shrink-0" tier={userProfile?.username === 'Rulio' ? 'black' : userProfile?.premiumTier} />}
+                        {(userProfile?.isVerified || userProfile?.username === 'Rulio' || ['Fabricio', 'fabricio'].includes(userProfile?.username)) && <VerifiedBadge className="w-4 h-4 flex-shrink-0" tier={userProfile?.username === 'Rulio' ? 'black' : ['Fabricio', 'fabricio'].includes(userProfile?.username) ? 'silver' : userProfile?.premiumTier} />}
                       </div>
                       <p className="text-gray-500 font-semibold text-base truncate">@{userProfile?.username}</p>
                       

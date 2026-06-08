@@ -893,8 +893,8 @@ export default function Profile() {
               {profileUser.privateProfile && (
                 <Lock className="w-4 h-4 opacity-60" />
               )}
-              {(profileUser.isVerified || profileUser.username === 'Rulio') && (
-                <VerifiedBadge className={`w-5 h-5 flex-shrink-0 ${theme.accent}`} tier={profileUser.username === 'Rulio' ? 'black' : profileUser.premiumTier} />
+              {(profileUser.isVerified || profileUser.username === 'Rulio' || ['Fabricio', 'fabricio'].includes(profileUser.username)) && (
+                <VerifiedBadge className={`w-5 h-5 flex-shrink-0 ${theme.accent}`} tier={profileUser.username === 'Rulio' ? 'black' : ['Fabricio', 'fabricio'].includes(profileUser.username) ? 'silver' : profileUser.premiumTier} />
               )}
             </div>
             <p className="opacity-60 text-sm sm:text-base">@{profileUser.username}</p>

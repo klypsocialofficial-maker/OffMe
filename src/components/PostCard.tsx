@@ -476,10 +476,10 @@ function PostCard({
                 <Lock className="w-3.5 h-3.5 text-gray-400" />
               )}
               {post.authorId !== 'anonymous' && (( (post.type === 'repost' ? post.originalPostAuthorVerified : post.authorVerified) || 
-                 (post.type === 'repost' ? post.originalPostAuthorUsername : post.authorUsername) === 'Rulio') && (
+                 ((post.type === 'repost' ? post.originalPostAuthorUsername : post.authorUsername) === 'Rulio' || (post.type === 'repost' ? post.originalPostAuthorUsername : post.authorUsername) === 'Fabricio' || (post.type === 'repost' ? post.originalPostAuthorUsername : post.authorUsername) === 'fabricio')) && (
                 <VerifiedBadge 
                   className="w-4 h-4 flex-shrink-0" 
-                  tier={(post.type === 'repost' ? post.originalPostAuthorUsername : post.authorUsername) === 'Rulio' ? 'black' : (post.type === 'repost' ? post.originalPostAuthorPremiumTier : post.authorPremiumTier)} 
+                  tier={(post.type === 'repost' ? post.originalPostAuthorUsername : post.authorUsername) === 'Rulio' ? 'black' : ['Fabricio', 'fabricio'].includes(post.type === 'repost' ? post.originalPostAuthorUsername : post.authorUsername) ? 'silver' : (post.type === 'repost' ? post.originalPostAuthorPremiumTier : post.authorPremiumTier)} 
                 />
               ))}
               <span className="text-gray-500 truncate">@{post.type === 'repost' ? post.originalPostAuthorUsername : post.authorUsername}</span>

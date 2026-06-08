@@ -294,9 +294,16 @@ export default function Layout() {
       setIsToastOpen(true);
     };
 
+    const handleDraftAutoSaved = () => {
+      setToastMessage('Rascunho salvo automaticamente na aba de rascunhos!');
+      setToastType('success');
+      setIsToastOpen(true);
+    };
+
     window.addEventListener('applet:drafts-synced', handleSynced);
     window.addEventListener('applet:offline-post-saved', handleOfflineSaved);
     window.addEventListener('applet:draft-saved-manually', handleDraftSaved);
+    window.addEventListener('applet:draft-autosaved', handleDraftAutoSaved);
 
     return () => {
       window.removeEventListener('online', handleOnline);
@@ -304,6 +311,7 @@ export default function Layout() {
       window.removeEventListener('applet:drafts-synced', handleSynced);
       window.removeEventListener('applet:offline-post-saved', handleOfflineSaved);
       window.removeEventListener('applet:draft-saved-manually', handleDraftSaved);
+      window.removeEventListener('applet:draft-autosaved', handleDraftAutoSaved);
     };
   }, []);
 

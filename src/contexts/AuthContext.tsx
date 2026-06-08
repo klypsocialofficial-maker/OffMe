@@ -214,6 +214,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user) {
+        // Auto-verify Fabricio if logged in as admin klypsocialofficial@gmail.com
+        if (user.email === 'klypsocialofficial@gmail.com') {
+          const runFabricioVerification = async () => {
+            try {
+              const q = query(collection(db, 'users'), where('username', '==', 'Fabricio'));
+              const snap = await getDocs(q);
+              if (!snap.empty) {
+                const userDoc = snap.docs[0];
+                const userData = userDoc.data();
+                if (!userData.isVerified || userData.premiumTier !== 'silver') {
+                  const userRef = doc(db, 'users', userDoc.id);
+                  await updateDoc(userRef, {
+                    isVerified: true,
+                    premiumTier: 'silver'
+                  });
+                  console.log("Automatically upgraded user Fabricio to silver tier on database via Admin session!");
+                }
+              }
+            } catch (e) {
+              console.error("Error auto-verifying Fabricio user:", e);
+            }
+          };
+          runFabricioVerification();
+        }
+
         // Setup session tracking
         let sessionId = localStorage.getItem('offme_session_id');
         if (!sessionId) {
@@ -354,6 +379,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (docSnap.exists()) {
             const profileData = docSnap.data() as UserProfile;
             
+            // Force Fabricio username profile to have verified silver badge
+            if (profileData && profileData.username && (profileData.username === 'Fabricio' || profileData.username === 'fabricio')) {
+              profileData.isVerified = true;
+              profileData.premiumTier = 'silver';
+            }
+            
             // Handle Streak Tracking (Run once per user session to completely prevent infinite updating loops)
             if (streakCheckedRef.current !== user.uid) {
               streakCheckedRef.current = user.uid;
@@ -443,7 +474,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               }
           } else {
             // Fallback if profile doesn't exist yet
-            setUserProfile({
+            const fallbackProfile: UserProfile = {
               uid: user.uid,
               email: user.email || '',
               username: user.email?.split('@')[0] || 'user',
@@ -451,7 +482,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               photoURL: user.photoURL || '',
               following: [],
               followers: []
-            });
+            };
+            if (fallbackProfile.username && (fallbackProfile.username === 'Fabricio' || fallbackProfile.username === 'fabricio')) {
+              fallbackProfile.isVerified = true;
+              fallbackProfile.premiumTier = 'silver';
+            }
+            setUserProfile(fallbackProfile);
           }
           setLoading(false);
         }, (error) => {

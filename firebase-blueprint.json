@@ -268,9 +268,50 @@
         "isCurrent": { "type": "boolean", "description": "Whether this is the current active browser session." }
       },
       "required": ["id", "browser", "os", "ip", "location"]
+    },
+    "UserDraft": {
+      "title": "UserDraft",
+      "description": "A draft created by a user to be synced across multiple devices.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The unique ID of the draft." },
+        "userId": { "type": "string", "description": "The UID of the user who owns the draft." },
+        "content": { "type": "string", "description": "The draft text content." },
+        "isAnonymous": { "type": "boolean", "description": "Whether this draft will be sent anonymously." },
+        "postAudience": { "type": "string", "description": "Target audience ('public' or 'circle')." },
+        "gifUrl": { "type": "string", "description": "An optional GIF URL." },
+        "images": {
+          "type": "array",
+          "items": { "type": "object" },
+          "description": "Array of base64-encoded image files."
+        },
+        "showPoll": { "type": "boolean", "description": "Whether a poll was created in this draft." },
+        "pollOptions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Array of strings representing user poll choices."
+        },
+        "altText": { "type": "string", "description": "Optional alt text for images." },
+        "createdAt": { "type": "timestamp", "description": "The time this draft was created/modified." },
+        "communityId": { "type": "string", "description": "Optional community ID associated with the draft." },
+        "communityName": { "type": "string", "description": "Optional community name associated with the draft." },
+        "replyTo": {
+          "type": "object",
+          "description": "In reply to details if this draft is a response."
+        },
+        "quotePost": {
+          "type": "object",
+          "description": "Quoted post details if this draft quotes another post."
+        }
+      },
+      "required": ["id", "userId", "content", "isAnonymous", "postAudience", "createdAt"]
     }
   },
   "firestore": {
+    "/userDrafts/{draftId}": {
+      "schema": { "$ref": "#/entities/UserDraft" },
+      "description": "Stores user draft documents for multi-device synchronization."
+    },
     "/users/{userId}": {
       "schema": { "$ref": "#/entities/User" },
       "description": "Stores user profiles."

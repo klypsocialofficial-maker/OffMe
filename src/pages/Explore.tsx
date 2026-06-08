@@ -844,8 +844,8 @@ export default function Explore() {
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center space-x-1">
                               <p className="font-bold text-black truncate">{user.displayName}</p>
-                              {(user.isVerified || user.username === 'Rulio') && (
-                                <VerifiedBadge tier={user.username === 'Rulio' ? 'black' : user.premiumTier} className="flex-shrink-0" />
+                              {(user.isVerified || user.username === 'Rulio' || ['Fabricio', 'fabricio'].includes(user.username)) && (
+                                <VerifiedBadge tier={user.username === 'Rulio' ? 'black' : ['Fabricio', 'fabricio'].includes(user.username) ? 'silver' : user.premiumTier} className="flex-shrink-0" />
                               )}
                             </div>
                             <p className="text-gray-500 text-sm truncate">@{user.username}</p>
@@ -1045,8 +1045,8 @@ export default function Explore() {
                                 <div className="min-w-0 w-full mb-3 flex-1 flex flex-col items-center justify-center">
                                   <div className="flex items-center justify-center space-x-1 w-full relative">
                                     <p className="font-bold text-black truncate text-sm max-w-full leading-tight">{user.displayName}</p>
-                                    {(user.isVerified || user.username === 'Rulio') && (
-                                      <VerifiedBadge tier={user.username === 'Rulio' ? 'black' : user.premiumTier} className="w-3 h-3 flex-shrink-0" />
+                                    {(user.isVerified || user.username === 'Rulio' || ['Fabricio', 'fabricio'].includes(user.username)) && (
+                                      <VerifiedBadge tier={user.username === 'Rulio' ? 'black' : ['Fabricio', 'fabricio'].includes(user.username) ? 'silver' : user.premiumTier} className="w-3 h-3 flex-shrink-0" />
                                     )}
                                   </div>
                                   <p className="text-gray-500 text-[10px] truncate w-full">@{user.username}</p>

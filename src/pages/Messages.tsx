@@ -233,7 +233,7 @@ export default function Messages() {
                             <p className={`font-bold text-black truncate ${conversation.unreadCount?.[userProfile?.uid] ? 'font-black' : ''}`}>
                               {otherParticipantInfo?.displayName || 'Usuário'}
                             </p>
-                            {(otherParticipantInfo?.isVerified || otherParticipantInfo?.username === 'Rulio') && <VerifiedBadge tier={otherParticipantInfo?.username === 'Rulio' ? 'black' : otherParticipantInfo?.premiumTier} />}
+                            {(otherParticipantInfo?.isVerified || otherParticipantInfo?.username === 'Rulio' || ['Fabricio', 'fabricio'].includes(otherParticipantInfo?.username)) && <VerifiedBadge tier={otherParticipantInfo?.username === 'Rulio' ? 'black' : ['Fabricio', 'fabricio'].includes(otherParticipantInfo?.username) ? 'silver' : otherParticipantInfo?.premiumTier} />}
                             {conversation.streakCount > 0 && (
                               <div className="flex items-center space-x-0.5 ml-1 bg-gradient-to-r from-orange-50 to-amber-50 px-1.5 py-0.5 rounded-full border border-orange-100 shadow-sm animate-pulse-slow">
                                 <Flame className="w-3 h-3 text-orange-500 fill-current" />

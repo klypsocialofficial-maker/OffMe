@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User as UserIcon, Image as ImageIcon, X, BarChart2, Film, Ghost, Clock, Users, Plus, Calendar, Music } from 'lucide-react';
+import { User as UserIcon, Image as ImageIcon, X, BarChart2, Film, Ghost, Clock, Users, Plus, Calendar, Music, Sparkles } from 'lucide-react';
 import { addDoc, collection, serverTimestamp, doc, updateDoc, increment, query, where, getDocs, Timestamp, limit } from 'firebase/firestore';
 import { db } from '../firebase';
 import { uploadToImgBB, optimizeImage } from '../lib/imgbb';
@@ -107,6 +107,104 @@ export default function CreatePostModal({
 
   // Draft autosave states and helpers
   const [isDraftLoaded, setIsDraftLoaded] = useState(false);
+  const [showRestoredMessage, setShowRestoredMessage] = useState(false);
+
+  // Automatically hide the "restored" message after 5 seconds
+  useEffect(() => {
+    if (showRestoredMessage) {
+      const timer = setTimeout(() => {
+        setShowRestoredMessage(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [showRestoredMessage]);
+
+  // Synchronous refs to prevent stale closures during navigation/unmounting auto-saves
+  const contentRef = useRef(content);
+  const isAnonymousRef = useRef(isAnonymous);
+  const postAudienceRef = useRef(postAudience);
+  const imageFilesRef = useRef(imageFiles);
+  const pollOptionsRef = useRef(pollOptions);
+  const showPollRef = useRef(showPoll);
+  const gifUrlRef = useRef(gifUrl);
+  const altTextRef = useRef(altText);
+  const isDraftLoadedRef = useRef(isDraftLoaded);
+  const hasSubmittedOrSaved = useRef(false);
+
+  useEffect(() => { contentRef.current = content; }, [content]);
+  useEffect(() => { isAnonymousRef.current = isAnonymous; }, [isAnonymous]);
+  useEffect(() => { postAudienceRef.current = postAudience; }, [postAudience]);
+  useEffect(() => { imageFilesRef.current = imageFiles; }, [imageFiles]);
+  useEffect(() => { pollOptionsRef.current = pollOptions; }, [pollOptions]);
+  useEffect(() => { showPollRef.current = showPoll; }, [showPoll]);
+  useEffect(() => { gifUrlRef.current = gifUrl; }, [gifUrl]);
+  useEffect(() => { altTextRef.current = altText; }, [altText]);
+  useEffect(() => { isDraftLoadedRef.current = isDraftLoaded; }, [isDraftLoaded]);
+
+  const autoSaveDraftIfNeeded = async () => {
+    if (hasSubmittedOrSaved.current || !isDraftLoadedRef.current) return;
+
+    const currentContent = contentRef.current;
+    const currentGifUrl = gifUrlRef.current;
+    const currentShowPoll = showPollRef.current;
+    const currentImageFiles = imageFilesRef.current;
+
+    const hasAnyContent = currentContent.trim() || currentGifUrl || currentShowPoll || (currentImageFiles && currentImageFiles.length > 0);
+
+    if (!hasAnyContent) return;
+
+    hasSubmittedOrSaved.current = true;
+
+    try {
+      const validPollOptions = pollOptionsRef.current.filter(opt => opt.trim() !== '');
+      const hasValidPoll = currentShowPoll && validPollOptions.length >= 2;
+
+      await addDraft(
+        currentContent,
+        isAnonymousRef.current,
+        postAudienceRef.current,
+        currentImageFiles,
+        validPollOptions,
+        hasValidPoll,
+        currentGifUrl,
+        altTextRef.current,
+        replyTo,
+        quotePost,
+        communityId,
+        communityName
+      );
+
+      const composerKey = getDraftKey();
+      localStorage.removeItem(composerKey);
+
+      setContent('');
+      setImageFiles([]);
+      setImagePreviews([]);
+      setImageFilters([]);
+      setGifUrl(null);
+      setThreadPosts([]);
+      setShowPoll(false);
+      setPollOptions(['', '']);
+      setAltText('');
+
+      window.dispatchEvent(new CustomEvent('applet:draft-autosaved'));
+    } catch (err) {
+      console.error("Auto-save draft failed:", err);
+    }
+  };
+
+  // Run autoSaveDraftIfNeeded on unmount (navigating away) and when isOpen changes to false
+  useEffect(() => {
+    return () => {
+      autoSaveDraftIfNeeded();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) {
+      autoSaveDraftIfNeeded();
+    }
+  }, [isOpen]);
 
   const getDraftKey = () => {
     if (replyTo) {
@@ -136,6 +234,7 @@ export default function CreatePostModal({
   // Load draft when modal is opened
   useEffect(() => {
     if (isOpen) {
+      hasSubmittedOrSaved.current = false;
       const key = getDraftKey();
       const savedDraft = localStorage.getItem(key);
       if (savedDraft) {
@@ -167,6 +266,12 @@ export default function CreatePostModal({
             setImagePreviews([]);
             setImageFilters([]);
           }
+
+          // Check if restored draft has actual content to show a helpful indicator/alert
+          const hasContent = (parsed.content || '').trim() || parsed.gifUrl || parsed.showPoll || (parsed.images && parsed.images.length > 0);
+          if (hasContent) {
+            setShowRestoredMessage(true);
+          }
         } catch (e) {
           console.error('Error parsing draft:', e);
           setIsAnonymous(isAnonymousDefault || !userProfile);
@@ -182,10 +287,12 @@ export default function CreatePostModal({
         setImageFiles([]);
         setImagePreviews([]);
         setImageFilters([]);
+        setShowRestoredMessage(false);
       }
       setIsDraftLoaded(true);
     } else {
       setIsDraftLoaded(false);
+      setShowRestoredMessage(false);
     }
   }, [isOpen, replyTo, quotePost, communityId, isAnonymousDefault, userProfile]);
 
@@ -462,6 +569,7 @@ export default function CreatePostModal({
         setAltText('');
         
         triggerHaptic('success');
+        hasSubmittedOrSaved.current = true;
         window.dispatchEvent(new CustomEvent('applet:offline-post-saved'));
         onClose();
         return;
@@ -624,6 +732,7 @@ export default function CreatePostModal({
       setShowPoll(false);
       setPollOptions(['', '']);
       triggerHaptic('success');
+      hasSubmittedOrSaved.current = true;
       onClose();
     } catch (error: any) {
       console.error("Erro ao postar:", error);
@@ -747,6 +856,7 @@ export default function CreatePostModal({
                       setAltText('');
                       
                       triggerHaptic('success');
+                      hasSubmittedOrSaved.current = true;
                       window.dispatchEvent(new CustomEvent('applet:draft-saved-manually'));
                       onClose();
                     } catch (err: any) {
@@ -773,6 +883,33 @@ export default function CreatePostModal({
 
             {/* Body */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <AnimatePresence>
+                {showRestoredMessage && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0, y: -10 }}
+                    animate={{ opacity: 1, height: 'auto', y: 0 }}
+                    exit={{ opacity: 0, height: 0, y: -10 }}
+                    className="flex items-start justify-between p-3.5 bg-sky-50 dark:bg-zinc-850 border border-sky-100 dark:border-zinc-700/60 rounded-2xl text-xs text-sky-850 dark:text-sky-200 transition-all shadow-sm z-20 mb-2"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="p-1.5 bg-sky-500/10 text-sky-600 dark:text-sky-400 rounded-xl flex-shrink-0">
+                        <Sparkles className="w-4 h-4 animate-pulse text-sky-500" />
+                      </div>
+                      <div className="pr-2">
+                        <span className="font-extrabold block text-gray-950 dark:text-gray-50">Rascunho restaurado!</span>
+                        <span className="text-[11px] text-gray-500 dark:text-zinc-400">Recuperamos o seu conteúdo de rascunho anterior de forma segura.</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowRestoredMessage(false)}
+                      className="p-1 px-2.5 text-[10px] font-bold text-sky-700 dark:text-sky-400 hover:bg-sky-100 dark:hover:bg-zinc-700/50 rounded-lg transition-colors border border-sky-200 dark:border-zinc-600/50 flex-shrink-0 cursor-pointer"
+                    >
+                      Ok
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               {replyTo && (
                 <div className="flex space-x-3 p-3 bg-gray-50 rounded-2xl border border-gray-100">
                   <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">

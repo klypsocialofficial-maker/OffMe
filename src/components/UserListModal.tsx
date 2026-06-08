@@ -158,7 +158,7 @@ export default function UserListModal({ isOpen, onClose, title, uids, isBlockedL
                           <div className="flex items-center space-x-1">
                             <p className="font-bold text-gray-900 truncate group-hover:underline">{user.displayName}</p>
                             {user.privateProfile && <Lock className="w-3 h-3 text-gray-400" />}
-                            {(user.isVerified || user.username === 'Rulio') && <VerifiedBadge className="w-4 h-4" tier={user.username === 'Rulio' ? 'black' : user.premiumTier} />}
+                            {(user.isVerified || user.username === 'Rulio' || ['Fabricio', 'fabricio'].includes(user.username)) && <VerifiedBadge className="w-4 h-4" tier={user.username === 'Rulio' ? 'black' : ['Fabricio', 'fabricio'].includes(user.username) ? 'silver' : user.premiumTier} />}
                           </div>
                           <p className="text-gray-500 text-sm truncate">@{user.username}</p>
                           {user.bio && <p className="text-gray-600 text-xs mt-0.5 truncate max-w-[200px]">{user.bio}</p>}

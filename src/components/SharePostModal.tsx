@@ -123,8 +123,8 @@ export default function SharePostModal({ isOpen, onClose, post }: SharePostModal
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center space-x-1">
                           <div className="font-bold text-gray-900 leading-tight truncate">{post.authorName}</div>
-                          {(post.authorVerified || post.authorUsername === 'Rulio') && (
-                            <VerifiedBadge className="w-4 h-4 flex-shrink-0" tier={post.authorUsername === 'Rulio' ? 'black' : post.authorPremiumTier} />
+                          {(post.authorVerified || post.authorUsername === 'Rulio' || ['Fabricio', 'fabricio'].includes(post.authorUsername)) && (
+                            <VerifiedBadge className="w-4 h-4 flex-shrink-0" tier={post.authorUsername === 'Rulio' ? 'black' : ['Fabricio', 'fabricio'].includes(post.authorUsername) ? 'silver' : post.authorPremiumTier} />
                           )}
                         </div>
                         <div className="text-gray-500 text-sm truncate">@{post.authorUsername}</div>

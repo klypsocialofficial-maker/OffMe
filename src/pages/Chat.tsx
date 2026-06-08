@@ -597,7 +597,7 @@ export default function Chat() {
               <div>
                 <div className="flex items-center space-x-1">
                   <h2 className="font-bold leading-tight">{otherParticipantInfo?.displayName || 'Usuário'}</h2>
-                  {(otherParticipantInfo?.isVerified || otherParticipantInfo?.username === 'Rulio') && <VerifiedBadge tier={otherParticipantInfo?.username === 'Rulio' ? 'black' : otherParticipantInfo?.premiumTier} />}
+                  {(otherParticipantInfo?.isVerified || otherParticipantInfo?.username === 'Rulio' || ['Fabricio', 'fabricio'].includes(otherParticipantInfo?.username)) && <VerifiedBadge tier={otherParticipantInfo?.username === 'Rulio' ? 'black' : ['Fabricio', 'fabricio'].includes(otherParticipantInfo?.username) ? 'silver' : otherParticipantInfo?.premiumTier} />}
                   {conversation?.streakCount > 0 && (
                     <div className="flex items-center space-x-0.5 ml-1 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100">
                       <Flame className="w-3 h-3 text-orange-500 fill-current" />

@@ -50,8 +50,8 @@ export default function QuotedPost({ post }: QuotedPostProps) {
   const displayContent = quotedData?.content || post.quotedPostContent;
   const displayUsername = quotedData?.authorUsername;
   const displayPhoto = quotedData?.authorPhoto;
-  const displayVerified = quotedData?.authorVerified || displayUsername === 'Rulio';
-  const displayVerifiedTier = displayUsername === 'Rulio' ? 'black' : quotedData?.authorPremiumTier;
+  const displayVerified = quotedData?.authorVerified || displayUsername === 'Rulio' || ['Fabricio', 'fabricio'].includes(displayUsername);
+  const displayVerifiedTier = displayUsername === 'Rulio' ? 'black' : ['Fabricio', 'fabricio'].includes(displayUsername) ? 'silver' : quotedData?.authorPremiumTier;
   const displayImages = quotedData?.imageUrls || [];
 
   return (

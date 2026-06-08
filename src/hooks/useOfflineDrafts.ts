@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, setDoc, deleteDoc, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth, handleFirestoreError, OperationType } from '../contexts/AuthContext';
 import { uploadToImgBB } from '../lib/imgbb';
 import { awardPoints } from '../services/gamificationService';
 import { handleMentions, notifyFollowers } from '../lib/notifications';
@@ -63,6 +63,10 @@ export function useOfflineDrafts() {
   const [drafts, setDrafts] = useState<OfflineDraft[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isCloudSyncing, setIsCloudSyncing] = useState(false);
+  const [isCloudSyncEnabled, setIsCloudSyncEnabled] = useState<boolean>(() => {
+    return localStorage.getItem('klyp_cloud_drafts_sync_enabled') === 'true';
+  });
 
   // Load from LocalStorage
   const loadDrafts = useCallback(() => {
@@ -106,6 +110,115 @@ export function useOfflineDrafts() {
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
+  // Synchronize drafts with userDrafts collection in Firestore
+  const performCloudSync = useCallback(async () => {
+    if (!navigator.onLine || !db || !userProfile?.uid) return;
+    
+    setIsCloudSyncing(true);
+    try {
+      // 1. Fetch remote user drafts
+      const q = query(
+        collection(db, 'userDrafts'),
+        where('userId', '==', userProfile.uid)
+      );
+      
+      const querySnapshot = await getDocs(q).catch((err) => {
+        handleFirestoreError(err, OperationType.LIST, 'userDrafts');
+        throw err;
+      });
+
+      const cloudDrafts: OfflineDraft[] = [];
+      querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        cloudDrafts.push({
+          id: docSnap.id,
+          content: data.content || '',
+          isAnonymous: data.isAnonymous || false,
+          postAudience: data.postAudience || 'public',
+          gifUrl: data.gifUrl || null,
+          images: data.images || [],
+          showPoll: data.showPoll || false,
+          pollOptions: data.pollOptions || [],
+          altText: data.altText || '',
+          createdAt: data.createdAt || new Date().toISOString(),
+          communityId: data.communityId || null,
+          communityName: data.communityName || null,
+          replyTo: data.replyTo || null,
+          quotePost: data.quotePost || null
+        });
+      });
+
+      // 2. Load local drafts
+      const stored = localStorage.getItem('klyp_offline_drafts_v1');
+      let localDrafts: OfflineDraft[] = [];
+      if (stored) {
+        try {
+          localDrafts = JSON.parse(stored);
+        } catch (e) {
+          console.error('Error parsing local drafts:', e);
+        }
+      }
+
+      // 3. Merging
+      const mergedMap = new Map<string, OfflineDraft>();
+      localDrafts.forEach(d => mergedMap.set(d.id, d));
+      cloudDrafts.forEach(cd => {
+        const existing = mergedMap.get(cd.id);
+        if (!existing) {
+          mergedMap.set(cd.id, cd);
+        } else {
+          // Keep the latest one based on createdAt
+          const localTime = new Date(existing.createdAt).getTime();
+          const cloudTime = new Date(cd.createdAt).getTime();
+          if (cloudTime > localTime) {
+            mergedMap.set(cd.id, cd);
+          }
+        }
+      });
+
+      const mergedList = Array.from(mergedMap.values()).sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+
+      // Save merged list locally
+      localStorage.setItem('klyp_offline_drafts_v1', JSON.stringify(mergedList));
+      setDrafts(mergedList);
+
+      // 4. Update cloud with any drafts that were only local
+      const cloudIds = new Set(cloudDrafts.map(d => d.id));
+      for (const draft of mergedList) {
+        if (!cloudIds.has(draft.id)) {
+          await setDoc(doc(db, 'userDrafts', draft.id), {
+            ...draft,
+            userId: userProfile.uid,
+          }).catch((err) => {
+            handleFirestoreError(err, OperationType.WRITE, `userDrafts/${draft.id}`);
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Cloud draft sync error:", err);
+    } finally {
+      setIsCloudSyncing(false);
+    }
+  }, [userProfile?.uid]);
+
+  const toggleCloudSync = useCallback(async (enabled: boolean) => {
+    setIsCloudSyncEnabled(enabled);
+    localStorage.setItem('klyp_cloud_drafts_sync_enabled', enabled ? 'true' : 'false');
+    triggerHaptic('selection');
+    if (enabled && userProfile?.uid) {
+      await performCloudSync();
+    }
+  }, [userProfile?.uid, performCloudSync]);
+
+  // Sync on mount or when userProfile/online changes
+  useEffect(() => {
+    if (isCloudSyncEnabled && userProfile?.uid && isOnline) {
+      performCloudSync();
+    }
+  }, [isCloudSyncEnabled, userProfile?.uid, isOnline, performCloudSync]);
 
   // Add draft
   const addDraft = useCallback(async (
@@ -167,18 +280,41 @@ export function useOfflineDrafts() {
       return updated;
     });
 
+    if (isCloudSyncEnabled && userProfile?.uid && navigator.onLine && db) {
+      try {
+        await setDoc(doc(db, 'userDrafts', newDraft.id), {
+          ...newDraft,
+          userId: userProfile.uid,
+        }).catch((err) => {
+          handleFirestoreError(err, OperationType.WRITE, `userDrafts/${newDraft.id}`);
+        });
+      } catch (err) {
+        console.error("Failed to sync new draft to Firestore:", err);
+      }
+    }
+
     return newDraft;
-  }, []);
+  }, [isCloudSyncEnabled, userProfile?.uid]);
 
   // Delete Draft
-  const deleteDraft = useCallback((id: string) => {
+  const deleteDraft = useCallback(async (id: string) => {
     triggerHaptic('light');
     setDrafts((prev) => {
       const updated = prev.filter((d) => d.id !== id);
       localStorage.setItem('klyp_offline_drafts_v1', JSON.stringify(updated));
       return updated;
     });
-  }, []);
+
+    if (isCloudSyncEnabled && userProfile?.uid && navigator.onLine && db) {
+      try {
+        await deleteDoc(doc(db, 'userDrafts', id)).catch((err) => {
+          handleFirestoreError(err, OperationType.DELETE, `userDrafts/${id}`);
+        });
+      } catch (err) {
+        console.error("Failed to delete draft from Firestore:", err);
+      }
+    }
+  }, [isCloudSyncEnabled, userProfile?.uid]);
 
   // Sync / Upload pending drafts to Firestore
   const syncDrafts = useCallback(async () => {
@@ -353,5 +489,9 @@ export function useOfflineDrafts() {
     syncDrafts,
     isSyncing,
     isOnline,
+    isCloudSyncEnabled,
+    isCloudSyncing,
+    toggleCloudSync,
+    performCloudSync,
   };
 }

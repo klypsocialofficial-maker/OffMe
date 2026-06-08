@@ -216,7 +216,7 @@ export default function Notifications() {
         ) : (
           (() => {
             let filtered = activeTab === 'verified' 
-              ? notifications.filter(n => n.senderVerified || n.senderUsername === 'Rulio') 
+              ? notifications.filter(n => n.senderVerified || n.senderUsername === 'Rulio' || ['Fabricio', 'fabricio'].includes(n.senderUsername)) 
               : notifications;
             
             // Filter out notifications from muted users
@@ -305,7 +305,7 @@ export default function Notifications() {
                               >
                                 {notification.senderName}
                               </span>
-                              {(notification.senderVerified || notification.senderUsername === 'Rulio') && <VerifiedBadge tier={notification.senderUsername === 'Rulio' ? 'black' : notification.senderPremiumTier} className="w-3.5 h-3.5" />}
+                              {(notification.senderVerified || notification.senderUsername === 'Rulio' || ['Fabricio', 'fabricio'].includes(notification.senderUsername)) && <VerifiedBadge tier={notification.senderUsername === 'Rulio' ? 'black' : ['Fabricio', 'fabricio'].includes(notification.senderUsername) ? 'silver' : notification.senderPremiumTier} className="w-3.5 h-3.5" />}
                               <span className="text-gray-600 font-medium">
                                 {notification.type === 'like' && 'curtiu seu post'}
                                 {notification.type === 'follow' && 'começou a seguir você'}

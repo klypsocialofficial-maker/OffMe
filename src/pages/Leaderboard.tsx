@@ -137,7 +137,7 @@ export default function Leaderboard() {
                   <div className="flex-grow min-w-0">
                     <div className="flex items-center space-x-1">
                       <p className="font-bold truncate text-sm">{user.displayName}</p>
-                      {(user.isVerified || user.username === 'Rulio') && <VerifiedBadge tier={user.username === 'Rulio' ? 'black' : user.premiumTier} />}
+                      {(user.isVerified || user.username === 'Rulio' || ['Fabricio', 'fabricio'].includes(user.username)) && <VerifiedBadge tier={user.username === 'Rulio' ? 'black' : ['Fabricio', 'fabricio'].includes(user.username) ? 'silver' : user.premiumTier} />}
                     </div>
                     <div className="flex items-center space-x-2 text-[10px] text-gray-500 font-bold uppercase tracking-widest">
                       <span>Nível {Math.floor(Math.sqrt((user.points || 0) / 100)) + 1}</span>

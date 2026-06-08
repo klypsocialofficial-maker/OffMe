@@ -278,7 +278,7 @@ export default function RightSidebar() {
                   <div className="min-w-0">
                     <div className="flex items-center space-x-1">
                       <p className="font-bold text-sm truncate group-hover:underline">{user.displayName}</p>
-                      {(user.isVerified || user.username === 'Rulio') && <VerifiedBadge className="w-3 h-3" tier={user.username === 'Rulio' ? 'black' : user.premiumTier} />}
+                      {(user.isVerified || user.username === 'Rulio' || ['Fabricio', 'fabricio'].includes(user.username)) && <VerifiedBadge className="w-3 h-3" tier={user.username === 'Rulio' ? 'black' : ['Fabricio', 'fabricio'].includes(user.username) ? 'silver' : user.premiumTier} />}
                     </div>
                     <p className="text-gray-500 text-xs truncate">@{user.username}</p>
                   </div>

@@ -1,15 +1,27 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, Trash2, Edit3, Send, ArrowLeft, Plus, Wifi, WifiOff, Loader2 } from 'lucide-react';
+import { FileText, Trash2, Edit3, Send, ArrowLeft, Plus, Wifi, WifiOff, Loader2, Cloud, CloudOff, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useOfflineDrafts, OfflineDraft } from '../hooks/useOfflineDrafts';
 import { triggerHaptic } from '../hooks/useHaptic';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Drafts() {
   const navigate = useNavigate();
   const { t } = useLanguage();
-  const { drafts, deleteDraft, syncDrafts, isSyncing, isOnline } = useOfflineDrafts();
+  const { userProfile } = useAuth();
+  const { 
+    drafts, 
+    deleteDraft, 
+    syncDrafts, 
+    isSyncing, 
+    isOnline,
+    isCloudSyncEnabled,
+    isCloudSyncing,
+    toggleCloudSync,
+    performCloudSync
+  } = useOfflineDrafts();
   const [syncingId, setSyncingId] = useState<string | null>(null);
 
   const handleEditDraft = (draft: OfflineDraft) => {
@@ -124,6 +136,71 @@ export default function Drafts() {
             </span>
           )}
         </div>
+      </div>
+
+      {/* Cloud Sync Controller Banner */}
+      <div className="max-w-2xl mx-auto px-4 mt-3">
+        {!userProfile ? (
+          <div className="p-4 rounded-3xl border border-dashed border-gray-200 dark:border-zinc-850 bg-white/50 dark:bg-zinc-900/20 text-center flex flex-col items-center justify-center space-y-2">
+            <div className="flex items-center space-x-2 text-zinc-400 dark:text-zinc-500">
+              <CloudOff className="w-5 h-5" />
+              <span className="font-bold text-sm">Sincronização na Nuvem Indisponível</span>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-zinc-400 max-w-md">
+              Faça login em sua conta para ativar a sincronização na nuvem e poder acessar seus rascunhos em qualquer outro dispositivo.
+            </p>
+          </div>
+        ) : (
+          <div className="p-4 rounded-3xl border border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-sm">
+            <div className="flex items-start space-x-3">
+              <div className={`p-2.5 rounded-2xl ${isCloudSyncEnabled ? 'bg-blue-50 text-blue-500 dark:bg-blue-950/40 dark:text-blue-400' : 'bg-gray-100 text-gray-400 dark:bg-zinc-800 dark:text-zinc-500'} transition-colors`}>
+                <Cloud className="w-5 h-5 animate-pulse" />
+              </div>
+              <div className="space-y-0.5">
+                <h2 className="text-sm font-black text-gray-900 dark:text-white flex items-center gap-1.5">
+                  Sincronização na nuvem
+                  {isCloudSyncEnabled && (
+                    <span className="inline-flex h-2 w-2 rounded-full bg-green-500 animate-ping" />
+                  )}
+                </h2>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">
+                  Backup e sincronização em tempo real das mensagens e mídias rascunhadas.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-3 self-end md:self-center">
+              {isCloudSyncEnabled && (
+                <button
+                  onClick={async () => {
+                    triggerHaptic('light');
+                    await performCloudSync();
+                  }}
+                  disabled={isCloudSyncing || !isOnline}
+                  className="p-1.5 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors disabled:opacity-50"
+                  title="Sincronizar agora"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isCloudSyncing ? 'animate-spin text-blue-500' : ''}`} />
+                </button>
+              )}
+              
+              <button
+                role="checkbox"
+                aria-checked={isCloudSyncEnabled}
+                onClick={() => toggleCloudSync(!isCloudSyncEnabled)}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  isCloudSyncEnabled ? 'bg-blue-500' : 'bg-gray-200 dark:bg-zinc-850'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                    isCloudSyncEnabled ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Main Content List */}
