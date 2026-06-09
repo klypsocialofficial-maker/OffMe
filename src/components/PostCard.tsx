@@ -312,10 +312,15 @@ function PostCard({
 
   return (
     <motion.article 
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-10% 0px -10% 0px" }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
+      layout="position"
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ 
+        type: "spring",
+        stiffness: 280,
+        damping: 24,
+        opacity: { duration: 0.2 }
+      }}
       onClick={() => navigate(`/post/${effectivePost.id}`)}
       onPointerDown={handleCardPointerDown}
       onPointerUp={handleCardPointerUp}

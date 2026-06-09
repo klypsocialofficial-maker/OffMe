@@ -4,7 +4,7 @@ import { doc, onSnapshot, collection, query, where, orderBy, serverTimestamp, ad
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { User as UserIcon, ArrowLeft, MoreHorizontal, Trash2, Edit2, BarChart2, Heart, Repeat, MessageCircle, Send, Bookmark, BookmarkCheck, Ghost, Lock, Music, Play, Pause, ExternalLink, Pin, PinOff, VolumeX, UserX, Gift, ShieldAlert, Share, Flag, Clock } from 'lucide-react';
+import { User as UserIcon, ArrowLeft, MoreHorizontal, Trash2, Edit2, BarChart2, Heart, Repeat, MessageCircle, Send, Bookmark, BookmarkCheck, Ghost, Lock, Music, Play, Pause, ExternalLink, Pin, PinOff, VolumeX, UserX, Gift, ShieldAlert, Share, Flag } from 'lucide-react';
 import VerifiedBadge from '../components/VerifiedBadge';
 import PostContent from '../components/PostContent';
 import QuotedPost from '../components/QuotedPost';
@@ -81,13 +81,6 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
   console.error('Firestore Error: ', JSON.stringify(errInfo));
   throw new Error(JSON.stringify(errInfo));
 }
-
-const calculateReadingTime = (content?: string) => {
-  if (!content) return 1;
-  const words = content.trim().split(/\s+/).filter(Boolean).length;
-  const wpm = 200;
-  return Math.max(1, Math.ceil(words / wpm));
-};
 
 export default function PostDetail() {
   const { postId } = useParams();
@@ -1206,11 +1199,7 @@ export default function PostDetail() {
                   <span className="text-gray-500">Visualizações</span>
                 </>
               )}
-              <span>·</span>
-              <div className="flex items-center space-x-1 text-gray-500">
-                <Clock className="w-4 h-4 text-gray-400" />
-                <span>{t('post.reading_time').replace('{time}', calculateReadingTime(post.content).toString())}</span>
-              </div>
+
             </div>
 
             {/* Counters */}
