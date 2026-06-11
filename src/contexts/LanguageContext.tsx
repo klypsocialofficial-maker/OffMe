@@ -63,6 +63,8 @@ const translations: Record<Language, Record<string, string>> = {
     'display.theme.cyberpunk.desc': 'Futurista & Neon vibrante',
     'display.theme.dark_gold.label': 'Luxo Real',
     'display.theme.dark_gold.desc': 'Preto sóbrio & Ouro reluzente',
+    'display.theme.liquid_glass.label': 'Liquid Glass (iOS 26)',
+    'display.theme.liquid_glass.desc': 'Vidro cristalino & Fluidez orgânica',
     
     // Language Section
     'display.lang.section': 'Idioma',
@@ -121,6 +123,8 @@ const translations: Record<Language, Record<string, string>> = {
     'display.theme.cyberpunk.desc': 'Futuristic & vibrant Neon',
     'display.theme.dark_gold.label': 'Royal Luxury',
     'display.theme.dark_gold.desc': 'Sober black & shiny Gold',
+    'display.theme.liquid_glass.label': 'Liquid Glass (iOS 26)',
+    'display.theme.liquid_glass.desc': 'Crystal glass & organic fluid motion',
     
     // Language Section
     'display.lang.section': 'Language',
@@ -179,6 +183,8 @@ const translations: Record<Language, Record<string, string>> = {
     'display.theme.cyberpunk.desc': 'Futurista y Neón vibrante',
     'display.theme.dark_gold.label': 'Lujo Real',
     'display.theme.dark_gold.desc': 'Negro sobrio y Oro brillante',
+    'display.theme.liquid_glass.label': 'Liquid Glass (iOS 26)',
+    'display.theme.liquid_glass.desc': 'Vidrio cristalino y fluidez orgánica',
     
     // Language Section
     'display.lang.section': 'Idioma',

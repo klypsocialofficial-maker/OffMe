@@ -44,6 +44,7 @@ import AndroidLayout from './layouts/AndroidLayout';
 import BetaLayout from './layouts/BetaLayout';
 import EditProfileModal from './EditProfileModal';
 import ProfileQuickModal from './ProfileQuickModal';
+import LiquidGlassBackground from './LiquidGlassBackground';
 
 export default function Layout() {
   const { userProfile, logout } = useAuth();
@@ -409,8 +410,14 @@ export default function Layout() {
       )}
       
       {/* Decorative background blobs - reduced opacity for light mode */}
-      <div className="fixed top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-blue-400/5 blur-[120px] pointer-events-none animate-pulse" />
-      <div className="fixed bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-purple-400/5 blur-[120px] pointer-events-none animate-pulse" style={{ animationDelay: '2s' }} />
+      {theme === 'liquid_glass' ? (
+        <LiquidGlassBackground />
+      ) : (
+        <>
+          <div className="fixed top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-blue-400/5 blur-[120px] pointer-events-none animate-pulse" />
+          <div className="fixed bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-purple-400/5 blur-[120px] pointer-events-none animate-pulse" style={{ animationDelay: '2s' }} />
+        </>
+      )}
       
       {renderLayout()}
 

@@ -173,6 +173,91 @@ body {
   background-size: 24px 24px !important;
 }
 
+/* Liquid Glass iOS 26 Theme Mode */
+.liquid_glass body {
+  background: transparent !important;
+  color: #1e293b !important;
+}
+
+/* Glassmorphic card styling with premium frosted light reflections */
+.liquid_glass .bg-white,
+.liquid_glass .bg-slate-50,
+.liquid_glass .bg-gray-50,
+.liquid_glass .bg-white\/90,
+.liquid_glass .bg-white\/80,
+.liquid_glass .bg-white\/30,
+.liquid_glass .liquid-glass-card,
+.liquid_glass header {
+  background-color: rgba(255, 255, 255, 0.4) !important;
+  backdrop-filter: blur(28px) saturate(210%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(210%) !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+  box-shadow: 
+    0 10px 30px -10px rgba(100, 116, 139, 0.08),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -1px 2px 0 rgba(100, 116, 139, 0.03) !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.liquid_glass .sticky {
+  background-color: rgba(255, 255, 255, 0.3) !important;
+  backdrop-filter: blur(32px) saturate(220%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(220%) !important;
+}
+
+.liquid_glass .hover\:bg-gray-50\/50:hover,
+.liquid_glass .hover\:bg-gray-50:hover,
+.liquid_glass .hover\:bg-black\/5:hover {
+  background-color: rgba(255, 255, 255, 0.6) !important;
+  box-shadow: 
+    0 12px 35px -8px rgba(100, 116, 139, 0.12),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+.liquid_glass .text-gray-900,
+.liquid_glass h1,
+.liquid_glass h2,
+.liquid_glass h3,
+.liquid_glass h4 {
+  color: #0f172a !important;
+}
+
+.liquid_glass p,
+.liquid_glass span:not(.text-amber-500):not(.text-cyan-500):not(.text-rose-500):not(.text-blue-500):not(.text-emerald-500),
+.liquid_glass .text-gray-500 {
+  color: #334155 !important;
+}
+
+.liquid_glass .text-gray-400 {
+  color: #64748b !important;
+}
+
+.liquid_glass .border-black\/5,
+.liquid_glass .border-gray-100,
+.liquid_glass .border-gray-200,
+.liquid_glass .border-zinc-100,
+.liquid_glass .border-slate-100 {
+  border-color: rgba(255, 255, 255, 0.45) !important;
+}
+
+/* Rounded, glossy interactive pills and buttons in iOS 26 style */
+.liquid_glass button:not(.bg-black):not(.bg-blue-600):not(.bg-rose-500):not(.bg-rose-600) {
+  background-color: rgba(255, 255, 255, 0.45);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.liquid_glass .bg-black {
+  background-color: rgba(15, 23, 42, 0.85) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.15) !important;
+}
+
+.liquid_glass .bg-black:hover {
+  background-color: rgba(15, 23, 42, 0.95) !important;
+}
+
 .cyberpunk .bg-white,
 .cyberpunk .bg-gray-50,
 .cyberpunk .bg-slate-50,

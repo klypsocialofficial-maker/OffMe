@@ -18,6 +18,7 @@ export default function DisplaySettings() {
     { id: 'system', labelKey: 'display.theme.system.label', icon: Monitor, descriptionKey: 'display.theme.system.desc', isPremium: false, storeId: '' },
     { id: 'cyberpunk', labelKey: 'display.theme.cyberpunk.label', icon: Sparkles, descriptionKey: 'display.theme.cyberpunk.desc', isPremium: true, storeId: 'theme_cyberpunk' },
     { id: 'dark_gold', labelKey: 'display.theme.dark_gold.label', icon: Sparkles, descriptionKey: 'display.theme.dark_gold.desc', isPremium: true, storeId: 'theme_dark_gold' },
+    { id: 'liquid_glass', labelKey: 'display.theme.liquid_glass.label', icon: Sparkles, descriptionKey: 'display.theme.liquid_glass.desc', isPremium: false, storeId: '' },
   ] as const;
 
   const handleThemeSelect = (option: typeof themeOptions[number]) => {

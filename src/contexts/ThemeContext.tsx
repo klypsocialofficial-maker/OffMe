@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-type Theme = 'light' | 'dark' | 'amoled' | 'system' | 'cyberpunk' | 'dark_gold';
+type Theme = 'light' | 'dark' | 'amoled' | 'system' | 'cyberpunk' | 'dark_gold' | 'liquid_glass';
 
 interface ThemeContextType {
   theme: Theme;
@@ -24,6 +24,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         document.documentElement.classList.add('dark');
         document.body.classList.add('dark');
         document.documentElement.style.setProperty('color-scheme', 'dark');
+        
+        document.documentElement.classList.remove('liquid_glass');
+        document.body.classList.remove('liquid_glass');
         
         if (t === 'amoled') {
           document.documentElement.classList.add('amoled');
@@ -58,6 +61,14 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         document.documentElement.classList.remove('dark_gold');
         document.body.classList.remove('dark_gold');
         document.documentElement.style.setProperty('color-scheme', 'light');
+
+        if (t === 'liquid_glass') {
+          document.documentElement.classList.add('liquid_glass');
+          document.body.classList.add('liquid_glass');
+        } else {
+          document.documentElement.classList.remove('liquid_glass');
+          document.body.classList.remove('liquid_glass');
+        }
       }
     };
 
