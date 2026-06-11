@@ -6,7 +6,6 @@ import { LogOut, User as UserIcon, Plus } from 'lucide-react';
 import VerifiedBadge from '../VerifiedBadge';
 import LazyImage from '../LazyImage';
 import { getDefaultAvatar } from '../../lib/avatar';
-import GestureNavigationWrapper from '../GestureNavigationWrapper';
 
 interface AndroidLayoutProps {
   userProfile: any;
@@ -55,9 +54,18 @@ export default function AndroidLayout({
     <div className="flex flex-col w-full min-h-[100dvh] bg-white overflow-x-clip">
       {/* Main Content Area */}
       <main className={`flex-1 w-full relative ${location.pathname.startsWith('/messages/') && location.pathname !== '/messages' ? '' : 'pb-20'}`}>
-        <GestureNavigationWrapper>
-          <Outlet context={{ openDrawer, openCreateModal }} />
-        </GestureNavigationWrapper>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            className="w-full"
+          >
+            <Outlet context={{ openDrawer, openCreateModal }} />
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {/* Android Bottom Navigation - Material Design feel */}
