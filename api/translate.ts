@@ -1,24 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
-
-let aiInstance: GoogleGenAI | null = null;
-
-function getGemini(): GoogleGenAI {
-  if (!aiInstance) {
-    const key = process.env.GEMINI_API_KEY;
-    if (!key) {
-      throw new Error('GEMINI_API_KEY environment variable is required');
-    }
-    aiInstance = new GoogleGenAI({
-      apiKey: key,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        }
-      }
-    });
-  }
-  return aiInstance;
-}
+import { getGemini, withRetry } from "./lib/gemini";
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
@@ -50,17 +30,17 @@ export default async function handler(req: any, res: any) {
 Text:
 ${text}`;
 
-    // Race the Gemini model call against a 4-second timeout to avoid request hang on rate-limit/quota retries
-    const geminiPromise = ai.models.generateContent({
-      model: "gemini-3.5-flash",
+    // Race the Gemini model call against a timeout
+    const geminiPromise = withRetry(() => (ai as any).models.generateContent({
+      model: "gemini-1.5-flash",
       contents: prompt,
-    });
+    }));
 
     const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("Timeout translating text via Gemini API")), 4000)
+      setTimeout(() => reject(new Error("Timeout translating text via Gemini API")), 30000)
     );
 
-    const response = await Promise.race([geminiPromise, timeoutPromise]);
+    const response = await Promise.race([geminiPromise, timeoutPromise]) as any;
 
     const translatedText = response.text?.trim() || text;
     res.status(200).json({ translatedText });

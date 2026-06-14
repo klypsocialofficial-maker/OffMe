@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Trophy } from 'lucide-react';
 import LinkPreview from './LinkPreview';
 import { motion } from 'motion/react';
 
@@ -48,7 +49,7 @@ export default function PostContent({ content, className = '', showPreview = tru
           if (part.startsWith('#')) {
             const tag = part.substring(1);
             const isWorldCupTag = [
-              'copa2026', 'copadomundo', 'hexa2026', 
+              'copa', 'copa2026', 'copadomundo', 'hexa2026', 
               'brasilnacopa', 'copa26', 'worldcup2026', 
               'worldcup26', 'rumoaohexa', 'hexa'
             ].includes(tag.toLowerCase());
@@ -61,50 +62,27 @@ export default function PostContent({ content, className = '', showPreview = tru
                     e.stopPropagation();
                     navigate(`/explore?q=${encodeURIComponent(part)}`);
                   }}
-                  className="inline-flex items-center space-x-1 px-2.5 py-0.5 my-0.5 rounded-full bg-gradient-to-r from-emerald-500 via-amber-400 to-blue-500 text-white font-extrabold text-xs shadow-md shadow-emerald-500/10 cursor-pointer overflow-hidden relative select-none border border-emerald-400/20"
-                  whileHover={{ 
-                    scale: 1.1,
-                    rotate: [-1, 1, -1, 0],
-                    boxShadow: "0px 10px 15px rgba(16, 185, 129, 0.4)"
-                  }}
+                  className="inline-flex items-center space-x-1 px-3 py-1 my-0.5 rounded-full bg-slate-950 text-amber-400 font-black text-[10px] uppercase tracking-widest cursor-pointer overflow-hidden relative border border-amber-500/30 shadow-[0_4px_10px_rgba(251,191,36,0.15)] group"
+                  whileHover={{ scale: 1.05 }}
                   animate={{
-                    backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
+                    borderColor: ["rgba(251, 191, 36, 0.3)", "rgba(251, 191, 36, 0.8)", "rgba(251, 191, 36, 0.3)"]
                   }}
                   transition={{
-                    backgroundPosition: {
-                      duration: 5,
-                      repeat: Infinity,
-                      ease: "linear"
-                    },
-                    scale: { duration: 0.15 }
-                  }}
-                  style={{
-                    backgroundSize: '200% auto'
+                    borderColor: { duration: 2, repeat: Infinity, ease: "easeInOut" }
                   }}
                 >
-                  {/* Glowing Shimmer */}
                   <motion.span 
-                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent w-full"
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-400/5 to-transparent w-full"
                     animate={{ left: ['-100%', '200%'] }}
                     transition={{
                       repeat: Infinity,
-                      repeatDelay: 2.5,
-                      duration: 1.5,
+                      repeatDelay: 3,
+                      duration: 2,
                       ease: "easeInOut"
                     }}
                   />
                   <span>{part}</span>
-                  <motion.span
-                    animate={{ rotate: 360 }}
-                    transition={{
-                      repeat: Infinity,
-                      duration: 4,
-                      ease: "linear"
-                    }}
-                    className="inline-block"
-                  >
-                    ⚽
-                  </motion.span>
+                  <Trophy className="w-3 h-3 text-amber-400 group-hover:rotate-12 transition-transform" />
                 </motion.span>
               );
             }

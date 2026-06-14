@@ -1,24 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
-
-let aiInstance: GoogleGenAI | null = null;
-
-function getGemini(): GoogleGenAI {
-  if (!aiInstance) {
-    const key = process.env.GEMINI_API_KEY;
-    if (!key) {
-      throw new Error('GEMINI_API_KEY environment variable is required');
-    }
-    aiInstance = new GoogleGenAI({
-      apiKey: key,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        }
-      }
-    });
-  }
-  return aiInstance;
-}
+import { withRetry } from "./lib/gemini";
 
 const fallbackMatches = [
   {
@@ -188,108 +168,121 @@ const fallbackMatches = [
   }
 ];
 
+let matchCache: { data: any; timestamp: number } | null = null;
+const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes
+
+const TEAM_MAP: Record<string, { nome: string, flag: string }> = {
+  'Mexico': { nome: 'México', flag: '🇲🇽' },
+  'South Africa': { nome: 'África do Sul', flag: '🇿🇦' },
+  'USA': { nome: 'EUA', flag: '🇺🇸' },
+  'United States': { nome: 'EUA', flag: '🇺🇸' },
+  'Bolivia': { nome: 'Bolívia', flag: '🇧🇴' },
+  'Canada': { nome: 'Canadá', flag: '🇨🇦' },
+  'Sweden': { nome: 'Suécia', flag: '🇸🇪' },
+  'Uruguay': { nome: 'Uruguai', flag: '🇺🇾' },
+  'Japan': { nome: 'Japão', flag: '🇯🇵' },
+  'Brazil': { nome: 'Brasil', flag: '🇧🇷' },
+  'Morocco': { nome: 'Marrocos', flag: '🇲🇦' },
+  'Spain': { nome: 'Espanha', flag: '🇪🇸' },
+  'Australia': { nome: 'Austrália', flag: '🇦🇺' },
+  'France': { nome: 'França', flag: '🇫🇷' },
+  'Saudi Arabia': { nome: 'Arábia Saudita', flag: '🇸🇦' },
+  'Argentina': { nome: 'Argentina', flag: '🇦🇷' },
+  'South Korea': { nome: 'Coreia do Sul', flag: '🇰🇷' },
+  'Germany': { nome: 'Alemanha', flag: '🇩🇪' },
+  'Cameroon': { nome: 'Camarões', flag: '🇨🇲' },
+  'England': { nome: 'Inglaterra', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+  'Portugal': { nome: 'Portugal', flag: '🇵🇹' },
+  'Italy': { nome: 'Itália', flag: '🇮🇹' },
+  'Netherlands': { nome: 'Holanda', flag: '🇳🇱' },
+  'Belgium': { nome: 'Bélgica', flag: '🇧🇪' },
+  'Croatia': { nome: 'Croácia', flag: '🇭🇷' },
+  'Senegal': { nome: 'Senegal', flag: '🇸🇳' },
+  'Ghana': { nome: 'Gana', flag: '🇬🇭' },
+  'Tunisia': { nome: 'Tunísia', flag: '🇹🇳' },
+  'Poland': { nome: 'Polônia', flag: '🇵🇱' },
+  'Switzerland': { nome: 'Suíça', flag: '🇨🇭' },
+  'Serbia': { nome: 'Sérvia', flag: '🇷🇸' },
+  'Denmark': { nome: 'Dinamarca', flag: '🇩🇰' },
+};
+
+async function fetchFromSportsAPI() {
+  const sources = [
+    'https://worldcupjson.net/matches',
+    'https://fixturedownload.com/feed/json/fifa-world-cup-2026',
+    'https://raw.githubusercontent.com/lsv/fifa-worldcup-2026/master/data.json'
+  ];
+
+  for (const url of sources) {
+    try {
+      console.log(`[Real-time Match API] Attempting to fetch from: ${url}`);
+      const response = await fetch(url, { signal: AbortSignal.timeout(8000) });
+      if (!response.ok) continue;
+      
+      const data = await response.json();
+      
+      if (Array.isArray(data)) {
+        return data.map((m: any, idx: number) => {
+          const homeName = m.home_team_country || m.HomeTeam || m.home_team?.name || 'Time A';
+          const awayName = m.away_team_country || m.AwayTeam || m.away_team?.name || 'Time B';
+          const homeInfo = TEAM_MAP[homeName] || { nome: homeName, flag: '🏳️' };
+          const awayInfo = TEAM_MAP[awayName] || { nome: awayName, flag: '🏳️' };
+          
+          const apiStatus = m.status || '';
+          let status: 'LIVE' | 'FT' | 'UPCOMING' = 'UPCOMING';
+          if (apiStatus === 'completed' || m.finished === true || m.HomeTeamScore !== undefined) {
+             status = 'FT';
+          } else if (apiStatus === 'in_progress' || apiStatus === 'live') {
+             status = 'LIVE';
+          }
+
+          return {
+            id: m.id || m.MatchNumber || `api-${idx}`,
+            group: m.group || m.Group || 'Mundial',
+            homeTeam: homeInfo.nome,
+            homeFlag: homeInfo.flag,
+            awayTeam: awayInfo.nome,
+            awayFlag: awayInfo.flag,
+            homeScore: m.home_team_score ?? m.HomeTeamScore ?? 0,
+            awayScore: m.away_team_score ?? m.AwayTeamScore ?? 0,
+            status: status,
+            minute: m.time === 'full-time' ? 90 : (parseInt(m.time) || 0),
+            time: m.datetime ? new Date(m.datetime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : (m.time || '15:00'),
+            date: m.datetime ? new Date(m.datetime).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' }) : (m.date || 'Hoje'),
+            events: m.events || []
+          };
+        });
+      }
+    } catch (e) {
+      console.error(`[Real-time Match API] Failed to fetch from ${url}:`, e);
+    }
+  }
+  return null;
+}
+
 export default async function handler(req: any, res: any) {
-  // Allow GET to fetch real-time matches
   if (req.method !== 'GET' && req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  if (matchCache && Date.now() - matchCache.timestamp < CACHE_DURATION) {
+    return res.status(200).json({ ...matchCache.data, source: 'cache' });
+  }
+
   try {
-    const ai = getGemini();
-
-    const prompt = `
-      Hoje é dia 13 de junho de 2026. A Copa do Mundo da FIFA de 2026 está acontecendo neste exato momento (iniciou dia 11 de junho de 2026 e vai até 19 de julho de 2026).
-      Eu preciso de dados EM TEMPO REAL e reais das partidas oficiais da Copa do Mundo 2026 para abastecer o nosso painel esportivo.
-      
-      Por favor, busque no Google (use search grounding) os últimos resultados, jogos de hoje (13 de junho de 2026) e cronogramas das partidas oficiais da Copa do Mundo 2026.
-      Se os jogos reais de hoje ou placares ainda não estiverem consolidados ou o sorteio final detalhado ainda estiver indisponível no buscador, gere uma lista perfeitamente plausível e realista com base nas seleções classificadas e nos estádios/cronograma oficial da Copa de 2026 (por exemplo, jogos do México, EUA e Canadá como países sede abrirem os primeiros dias, e grandes seleções como Brasil, Argentina, França, Espanha estreando logo em seguida).
-
-      Crie uma lista com pelo menos 8 partidas no total, dividida nas seguintes categorias:
-      - Jogos encerrados (status "FT") dos dias 11 e 12 de junho (ex: a partida de abertura do México no Azteca em 11 de junho; o jogo de estreia dos EUA no SoFi Stadium; o jogo do Canadá em Toronto no dia 12). Coloque placares, minutos dos gols e jogadores marcadores verossímeis ou reais.
-      - Jogos ao vivo (status "LIVE") de hoje, dia 13 de junho. Coloque minutos correntes realistas (ex: 74', 45') e crie um conjunto de 3-5 eventos emocionantes e detalhados em português (gols, cartões amarelhos, lances perigosos).
-      - Jogos futuros (status "UPCOMING") agendados para hoje mais tarde (13 de junho) ou amanhã (14 de junho).
-
-      Formate a resposta estritamente como um array JSON válido de objetos com o seguinte formato em TypeScript:
-      
-      interface MatchEvent {
-        minute: number;
-        type: 'goal' | 'card_yellow' | 'card_red' | 'commentary' | 'substitution';
-        text: string;
-        team?: 'home' | 'away'; // indicando quem causou
-      }
-
-      interface Match {
-        id: string; // único, ex: wc-real-1
-        group: string; // ex: "Grupo A", "Grupo B"
-        homeTeam: string; // Nome em português, ex: "Brasil", "Alemanha"
-        homeFlag: string; // Emoji da bandeira do país
-        awayTeam: string;
-        awayFlag: string;
-        homeScore: number;
-        awayScore: number;
-        status: 'LIVE' | 'FT' | 'UPCOMING';
-        minute: number; // minuto corrente ou 90 se encerrado
-        time: string; // ex: "17:00"
-        date: string; // ex: "Hoje", "Amanhã", "11 de Junho"
-        events: MatchEvent[]; // lista de eventos ordenada do mais recente para o mais antigo (ou vice-versa, ordene devidamente por minuto decrescente)
-      }
-
-      REQUISITOS IMPORTANTES:
-      1. Siga EXATAMENTE a estrutura de chaves do JSON para que nosso frontend renderize com perfeição.
-      2. Não coloque carácteres especiais fora do JSON, não coloque marcações markdown como \`\`\`json ou explicações complementares no início/final. Retorne APENAS o array JSON válido.
-      3. As narrativas de eventos devem ser ricas e totalmente em Português do Brasil de forma empolgante!
-    `;
-
-    // Race the Gemini model call against a 4-second timeout to prevent requests from stalling or timing out the browser fetch
-    const geminiPromise = ai.models.generateContent({
-      model: "gemini-3.5-flash",
-      contents: prompt,
-      config: {
-        tools: [{ googleSearch: {} }],
-      }
-    });
-
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("Timeout waiting for Gemini API response")), 4000)
-    );
-
-    const response = await Promise.race([geminiPromise, timeoutPromise]);
-
-    const text = response.text || "";
-    // Clean potential markdown leftovers
-    let jsonStr = text.trim();
-    if (jsonStr.startsWith("```json")) {
-      jsonStr = jsonStr.substring(jsonStr.indexOf("["));
-    }
-    if (jsonStr.endsWith("```")) {
-      jsonStr = jsonStr.substring(0, jsonStr.lastIndexOf("]")) + "]";
-    }
+    const matchesFromAPI = await fetchFromSportsAPI();
     
-    // Find first [ and last ] to be absolutely sure of parsing boundaries
-    const firstBracket = jsonStr.indexOf("[");
-    const lastBracket = jsonStr.lastIndexOf("]");
-    if (firstBracket !== -1 && lastBracket !== -1) {
-      jsonStr = jsonStr.substring(firstBracket, lastBracket + 1);
+    if (matchesFromAPI && matchesFromAPI.length > 0) {
+      const result = { matches: matchesFromAPI.slice(0, 15), source: 'external_sports_api' };
+      matchCache = { data: result, timestamp: Date.now() };
+      return res.status(200).json(result);
     }
 
-    const matches = JSON.parse(jsonStr);
-    if (Array.isArray(matches) && matches.length > 0) {
-      console.log(`[Real-time Match API] Successfully fetched ${matches.length} matches from Gemini Search Grounding.`);
-      return res.status(200).json({ matches, source: 'gemini_grounded' });
-    } else {
-      throw new Error("Invalid matches parsed from Gemini output.");
-    }
+    console.log("[Real-time Match API] All external APIs failed. Using high-quality curated fallback.");
+    return res.status(200).json({ matches: fallbackMatches, source: 'curated_fallback' });
 
   } catch (error: any) {
-    const errorStr = error?.message || error?.toString() || "";
-    const isRateLimit = errorStr.includes("429") || error?.status === 429 || errorStr.includes("RESOURCE_EXHAUSTED") || errorStr.includes("quota");
-    
-    if (isRateLimit) {
-      console.warn("[Real-time Match API] Rate limit or quota exhausted from Gemini. Serving curated matches seamlessly.");
-    } else {
-      console.warn("[Real-time Match API] Error fetching from Gemini:", errorStr);
-    }
-    // Silent fallback to standard real-world curated data for maximum resilience
-    return res.status(200).json({ matches: fallbackMatches, source: 'curated_fallback' });
+    console.error("[Real-time Match API] Fatal error:", error);
+    return res.status(200).json({ matches: fallbackMatches, source: 'curated_error_fallback' });
   }
 }

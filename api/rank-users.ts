@@ -1,24 +1,5 @@
-import { GoogleGenAI, Type } from "@google/genai";
-
-let aiInstance: GoogleGenAI | null = null;
-
-function getGemini(): GoogleGenAI {
-  if (!aiInstance) {
-    const key = process.env.GEMINI_API_KEY;
-    if (!key) {
-      throw new Error('GEMINI_API_KEY environment variable is required');
-    }
-    aiInstance = new GoogleGenAI({
-      apiKey: key,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        }
-      }
-    });
-  }
-  return aiInstance;
-}
+import { Type } from "@google/genai";
+import { getGemini, withRetry } from "./lib/gemini";
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
@@ -46,9 +27,9 @@ export default async function handler(req: any, res: any) {
       Example: ["id1", "id2", "id3"]
     `;
 
-    // Race the Gemini model call against a 4-second timeout to avoid request hang on rate-limit/quota retries
-    const geminiPromise = ai.models.generateContent({
-      model: "gemini-3.5-flash",
+    // Race the Gemini model call against a timeout
+    const geminiPromise = withRetry(() => (ai as any).models.generateContent({
+      model: "gemini-1.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -57,31 +38,16 @@ export default async function handler(req: any, res: any) {
           items: { type: Type.STRING }
         }
       }
-    });
+    }));
 
     const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("Timeout ranking users via Gemini API")), 4000)
+      setTimeout(() => reject(new Error("Timeout ranking users via Gemini API")), 30000)
     );
 
-    const response = await Promise.race([geminiPromise, timeoutPromise]);
-
-    const bodyText = response.text || "[]";
-    let jsonStr = bodyText.trim();
+    const response = await Promise.race([geminiPromise, timeoutPromise]) as any;
+    const jsonStr = (response.text || "").trim();
     
-    // Quick sanitization
-    if (jsonStr.startsWith("```json")) {
-      jsonStr = jsonStr.substring(jsonStr.indexOf("["));
-    }
-    if (jsonStr.endsWith("```")) {
-      jsonStr = jsonStr.substring(0, jsonStr.lastIndexOf("]")) + "]";
-    }
-
-    const firstBracket = jsonStr.indexOf("[");
-    const lastBracket = jsonStr.lastIndexOf("]");
-    if (firstBracket !== -1 && lastBracket !== -1) {
-      jsonStr = jsonStr.substring(firstBracket, lastBracket + 1);
-    }
-
+    // The response is already schema-validated by the SDK, but we'll parse it safely
     const rankedIds = JSON.parse(jsonStr);
     return res.status(200).json({ rankedIds, source: 'gemini' });
   } catch (error: any) {

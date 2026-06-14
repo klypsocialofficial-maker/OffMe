@@ -1,28 +1,16 @@
-import { GoogleGenAI } from "@google/genai";
+import { getGemini, withRetry } from "./lib/gemini";
 
-let aiInstance: GoogleGenAI | null = null;
-
-function getGemini(): GoogleGenAI {
-  if (!aiInstance) {
-    const key = process.env.GEMINI_API_KEY;
-    if (!key) {
-      throw new Error('GEMINI_API_KEY environment variable is required');
-    }
-    aiInstance = new GoogleGenAI({
-      apiKey: key,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        }
-      }
-    });
-  }
-  return aiInstance;
-}
+let summaryCache: { data: string; timestamp: number } | null = null;
+const CACHE_DURATION = 20 * 60 * 1000; // 20 minutes for community summaries
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Check simple cache (ignoring tiny variations in post list for high-level summary)
+  if (summaryCache && Date.now() - summaryCache.timestamp < CACHE_DURATION) {
+    return res.status(200).json({ summary: summaryCache.data, source: 'cache' });
   }
 
   let posts: any[] = [];
@@ -52,19 +40,23 @@ export default async function handler(req: any, res: any) {
       ${postsText}
     `;
 
-    // Race the Gemini model call against a 4-second timeout to avoid request hang on rate-limit/quota retries
-    const geminiPromise = ai.models.generateContent({
-      model: "gemini-3.5-flash",
+    // Race the Gemini model call against a timeout
+    const geminiPromise = withRetry(() => (ai as any).models.generateContent({
+      model: "gemini-1.5-flash",
       contents: prompt,
-    });
+    }));
 
     const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("Timeout generating smart summary via Gemini API")), 4000)
+      setTimeout(() => reject(new Error("Timeout generating smart summary via Gemini API")), 30000)
     );
 
-    const response = await Promise.race([geminiPromise, timeoutPromise]);
+    const response = await Promise.race([geminiPromise, timeoutPromise]) as any;
 
     const summary = response.text || "O papo tá rendendo mas não consegui resumir agora. Tenta jaja! 👻";
+    
+    // Update cache
+    summaryCache = { data: summary, timestamp: Date.now() };
+    
     res.status(200).json({ summary });
   } catch (error: any) {
     // Avoid triggering system scanners by not using the word 'Error' starts in logs

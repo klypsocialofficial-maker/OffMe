@@ -45,6 +45,8 @@ interface CreatePostModalProps {
     spotifyUrl: string;
   } | null;
   prefilledContent?: string | null;
+  worldCupMatch?: any | null;
+  worldCupGroup?: any | null;
 }
 
 export default function CreatePostModal({ 
@@ -59,7 +61,9 @@ export default function CreatePostModal({
   communityId,
   communityName,
   sharedMusic = null,
-  prefilledContent = null
+  prefilledContent = null,
+  worldCupMatch = null,
+  worldCupGroup = null
 }: CreatePostModalProps) {
   const { addDraft } = useOfflineDrafts();
   const [content, setContent] = useState('');
@@ -671,6 +675,14 @@ export default function CreatePostModal({
             totalVotes: 0,
             voters: []
           };
+        }
+
+        if (index === 0 && worldCupMatch) {
+          postData.worldCupMatch = worldCupMatch;
+        }
+
+        if (index === 0 && worldCupGroup) {
+          postData.worldCupGroup = worldCupGroup;
         }
 
         const newPostRef = await addDoc(collection(db, 'posts'), postData);
