@@ -11,7 +11,7 @@ import { GiphyFetch } from '@giphy/js-fetch-api';
 import { getDefaultAvatar } from '../lib/avatar';
 import { triggerHaptic } from '../hooks/useHaptic';
 import { Grid } from '@giphy/react-components';
-import { handleMentions, sendPushNotification, notifyFollowers } from '../lib/notifications';
+import { handleMentions, sendPushNotification, notifyFollowers, notifyHashtagFollowers } from '../lib/notifications';
 import { suggestPostContent } from '../services/aiService';
 import { useOfflineDrafts } from '../hooks/useOfflineDrafts';
 
@@ -44,6 +44,7 @@ interface CreatePostModalProps {
     previewUrl: string;
     spotifyUrl: string;
   } | null;
+  prefilledContent?: string | null;
 }
 
 export default function CreatePostModal({ 
@@ -57,7 +58,8 @@ export default function CreatePostModal({
   isAnonymousDefault = false,
   communityId,
   communityName,
-  sharedMusic = null
+  sharedMusic = null,
+  prefilledContent = null
 }: CreatePostModalProps) {
   const { addDraft } = useOfflineDrafts();
   const [content, setContent] = useState('');
@@ -236,13 +238,13 @@ export default function CreatePostModal({
     if (isOpen) {
       hasSubmittedOrSaved.current = false;
       const key = getDraftKey();
-      const savedDraft = localStorage.getItem(key);
+      const savedDraft = prefilledContent ? null : localStorage.getItem(key);
       if (savedDraft) {
         try {
           const parsed = JSON.parse(savedDraft);
           setContent(parsed.content || '');
           if (parsed.isAnonymous !== undefined) {
-            setIsAnonymous(parsed.isAnonymous);
+             setIsAnonymous(parsed.isAnonymous);
           } else {
             setIsAnonymous(isAnonymousDefault || !userProfile);
           }
@@ -277,7 +279,7 @@ export default function CreatePostModal({
           setIsAnonymous(isAnonymousDefault || !userProfile);
         }
       } else {
-        setContent('');
+        setContent(prefilledContent || '');
         setIsAnonymous(isAnonymousDefault || !userProfile);
         setPostAudience('public');
         setGifUrl(null);
@@ -294,7 +296,7 @@ export default function CreatePostModal({
       setIsDraftLoaded(false);
       setShowRestoredMessage(false);
     }
-  }, [isOpen, replyTo, quotePost, communityId, isAnonymousDefault, userProfile]);
+  }, [isOpen, replyTo, quotePost, communityId, isAnonymousDefault, userProfile, prefilledContent]);
 
   // Save/Update draft as the user types or updates options
   useEffect(() => {
@@ -684,6 +686,7 @@ export default function CreatePostModal({
             const firstImageUrl = imageUrls[0] || null;
             await handleMentions(postContent, newPostRef.id, userProfile, firstImageUrl);
             await notifyFollowers(userProfile, postContent, firstImageUrl);
+            await notifyHashtagFollowers(postContent, newPostRef.id, userProfile, firstImageUrl);
           }
         }
         

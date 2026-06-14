@@ -94,6 +94,7 @@ export default function Layout() {
   const [replyToPost, setReplyToPost] = useState<any | null>(null);
   const [quotePost, setQuotePost] = useState<any | null>(null);
   const [sharedMusic, setSharedMusic] = useState<any | null>(null);
+  const [prefilledContent, setPrefilledContent] = useState<string | null>(null);
   const [isAnonymousDefault, setIsAnonymousDefault] = useState(false);
   const [viewerImage, setViewerImage] = useState<{ src: string; alt: string } | null>(null);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
@@ -188,10 +189,11 @@ export default function Layout() {
     }
   }, [userProfile?.uid, missionsList]);
 
-  const openCreateModal = (replyTo: any = null, quotePost: any = null, isAnonymous: boolean = false, sharedMusic: any = null) => {
+  const openCreateModal = (replyTo: any = null, quotePost: any = null, isAnonymous: boolean = false, sharedMusic: any = null, initialPrefilledContent: string | null = null) => {
     setReplyToPost(replyTo);
     setQuotePost(quotePost);
     setSharedMusic(sharedMusic);
+    setPrefilledContent(initialPrefilledContent);
     setIsAnonymousDefault(isAnonymous);
     setIsCreateModalOpen(true);
   };
@@ -202,8 +204,8 @@ export default function Layout() {
 
   useEffect(() => {
     const handleOpenCreateModal = (e: any) => {
-      const { replyTo, quotePost, isAnonymous, sharedMusic } = e.detail || {};
-      openCreateModal(replyTo, quotePost, isAnonymous, sharedMusic);
+      const { replyTo, quotePost, isAnonymous, sharedMusic, prefilledContent } = e.detail || {};
+      openCreateModal(replyTo, quotePost, isAnonymous, sharedMusic, prefilledContent);
     };
     window.addEventListener('open-create-modal', handleOpenCreateModal);
     return () => window.removeEventListener('open-create-modal', handleOpenCreateModal);
@@ -435,6 +437,7 @@ export default function Layout() {
           setReplyToPost(null);
           setQuotePost(null);
           setSharedMusic(null);
+          setPrefilledContent(null);
           setIsAnonymousDefault(false);
         }} 
         userProfile={userProfile}
@@ -444,6 +447,7 @@ export default function Layout() {
         quotePost={quotePost}
         isAnonymousDefault={isAnonymousDefault}
         sharedMusic={sharedMusic}
+        prefilledContent={prefilledContent}
       />
 
       <ConfirmModal

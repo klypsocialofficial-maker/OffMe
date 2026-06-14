@@ -4,7 +4,7 @@ import { db } from '../firebase';
 import { useAuth, handleFirestoreError, OperationType } from '../contexts/AuthContext';
 import { uploadToImgBB } from '../lib/imgbb';
 import { awardPoints } from '../services/gamificationService';
-import { handleMentions, notifyFollowers } from '../lib/notifications';
+import { handleMentions, notifyFollowers, notifyHashtagFollowers } from '../lib/notifications';
 import { triggerHaptic } from './useHaptic';
 
 export interface OfflineDraft {
@@ -437,6 +437,7 @@ export function useOfflineDrafts() {
             const firstImageUrl = imageUrls[0] || null;
             await handleMentions(postContent, newPostRef.id, userProfile, firstImageUrl);
             await notifyFollowers(userProfile, postContent, firstImageUrl);
+            await notifyHashtagFollowers(postContent, newPostRef.id, userProfile, firstImageUrl);
           } catch (ne) {
             console.error("Mention notify error:", ne);
           }

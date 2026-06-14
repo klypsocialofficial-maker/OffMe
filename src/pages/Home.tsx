@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { User as UserIcon, Send, MoreHorizontal, Trash2, Edit2, BarChart2, Plus, Heart, Repeat, MessageCircle, ArrowUp, Search, X, Image as ImageIcon, Zap as ZapIcon, Ghost } from 'lucide-react';
+import { User as UserIcon, Send, MoreHorizontal, Trash2, Edit2, BarChart2, Plus, Heart, Repeat, MessageCircle, ArrowUp, Search, X, Image as ImageIcon, Zap as ZapIcon, Ghost, Hash } from 'lucide-react';
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, where, deleteDoc, doc, updateDoc, limit, arrayUnion, arrayRemove, startAfter, getDocs, QueryDocumentSnapshot, deleteField } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { useOutletContext, useNavigate } from 'react-router-dom';
@@ -77,13 +77,13 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 }
 
 export default function Home() {
-  const { userProfile, logout } = useAuth();
+  const { userProfile, logout, followHashtag, unfollowHashtag } = useAuth();
   const navigate = useNavigate();
   const { openDrawer, openCreateModal } = useOutletContext<{ 
     openDrawer: () => void; 
     openCreateModal: (replyTo?: any, quotePost?: any, isAnonymous?: boolean) => void 
   }>();
-  const [activeTab, setActiveTab] = useState<'foryou' | 'following'>('foryou');
+  const [activeTab, setActiveTab] = useState<'foryou' | 'following' | 'hashtags'>('foryou');
   const [displayedPosts, setDisplayedPosts] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -103,6 +103,10 @@ export default function Home() {
   const mutedString = useMemo(() => {
     return (userProfile?.mutedUsers || []).join(',');
   }, [userProfile?.mutedUsers]);
+
+  const followedHashtagsString = useMemo(() => {
+    return (userProfile?.followedHashtags || []).join(',');
+  }, [userProfile?.followedHashtags]);
 
   useEffect(() => {
     isInitialLoadRef.current = true;
@@ -250,6 +254,15 @@ export default function Home() {
             if (!followingIds.includes(post.authorId)) return false;
           }
 
+          // 4. Hashtags filter (for "Hashtags" tab)
+          if (activeTab === 'hashtags') {
+            const followed = userProfile?.followedHashtags || [];
+            if (followed.length === 0) return false;
+            const postTags = post.hashtags || [];
+            const hasMatch = postTags.some((tag: string) => followed.includes(tag.toLowerCase()));
+            if (!hasMatch) return false;
+          }
+
           return true;
         });
 
@@ -318,6 +331,15 @@ export default function Home() {
             if (!followingIds.includes(post.authorId)) return false;
           }
 
+          // 4. Hashtags filter (for "Hashtags" tab)
+          if (activeTab === 'hashtags') {
+            const followed = userProfile?.followedHashtags || [];
+            if (followed.length === 0) return false;
+            const postTags = post.hashtags || [];
+            const hasMatch = postTags.some((tag: string) => followed.includes(tag.toLowerCase()));
+            if (!hasMatch) return false;
+          }
+
           return true;
         });
 
@@ -334,7 +356,7 @@ export default function Home() {
     return () => {
       unsubscribe();
     };
-  }, [activeTab, db, followingString, mutedString, refreshKey, userProfile?.uid]);
+  }, [activeTab, db, followingString, mutedString, followedHashtagsString, refreshKey, userProfile?.uid]);
 
   // Listener for new posts to show update notification
   useEffect(() => {
@@ -372,6 +394,15 @@ export default function Home() {
           if (!followingIds.includes(postData.authorId)) return false;
         }
 
+        // Hashtags check
+        if (activeTab === 'hashtags') {
+          const followed = userProfile?.followedHashtags || [];
+          if (followed.length === 0) return false;
+          const postTags = postData.hashtags || [];
+          const hasMatch = postTags.some((tag: string) => followed.includes(tag.toLowerCase()));
+          if (!hasMatch) return false;
+        }
+
         return true;
       });
 
@@ -383,7 +414,7 @@ export default function Home() {
     });
 
     return () => unsubscribe();
-  }, [activeTab, db, userProfile?.uid, isFetching, displayedPosts[0]?.id]);
+  }, [activeTab, db, userProfile?.uid, isFetching, displayedPosts[0]?.id, followedHashtagsString]);
 
   const loadMorePosts = useCallback(() => {
     fetchPosts(false);
@@ -818,7 +849,7 @@ export default function Home() {
               <nav className="liquid-glass-pill p-1 rounded-full flex items-center relative overflow-hidden border border-white/40 shadow-lg whitespace-nowrap">
                 <button
                   onClick={() => setActiveTab('foryou')}
-                  className={`relative px-4 sm:px-5 py-1.5 text-xs sm:text-sm font-bold transition-all duration-300 z-10 flex-shrink-0 ${
+                  className={`relative px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-bold transition-all duration-300 z-10 flex-shrink-0 ${
                     activeTab === 'foryou' ? 'text-black' : 'text-gray-500 hover:text-black'
                   }`}
                 >
@@ -833,7 +864,7 @@ export default function Home() {
                 </button>
                 <button
                   onClick={() => setActiveTab('following')}
-                  className={`relative px-4 sm:px-5 py-1.5 text-xs sm:text-sm font-bold transition-all duration-300 z-10 flex-shrink-0 ${
+                  className={`relative px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-bold transition-all duration-300 z-10 flex-shrink-0 ${
                     activeTab === 'following' ? 'text-black' : 'text-gray-500 hover:text-black'
                   }`}
                 >
@@ -845,6 +876,21 @@ export default function Home() {
                     />
                   )}
                   Seguindo
+                </button>
+                <button
+                  onClick={() => setActiveTab('hashtags')}
+                  className={`relative px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-bold transition-all duration-300 z-10 flex-shrink-0 ${
+                    activeTab === 'hashtags' ? 'text-black' : 'text-gray-500 hover:text-black'
+                  }`}
+                >
+                  {activeTab === 'hashtags' && (
+                    <motion.div
+                      layoutId="feed-tab-blob"
+                      className="absolute inset-0 bg-white/90 rounded-full -z-10 shadow-sm"
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    />
+                  )}
+                  Hashtags
                 </button>
               </nav>
             </div>
@@ -907,17 +953,58 @@ export default function Home() {
                   ))}
                 </div>
               ) : filteredPosts.length === 0 ? (
-                <div className="p-12 text-center">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    {searchQuery ? <Search className="w-8 h-8 text-gray-300" /> : <MessageCircle className="w-8 h-8 text-gray-300" />}
+                activeTab === 'hashtags' ? (
+                  <div className="p-8 text-center bg-gray-50/50 rounded-3xl border border-black/5 max-w-sm mx-auto shadow-sm">
+                    <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Hash className="w-8 h-8" />
+                    </div>
+                    <h3 className="text-lg font-black italic tracking-tighter text-gray-900 mb-1">
+                      Explore suas Hashtags
+                    </h3>
+                    <p className="text-xs text-gray-500 mb-5 max-w-[250px] mx-auto leading-relaxed">
+                      {(userProfile?.followedHashtags || []).length === 0 
+                        ? 'Comece a seguir hashtags para receber notificações e ter um feed personalizado com o que você ama!'
+                        : 'Nenhuma postagem recente foi encontrada para as hashtags que você segue.'}
+                    </p>
+
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-widest text-gray-400 mb-3">Hashtags Recomendadas</p>
+                      <div className="flex flex-wrap justify-center gap-2">
+                        {['copa2026', 'futebol', 'brasil', 'messi', 'vini'].map((tag) => {
+                          const isFollowing = (userProfile?.followedHashtags || []).includes(tag.toLowerCase());
+                          return (
+                            <button
+                              key={tag}
+                              onClick={() => isFollowing ? unfollowHashtag(tag) : followHashtag(tag)}
+                              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-300 flex items-center space-x-1 ${
+                                isFollowing 
+                                  ? 'bg-blue-500 text-white shadow-sm shadow-blue-500/25' 
+                                  : 'bg-white border border-black/5 hover:border-black/20 text-gray-700 shadow-sm'
+                              }`}
+                            >
+                              <span>#{tag}</span>
+                              <span className="text-[10px] opacity-75">
+                                {isFollowing ? '✓' : '+'}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
-                  <h3 className="text-lg font-black italic tracking-tighter text-gray-900 mb-1">
-                    {searchQuery ? 'Nenhum resultado' : 'Nenhum post ainda'}
-                  </h3>
-                  <p className="text-sm text-gray-500 max-w-[200px] mx-auto">
-                    {searchQuery ? `Não encontramos nada para "${searchQuery}"` : 'Seja o primeiro a compartilhar algo com o mundo!'}
-                  </p>
-                </div>
+                ) : (
+                  <div className="p-12 text-center">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      {searchQuery ? <Search className="w-8 h-8 text-gray-300" /> : <MessageCircle className="w-8 h-8 text-gray-300" />}
+                    </div>
+                    <h3 className="text-lg font-black italic tracking-tighter text-gray-900 mb-1">
+                      {searchQuery ? 'Nenhum resultado' : 'Nenhum post ainda'}
+                    </h3>
+                    <p className="text-sm text-gray-500 max-w-[200px] mx-auto">
+                      {searchQuery ? `Não encontramos nada para "${searchQuery}"` : 'Seja o primeiro a compartilhar algo com o mundo!'}
+                    </p>
+                  </div>
+                )
               ) : (
                 <>
                   {filteredPosts.map((post, index) => (

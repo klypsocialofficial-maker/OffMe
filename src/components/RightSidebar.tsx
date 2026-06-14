@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, TrendingUp, MoreHorizontal, UserPlus, Trophy, X as XIcon } from 'lucide-react';
+import { motion } from 'motion/react';
 import { collection, query, limit, getDocs, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -236,6 +237,47 @@ export default function RightSidebar() {
           </button>
         </div>
         <div className="divide-y divide-gray-100 dark:divide-white/5">
+          {/* Animated Premium Special Hashtag: #copa2026 */}
+          <motion.div 
+            onClick={() => navigate('/explore?q=%23copa2026')}
+            className="px-4 py-3.5 hover:bg-emerald-500/10 dark:hover:bg-emerald-500/5 cursor-pointer transition-colors relative group overflow-hidden bg-gradient-to-r from-emerald-500/5 via-amber-500/5 to-blue-500/5 dark:from-emerald-950/20 dark:via-amber-950/10 dark:to-blue-950/20"
+            whileHover={{ scale: 1.01 }}
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            {/* Shifting Gradient Bottom Bar */}
+            <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-500 via-amber-400 to-blue-500 animate-pulse" />
+            
+            <div className="flex justify-between items-start">
+              <span className="text-[10px] uppercase font-black tracking-widest text-emerald-600 dark:text-emerald-400 flex items-center space-x-1">
+                <span>🏆 Copa do Mundo</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping inline-block" />
+              </span>
+              <span className="text-[9px] bg-amber-400 text-emerald-950 font-black px-1.5 py-0.5 rounded uppercase">Ao Vivo</span>
+            </div>
+            
+            <div className="flex items-center space-x-1.5 mt-1">
+              <motion.span 
+                animate={{ rotate: [0, 360] }}
+                transition={{ repeat: Infinity, duration: 6, ease: "linear" }}
+                className="text-base"
+              >
+                ⚽
+              </motion.span>
+              <p className="font-extrabold text-sm text-gray-900 dark:text-white flex items-center">
+                <span className="text-emerald-600 dark:text-emerald-450 italic font-black">#copa2026</span>
+              </p>
+            </div>
+            
+            <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400 mt-1">
+              <span>Palpites e cobertura em tempo real</span>
+              <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center space-x-0.5">
+                <span className="text-[9px]">🔥</span>
+                <span>Hexa 2026</span>
+              </span>
+            </div>
+          </motion.div>
+
           {trendingTopics.map((topic, i) => (
             <div key={i} className="px-4 py-3 hover:bg-gray-100 cursor-pointer transition-colors group relative">
               <div className="flex justify-between items-start">

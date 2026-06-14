@@ -8,6 +8,7 @@ import Toast from '../components/Toast';
 import LazyImage from '../components/LazyImage';
 import PostCard from '../components/PostCard';
 import { useAuth } from '../contexts/AuthContext';
+import WorldCupDashboard from '../components/WorldCupDashboard';
 import { useOutletContext, Link, useNavigate, useLocation } from 'react-router-dom';
 import { getDefaultAvatar } from '../lib/avatar';
 import { deletePostAndRelationships } from '../lib/postUtils';
@@ -76,7 +77,7 @@ const CATEGORIES = [
 ];
 
 export default function Explore() {
-  const { userProfile } = useAuth();
+  const { userProfile, followHashtag, unfollowHashtag } = useAuth();
   const { openDrawer } = useOutletContext<{ openDrawer: () => void }>();
   const navigate = useNavigate();
   const location = useLocation();
@@ -966,35 +967,68 @@ export default function Explore() {
                   </div>
                 )
               ) : searchTab === 'posts' || searchTab === 'media' ? (
-                postsResults.length > 0 ? (
-                  <div className="space-y-0 -mx-4">
-                    {postsResults.map((post) => (
-                      <PostCard 
-                        key={`search-post-${post.id}`}
-                        post={post}
-                        onLike={(p, rid) => handleLikePost(p, rid)}
-                        onRepost={() => handleRepost(post)}
-                        onDelete={() => handleDeletePost(post.id)}
-                        onEdit={(p) => navigate(`/post/${p.id}`)}
-                        onShare={() => {}}
-                        onReply={(p) => navigate(`/post/${p.id}`)}
-                        onQuote={(p) => navigate(`/post/${p.id}`)}
-                        onImageClick={(src, alt) => {}}
-                        canEdit={() => false}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center p-12 text-center">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                      <Hash className="w-8 h-8 text-gray-300" />
+                <div>
+                  {searchQuery.trim().startsWith('#') && (
+                    (() => {
+                      const tag = searchQuery.trim().replace(/^#/, '').toLowerCase();
+                      const isFollowing = (userProfile?.followedHashtags || []).includes(tag);
+                      return (
+                        <div className="mb-4 p-4 bg-white border border-black/5 rounded-3xl flex items-center justify-between shadow-sm">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center font-bold text-lg flex-shrink-0">
+                              #
+                            </div>
+                            <div>
+                              <h4 className="font-black text-black text-sm">Hashtag #{tag}</h4>
+                              <p className="text-[11px] text-gray-500">
+                                {isFollowing ? 'Você segue esta hashtag' : 'Siga para receber atualizações no seu feed'}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => isFollowing ? unfollowHashtag(tag) : followHashtag(tag)}
+                            className={`px-4 py-2 rounded-xl text-xs font-black transition-all active:scale-95 flex-shrink-0 ${
+                              isFollowing 
+                                ? 'bg-gray-100 hover:bg-gray-200 text-gray-600 border border-black/5' 
+                                : 'bg-blue-500 hover:bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                            }`}
+                          >
+                            {isFollowing ? 'Seguindo' : 'Seguir'}
+                          </button>
+                        </div>
+                      );
+                    })()
+                  )}
+                  {postsResults.length > 0 ? (
+                    <div className="space-y-0 -mx-4">
+                      {postsResults.map((post) => (
+                        <PostCard 
+                          key={`search-post-${post.id}`}
+                          post={post}
+                          onLike={(p, rid) => handleLikePost(p, rid)}
+                          onRepost={() => handleRepost(post)}
+                          onDelete={() => handleDeletePost(post.id)}
+                          onEdit={(p) => navigate(`/post/${p.id}`)}
+                          onShare={() => {}}
+                          onReply={(p) => navigate(`/post/${p.id}`)}
+                          onQuote={(p) => navigate(`/post/${p.id}`)}
+                          onImageClick={(src, alt) => {}}
+                          canEdit={() => false}
+                        />
+                      ))}
                     </div>
-                    <h3 className="font-bold text-gray-900">Nenhum post encontrado</h3>
-                    <p className="text-gray-500 text-sm mt-1">
-                      Não encontramos posts com "{searchQuery}"
-                    </p>
-                  </div>
-                )
+                  ) : (
+                    <div className="flex flex-col items-center justify-center p-12 text-center">
+                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                        <Hash className="w-8 h-8 text-gray-300" />
+                      </div>
+                      <h3 className="font-bold text-gray-900">Nenhum post encontrado</h3>
+                      <p className="text-gray-500 text-sm mt-1">
+                        Não encontramos posts com "{searchQuery}"
+                      </p>
+                    </div>
+                  )}
+                </div>
               ) : null}
             </motion.div>
           ) : (
@@ -1084,6 +1118,43 @@ export default function Explore() {
                           </h2>
                         </div>
                         <div className="flex flex-wrap gap-2">
+                          <motion.button
+                            onClick={() => {
+                              setSearchQuery('#copa2026');
+                              setSearchTab('posts');
+                              navigate('?q=%23copa2026');
+                              if (typeof window !== 'undefined' && window.scrollTo) {
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                              }
+                            }}
+                            className="px-4 py-2 bg-gradient-to-r from-emerald-500 via-amber-400 to-blue-600 text-white rounded-2xl border-none shadow-md hover:shadow-lg hover:shadow-emerald-500/20 transition-all flex items-center space-x-2 active:scale-95 group relative overflow-hidden font-black text-sm select-none"
+                            whileHover={{ scale: 1.05 }}
+                            animate={{
+                              boxShadow: ["0 4px 6px -1px rgba(16, 185, 129, 0.2)", "0 10px 15px -3px rgba(234, 179, 8, 0.4)", "0 4px 6px -1px rgba(16, 185, 129, 0.2)"]
+                            }}
+                            transition={{
+                              duration: 3,
+                              repeat: Infinity,
+                              ease: "easeInOut"
+                            }}
+                          >
+                            <motion.span
+                              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent w-full"
+                              animate={{ left: ['-100%', '200%'] }}
+                              transition={{
+                                repeat: Infinity,
+                                repeatDelay: 2.5,
+                                duration: 1.5,
+                                ease: "easeInOut"
+                              }}
+                            />
+                            <span className="flex items-center space-x-1">
+                              <span>🏆</span>
+                              <span className="font-extrabold text-white tracking-tight">#copa2026</span>
+                            </span>
+                            <span className="text-[10px] text-emerald-950 font-extrabold bg-amber-350 dark:bg-amber-400 px-2 py-0.5 rounded-md uppercase tracking-tighter shadow-sm">COPA ⚽</span>
+                          </motion.button>
+
                           {trendingHashtags.length > 0 ? trendingHashtags.map((trend) => (
                             <button 
                               key={trend.tag}
@@ -1143,6 +1214,45 @@ export default function Explore() {
                           </h2>
                         </div>
                         <div className="flex overflow-x-auto no-scrollbar gap-2 pb-2 -mx-4 px-4">
+                          <motion.button
+                            onClick={() => {
+                              setSearchQuery('#copa2026');
+                              setSearchTab('posts');
+                              navigate('?q=%23copa2026');
+                              if (typeof window !== 'undefined' && window.scrollTo) {
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                              }
+                            }}
+                            className="flex-shrink-0 px-4 py-3 bg-gradient-to-r from-emerald-500 via-amber-400 to-blue-600 text-white rounded-2xl border-none shadow-md hover:shadow-lg hover:shadow-emerald-500/20 transition-all flex items-center space-x-3 active:scale-95 group relative overflow-hidden font-black text-sm select-none"
+                            whileHover={{ scale: 1.05 }}
+                            animate={{
+                              boxShadow: ["0 4px 6px -1px rgba(16, 185, 129, 0.2)", "0 10px 15px -3px rgba(234, 179, 8, 0.4)", "0 4px 6px -1px rgba(16, 185, 129, 0.2)"]
+                            }}
+                            transition={{
+                              duration: 3,
+                              repeat: Infinity,
+                              ease: "easeInOut"
+                            }}
+                          >
+                            <motion.span
+                              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent w-full"
+                              animate={{ left: ['-100%', '200%'] }}
+                              transition={{
+                                repeat: Infinity,
+                                repeatDelay: 2.5,
+                                duration: 1.5,
+                                ease: "easeInOut"
+                              }}
+                            />
+                            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center animate-bounce">
+                              <span className="text-sm">🏆</span>
+                            </div>
+                            <div className="flex flex-col items-start leading-tight">
+                              <span className="text-sm font-black text-white">#copa2026</span>
+                              <span className="text-[10px] text-emerald-100 font-bold uppercase tracking-tight">Em Alta ⚽</span>
+                            </div>
+                          </motion.button>
+
                           {trendingHashtags.length > 0 ? trendingHashtags.map((trend) => (
                             <button 
                               key={trend.tag}
@@ -1180,7 +1290,13 @@ export default function Explore() {
                     </div>
                   )}
 
-                  {(activeTab === 'news' || activeTab === 'sports' || activeTab === 'tech') && (
+                  {activeTab === 'sports' && (
+                    <div className="px-4">
+                      <WorldCupDashboard userProfile={userProfile} showToast={showToast} />
+                    </div>
+                  )}
+
+                  {(activeTab === 'news' || activeTab === 'tech') && (
                     <div className="flex flex-col items-center justify-center p-12 text-center bg-white mx-4 rounded-3xl border border-black/5 shadow-sm">
                       <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6">
                         {React.createElement(CATEGORIES.find(c => c.id === activeTab)?.icon || Hash, { className: "w-10 h-10 text-gray-300" })}
@@ -1193,7 +1309,7 @@ export default function Explore() {
                       </p>
                       <button 
                         onClick={() => {
-                          const tag = activeTab === 'news' ? '#noticias' : activeTab === 'sports' ? '#esportes' : '#tecnologia';
+                          const tag = activeTab === 'news' ? '#noticias' : '#tecnologia';
                           setSearchQuery(tag);
                           setSearchTab('posts');
                           navigate(`?q=${encodeURIComponent(tag)}`);
