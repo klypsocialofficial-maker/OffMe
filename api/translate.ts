@@ -50,15 +50,30 @@ export default async function handler(req: any, res: any) {
 Text:
 ${text}`;
 
-    const response = await ai.models.generateContent({
+    // Race the Gemini model call against a 4-second timeout to avoid request hang on rate-limit/quota retries
+    const geminiPromise = ai.models.generateContent({
       model: "gemini-3.5-flash",
       contents: prompt,
     });
 
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Timeout translating text via Gemini API")), 4000)
+    );
+
+    const response = await Promise.race([geminiPromise, timeoutPromise]);
+
     const translatedText = response.text?.trim() || text;
     res.status(200).json({ translatedText });
   } catch (error: any) {
-    console.error("[Translation API Error]", error);
-    res.status(500).json({ error: 'Failed to translate content via Gemini' });
+    const errorStr = error?.message || error?.toString() || "";
+    const isRateLimit = errorStr.includes("429") || error?.status === 429 || errorStr.includes("RESOURCE_EXHAUSTED") || errorStr.includes("quota");
+    
+    if (isRateLimit) {
+      console.warn("[Translation API Warning] Rate limit or quota exhausted from Gemini. Serving original text.");
+    } else {
+      console.warn("[Translation API Error] Error fetching from Gemini:", errorStr);
+    }
+    // Beautiful local fallback: return original text to client
+    return res.status(200).json({ translatedText: text });
   }
 }

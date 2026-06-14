@@ -52,10 +52,17 @@ export default async function handler(req: any, res: any) {
       ${postsText}
     `;
 
-    const response = await ai.models.generateContent({
+    // Race the Gemini model call against a 4-second timeout to avoid request hang on rate-limit/quota retries
+    const geminiPromise = ai.models.generateContent({
       model: "gemini-3.5-flash",
       contents: prompt,
     });
+
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Timeout generating smart summary via Gemini API")), 4000)
+    );
+
+    const response = await Promise.race([geminiPromise, timeoutPromise]);
 
     const summary = response.text || "O papo tá rendendo mas não consegui resumir agora. Tenta jaja! 👻";
     res.status(200).json({ summary });
