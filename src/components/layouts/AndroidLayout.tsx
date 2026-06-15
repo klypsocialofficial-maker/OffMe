@@ -72,9 +72,8 @@ export default function AndroidLayout({
       {location.pathname !== '/premium' && !(location.pathname.startsWith('/messages/') && location.pathname !== '/messages') && (
         <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/70 backdrop-blur-md border-t border-white/20 shadow-lg">
           <nav className="flex justify-around items-center h-16 relative px-2">
-            {[navItems[0], navItems[1], navItems[2], navItems[4], navItems[3], navItems[5]].map((item) => {
+            {[navItems[0], navItems[1], navItems[3], navItems[4], navItems[5]].map((item) => {
               const isActive = location.pathname === item.path;
-              const isCopa = item.path.includes('Copa2026');
               
               if (item.isAction) {
                 return (
@@ -121,21 +120,12 @@ export default function AndroidLayout({
                   to={item.path}
                   onClick={item.isProfile ? (e) => handleProfileClick(e, item.path) : handleHomeClick}
                   className={`relative p-3 rounded-xl transition-all duration-200 flex flex-col items-center justify-center active:bg-black/5 ${
-                    isActive ? 'text-black' : isCopa ? 'text-amber-500' : 'text-gray-400'
+                    isActive ? 'text-black' : 'text-gray-400'
                   }`}
                 >
                   <motion.div
                     className="flex flex-col items-center justify-center"
                     whileTap={{ scale: 0.9 }}
-                    animate={isCopa ? {
-                      scale: [1, 1.05, 1],
-                      filter: ["drop-shadow(0 0 0px rgba(245, 158, 11, 0))", "drop-shadow(0 0 8px rgba(245, 158, 11, 0.4))", "drop-shadow(0 0 0px rgba(245, 158, 11, 0))"]
-                    } : {}}
-                    transition={isCopa ? {
-                      duration: 2,
-                      repeat: Infinity,
-                      ease: "easeInOut"
-                    } : {}}
                   >
                     {item.isProfile ? (
                       <div className={`w-6 h-6 rounded-full overflow-hidden border-2 transition-all duration-200 ${isActive ? 'border-black' : 'border-transparent'}`}>
@@ -146,9 +136,9 @@ export default function AndroidLayout({
                         )}
                       </div>
                     ) : (
-                      <item.icon className={`w-6 h-6 ${isActive ? 'stroke-[2.5px]' : isCopa ? 'stroke-[2.5px] text-amber-500' : 'stroke-[2px]'}`} />
+                      <item.icon className={`w-6 h-6 ${isActive ? 'stroke-[2.5px]' : 'stroke-[2px]'}`} />
                     )}
-                    <span className={`text-[10px] mt-1 font-bold ${isActive || isCopa ? 'opacity-100' : 'opacity-0'}`}>
+                    <span className={`text-[10px] mt-1 font-bold ${isActive ? 'opacity-100' : 'opacity-0'}`}>
                       {item.label}
                     </span>
                     

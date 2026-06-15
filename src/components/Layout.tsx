@@ -66,7 +66,6 @@ export default function Layout() {
   const navItems = [
     { path: '/', icon: HomeIcon, label: t('nav.home') },
     { path: '/explore', icon: Search, label: t('nav.explore') },
-    { path: '/explore?q=%23Copa2026', icon: Trophy, label: 'Copa 2026' },
     { path: `/${userProfile?.username || 'profile'}`, icon: UserIcon, label: t('nav.profile'), isProfile: true },
     { path: '#create', icon: Plus, label: t('nav.post'), isAction: true },
     { path: '/notifications', icon: Bell, label: t('nav.notifications') },
@@ -96,8 +95,6 @@ export default function Layout() {
   const [quotePost, setQuotePost] = useState<any | null>(null);
   const [sharedMusic, setSharedMusic] = useState<any | null>(null);
   const [prefilledContent, setPrefilledContent] = useState<string | null>(null);
-  const [worldCupMatch, setWorldCupMatch] = useState<any | null>(null);
-  const [worldCupGroup, setWorldCupGroup] = useState<any | null>(null);
   const [isAnonymousDefault, setIsAnonymousDefault] = useState(false);
   const [viewerImage, setViewerImage] = useState<{ src: string; alt: string } | null>(null);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
@@ -192,13 +189,11 @@ export default function Layout() {
     }
   }, [userProfile?.uid, missionsList]);
 
-  const openCreateModal = (replyTo: any = null, quotePost: any = null, isAnonymous: boolean = false, sharedMusic: any = null, initialPrefilledContent: string | null = null, match: any = null, group: any = null) => {
+  const openCreateModal = (replyTo: any = null, quotePost: any = null, isAnonymous: boolean = false, sharedMusic: any = null, initialPrefilledContent: string | null = null) => {
     setReplyToPost(replyTo);
     setQuotePost(quotePost);
     setSharedMusic(sharedMusic);
     setPrefilledContent(initialPrefilledContent);
-    setWorldCupMatch(match);
-    setWorldCupGroup(group);
     setIsAnonymousDefault(isAnonymous);
     setIsCreateModalOpen(true);
   };
@@ -209,8 +204,8 @@ export default function Layout() {
 
   useEffect(() => {
     const handleOpenCreateModal = (e: any) => {
-      const { replyTo, quotePost, isAnonymous, sharedMusic, prefilledContent, worldCupMatch, worldCupGroup } = e.detail || {};
-      openCreateModal(replyTo, quotePost, isAnonymous, sharedMusic, prefilledContent, worldCupMatch, worldCupGroup);
+      const { replyTo, quotePost, isAnonymous, sharedMusic, prefilledContent } = e.detail || {};
+      openCreateModal(replyTo, quotePost, isAnonymous, sharedMusic, prefilledContent);
     };
     window.addEventListener('open-create-modal', handleOpenCreateModal);
     return () => window.removeEventListener('open-create-modal', handleOpenCreateModal);
@@ -435,29 +430,25 @@ export default function Layout() {
         onClose={() => setIsToastOpen(false)} 
       />
 
-          <CreatePostModal 
-            isOpen={isCreateModalOpen} 
-            onClose={() => {
-              setIsCreateModalOpen(false);
-              setReplyToPost(null);
-              setQuotePost(null);
-              setSharedMusic(null);
-              setPrefilledContent(null);
-              setWorldCupMatch(null);
-              setWorldCupGroup(null);
-              setIsAnonymousDefault(false);
-            }} 
-            userProfile={userProfile}
-            handleFirestoreError={handleFirestoreError}
-            OperationType={OperationType}
-            replyTo={replyToPost}
-            quotePost={quotePost}
-            isAnonymousDefault={isAnonymousDefault}
-            sharedMusic={sharedMusic}
-            prefilledContent={prefilledContent}
-            worldCupMatch={worldCupMatch}
-            worldCupGroup={worldCupGroup}
-          />
+      <CreatePostModal 
+        isOpen={isCreateModalOpen} 
+        onClose={() => {
+          setIsCreateModalOpen(false);
+          setReplyToPost(null);
+          setQuotePost(null);
+          setSharedMusic(null);
+          setPrefilledContent(null);
+          setIsAnonymousDefault(false);
+        }} 
+        userProfile={userProfile}
+        handleFirestoreError={handleFirestoreError}
+        OperationType={OperationType}
+        replyTo={replyToPost}
+        quotePost={quotePost}
+        isAnonymousDefault={isAnonymousDefault}
+        sharedMusic={sharedMusic}
+        prefilledContent={prefilledContent}
+      />
 
       <ConfirmModal
         isOpen={isLogoutModalOpen}

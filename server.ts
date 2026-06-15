@@ -21,8 +21,6 @@ import webhook from "./api/webhook";
 import activatePremium from "./api/activate-premium";
 import sendAuthEmail from "./api/send-auth-email";
 import translate from "./api/translate";
-import worldCupMatches from "./api/world-cup-matches";
-import rankUsers from "./api/rank-users";
 
 // Load firebase config for the project ID
 let firebaseConfig: any = {};
@@ -144,9 +142,7 @@ async function startServer() {
     "webhook": webhook,
     "activate-premium": activatePremium,
     "send-auth-email": sendAuthEmail,
-    "translate": translate,
-    "world-cup-matches": worldCupMatches,
-    "rank-users": rankUsers
+    "translate": translate
   };
 
   for (const [name, handler] of Object.entries(staticApiHandlers)) {

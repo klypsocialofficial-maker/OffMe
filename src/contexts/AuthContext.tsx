@@ -113,7 +113,6 @@ interface UserProfile {
   twoFactorPIN?: string;
   twoFactorBackupCodes?: string[];
   twoFactorCreatedAt?: any;
-  followedHashtags?: string[];
   streakCount?: number;
   lastLoginAt?: any;
   inventory?: string[];
@@ -176,8 +175,6 @@ interface AuthContextType {
   purchaseItem: (itemId: string, cost: number) => Promise<void>;
   equipItem: (itemId: string, category: 'frames' | 'themes') => Promise<void>;
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
-  followHashtag: (tag: string) => Promise<void>;
-  unfollowHashtag: (tag: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -1407,41 +1404,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const followHashtag = async (tag: string) => {
-    if (!currentUser || !userProfile) {
-      showToast("Por favor, faça login para seguir hashtags!", "error");
-      return;
-    }
-    const normalizedTag = tag.trim().replace(/^#/, '').toLowerCase();
-    if (!normalizedTag) return;
-    const userRef = doc(db, 'users', currentUser.uid);
-    try {
-      await updateDoc(userRef, {
-        followedHashtags: arrayUnion(normalizedTag)
-      });
-      showToast(`Você começou a seguir a hashtag #${normalizedTag}!`, "success");
-    } catch (error: any) {
-      showToast("Erro ao seguir hashtag: " + (error.message || error), "error");
-      handleFirestoreError(error, OperationType.UPDATE, `users/${currentUser.uid}`);
-    }
-  };
-
-  const unfollowHashtag = async (tag: string) => {
-    if (!currentUser || !userProfile) return;
-    const normalizedTag = tag.trim().replace(/^#/, '').toLowerCase();
-    if (!normalizedTag) return;
-    const userRef = doc(db, 'users', currentUser.uid);
-    try {
-      await updateDoc(userRef, {
-        followedHashtags: arrayRemove(normalizedTag)
-      });
-      showToast(`Você deixou de seguir a hashtag #${normalizedTag}.`, "info");
-    } catch (error: any) {
-      showToast("Erro ao deixar de seguir hashtag: " + (error.message || error), "error");
-      handleFirestoreError(error, OperationType.UPDATE, `users/${currentUser.uid}`);
-    }
-  };
-
   const addMutedWord = async (word: string) => {
     if (!currentUser || !userProfile) throw new Error("User not authenticated");
     const userRef = doc(db, 'users', currentUser.uid);
@@ -1637,9 +1599,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setTypingStatus,
     purchaseItem,
     equipItem,
-    showToast,
-    followHashtag,
-    unfollowHashtag
+    showToast
   };
 
   return (

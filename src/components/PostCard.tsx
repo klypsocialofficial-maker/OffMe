@@ -22,8 +22,6 @@ import PostImageGrid from './PostImageGrid';
 import LazyImage from './LazyImage';
 import { getGhostIdentity } from '../lib/ghostUtils';
 import ReactionPicker, { REACTION_TYPES } from './ReactionPicker';
-import WorldCupShareCard from './WorldCupShareCard';
-import WorldCupStandingsCard from './WorldCupStandingsCard';
 
 interface PostCardProps {
   key?: any;
@@ -688,16 +686,6 @@ function PostCard({
           altText={post.altText}
           imageFilters={post.imageFilters}
         />
-
-        {/* World Cup Match Card */}
-        {post.worldCupMatch && (
-          <WorldCupShareCard match={post.worldCupMatch} />
-        )}
-
-        {/* World Cup Standings Card */}
-        {post.worldCupGroup && (
-          <WorldCupStandingsCard group={post.worldCupGroup} />
-        )}
 
         {/* Shared Music */}
         {post.sharedMusic && (

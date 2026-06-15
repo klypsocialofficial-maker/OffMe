@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, User as UserIcon, Heart, UserPlus, MessageCircle, Repeat, AtSign, Trophy, Award, Zap, Hash } from 'lucide-react';
+import { Bell, User as UserIcon, Heart, UserPlus, MessageCircle, Repeat, AtSign, Trophy, Award, Zap } from 'lucide-react';
 import LazyImage from '../components/LazyImage';
 import VerifiedBadge from '../components/VerifiedBadge';
 import { useAuth } from '../contexts/AuthContext';
@@ -255,7 +255,6 @@ export default function Notifications() {
                         {notification.type === 'reply' && <MessageCircle className="w-6 h-6 text-green-500" />}
                         {notification.type === 'repost' && <Repeat className="w-6 h-6 text-green-600" />}
                         {notification.type === 'mention' && <AtSign className="w-6 h-6 text-purple-500" />}
-                        {notification.type === 'hashtag_post' && <Hash className="w-6 h-6 text-blue-500" />}
                         {notification.type === 'mission_completed' && <Trophy className="w-6 h-6 text-amber-500 fill-current" />}
                       </div>
                       <div className="flex-1">
@@ -307,14 +306,13 @@ export default function Notifications() {
                                 {notification.senderName}
                               </span>
                               {(notification.senderVerified || notification.senderUsername === 'Rulio' || ['Fabricio', 'fabricio'].includes(notification.senderUsername)) && <VerifiedBadge tier={notification.senderUsername === 'Rulio' ? 'black' : ['Fabricio', 'fabricio'].includes(notification.senderUsername) ? 'silver' : notification.senderPremiumTier} className="w-3.5 h-3.5" />}
-                              <span className="text-gray-600 font-medium font-sans">
+                              <span className="text-gray-600 font-medium">
                                 {notification.type === 'like' && 'curtiu seu post'}
                                 {notification.type === 'follow' && 'começou a seguir você'}
                                 {notification.type === 'follow_request' && 'quer seguir você'}
                                 {notification.type === 'reply' && 'respondeu ao seu post'}
                                 {notification.type === 'repost' && 'repostou seu post'}
                                 {notification.type === 'mention' && 'mencionou você'}
-                                {notification.type === 'hashtag_post' && `postou em #${notification.hashtag}`}
                               </span>
                             </span>
                           </p>

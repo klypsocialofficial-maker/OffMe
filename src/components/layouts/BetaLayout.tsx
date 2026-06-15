@@ -75,9 +75,8 @@ export default function BetaLayout({
             {/* Inner background highlight */}
             <div className="absolute inset-0 rounded-[32px] bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
             
-            {[navItems[0], navItems[1], navItems[2], navItems[4], navItems[3], navItems[5]].map((item) => {
+            {[navItems[0], navItems[1], navItems[3], navItems[4], navItems[5]].map((item) => {
               const isActive = location.pathname === item.path;
-              const isCopa = item.path.includes('Copa2026');
               
               if (item.isAction) {
                 return (
@@ -126,21 +125,12 @@ export default function BetaLayout({
                   to={item.path}
                   onClick={item.isProfile ? (e) => handleProfileClick(e, item.path) : handleHomeClick}
                   className={`relative p-3 rounded-full transition-all duration-300 z-10 flex flex-col items-center justify-center active:bg-black/5 ${
-                    isActive ? 'text-black' : isCopa ? 'text-amber-500' : 'text-gray-400'
+                    isActive ? 'text-black' : 'text-gray-400'
                   }`}
                 >
                   <motion.div 
                     className="relative flex flex-col items-center"
                     whileTap={{ scale: 0.9 }}
-                    animate={isCopa ? {
-                      scale: [1, 1.05, 1],
-                      filter: ["drop-shadow(0 0 0px rgba(245, 158, 11, 0))", "drop-shadow(0 0 8px rgba(245, 158, 11, 0.4))", "drop-shadow(0 0 0px rgba(245, 158, 11, 0))"]
-                    } : {}}
-                    transition={isCopa ? {
-                      duration: 2,
-                      repeat: Infinity,
-                      ease: "easeInOut"
-                    } : {}}
                   >
                     {item.isProfile ? (
                       <div className={`w-7 h-7 rounded-full overflow-hidden border-2 transition-all duration-300 ${isActive ? 'border-black' : 'border-transparent'}`}>
@@ -151,7 +141,7 @@ export default function BetaLayout({
                         )}
                       </div>
                     ) : (
-                      <item.icon className={`w-6 h-6 transition-all duration-300 ${isActive ? 'stroke-[2.5px]' : isCopa ? 'stroke-[2.5px] text-amber-500' : 'stroke-[2px]'}`} />
+                      <item.icon className={`w-6 h-6 transition-all duration-300 ${isActive ? 'stroke-[2.5px]' : 'stroke-[2px]'}`} />
                     )}
                     
                     {isActive && (

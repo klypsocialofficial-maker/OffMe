@@ -1,16 +1,6 @@
-import { getGemini, withRetry } from "./lib/gemini";
-
-let summaryCache: { data: string; timestamp: number } | null = null;
-const CACHE_DURATION = 20 * 60 * 1000; // 20 minutes for community summaries
-
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  // Check simple cache (ignoring tiny variations in post list for high-level summary)
-  if (summaryCache && Date.now() - summaryCache.timestamp < CACHE_DURATION) {
-    return res.status(200).json({ summary: summaryCache.data, source: 'cache' });
   }
 
   let posts: any[] = [];
@@ -23,70 +13,27 @@ export default async function handler(req: any, res: any) {
       return res.status(400).json({ error: 'Posts must be provided as an array.' });
     }
 
-    const ai = getGemini();
-
-    const postsText = posts
-      .map((p: any) => `@${p.authorUsername || 'anonimo'}: ${p.content || ''}`)
-      .join("\n---\n");
-
-    const prompt = `
-      Você é o assistente do Klyp, uma rede social focada em anonimato e comunidade (também conhecida por OffMe).
-      Abaixo estão os posts mais recentes da rede. Crie um resumo curto, informal e "descolado" (estilo Gen-Z brasileira)
-      dos assuntos que estão dominando agora. Use emojis. Máximo de 3 frases. 
-      Linguagem: Português Brasileiro.
-      IMPORTANTE: Não mencione que você é uma IA, apenas dê o "papo reto".
-
-      POSTS:
-      ${postsText}
-    `;
-
-    // Race the Gemini model call against a timeout
-    const geminiPromise = withRetry(() => (ai as any).models.generateContent({
-      model: "gemini-1.5-flash",
-      contents: prompt,
-    }));
-
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("Timeout generating smart summary via Gemini API")), 30000)
-    );
-
-    const response = await Promise.race([geminiPromise, timeoutPromise]) as any;
-
-    const summary = response.text || "O papo tá rendendo mas não consegui resumir agora. Tenta jaja! 👻";
-    
-    // Update cache
-    summaryCache = { data: summary, timestamp: Date.now() };
-    
-    res.status(200).json({ summary });
-  } catch (error: any) {
-    // Avoid triggering system scanners by not using the word 'Error' starts in logs
-    console.log("[Gemini Status] Rate limit / quota reached. Switching silently to local heuristic smart summary.");
-    
     let summary = "";
-    try {
-      if (posts && posts.length > 0) {
-        const tags: string[] = [];
-        const users: string[] = [];
-        posts.slice(0, 10).forEach((p: any) => {
-          if (p.authorUsername && !users.includes(p.authorUsername)) {
-            users.push(p.authorUsername);
-          }
-          const words = (p.content || '').split(/\s+/);
-          words.forEach((w: string) => {
-            if (w.startsWith('#') && w.length > 1 && !tags.includes(w)) {
-              tags.push(w);
-            }
-          });
-        });
-
-        if (tags.length > 0) {
-          summary = `A galera tá comentando forte sobre ${tags.slice(0, 2).join(' e ')}! Principalmente com @${users[0] || 'anonimo'} agitando o feed agora. Fica de olho! 👀🔥`;
-        } else if (users.length > 0) {
-          summary = `O papo tá rendendo! @${users[0]} e outros perfis anônimos movimentando o universo OffMe hoje. Acompanhe! ⚡🤫`;
+    if (posts && posts.length > 0) {
+      const tags: string[] = [];
+      const users: string[] = [];
+      posts.slice(0, 10).forEach((p: any) => {
+        if (p.authorUsername && !users.includes(p.authorUsername)) {
+          users.push(p.authorUsername);
         }
+        const words = (p.content || '').split(/\s+/);
+        words.forEach((w: string) => {
+          if (w.startsWith('#') && w.length > 1 && !tags.includes(w)) {
+            tags.push(w);
+          }
+        });
+      });
+
+      if (tags.length > 0) {
+        summary = `A galera tá comentando forte sobre ${tags.slice(0, 2).join(' e ')}! Principalmente com @${users[0] || 'anonimo'} agitando o feed agora. Fica de olho! 👀🔥`;
+      } else if (users.length > 0) {
+        summary = `O papo tá rendendo! @${users[0]} e outros perfis anônimos movimentando o universo OffMe hoje. Acompanhe! ⚡🤫`;
       }
-    } catch (e) {
-      // silent pass
     }
 
     if (!summary) {
@@ -99,5 +46,7 @@ export default async function handler(req: any, res: any) {
     }
     
     res.status(200).json({ summary, fallback: true });
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to summarize' });
   }
 }

@@ -64,7 +64,6 @@ export default function DesktopLayout({
         <nav className="flex-1 overflow-y-auto custom-scrollbar space-y-1 mt-4 relative pb-4">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
-            const isCopa = item.path.includes('Copa2026');
             
             if (item.isAction) {
               return null;
@@ -99,21 +98,10 @@ export default function DesktopLayout({
                 to={item.path}
                 onClick={item.isProfile ? (e) => handleProfileClick(e, item.path) : handleHomeClick}
                 className={`flex items-center justify-center xl:justify-start space-x-3 px-3 py-2.5 rounded-full transition-all relative z-10 group ${
-                  isActive ? 'text-black' : isCopa ? 'text-amber-500 hover:bg-amber-50' : 'text-gray-900 hover:bg-gray-100'
+                  isActive ? 'text-black' : 'text-gray-900 hover:bg-gray-100'
                 }`}
               >
-                <motion.div 
-                  className="relative flex items-center" 
-                  ref={item.isProfile ? profileRef : undefined}
-                  animate={isCopa ? {
-                    scale: [1, 1.05, 1],
-                  } : {}}
-                  transition={isCopa ? {
-                    duration: 2,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  } : {}}
-                >
+                <div className="relative" ref={item.isProfile ? profileRef : undefined}>
                   {item.isProfile ? (
                     <div className={`w-6 h-6 rounded-full overflow-hidden border-2 transition-all duration-200 ${isActive ? 'border-black' : 'border-transparent'}`}>
                       {userProfile?.photoURL ? (
@@ -123,16 +111,7 @@ export default function DesktopLayout({
                       )}
                     </div>
                   ) : (
-                    <div className="relative">
-                      <item.icon className={`w-6 h-6 ${isActive || isCopa ? 'stroke-[2.5px]' : 'stroke-[2px]'}`} />
-                      {isCopa && (
-                        <motion.div 
-                          animate={{ scale: [1, 1.8, 1], opacity: [0, 0.4, 0] }}
-                          transition={{ duration: 2, repeat: Infinity }}
-                          className="absolute inset-0 bg-amber-400 rounded-full blur-md -z-10"
-                        />
-                      )}
-                    </div>
+                    <item.icon className={`w-6 h-6 ${isActive ? 'stroke-[2.5px]' : 'stroke-[2px]'}`} />
                   )}
                   {item.path === '/notifications' && unreadNotificationsCount > 0 && (
                     <span className="absolute -top-1 -right-1 bg-black text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">
@@ -144,8 +123,8 @@ export default function DesktopLayout({
                       {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
                     </span>
                   )}
-                </motion.div>
-                <span className={`text-lg hidden xl:block ${isActive || isCopa ? 'font-black' : 'font-medium'}`}>{item.label}</span>
+                </div>
+                <span className={`text-lg hidden xl:block ${isActive ? 'font-black' : 'font-medium'}`}>{item.label}</span>
               </Link>
             );
           })}

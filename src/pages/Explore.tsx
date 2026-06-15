@@ -14,7 +14,7 @@ import { getDefaultAvatar } from '../lib/avatar';
 import { deletePostAndRelationships } from '../lib/postUtils';
 import { collection, query, where, onSnapshot, limit, addDoc, serverTimestamp, getDocs, doc, updateDoc, arrayUnion, arrayRemove, orderBy, getDoc, deleteDoc, deleteField } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { rankSuggestedUsers } from '../lib/gemini';
+import { rankSuggestedUsers } from '../lib/ranking';
 import { awardPoints } from '../services/gamificationService';
 
 enum OperationType {
@@ -77,7 +77,7 @@ const CATEGORIES = [
 ];
 
 export default function Explore() {
-  const { userProfile, followHashtag, unfollowHashtag } = useAuth();
+  const { userProfile } = useAuth();
   const { openDrawer } = useOutletContext<{ openDrawer: () => void }>();
   const navigate = useNavigate();
   const location = useLocation();
@@ -714,46 +714,53 @@ export default function Explore() {
 
   return (
     <div className="w-full min-h-full bg-slate-50 relative">
-      <div className="sticky top-0 z-40 bg-white/40 dark:bg-black/40 backdrop-blur-[40px] border-b border-black/[0.03] dark:border-white/[0.05] pt-[max(env(safe-area-inset-top),44px)]">
-        <div className="w-full px-6 py-4">
-          <div className="flex items-center space-x-6">
-            <button onClick={openDrawer} className="w-12 h-12 rounded-[1.25rem] bg-slate-50 dark:bg-slate-900 overflow-hidden flex-shrink-0 sm:hidden border border-black/5 dark:border-white/10 shadow-sm transition-transform active:scale-95">
+      <div className="sticky top-0 z-40 bg-white/70 backdrop-blur-2xl border-b border-black/5 pt-[max(env(safe-area-inset-top),44px)]">
+        <div className="w-full px-4 py-3">
+          <div className="flex items-center space-x-3">
+            <button onClick={openDrawer} className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 sm:hidden border border-white/40 shadow-sm transition-transform active:scale-95">
               {userProfile?.photoURL ? (
-                <LazyImage src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full object-cover" />
+                <LazyImage src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full" />
               ) : (
                 <LazyImage src={getDefaultAvatar(userProfile?.displayName || '', userProfile?.username || '')} alt={userProfile?.displayName} className="w-full h-full" />
               )}
             </button>
             <div className="relative flex-1 group">
-              <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-black dark:group-focus-within:text-white transition-colors" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-black transition-colors" />
               <input 
                 type="text" 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Pesquisar no Klyp..." 
-                className="w-full bg-black/5 dark:bg-white/5 rounded-[1.25rem] py-4 pl-12 pr-6 outline-none border border-transparent focus:bg-white dark:focus:bg-slate-900 focus:border-black/5 dark:focus:border-white/10 transition-all text-sm font-medium tracking-tight placeholder:text-gray-400"
+                placeholder="Explorar pessoas e assuntos..." 
+                className="w-full bg-gray-100 rounded-2xl py-3 pl-12 pr-4 outline-none border border-transparent focus:bg-white focus:border-black/10 focus:ring-4 focus:ring-black/5 transition-all text-sm"
               />
             </div>
           </div>
         </div>
 
         {searchQuery.trim() ? (
-          <div className="flex flex-col bg-transparent">
-            <div className="flex px-4">
-              {[
-                { id: 'users', label: 'Pessoas' },
-                { id: 'posts', label: 'Posts' },
-                { id: 'music', label: 'Música' }
-              ].map(tab => (
-                <button 
-                  key={tab.id}
-                  onClick={() => setSearchTab(tab.id as any)}
-                  className={`flex-1 py-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative ${searchTab === tab.id ? 'text-black dark:text-white' : 'text-gray-400 hover:text-black dark:hover:text-white'}`}
-                >
-                  {tab.label}
-                  {searchTab === tab.id && <motion.div layoutId="search-tab-indicator" className="absolute bottom-0 left-1/4 right-1/4 h-0.5 bg-black dark:bg-white rounded-full" />}
-                </button>
-              ))}
+          <div className="flex flex-col border-b border-black/5 bg-white">
+            <div className="flex">
+              <button 
+                onClick={() => setSearchTab('users')}
+                className={`flex-1 py-3 text-sm font-bold transition-all relative ${searchTab === 'users' ? 'text-black' : 'text-gray-500'}`}
+              >
+                Pessoas
+                {searchTab === 'users' && <motion.div layoutId="search-tab-indicator" className="absolute bottom-0 left-8 right-8 h-0.5 bg-black rounded-full" />}
+              </button>
+              <button 
+                onClick={() => setSearchTab('posts')}
+                className={`flex-1 py-3 text-sm font-bold transition-all relative ${searchTab === 'posts' ? 'text-black' : 'text-gray-500'}`}
+              >
+                Posts
+                {searchTab === 'posts' && <motion.div layoutId="search-tab-indicator" className="absolute bottom-0 left-8 right-8 h-0.5 bg-black rounded-full" />}
+              </button>
+              <button 
+                onClick={() => setSearchTab('music')}
+                className={`flex-1 py-3 text-sm font-bold transition-all relative ${searchTab === 'music' ? 'text-black' : 'text-gray-500'}`}
+              >
+                Música
+                {searchTab === 'music' && <motion.div layoutId="search-tab-indicator" className="absolute bottom-0 left-8 right-8 h-0.5 bg-black rounded-full" />}
+              </button>
             </div>
             {(searchTab !== 'users' && searchTab !== 'music') && (
               <div className="px-4 py-2 flex items-center space-x-2 border-t border-black/5 overflow-x-auto no-scrollbar">
@@ -960,68 +967,35 @@ export default function Explore() {
                   </div>
                 )
               ) : searchTab === 'posts' || searchTab === 'media' ? (
-                <div>
-                  {searchQuery.trim().startsWith('#') && (
-                    (() => {
-                      const tag = searchQuery.trim().replace(/^#/, '').toLowerCase();
-                      const isFollowing = (userProfile?.followedHashtags || []).includes(tag);
-                      return (
-                        <div className="mb-4 p-4 bg-white border border-black/5 rounded-3xl flex items-center justify-between shadow-sm">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center font-bold text-lg flex-shrink-0">
-                              #
-                            </div>
-                            <div>
-                              <h4 className="font-black text-black text-sm">Hashtag #{tag}</h4>
-                              <p className="text-[11px] text-gray-500">
-                                {isFollowing ? 'Você segue esta hashtag' : 'Siga para receber atualizações no seu feed'}
-                              </p>
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => isFollowing ? unfollowHashtag(tag) : followHashtag(tag)}
-                            className={`px-4 py-2 rounded-xl text-xs font-black transition-all active:scale-95 flex-shrink-0 ${
-                              isFollowing 
-                                ? 'bg-gray-100 hover:bg-gray-200 text-gray-600 border border-black/5' 
-                                : 'bg-blue-500 hover:bg-blue-600 text-white shadow-md shadow-blue-500/20'
-                            }`}
-                          >
-                            {isFollowing ? 'Seguindo' : 'Seguir'}
-                          </button>
-                        </div>
-                      );
-                    })()
-                  )}
-                  {postsResults.length > 0 ? (
-                    <div className="space-y-0 -mx-4">
-                      {postsResults.map((post) => (
-                        <PostCard 
-                          key={`search-post-${post.id}`}
-                          post={post}
-                          onLike={(p, rid) => handleLikePost(p, rid)}
-                          onRepost={() => handleRepost(post)}
-                          onDelete={() => handleDeletePost(post.id)}
-                          onEdit={(p) => navigate(`/post/${p.id}`)}
-                          onShare={() => {}}
-                          onReply={(p) => navigate(`/post/${p.id}`)}
-                          onQuote={(p) => navigate(`/post/${p.id}`)}
-                          onImageClick={(src, alt) => {}}
-                          canEdit={() => false}
-                        />
-                      ))}
+                postsResults.length > 0 ? (
+                  <div className="space-y-0 -mx-4">
+                    {postsResults.map((post) => (
+                      <PostCard 
+                        key={`search-post-${post.id}`}
+                        post={post}
+                        onLike={(p, rid) => handleLikePost(p, rid)}
+                        onRepost={() => handleRepost(post)}
+                        onDelete={() => handleDeletePost(post.id)}
+                        onEdit={(p) => navigate(`/post/${p.id}`)}
+                        onShare={() => {}}
+                        onReply={(p) => navigate(`/post/${p.id}`)}
+                        onQuote={(p) => navigate(`/post/${p.id}`)}
+                        onImageClick={(src, alt) => {}}
+                        canEdit={() => false}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center p-12 text-center">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                      <Hash className="w-8 h-8 text-gray-300" />
                     </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center p-12 text-center">
-                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                        <Hash className="w-8 h-8 text-gray-300" />
-                      </div>
-                      <h3 className="font-bold text-gray-900">Nenhum post encontrado</h3>
-                      <p className="text-gray-500 text-sm mt-1">
-                        Não encontramos posts com "{searchQuery}"
-                      </p>
-                    </div>
-                  )}
-                </div>
+                    <h3 className="font-bold text-gray-900">Nenhum post encontrado</h3>
+                    <p className="text-gray-500 text-sm mt-1">
+                      Não encontramos posts com "{searchQuery}"
+                    </p>
+                  </div>
+                )
               ) : null}
             </motion.div>
           ) : (
@@ -1059,37 +1033,34 @@ export default function Explore() {
                             {suggestedUsers.map((user) => (
                               <motion.div 
                                 key={`suggested-card-${user.id}`}
-                                className="w-[160px] flex-shrink-0 bg-white dark:bg-slate-950 p-6 rounded-[2.5rem] border border-black/[0.03] dark:border-white/[0.05] shadow-[0_8px_30px_rgb(0,0,0,0.04)] text-center flex flex-col items-center group cursor-pointer hover:shadow-[0_20px_50px_rgba(0,0,0,0.1)] transition-all duration-500"
+                                className="w-[140px] flex-shrink-0 bg-white p-4 rounded-3xl border border-black/5 shadow-sm text-center flex flex-col items-center group cursor-pointer hover:shadow-md hover:border-black/10 transition-all"
                                 onClick={() => navigate(`/${user.username}`)}
                               >
-                                <div className="relative mb-4">
-                                  <div className="w-20 h-20 rounded-[2rem] bg-slate-50 dark:bg-slate-900 overflow-hidden border-2 border-white dark:border-slate-800 shadow-xl transition-transform group-hover:scale-110">
-                                    {user.photoURL ? (
-                                      <LazyImage src={user.photoURL} alt={user.displayName} className="w-full h-full object-cover" />
-                                    ) : (
-                                      <LazyImage src={getDefaultAvatar(user.displayName, user.username)} alt={user.displayName} className="w-full h-full object-cover" />
-                                    )}
-                                  </div>
-                                  <div className="absolute -bottom-1 -right-1">
-                                    {(user.isVerified || user.username === 'Rulio' || ['Fabricio', 'fabricio'].includes(user.username)) && (
-                                      <VerifiedBadge tier={user.username === 'Rulio' ? 'black' : ['Fabricio', 'fabricio'].includes(user.username) ? 'silver' : user.premiumTier} className="w-5 h-5 shadow-lg" />
-                                    )}
-                                  </div>
+                                <div className="w-16 h-16 rounded-full bg-gray-200 overflow-hidden mb-2 border-2 border-white shadow-sm ring-1 ring-black/5">
+                                  {user.photoURL ? (
+                                    <LazyImage src={user.photoURL} alt={user.displayName} className="w-full h-full group-hover:scale-110 transition-transform" />
+                                  ) : (
+                                    <LazyImage src={getDefaultAvatar(user.displayName, user.username)} alt={user.displayName} className="w-full h-full group-hover:scale-110 transition-transform" />
+                                  )}
                                 </div>
-
-                                <div className="min-w-0 w-full mb-6 flex-1 flex flex-col items-center">
-                                  <p className="font-black text-black dark:text-white truncate text-sm tracking-tight leading-tight mb-1">{user.displayName}</p>
-                                  <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">@{user.username}</p>
+                                <div className="min-w-0 w-full mb-3 flex-1 flex flex-col items-center justify-center">
+                                  <div className="flex items-center justify-center space-x-1 w-full relative">
+                                    <p className="font-bold text-black truncate text-sm max-w-full leading-tight">{user.displayName}</p>
+                                    {(user.isVerified || user.username === 'Rulio' || ['Fabricio', 'fabricio'].includes(user.username)) && (
+                                      <VerifiedBadge tier={user.username === 'Rulio' ? 'black' : ['Fabricio', 'fabricio'].includes(user.username) ? 'silver' : user.premiumTier} className="w-3 h-3 flex-shrink-0" />
+                                    )}
+                                  </div>
+                                  <p className="text-gray-500 text-[10px] truncate w-full">@{user.username}</p>
                                 </div>
                                 <button 
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleFollowClick(user);
                                   }}
-                                  className={`w-full py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all active:scale-[0.98] ${
+                                  className={`w-full py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
                                     userProfile?.following?.includes(user.id)
-                                      ? 'bg-black/5 dark:bg-white/5 text-gray-500'
-                                      : 'bg-black dark:bg-white text-white dark:text-black shadow-xl hover:shadow-black/20'
+                                      ? 'bg-gray-100 text-gray-600'
+                                      : 'bg-black text-white hover:bg-gray-800'
                                   }`}
                                 >
                                   {userProfile?.following?.includes(user.id) ? 'Seguindo' : 'Seguir'}
@@ -1114,43 +1085,6 @@ export default function Explore() {
                           </h2>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                          <motion.button
-                            onClick={() => {
-                              setSearchQuery('#copa2026');
-                              setSearchTab('posts');
-                              navigate('?q=%23copa2026');
-                              if (typeof window !== 'undefined' && window.scrollTo) {
-                                window.scrollTo({ top: 0, behavior: 'smooth' });
-                              }
-                            }}
-                            className="px-4 py-2 bg-gradient-to-r from-emerald-500 via-amber-400 to-blue-600 text-white rounded-2xl border-none shadow-md hover:shadow-lg hover:shadow-emerald-500/20 transition-all flex items-center space-x-2 active:scale-95 group relative overflow-hidden font-black text-sm select-none"
-                            whileHover={{ scale: 1.05 }}
-                            animate={{
-                              boxShadow: ["0 4px 6px -1px rgba(16, 185, 129, 0.2)", "0 10px 15px -3px rgba(234, 179, 8, 0.4)", "0 4px 6px -1px rgba(16, 185, 129, 0.2)"]
-                            }}
-                            transition={{
-                              duration: 3,
-                              repeat: Infinity,
-                              ease: "easeInOut"
-                            }}
-                          >
-                            <motion.span
-                              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent w-full"
-                              animate={{ left: ['-100%', '200%'] }}
-                              transition={{
-                                repeat: Infinity,
-                                repeatDelay: 2.5,
-                                duration: 1.5,
-                                ease: "easeInOut"
-                              }}
-                            />
-                            <span className="flex items-center space-x-1">
-                              <span>🏆</span>
-                              <span className="font-extrabold text-white tracking-tight">#copa2026</span>
-                            </span>
-                            <span className="text-[10px] text-emerald-950 font-extrabold bg-amber-350 dark:bg-amber-400 px-2 py-0.5 rounded-md uppercase tracking-tighter shadow-sm">COPA ⚽</span>
-                          </motion.button>
-
                           {trendingHashtags.length > 0 ? trendingHashtags.map((trend) => (
                             <button 
                               key={trend.tag}
@@ -1178,32 +1112,20 @@ export default function Explore() {
                         </div>
                       </div>
 
-                      {/* Categories - Chic Redesign */}
+                      {/* Categories */}
                       <div className="px-4">
-                        <h2 className="text-xl font-black italic tracking-tighter mb-4 px-2">Explorar Categorias</h2>
-                        <div className="grid grid-cols-2 gap-4">
+                        <h2 className="text-lg font-black italic tracking-tight mb-3">Navegar por Categorias</h2>
+                        <div className="grid grid-cols-2 gap-3">
                           {CATEGORIES.filter(c => c.id !== 'foryou').map((cat) => (
                             <button
                               key={`cat-card-${cat.id}`}
                               onClick={() => setActiveTab(cat.id)}
-                              className="relative h-40 rounded-[2.5rem] overflow-hidden group border border-black/5 dark:border-white/5 active:scale-[0.98] transition-all shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
+                              className="relative h-24 rounded-2xl overflow-hidden group border border-black/5 shadow-sm active:scale-95 transition-transform"
                             >
-                              {/* Background for Category */}
-                              <div className="absolute inset-0 bg-slate-950">
-                                <div className={`absolute inset-0 opacity-20 bg-gradient-to-br transition-all duration-700 group-hover:scale-110 ${
-                                  cat.id === 'trending' ? 'from-rose-500 to-amber-500' :
-                                  cat.id === 'news' ? 'from-blue-500 to-indigo-500' :
-                                  cat.id === 'sports' ? 'from-emerald-500 to-blue-500' :
-                                  'from-orange-500 to-red-500'
-                                }`} />
-                              </div>
-                              
-                              <div className="absolute inset-0 flex flex-col items-center justify-center z-10 p-6">
-                                <div className="w-12 h-12 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 flex items-center justify-center mb-3 shadow-2xl transition-transform group-hover:scale-110">
-                                  <cat.icon className="w-6 h-6 text-white" />
-                                </div>
-                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60 mb-1">Explore</span>
-                                <span className="text-sm font-black text-white uppercase tracking-wider">{cat.label}</span>
+                              <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-black group-hover:scale-105 transition-transform duration-500" />
+                              <div className="absolute inset-0 flex flex-col items-center justify-center text-white z-10">
+                                <cat.icon className="w-6 h-6 mb-1 opacity-90 drop-shadow-md" />
+                                <span className="text-xs font-black uppercase tracking-widest drop-shadow-md">{cat.label}</span>
                               </div>
                             </button>
                           ))}
@@ -1222,45 +1144,6 @@ export default function Explore() {
                           </h2>
                         </div>
                         <div className="flex overflow-x-auto no-scrollbar gap-2 pb-2 -mx-4 px-4">
-                          <motion.button
-                            onClick={() => {
-                              setSearchQuery('#copa2026');
-                              setSearchTab('posts');
-                              navigate('?q=%23copa2026');
-                              if (typeof window !== 'undefined' && window.scrollTo) {
-                                window.scrollTo({ top: 0, behavior: 'smooth' });
-                              }
-                            }}
-                            className="flex-shrink-0 px-4 py-3 bg-gradient-to-r from-emerald-500 via-amber-400 to-blue-600 text-white rounded-2xl border-none shadow-md hover:shadow-lg hover:shadow-emerald-500/20 transition-all flex items-center space-x-3 active:scale-95 group relative overflow-hidden font-black text-sm select-none"
-                            whileHover={{ scale: 1.05 }}
-                            animate={{
-                              boxShadow: ["0 4px 6px -1px rgba(16, 185, 129, 0.2)", "0 10px 15px -3px rgba(234, 179, 8, 0.4)", "0 4px 6px -1px rgba(16, 185, 129, 0.2)"]
-                            }}
-                            transition={{
-                              duration: 3,
-                              repeat: Infinity,
-                              ease: "easeInOut"
-                            }}
-                          >
-                            <motion.span
-                              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent w-full"
-                              animate={{ left: ['-100%', '200%'] }}
-                              transition={{
-                                repeat: Infinity,
-                                repeatDelay: 2.5,
-                                duration: 1.5,
-                                ease: "easeInOut"
-                              }}
-                            />
-                            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center animate-bounce">
-                              <span className="text-sm">🏆</span>
-                            </div>
-                            <div className="flex flex-col items-start leading-tight">
-                              <span className="text-sm font-black text-white">#copa2026</span>
-                              <span className="text-[10px] text-emerald-100 font-bold uppercase tracking-tight">Em Alta ⚽</span>
-                            </div>
-                          </motion.button>
-
                           {trendingHashtags.length > 0 ? trendingHashtags.map((trend) => (
                             <button 
                               key={trend.tag}

@@ -11,7 +11,7 @@ import { GiphyFetch } from '@giphy/js-fetch-api';
 import { getDefaultAvatar } from '../lib/avatar';
 import { triggerHaptic } from '../hooks/useHaptic';
 import { Grid } from '@giphy/react-components';
-import { handleMentions, sendPushNotification, notifyFollowers, notifyHashtagFollowers } from '../lib/notifications';
+import { handleMentions, sendPushNotification, notifyFollowers } from '../lib/notifications';
 import { suggestPostContent } from '../services/aiService';
 import { useOfflineDrafts } from '../hooks/useOfflineDrafts';
 
@@ -45,8 +45,6 @@ interface CreatePostModalProps {
     spotifyUrl: string;
   } | null;
   prefilledContent?: string | null;
-  worldCupMatch?: any | null;
-  worldCupGroup?: any | null;
 }
 
 export default function CreatePostModal({ 
@@ -61,9 +59,7 @@ export default function CreatePostModal({
   communityId,
   communityName,
   sharedMusic = null,
-  prefilledContent = null,
-  worldCupMatch = null,
-  worldCupGroup = null
+  prefilledContent = null
 }: CreatePostModalProps) {
   const { addDraft } = useOfflineDrafts();
   const [content, setContent] = useState('');
@@ -677,14 +673,6 @@ export default function CreatePostModal({
           };
         }
 
-        if (index === 0 && worldCupMatch) {
-          postData.worldCupMatch = worldCupMatch;
-        }
-
-        if (index === 0 && worldCupGroup) {
-          postData.worldCupGroup = worldCupGroup;
-        }
-
         const newPostRef = await addDoc(collection(db, 'posts'), postData);
         
         if (!isAnonymous && userProfile) {
@@ -698,7 +686,6 @@ export default function CreatePostModal({
             const firstImageUrl = imageUrls[0] || null;
             await handleMentions(postContent, newPostRef.id, userProfile, firstImageUrl);
             await notifyFollowers(userProfile, postContent, firstImageUrl);
-            await notifyHashtagFollowers(postContent, newPostRef.id, userProfile, firstImageUrl);
           }
         }
         
