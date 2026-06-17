@@ -8,7 +8,6 @@ import Toast from '../components/Toast';
 import LazyImage from '../components/LazyImage';
 import PostCard from '../components/PostCard';
 import { useAuth } from '../contexts/AuthContext';
-import WorldCupDashboard from '../components/WorldCupDashboard';
 import { useOutletContext, Link, useNavigate, useLocation } from 'react-router-dom';
 import { getDefaultAvatar } from '../lib/avatar';
 import { deletePostAndRelationships } from '../lib/postUtils';
@@ -509,7 +508,7 @@ export default function Explore() {
         const candidates = Array.from(candidatesMap.values())
           .filter(u => !userProfile?.blockedUsers?.includes(u.id));
         
-        // 5. Gemini Ranking
+        // 5. Ranking
         if (candidates.length > 0) {
           const rankedIds = await rankSuggestedUsers(userInterests.slice(0, 10), candidates);
           const rankedUsers = rankedIds
@@ -1181,13 +1180,7 @@ export default function Explore() {
                     </div>
                   )}
 
-                  {activeTab === 'sports' && (
-                    <div className="px-4">
-                      <WorldCupDashboard userProfile={userProfile} showToast={showToast} />
-                    </div>
-                  )}
-
-                  {(activeTab === 'news' || activeTab === 'tech') && (
+                  {(activeTab === 'news' || activeTab === 'tech' || activeTab === 'sports') && (
                     <div className="flex flex-col items-center justify-center p-12 text-center bg-white mx-4 rounded-3xl border border-black/5 shadow-sm">
                       <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6">
                         {React.createElement(CATEGORIES.find(c => c.id === activeTab)?.icon || Hash, { className: "w-10 h-10 text-gray-300" })}
