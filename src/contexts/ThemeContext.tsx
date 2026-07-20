@@ -20,6 +20,28 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const applyTheme = (t: Theme) => {
       const isDark = t === 'dark' || t === 'amoled' || t === 'cyberpunk' || t === 'dark_gold' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
       
+      // Update theme-color meta tag to match active theme background
+      let themeColor = '#ffffff';
+      if (isDark) {
+        if (t === 'amoled') themeColor = '#000000';
+        else if (t === 'cyberpunk') themeColor = '#0d0118';
+        else if (t === 'dark_gold') themeColor = '#0a0905';
+        else themeColor = '#0f172a';
+      } else {
+        if (t === 'liquid_glass') themeColor = '#f4f7fc';
+        else themeColor = '#ffffff';
+      }
+      
+      const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+      if (metaThemeColor) {
+        metaThemeColor.setAttribute('content', themeColor);
+      } else {
+        const newMeta = document.createElement('meta');
+        newMeta.setAttribute('name', 'theme-color');
+        newMeta.setAttribute('content', themeColor);
+        document.head.appendChild(newMeta);
+      }
+
       if (isDark) {
         document.documentElement.classList.add('dark');
         document.body.classList.add('dark');
