@@ -8,7 +8,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 export default function Settings() {
   const navigate = useNavigate();
   const { userProfile } = useAuth();
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const [notificationsEnabled, setNotificationsEnabled] = useState(Notification.permission === 'granted');
 
   const toggleNotifications = async () => {
@@ -74,6 +74,21 @@ export default function Settings() {
         >
           <h3 className="font-black italic tracking-tighter">{t('settings.display.title')}</h3>
           <p className="text-sm text-gray-500">{t('settings.display.description')}</p>
+        </div>
+        <div 
+          onClick={() => navigate('/settings/native')}
+          className="p-4 bg-white rounded-xl shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors"
+        >
+          <h3 className="font-black italic tracking-tighter">
+            {language === 'en' ? 'Native Integrations' : language === 'es' ? 'Funcionalidades Nativas' : 'Funcionalidades Nativas'}
+          </h3>
+          <p className="text-sm text-gray-500">
+            {language === 'en' 
+              ? 'Control iOS and Android native features like GPS, Haptics, Biometrics and Voice Dictation.' 
+              : language === 'es'
+                ? 'Gestiona características de iOS y Android como GPS, vibración háptica, biometría y dictado por voz.'
+                : 'Gerencie recursos nativos do iOS e Android como GPS, haptics, biometria e ditado de voz.'}
+          </p>
         </div>
         <div 
           onClick={() => {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
-import { User as UserIcon, MoreHorizontal, Trash2, Edit2, Send, MessageCircle, Repeat, Heart, Ghost, VolumeX, UserX, ShieldAlert, Bookmark, BookmarkCheck, Pin, PinOff, Users, BarChart2, Gift, Lock, Music, Play, Pause, ExternalLink, Share, Shield, Crown } from 'lucide-react';
+import { User as UserIcon, MoreHorizontal, Trash2, Edit2, Send, MessageCircle, Repeat, Heart, Ghost, VolumeX, UserX, ShieldAlert, Bookmark, BookmarkCheck, Pin, PinOff, Users, BarChart2, Gift, Lock, Music, Play, Pause, ExternalLink, Share, Shield, Crown, MapPin } from 'lucide-react';
 import { formatRelativeTime } from '../lib/dateUtils';
 import { triggerHaptic } from '../hooks/useHaptic';
 import { doc, updateDoc, increment } from 'firebase/firestore';
@@ -494,6 +494,20 @@ function PostCard({
               </span>
               {post.isEdited && <span className="text-gray-400 text-xs">(editado)</span>}
             </div>
+
+            {effectivePost.location && (
+              <div 
+                onClick={(e) => {
+                  stopPropagation(e);
+                  window.open(`https://www.google.com/maps/search/?api=1&query=${effectivePost.location.latitude},${effectivePost.location.longitude}`, '_blank');
+                }}
+                className="flex items-center space-x-1 text-indigo-500 dark:text-indigo-400 font-extrabold text-[10px] uppercase tracking-wider mt-1 bg-indigo-500/5 dark:bg-indigo-950/20 border border-indigo-100/50 dark:border-indigo-900/40 px-2 py-0.5 rounded-full w-fit hover:bg-indigo-100/50 dark:hover:bg-indigo-900/40 transition-colors cursor-pointer"
+                title="Ver no Google Maps"
+              >
+                <MapPin className="w-3 h-3 text-indigo-400" />
+                <span>{effectivePost.location.label}</span>
+              </div>
+            )}
 
           <div className="relative">
             <button 

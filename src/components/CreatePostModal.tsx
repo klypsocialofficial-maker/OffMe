@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User as UserIcon, Image as ImageIcon, X, BarChart2, Film, Ghost, Clock, Users, Plus, Calendar, Music, Sparkles } from 'lucide-react';
+import { User as UserIcon, Image as ImageIcon, X, BarChart2, Film, Ghost, Clock, Users, Plus, Calendar, Music, Sparkles, Mic, MicOff, MapPin } from 'lucide-react';
 import { addDoc, collection, serverTimestamp, doc, updateDoc, increment, query, where, getDocs, Timestamp, limit } from 'firebase/firestore';
 import { db } from '../firebase';
 import { uploadToImgBB, optimizeImage } from '../lib/imgbb';
@@ -104,6 +104,96 @@ export default function CreatePostModal({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestionType, setSuggestionType] = useState<'mention' | 'hashtag' | null>(null);
   const [cursorPosition, setCursorPosition] = useState(0);
+
+  // Native Features State
+  const [isDictating, setIsDictating] = useState(false);
+  const [locationData, setLocationData] = useState<{ latitude: number; longitude: number; accuracy: number; label: string } | null>(null);
+  const [gpsFetching, setGpsFetching] = useState(false);
+  const [recognition, setRecognition] = useState<any>(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setIsDictating(false);
+      return;
+    }
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const rec = new SpeechRecognition();
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.lang = 'pt-BR';
+
+      rec.onresult = (event: any) => {
+        let finalTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript;
+          }
+        }
+        if (finalTranscript) {
+          setContent(prev => prev + (prev.endsWith(' ') || prev === '' ? '' : ' ') + finalTranscript);
+        }
+      };
+
+      rec.onerror = (event: any) => {
+        console.error('STT error:', event.error);
+        if (event.error !== 'no-speech') {
+          setIsDictating(false);
+        }
+      };
+
+      rec.onend = () => {
+        setIsDictating(false);
+      };
+
+      setRecognition(rec);
+    }
+  }, [isOpen]);
+
+  const toggleDictation = () => {
+    if (!recognition) {
+      alert('Seu navegador não suporta reconhecimento de voz de forma nativa.');
+      return;
+    }
+    triggerHaptic('selection');
+    if (isDictating) {
+      recognition.stop();
+      setIsDictating(false);
+    } else {
+      recognition.start();
+      setIsDictating(true);
+    }
+  };
+
+  const handleFetchLocation = () => {
+    if (!('geolocation' in navigator)) {
+      alert('GPS não suportado neste aparelho.');
+      return;
+    }
+    triggerHaptic('selection');
+    setGpsFetching(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        setLocationData({
+          latitude: lat,
+          longitude: lng,
+          accuracy: Math.round(position.coords.accuracy),
+          label: `${lat.toFixed(4)}, ${lng.toFixed(4)}`
+        });
+        setGpsFetching(false);
+        triggerHaptic('success');
+      },
+      (error) => {
+        console.error('GPS error:', error);
+        setGpsFetching(false);
+        triggerHaptic('error');
+        alert('Não foi possível obter a sua localização GPS: ' + error.message);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
 
   const textInputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -393,7 +483,7 @@ export default function CreatePostModal({
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const newFiles = Array.from(e.target.files);
+      const newFiles = Array.from(e.target.files) as File[];
       if (imageFiles.length + newFiles.length > 4) {
         alert('Você pode adicionar no máximo 4 imagens.');
         return;
@@ -665,6 +755,15 @@ export default function CreatePostModal({
           postData.communityName = communityName;
         }
 
+        if (index === allPostsToPublish.length - 1 && locationData) {
+          postData.location = {
+            latitude: locationData.latitude,
+            longitude: locationData.longitude,
+            accuracy: locationData.accuracy,
+            label: locationData.label
+          };
+        }
+
         if (index === allPostsToPublish.length - 1 && hasValidPoll) {
           postData.poll = {
             options: validPollOptions.map(opt => ({ text: opt, votes: 0 })),
@@ -733,6 +832,7 @@ export default function CreatePostModal({
       setThreadPosts([]);
       setShowPoll(false);
       setPollOptions(['', '']);
+      setLocationData(null);
       triggerHaptic('success');
       hasSubmittedOrSaved.current = true;
       onClose();
@@ -1007,6 +1107,25 @@ export default function CreatePostModal({
                     className="w-full bg-transparent text-xl outline-none resize-none min-h-[120px] placeholder-gray-500"
                     autoFocus
                   />
+                  
+                  {locationData && (
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      className="inline-flex items-center space-x-1.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 px-3 py-1 rounded-full text-xs font-bold border border-indigo-150 mb-3"
+                    >
+                      <MapPin className="w-3 h-3" />
+                      <span>GPS: {locationData.label}</span>
+                      <button 
+                        type="button" 
+                        onClick={() => { triggerHaptic('selection'); setLocationData(null); }}
+                        className="hover:text-red-500 transition-colors p-0.5 ml-1 rounded-full hover:bg-indigo-100/50"
+                      >
+                        <X className="w-2.5 h-2.5" />
+                      </button>
+                    </motion.div>
+                  )}
                   
 
 
@@ -1342,6 +1461,22 @@ export default function CreatePostModal({
                   className={`p-2 rounded-full transition-colors ${showSchedule ? 'bg-blue-50 text-blue-500' : 'text-blue-500 hover:bg-blue-50'}`}
                 >
                    <Clock className="w-5 h-5" />
+                </button>
+                <button 
+                  type="button"
+                  onClick={toggleDictation} 
+                  className={`p-2 rounded-full transition-all duration-300 ${isDictating ? 'bg-rose-500 text-white animate-pulse' : 'text-blue-500 hover:bg-blue-50'}`}
+                  title="Digitar por voz (Nativo)"
+                >
+                  {isDictating ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                </button>
+                <button 
+                  type="button"
+                  onClick={handleFetchLocation} 
+                  className={`p-2 rounded-full transition-all duration-300 ${locationData ? 'bg-indigo-500 text-white shadow-sm' : gpsFetching ? 'bg-indigo-50 text-indigo-300 animate-spin' : 'text-blue-500 hover:bg-blue-50'}`}
+                  title="Tag de GPS (Nativo)"
+                >
+                  <MapPin className="w-5 h-5" />
                 </button>
               </div>
               

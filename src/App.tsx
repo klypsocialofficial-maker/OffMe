@@ -31,6 +31,7 @@ import Missions from './pages/Missions';
 import Settings from './pages/Settings';
 import AccountSettings from './pages/AccountSettings';
 import DisplaySettings from './pages/DisplaySettings';
+import NativeSettings from './pages/NativeSettings';
 import PrivacySettings from './pages/PrivacySettings';
 import ConnectedDevices from './pages/ConnectedDevices';
 import CreatorStudio from './pages/CreatorStudio';
@@ -247,6 +248,7 @@ export default function App() {
               <Route path="settings/devices" element={<ConnectedDevices />} />
               <Route path="settings/privacy" element={<PrivacySettings />} />
               <Route path="settings/display" element={<DisplaySettings />} />
+              <Route path="settings/native" element={<NativeSettings />} />
               <Route path="anonymous-feed" element={<AnonymousFeed />} />
               <Route path="admin" element={<AdminPanel />} />
             </Route>
