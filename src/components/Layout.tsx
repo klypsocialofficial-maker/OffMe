@@ -55,6 +55,17 @@ export default function Layout() {
   const { platform, isIOS, isAndroid, isDesktop } = usePlatform();
   
   useEffect(() => {
+    if (isIOS) {
+      document.body.classList.add('platform-ios');
+    } else {
+      document.body.classList.remove('platform-ios');
+    }
+    return () => {
+      document.body.classList.remove('platform-ios');
+    };
+  }, [isIOS]);
+  
+  useEffect(() => {
     if (userProfile?.equippedTheme) {
       const themeId = userProfile.equippedTheme.replace('theme_', '') as any;
       if (theme !== themeId) {

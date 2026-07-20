@@ -4,6 +4,7 @@ import { User as UserIcon, Send, MoreHorizontal, Trash2, Edit2, BarChart2, Plus,
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, where, deleteDoc, doc, updateDoc, limit, arrayUnion, arrayRemove, startAfter, getDocs, QueryDocumentSnapshot, deleteField } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { useOutletContext, useNavigate } from 'react-router-dom';
+import { usePlatform } from '../hooks/usePlatform';
 import CreatePostModal from '../components/CreatePostModal';
 import Toast from '../components/Toast';
 import VerifiedBadge from '../components/VerifiedBadge';
@@ -79,6 +80,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 export default function Home() {
   const { userProfile, logout } = useAuth();
   const navigate = useNavigate();
+  const { isIOS } = usePlatform();
   const { openDrawer, openCreateModal } = useOutletContext<{ 
     openDrawer: () => void; 
     openCreateModal: (replyTo?: any, quotePost?: any, isAnonymous?: boolean) => void 
@@ -791,7 +793,7 @@ export default function Home() {
       </AnimatePresence>
 
       {/* Sticky Header with Liquid Glass & Tabs */}
-      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-2xl border-b border-black/5 shadow-sm pt-[env(safe-area-inset-top,0px)]">
+      <div className={`sticky top-0 z-30 bg-white/80 backdrop-blur-2xl pt-[env(safe-area-inset-top,0px)] ${isIOS ? 'border-none shadow-none' : 'border-b border-black/5 shadow-sm'}`}>
         <div className="w-full px-4 py-2">
           <div className="flex items-center justify-between h-12 relative px-1">
             {/* Left Section (Mobile Avatar) */}
@@ -802,7 +804,7 @@ export default function Home() {
                     e.stopPropagation();
                     openDrawer();
                   }} 
-                  className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 cursor-pointer border border-white/40 shadow-sm"
+                  className={`w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 cursor-pointer ${isIOS ? 'border-none shadow-none' : 'border border-white/40 shadow-sm'}`}
                 >
                   {userProfile?.photoURL ? (
                     <LazyImage src={userProfile.photoURL} alt={userProfile.displayName} className="w-full h-full" />
@@ -815,7 +817,7 @@ export default function Home() {
 
             {/* Liquid Glass Tab Switcher (Center) */}
             <div className="flex-shrink-0 z-10 mx-2">
-              <nav className="liquid-glass-pill p-1 rounded-full flex items-center relative overflow-hidden border border-white/40 shadow-lg whitespace-nowrap">
+              <nav className={`liquid-glass-pill p-1 rounded-full flex items-center relative overflow-hidden whitespace-nowrap ${isIOS ? 'border-none shadow-none' : 'border border-white/40 shadow-lg'}`}>
                 <button
                   onClick={() => setActiveTab('foryou')}
                   className={`relative px-4 sm:px-5 py-1.5 text-xs sm:text-sm font-bold transition-all duration-300 z-10 flex-shrink-0 ${
@@ -855,7 +857,7 @@ export default function Home() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => openCreateModal(null, null, true)}
-                className="group relative p-2 sm:p-2.5 rounded-full transition-all duration-300 border border-white/40 shadow-sm overflow-hidden flex-shrink-0"
+                className={`group relative p-2 sm:p-2.5 rounded-full transition-all duration-300 overflow-hidden flex-shrink-0 ${isIOS ? 'border-none shadow-none' : 'border border-white/40 shadow-sm'}`}
                 title="Postar Anonimamente"
               >
                 <div className="absolute inset-0 bg-gradient-to-tr from-purple-50 via-gray-50 to-blue-50 opacity-100 group-hover:opacity-80 transition-opacity"></div>

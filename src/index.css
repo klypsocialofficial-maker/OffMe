@@ -371,3 +371,32 @@ body.modal-open {
 .overflow-y-auto {
   -webkit-overflow-scrolling: touch;
 }
+
+/* Clean iOS PWA overrides - remove borders and dividers */
+.platform-ios .sticky.top-0,
+.platform-ios [class*="sticky top-0"],
+.platform-ios header.sticky,
+.platform-ios div.sticky,
+.platform-ios [class*="sticky top-["] {
+  border-bottom: none !important;
+  border-bottom-width: 0px !important;
+  border-bottom-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Remove borders from switcher pills, avatars, and buttons in headers on iOS */
+.platform-ios .sticky.top-0 .border,
+.platform-ios .sticky.top-0 .border-white\/40,
+.platform-ios .sticky.top-0 .border-black\/5,
+.platform-ios .sticky.top-0 button,
+.platform-ios .sticky.top-0 nav,
+.platform-ios [class*="sticky top-0"] .border,
+.platform-ios [class*="sticky top-0"] .border-white\/40,
+.platform-ios [class*="sticky top-0"] .border-black\/5,
+.platform-ios [class*="sticky top-0"] button,
+.platform-ios [class*="sticky top-0"] nav {
+  border: none !important;
+  border-width: 0px !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
